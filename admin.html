@@ -4,11 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>BookMCQ - Admin Panel</title>
-    <!-- Tailwind CSS - OK for development -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); min-height: 100vh; }
@@ -36,7 +33,6 @@
             <h2 class="text-2xl font-bold">Admin Login</h2>
         </div>
         
-        <!-- Login Form -->
         <div id="loginForm">
             <input type="email" id="loginEmail" placeholder="Email Address" class="w-full p-3 border rounded-xl mb-3">
             <input type="password" id="loginPassword" placeholder="Password" class="w-full p-3 border rounded-xl mb-4">
@@ -48,7 +44,6 @@
             </button>
         </div>
         
-        <!-- Signup Form -->
         <div id="signupForm" class="hidden">
             <input type="email" id="signupEmail" placeholder="Email Address" class="w-full p-3 border rounded-xl mb-3">
             <input type="password" id="signupPassword" placeholder="Password (min 6 characters)" class="w-full p-3 border rounded-xl mb-4">
@@ -67,49 +62,98 @@
             <div class="flex items-center gap-2">
                 <i class="fas fa-user-circle text-2xl text-purple-600"></i>
                 <span class="font-semibold" id="userEmail">Loading...</span>
+                <span id="adminBadge" class="hidden bg-green-600 text-white text-xs px-2 py-1 rounded-full ml-2">Admin</span>
             </div>
             <button id="logoutBtn" class="bg-red-600 text-white px-4 py-2 rounded-lg">
                 <i class="fas fa-sign-out-alt mr-2"></i> Logout
             </button>
         </div>
         
-        <div class="flex flex-wrap gap-2 mb-6">
-            <button id="tabBooksBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-purple-600 text-white">📚 Books</button>
-            <button id="tabTopicsBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">🏷️ Topics</button>
-            <button id="tabAdminsBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">👑 Admins</button>
-        </div>
-
-        <!-- Books Tab -->
-        <div id="booksTab">
-            <h2 class="text-xl font-bold mb-4">Books</h2>
-            <button id="showAddBookBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg mb-4">+ Add Book</button>
-            <div id="addBookForm" class="hidden bg-gray-50 p-4 rounded-lg mb-4">
-                <input type="text" id="bookTitle" placeholder="Book Title" class="w-full p-2 border rounded mb-2">
-                <input type="text" id="bookAuthor" placeholder="Author" class="w-full p-2 border rounded mb-2">
-                <button id="saveBookBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
-                <button id="cancelBookBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
+        <!-- Admin-Only Features (Hidden for non-admins) -->
+        <div id="adminFeatures" class="hidden">
+            <div class="flex flex-wrap gap-2 mb-6">
+                <button id="tabBooksBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-purple-600 text-white">📚 Books</button>
+                <button id="tabTopicsBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">🏷️ Topics</button>
+                <button id="tabQuestionsBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">❓ Questions</button>
+                <button id="tabAdminsBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">👑 Admins</button>
             </div>
-            <div id="booksList">Loading...</div>
-        </div>
 
-        <!-- Topics Tab -->
-        <div id="topicsTab" class="hidden">
-            <h2 class="text-xl font-bold mb-4">Topics</h2>
-            <button id="showAddTopicBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg mb-4">+ Add Topic</button>
-            <div id="addTopicForm" class="hidden bg-gray-50 p-4 rounded-lg mb-4">
-                <select id="topicBookId" class="w-full p-2 border rounded mb-2"></select>
-                <input type="text" id="topicName" placeholder="Topic Name" class="w-full p-2 border rounded mb-2">
-                <button id="saveTopicBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
-                <button id="cancelTopicBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
+            <!-- Books Tab -->
+            <div id="booksTab">
+                <h2 class="text-xl font-bold mb-4">Books</h2>
+                <button id="showAddBookBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg mb-4">+ Add Book</button>
+                <div id="addBookForm" class="hidden bg-gray-50 p-4 rounded-lg mb-4">
+                    <input type="text" id="bookTitle" placeholder="Book Title" class="w-full p-2 border rounded mb-2">
+                    <input type="text" id="bookAuthor" placeholder="Author" class="w-full p-2 border rounded mb-2">
+                    <button id="saveBookBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
+                    <button id="cancelBookBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
+                </div>
+                <div id="booksList">Loading...</div>
             </div>
-            <div id="topicsList">Loading...</div>
-        </div>
 
-        <!-- Admins Tab -->
-        <div id="adminsTab" class="hidden">
-            <h2 class="text-xl font-bold mb-4">Admin Users</h2>
-            <div id="adminsList">Loading...</div>
-            <p class="text-sm text-gray-500 mt-4">After signing up, go to Supabase → Authentication → Users → Copy your User ID, then run SQL: INSERT INTO admin_roles (user_id, user_email) VALUES ('your-id', 'your-email');</p>
+            <!-- Topics Tab -->
+            <div id="topicsTab" class="hidden">
+                <h2 class="text-xl font-bold mb-4">Topics</h2>
+                <button id="showAddTopicBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg mb-4">+ Add Topic</button>
+                <div id="addTopicForm" class="hidden bg-gray-50 p-4 rounded-lg mb-4">
+                    <select id="topicBookId" class="w-full p-2 border rounded mb-2"></select>
+                    <input type="text" id="topicName" placeholder="Topic Name" class="w-full p-2 border rounded mb-2">
+                    <button id="saveTopicBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
+                    <button id="cancelTopicBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
+                </div>
+                <div id="topicsList">Loading...</div>
+            </div>
+
+            <!-- Questions Tab -->
+            <div id="questionsTab" class="hidden">
+                <h2 class="text-xl font-bold mb-4">Questions</h2>
+                <button id="showAddQuestionBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg mb-4">+ Add Question</button>
+                <div id="addQuestionForm" class="hidden bg-gray-50 p-4 rounded-lg mb-4">
+                    <select id="questionBookId" class="w-full p-2 border rounded mb-2">
+                        <option value="">Select Book</option>
+                    </select>
+                    <select id="questionTopicId" class="w-full p-2 border rounded mb-2">
+                        <option value="">Select Topic</option>
+                    </select>
+                    <select id="questionDifficulty" class="w-full p-2 border rounded mb-2">
+                        <option value="easy">Easy</option>
+                        <option value="medium">Medium</option>
+                        <option value="hard">Hard</option>
+                    </select>
+                    <textarea id="questionText" rows="3" placeholder="Question Text" class="w-full p-2 border rounded mb-2"></textarea>
+                    <input type="text" id="option0" placeholder="Option A" class="w-full p-2 border rounded mb-2">
+                    <input type="text" id="option1" placeholder="Option B" class="w-full p-2 border rounded mb-2">
+                    <input type="text" id="option2" placeholder="Option C" class="w-full p-2 border rounded mb-2">
+                    <input type="text" id="option3" placeholder="Option D" class="w-full p-2 border rounded mb-2">
+                    <select id="correctAnswer" class="w-full p-2 border rounded mb-2">
+                        <option value="0">Option A is correct</option>
+                        <option value="1">Option B is correct</option>
+                        <option value="2">Option C is correct</option>
+                        <option value="3">Option D is correct</option>
+                    </select>
+                    <textarea id="explanation" rows="2" placeholder="Explanation (optional)" class="w-full p-2 border rounded mb-2"></textarea>
+                    <button id="saveQuestionBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Save Question</button>
+                    <button id="cancelQuestionBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
+                </div>
+                <div id="questionsList">Loading...</div>
+            </div>
+
+            <!-- Admins Tab (Admin Only - Emails Hidden from Non-Admins) -->
+            <div id="adminsTab" class="hidden">
+                <h2 class="text-xl font-bold mb-4">Admin Users</h2>
+                <div id="adminsList">Loading...</div>
+                <div id="nonAdminMessage" class="hidden bg-yellow-50 p-4 rounded-lg mt-4">
+                    <p class="text-yellow-800">You don't have admin privileges. Contact the site administrator.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Non-Admin Message (Shown to logged-in users who aren't admins) -->
+        <div id="nonAdminView" class="hidden text-center py-8">
+            <i class="fas fa-lock text-5xl text-gray-400 mb-3"></i>
+            <h2 class="text-xl font-bold text-gray-600">Access Restricted</h2>
+            <p class="text-gray-500 mt-2">You don't have admin privileges.</p>
+            <p class="text-gray-400 text-sm mt-4">Contact the site administrator to request access.</p>
         </div>
     </div>
 </div>
@@ -123,13 +167,12 @@
     const SUPABASE_URL = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
     
-    // Initialize Supabase client (ONLY ONCE)
     const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
     let _currentUser = null;
+    let _isAdmin = false;
 
-    // Helper functions
-    function showToast(message, isError = false) {
+    function showToast(message) {
         const toast = document.getElementById('toast');
         toast.textContent = message;
         toast.classList.remove('hidden');
@@ -144,6 +187,17 @@
             if (m === '>') return '&gt;';
             return m;
         });
+    }
+
+    // ============ CHECK IF USER IS ADMIN ============
+    async function checkIsAdmin(userId) {
+        if (!userId) return false;
+        const { data, error } = await _supabase
+            .from('admin_roles')
+            .select('user_id')
+            .eq('user_id', userId);
+        
+        return data && data.length > 0;
     }
 
     // ============ AUTHENTICATION ============
@@ -163,34 +217,48 @@
         } else {
             showToast('Login successful!');
             _currentUser = data.user;
+            _isAdmin = await checkIsAdmin(_currentUser.id);
+            
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('adminDashboard').classList.remove('hidden');
             document.getElementById('userEmail').textContent = _currentUser.email;
-            loadBooks();
-            loadTopics();
-            loadAdmins();
+            
+            if (_isAdmin) {
+                document.getElementById('adminBadge').classList.remove('hidden');
+                document.getElementById('adminFeatures').classList.remove('hidden');
+                document.getElementById('nonAdminView').classList.add('hidden');
+                loadBooks();
+                loadTopics();
+                loadQuestions();
+                loadAdmins();
+                loadBookSelects();
+            } else {
+                document.getElementById('adminBadge').classList.add('hidden');
+                document.getElementById('adminFeatures').classList.add('hidden');
+                document.getElementById('nonAdminView').classList.remove('hidden');
+            }
         }
     }
 
-async function handleSignup() {
-    const email = document.getElementById('signupEmail').value;
-    const password = document.getElementById('signupPassword').value;
-    
-    if (!email || !password) {
-        showToast('Please enter email and password');
-        return;
-    }
-    
-    if (password.length < 6) {
-        showToast('Password must be at least 6 characters');
-        return;
-    }
-    
-    const { data, error } = await _supabase.auth.signUp({ 
-        email, 
-        password,
-        options: { emailRedirectTo: 'https://bookmcq.com/admin.html' }  // ← FIXED: Use your live URL
-    });
+    async function handleSignup() {
+        const email = document.getElementById('signupEmail').value;
+        const password = document.getElementById('signupPassword').value;
+        
+        if (!email || !password) {
+            showToast('Please enter email and password');
+            return;
+        }
+        
+        if (password.length < 6) {
+            showToast('Password must be at least 6 characters');
+            return;
+        }
+        
+        const { data, error } = await _supabase.auth.signUp({ 
+            email, 
+            password,
+            options: { emailRedirectTo: 'https://bookmcq.com/admin.html' }
+        });
         
         if (error) {
             showToast('Signup failed: ' + error.message);
@@ -204,6 +272,7 @@ async function handleSignup() {
     async function handleLogout() {
         await _supabase.auth.signOut();
         _currentUser = null;
+        _isAdmin = false;
         document.getElementById('adminDashboard').classList.add('hidden');
         document.getElementById('loginScreen').classList.remove('hidden');
         showToast('Logged out');
@@ -221,16 +290,14 @@ async function handleSignup() {
 
     // ============ TAB MANAGEMENT ============
     function showTab(tabName) {
-        // Hide all tabs
         document.getElementById('booksTab').classList.add('hidden');
         document.getElementById('topicsTab').classList.add('hidden');
+        document.getElementById('questionsTab').classList.add('hidden');
         document.getElementById('adminsTab').classList.add('hidden');
         
-        // Show selected tab
         document.getElementById(`${tabName}Tab`).classList.remove('hidden');
         
-        // Update button styles
-        const buttons = ['Books', 'Topics', 'Admins'];
+        const buttons = ['Books', 'Topics', 'Questions', 'Admins'];
         buttons.forEach(btn => {
             const btnElement = document.getElementById(`tab${btn}Btn`);
             if (btnElement) {
@@ -264,7 +331,7 @@ async function handleSignup() {
     }
 
     window.deleteBook = async function(id) {
-        if (confirm('Delete this book? This will also delete all related topics and questions.')) {
+        if (confirm('Delete this book?')) {
             await _supabase.from('books').delete().eq('id', id);
             loadBooks();
             loadTopics();
@@ -285,11 +352,12 @@ async function handleSignup() {
         if (error) {
             showToast('Error: ' + error.message);
         } else {
-            showToast('Book added successfully!');
+            showToast('Book added!');
             document.getElementById('addBookForm').classList.add('hidden');
             document.getElementById('bookTitle').value = '';
             document.getElementById('bookAuthor').value = '';
             loadBooks();
+            loadBookSelects();
         }
     }
 
@@ -312,7 +380,7 @@ async function handleSignup() {
     }
 
     window.deleteTopic = async function(id) {
-        if (confirm('Delete this topic? All questions in this topic will also be deleted.')) {
+        if (confirm('Delete this topic?')) {
             await _supabase.from('topics').delete().eq('id', id);
             loadTopics();
             showToast('Topic deleted');
@@ -332,7 +400,7 @@ async function handleSignup() {
         if (error) {
             showToast('Error: ' + error.message);
         } else {
-            showToast('Topic added successfully!');
+            showToast('Topic added!');
             document.getElementById('addTopicForm').classList.add('hidden');
             document.getElementById('topicName').value = '';
             loadTopics();
@@ -350,21 +418,126 @@ async function handleSignup() {
         }
     }
 
-    // ============ ADMINS CRUD ============
-    async function loadAdmins() {
-        const { data, error } = await _supabase.from('admin_roles').select('*');
-        const container = document.getElementById('adminsList');
+    // ============ QUESTIONS CRUD ============
+    async function loadQuestions() {
+        const { data, error } = await _supabase.from('questions').select('*, topics(name)').order('id', { ascending: false }).limit(50);
+        const container = document.getElementById('questionsList');
         
         if (error || !data || data.length === 0) {
-            container.innerHTML = '<p class="text-gray-500">No admins yet.</p>';
+            container.innerHTML = '<p class="text-gray-500">No questions yet. Add your first question!</p>';
             return;
         }
         
+        container.innerHTML = data.map(q => `
+            <div class="bg-gray-50 p-3 rounded-lg mb-2">
+                <p class="font-bold">${escapeHtml(q.question_text)}</p>
+                <p class="text-sm text-gray-600">Topic: ${escapeHtml(q.topics?.name || 'Unknown')} | Difficulty: ${q.difficulty}</p>
+                <button onclick="deleteQuestion(${q.id})" class="text-red-600 text-sm mt-1"><i class="fas fa-trash"></i> Delete</button>
+            </div>
+        `).join('');
+    }
+
+    window.deleteQuestion = async function(id) {
+        if (confirm('Delete this question?')) {
+            await _supabase.from('options').delete().eq('question_id', id);
+            await _supabase.from('questions').delete().eq('id', id);
+            loadQuestions();
+            showToast('Question deleted');
+        }
+    };
+
+    async function loadBookSelects() {
+        const { data } = await _supabase.from('books').select('id, title');
+        const select = document.getElementById('questionBookId');
+        select.innerHTML = '<option value="">Select Book</option>';
+        if (data) {
+            data.forEach(book => {
+                select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+            });
+        }
+    }
+
+    async function loadTopicsForQuestion() {
+        const bookId = document.getElementById('questionBookId').value;
+        if (!bookId) return;
+        
+        const { data } = await _supabase.from('topics').select('id, name').eq('book_id', bookId);
+        const select = document.getElementById('questionTopicId');
+        select.innerHTML = '<option value="">Select Topic</option>';
+        if (data) {
+            data.forEach(topic => {
+                select.innerHTML += `<option value="${topic.id}">${escapeHtml(topic.name)}</option>`;
+            });
+        }
+    }
+
+    async function addQuestion() {
+        const topicId = document.getElementById('questionTopicId').value;
+        const difficulty = document.getElementById('questionDifficulty').value;
+        const questionText = document.getElementById('questionText').value;
+        const options = [
+            document.getElementById('option0').value,
+            document.getElementById('option1').value,
+            document.getElementById('option2').value,
+            document.getElementById('option3').value
+        ];
+        const correctAnswer = parseInt(document.getElementById('correctAnswer').value);
+        const explanation = document.getElementById('explanation').value;
+        
+        if (!topicId || !questionText || options.some(opt => !opt)) {
+            showToast('Please fill all required fields');
+            return;
+        }
+        
+        const { data: qData, error: qError } = await _supabase.from('questions').insert([{
+            topic_id: parseInt(topicId),
+            question_text: questionText,
+            difficulty: difficulty,
+            correct_answer: correctAnswer,
+            explanation: explanation
+        }]).select();
+        
+        if (qError) {
+            showToast('Error: ' + qError.message);
+            return;
+        }
+        
+        for (let i = 0; i < options.length; i++) {
+            await _supabase.from('options').insert([{
+                question_id: qData[0].id,
+                option_text: options[i],
+                option_index: i
+            }]);
+        }
+        
+        showToast('Question added!');
+        document.getElementById('addQuestionForm').classList.add('hidden');
+        document.getElementById('questionText').value = '';
+        document.getElementById('option0').value = '';
+        document.getElementById('option1').value = '';
+        document.getElementById('option2').value = '';
+        document.getElementById('option3').value = '';
+        document.getElementById('explanation').value = '';
+        loadQuestions();
+    }
+
+    // ============ ADMINS CRUD (Email Hidden) ============
+    async function loadAdmins() {
+        const { data, error } = await _supabase.from('admin_roles').select('user_email');
+        const container = document.getElementById('adminsList');
+        
+        if (error || !data || data.length === 0) {
+            container.innerHTML = '<p class="text-gray-500">No admins configured.</p>';
+            return;
+        }
+        
+        // Only show that admins exist, not their emails (for non-admins)
+        // But since this function is only called for admins, we can show the list
         container.innerHTML = data.map(admin => `
             <div class="bg-gray-50 p-3 rounded-lg mb-2">
                 <i class="fas fa-user-shield text-purple-600 mr-2"></i>
-                ${escapeHtml(admin.user_email || admin.user_id)}
-                ${admin.user_id === _currentUser?.id ? ' <span class="text-green-600 text-sm">(You)</span>' : ''}
+                Administrator
+                ${admin.user_email === _currentUser?.email ? ' <span class="text-green-600 text-sm">(You)</span>' : ''}
             </div>
         `).join('');
     }
@@ -374,30 +547,42 @@ async function handleSignup() {
         const { data: { session } } = await _supabase.auth.getSession();
         if (session) {
             _currentUser = session.user;
+            _isAdmin = await checkIsAdmin(_currentUser.id);
+            
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('adminDashboard').classList.remove('hidden');
             document.getElementById('userEmail').textContent = _currentUser.email;
-            loadBooks();
-            loadTopics();
-            loadAdmins();
+            
+            if (_isAdmin) {
+                document.getElementById('adminBadge').classList.remove('hidden');
+                document.getElementById('adminFeatures').classList.remove('hidden');
+                document.getElementById('nonAdminView').classList.add('hidden');
+                loadBooks();
+                loadTopics();
+                loadQuestions();
+                loadAdmins();
+                loadBookSelects();
+            } else {
+                document.getElementById('adminBadge').classList.add('hidden');
+                document.getElementById('adminFeatures').classList.add('hidden');
+                document.getElementById('nonAdminView').classList.remove('hidden');
+            }
         }
     }
 
     // ============ SETUP EVENT LISTENERS ============
     function setupEventListeners() {
-        // Auth buttons
         document.getElementById('loginBtn').addEventListener('click', handleLogin);
         document.getElementById('signupBtn').addEventListener('click', handleSignup);
         document.getElementById('showSignupBtn').addEventListener('click', showSignupForm);
         document.getElementById('showLoginBtn').addEventListener('click', showLoginForm);
         document.getElementById('logoutBtn').addEventListener('click', handleLogout);
         
-        // Tab buttons
         document.getElementById('tabBooksBtn').addEventListener('click', () => showTab('books'));
         document.getElementById('tabTopicsBtn').addEventListener('click', () => showTab('topics'));
+        document.getElementById('tabQuestionsBtn').addEventListener('click', () => showTab('questions'));
         document.getElementById('tabAdminsBtn').addEventListener('click', () => showTab('admins'));
         
-        // Book buttons
         document.getElementById('showAddBookBtn').addEventListener('click', () => {
             document.getElementById('addBookForm').classList.remove('hidden');
         });
@@ -406,7 +591,6 @@ async function handleSignup() {
         });
         document.getElementById('saveBookBtn').addEventListener('click', addBook);
         
-        // Topic buttons
         document.getElementById('showAddTopicBtn').addEventListener('click', async () => {
             await loadBookSelectForTopics();
             document.getElementById('addTopicForm').classList.remove('hidden');
@@ -415,9 +599,18 @@ async function handleSignup() {
             document.getElementById('addTopicForm').classList.add('hidden');
         });
         document.getElementById('saveTopicBtn').addEventListener('click', addTopic);
+        
+        document.getElementById('showAddQuestionBtn').addEventListener('click', async () => {
+            await loadBookSelects();
+            document.getElementById('addQuestionForm').classList.remove('hidden');
+        });
+        document.getElementById('cancelQuestionBtn').addEventListener('click', () => {
+            document.getElementById('addQuestionForm').classList.add('hidden');
+        });
+        document.getElementById('saveQuestionBtn').addEventListener('click', addQuestion);
+        document.getElementById('questionBookId').addEventListener('change', loadTopicsForQuestion);
     }
 
-    // Initialize everything
     setupEventListeners();
     checkSession();
 </script>
