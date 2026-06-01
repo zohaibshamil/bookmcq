@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>QuizMaster | Modern MCQ Platform</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .quiz-card {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .quiz-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        .option-btn {
+            transition: all 0.2s ease;
+            border: 2px solid #e2e8f0;
+        }
+        .option-btn:hover:not(:disabled) {
+            background-color: #667eea;
+            border-color: #667eea;
+            color: white;
+            transform: scale(1.02);
+        }
+        .selected-option {
+            background-color: #667eea !important;
+            border-color: #667eea !important;
+            color: white !important;
+        }
+        .correct-feedback {
+            background-color: #10b981;
+            animation: fadeInUp 0.4s ease;
+        }
+        .wrong-feedback {
+            background-color: #ef4444;
+            animation: fadeInUp 0.4s ease;
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .progress-bar {
+            transition: width 0.5s ease;
+        }
+        @media (max-width: 640px) {
+            .quiz-card {
+                margin: 1rem;
+                border-radius: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <!-- Main Container -->
+    <div class="max-w-6xl mx-auto">
+        
+        <!-- Header -->
+        <div class="text-center mb-8 md:mb-12">
+            <div class="inline-flex items-center gap-2 bg-white/20 backdrop-blur rounded-full px-6 py-2 mb-4">
+                <i class="fas fa-graduation-cap text-white text-xl"></i>
+                <span class="text-white font-semibold">QuizMaster Pro</span>
+            </div>
+            <h1 class="text-4xl md:text-6xl font-bold text-white mb-3">Master Any Subject</h1>
+            <p class="text-white/90 text-lg md:text-xl max-w-2xl mx-auto">Topic-wise & difficulty-based MCQs from hundreds of books</p>
+        </div>
+
+        <!-- Filter Section (Books, Topic, Difficulty) -->
+        <div class="quiz-card rounded-2xl p-6 mb-8 shadow-xl">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <i class="fas fa-filter text-purple-600"></i> Filter Questions
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">📚 Select Book</label>
+                    <select id="bookSelect" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        <option value="js">JavaScript: The Definitive Guide</option>
+                        <option value="python">Python Crash Course</option>
+                        <option value="react">React - The Complete Guide</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">🏷️ Topic</label>
+                    <select id="topicSelect" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        <option value="basics">Basics & Fundamentals</option>
+                        <option value="advanced">Advanced Concepts</option>
+                        <option value="interview">Interview Prep</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">⚡ Difficulty Level</label>
+                    <select id="difficultySelect" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        <option value="easy">🌱 Easy</option>
+                        <option value="medium">⚡ Medium</option>
+                        <option value="hard">🔥 Hard</option>
+                    </select>
+                </div>
+            </div>
+            <button id="startQuizBtn" class="mt-6 w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold py-3 rounded-xl hover:opacity-90 transition shadow-lg">
+                <i class="fas fa-play mr-2"></i> Start Quiz
+            </button>
+        </div>
+
+        <!-- Quiz Area (Initially Hidden) -->
+        <div id="quizArea" class="hidden quiz-card rounded-2xl p-6 md:p-8 shadow-xl">
+            <!-- Progress & Stats -->
+            <div class="flex justify-between items-center mb-6 flex-wrap gap-3">
+                <div class="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-full">
+                    <i class="fas fa-question-circle text-purple-600"></i>
+                    <span id="questionCounter" class="font-bold">Question 1 / 5</span>
+                </div>
+                <div class="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-full">
+                    <i class="fas fa-star text-yellow-500"></i>
+                    <span id="scoreDisplay" class="font-bold">Score: 0</span>
+                </div>
+            </div>
+            
+            <!-- Progress Bar -->
+            <div class="w-full bg-gray-200 rounded-full h-2 mb-6">
+                <div id="progressFill" class="progress-bar bg-gradient-to-r from-purple-600 to-indigo-600 h-2 rounded-full" style="width: 0%"></div>
+            </div>
+
+            <!-- Question Text -->
+            <h3 id="questionText" class="text-xl md:text-2xl font-bold text-gray-800 mb-6">Loading question...</h3>
+
+            <!-- Options Container -->
+            <div id="optionsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6"></div>
+
+            <!-- Feedback Message -->
+            <div id="feedbackMessage" class="mb-6 hidden p-4 rounded-xl text-white font-semibold"></div>
+
+            <!-- Next Button -->
+            <button id="nextBtn" class="w-full bg-gray-800 text-white font-bold py-3 rounded-xl hover:bg-gray-900 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                Next Question <i class="fas fa-arrow-right ml-2"></i>
+            </button>
+        </div>
+
+        <!-- Results Area -->
+        <div id="resultsArea" class="hidden quiz-card rounded-2xl p-8 text-center shadow-xl">
+            <i class="fas fa-trophy text-6xl text-yellow-500 mb-4"></i>
+            <h2 class="text-3xl font-bold mb-2">Quiz Completed!</h2>
+            <p class="text-gray-600 mb-4">Your Performance</p>
+            <div class="text-5xl font-bold text-purple-600 mb-4"><span id="finalScore">0</span> / <span id="totalQuestions">0</span></div>
+            <div class="w-full bg-gray-200 rounded-full h-4 mb-6">
+                <div id="resultProgress" class="bg-gradient-to-r from-purple-600 to-indigo-600 h-4 rounded-full" style="width: 0%"></div>
+            </div>
+            <button id="restartBtn" class="bg-purple-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-purple-700 transition">
+                <i class="fas fa-redo-alt mr-2"></i> Try Another Quiz
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // ========================
+        // SAMPLE MCQ DATABASE (Can be expanded to hundreds of books)
+        // ========================
+        const questionBank = {
+            js: {
+                basics: {
+                    easy: [
+                        { text: "What does `typeof null` return in JavaScript?", options: ["'null'", "'undefined'", "'object'", "'number'"], correct: 2, explanation: "In JavaScript, `typeof null` returns 'object' due to a historical bug." },
+                        { text: "Which keyword is used to declare a variable in JavaScript?", options: ["var", "let", "const", "All of the above"], correct: 3, explanation: "var, let, and const are all used to declare variables." }
+                    ],
+                    medium: [
+                        { text: "What is closure in JavaScript?", options: ["A function inside a function", "A function with access to outer scope even after outer function returns", "A block of code", "A loop construct"], correct: 1, explanation: "Closures allow inner functions to access outer variables." }
+                    ],
+                    hard: [
+                        { text: "What will `console.log([] == ![])` output?", options: ["true", "false", "undefined", "TypeError"], correct: 0, explanation: "Abstract equality coercion leads to true." }
+                    ]
+                },
+                interview: {
+                    easy: [ { text: "What is the event loop?", options: ["A loop for events", "Handles async operations", "A type of array", "None"], correct: 1, explanation: "Event loop handles asynchronous callbacks." } ],
+                    medium: [ { text: "Explain `this` in arrow functions.", options: ["Lexical scope", "Dynamic scope", "Window object", "Undefined"], correct: 0, explanation: "Arrow functions inherit `this` from parent scope." } ],
+                    hard: [ { text: "What is prototypal inheritance?", options: ["Class inheritance", "Objects inherit from other objects", "Functional inheritance", "None"], correct: 1, explanation: "JavaScript uses prototype-based inheritance." } ]
+                }
+            },
+            python: {
+                basics: {
+                    easy: [ { text: "What is the output of `print(2**3)`?", options: ["6", "8", "9", "5"], correct: 1, explanation: "** is exponentiation operator." } ],
+                    medium: [ { text: "Which of the following is mutable?", options: ["Tuple", "String", "List", "Int"], correct: 2, explanation: "Lists are mutable in Python." } ],
+                    hard: [ { text: "What is a decorator?", options: ["Design pattern", "Function that modifies another function", "Class method", "None"], correct: 1, explanation: "Decorators wrap functions to add functionality." } ]
+                },
+                interview: {
+                    easy: [ { text: "What is PEP 8?", options: ["Python Editor", "Style Guide", "Library", "Framework"], correct: 1, explanation: "PEP 8 is Python's style guide." } ]
+                }
+            },
+            react: {
+                basics: {
+                    easy: [ { text: "What is JSX?", options: ["JavaScript XML", "Java Extension", "React Syntax", "None"], correct: 0, explanation: "JSX allows HTML in JavaScript." } ],
+                    medium: [ { text: "What is the virtual DOM?", options: ["Real DOM copy", "Lightweight representation", "Browser API", "None"], correct: 1, explanation: "Virtual DOM improves performance." } ],
+                    hard: [ { text: "What are hooks?", options: ["Functions", "Classes", "Components", "APIs"], correct: 0, explanation: "Hooks let you use state in functional components." } ]
+                },
+                interview: {
+                    easy: [ { text: "What is useState?", options: ["Hook", "Method", "Class", "Object"], correct: 0, explanation: "useState is a React Hook for state." } ]
+                }
+            }
+        };
+
+        // Helper to get questions based on filters
+        function getQuestions(book, topic, difficulty) {
+            try {
+                let questions = questionBank[book]?.[topic]?.[difficulty];
+                if (!questions || questions.length === 0) {
+                    // Fallback to any question
+                    for (let b in questionBank) {
+                        for (let t in questionBank[b]) {
+                            for (let d in questionBank[b][t]) {
+                                if (questionBank[b][t][d].length) {
+                                    return questionBank[b][t][d];
+                                }
+                            }
+                        }
+                    }
+                }
+                return questions || [];
+            } catch(e) {
+                return [];
+            }
+        }
+
+        // Global quiz state
+        let currentQuestions = [];
+        let currentIndex = 0;
+        let score = 0;
+        let selectedOptionIndex = null;
+        let answerLocked = false;
+
+        // DOM Elements
+        const quizArea = document.getElementById('quizArea');
+        const resultsArea = document.getElementById('resultsArea');
+        const startBtn = document.getElementById('startQuizBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const questionTextEl = document.getElementById('questionText');
+        const optionsContainer = document.getElementById('optionsContainer');
+        const feedbackMessage = document.getElementById('feedbackMessage');
+        const questionCounter = document.getElementById('questionCounter');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const progressFill = document.getElementById('progressFill');
+        const finalScoreSpan = document.getElementById('finalScore');
+        const totalQuestionsSpan = document.getElementById('totalQuestions');
+        const resultProgress = document.getElementById('resultProgress');
+
+        function renderCurrentQuestion() {
+            if (!currentQuestions.length || currentIndex >= currentQuestions.length) return;
+            const q = currentQuestions[currentIndex];
+            questionTextEl.textContent = q.text;
+            questionCounter.textContent = `Question ${currentIndex + 1} / ${currentQuestions.length}`;
+            scoreDisplay.textContent = `Score: ${score}`;
+            const progressPercent = ((currentIndex + 1) / currentQuestions.length) * 100;
+            progressFill.style.width = `${progressPercent}%`;
+            
+            // Render options
+            optionsContainer.innerHTML = '';
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.textContent = `${String.fromCharCode(65+idx)}. ${opt}`;
+                btn.className = `option-btn w-full text-left p-3 rounded-xl bg-white text-gray-800 font-medium transition`;
+                btn.dataset.index = idx;
+                btn.addEventListener('click', () => handleAnswer(idx));
+                optionsContainer.appendChild(btn);
+            });
+            
+            // Reset feedback and next button
+            feedbackMessage.classList.add('hidden');
+            nextBtn.disabled = true;
+            answerLocked = false;
+            selectedOptionIndex = null;
+        }
+
+        function handleAnswer(selectedIdx) {
+            if (answerLocked) return;
+            const currentQ = currentQuestions[currentIndex];
+            const isCorrect = (selectedIdx === currentQ.correct);
+            
+            // Highlight selected option
+            const allOptions = document.querySelectorAll('.option-btn');
+            allOptions.forEach((btn, idx) => {
+                btn.classList.remove('selected-option');
+                if (idx === selectedIdx) {
+                    btn.classList.add('selected-option');
+                }
+            });
+            
+            if (isCorrect) {
+                score++;
+                feedbackMessage.className = "correct-feedback p-4 rounded-xl text-white font-semibold mb-6";
+                feedbackMessage.innerHTML = `<i class="fas fa-check-circle mr-2"></i> ✅ Correct! ${currentQ.explanation || ''}`;
+                scoreDisplay.textContent = `Score: ${score}`;
+            } else {
+                const correctLetter = String.fromCharCode(65+currentQ.correct);
+                feedbackMessage.className = "wrong-feedback p-4 rounded-xl text-white font-semibold mb-6";
+                feedbackMessage.innerHTML = `<i class="fas fa-times-circle mr-2"></i> ❌ Wrong! Correct answer: ${correctLetter}. ${currentQ.explanation || ''}`;
+            }
+            
+            feedbackMessage.classList.remove('hidden');
+            answerLocked = true;
+            nextBtn.disabled = false;
+        }
+
+        function nextQuestion() {
+            if (!answerLocked) return;
+            currentIndex++;
+            if (currentIndex < currentQuestions.length) {
+                renderCurrentQuestion();
+            } else {
+                finishQuiz();
+            }
+        }
+
+        function finishQuiz() {
+            quizArea.classList.add('hidden');
+            resultsArea.classList.remove('hidden');
+            finalScoreSpan.textContent = score;
+            totalQuestionsSpan.textContent = currentQuestions.length;
+            const percent = (score / currentQuestions.length) * 100;
+            resultProgress.style.width = `${percent}%`;
+        }
+
+        function startQuiz() {
+            const book = document.getElementById('bookSelect').value;
+            const topic = document.getElementById('topicSelect').value;
+            const difficulty = document.getElementById('difficultySelect').value;
+            
+            let questions = getQuestions(book, topic, difficulty);
+            if (!questions || questions.length === 0) {
+                alert("No questions found for these filters. Showing sample questions instead.");
+                // Fallback to any available questions
+                questions = getQuestions('js', 'basics', 'easy');
+            }
+            currentQuestions = [...questions];
+            currentIndex = 0;
+            score = 0;
+            selectedOptionIndex = null;
+            answerLocked = false;
+            
+            if (currentQuestions.length === 0) {
+                alert("No questions available. Please check back later.");
+                return;
+            }
+            
+            quizArea.classList.remove('hidden');
+            resultsArea.classList.add('hidden');
+            renderCurrentQuestion();
+        }
+
+        // Event Listeners
+        startBtn.addEventListener('click', startQuiz);
+        restartBtn.addEventListener('click', startQuiz);
+        nextBtn.addEventListener('click', nextQuestion);
+    </script>
+</body>
+</html>
