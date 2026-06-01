@@ -172,25 +172,25 @@
         }
     }
 
-    async function handleSignup() {
-        const email = document.getElementById('signupEmail').value;
-        const password = document.getElementById('signupPassword').value;
-        
-        if (!email || !password) {
-            showToast('Please enter email and password');
-            return;
-        }
-        
-        if (password.length < 6) {
-            showToast('Password must be at least 6 characters');
-            return;
-        }
-        
-        const { data, error } = await _supabase.auth.signUp({ 
-            email, 
-            password,
-            options: { emailRedirectTo: window.location.origin + '/admin.html' }
-        });
+async function handleSignup() {
+    const email = document.getElementById('signupEmail').value;
+    const password = document.getElementById('signupPassword').value;
+    
+    if (!email || !password) {
+        showToast('Please enter email and password');
+        return;
+    }
+    
+    if (password.length < 6) {
+        showToast('Password must be at least 6 characters');
+        return;
+    }
+    
+    const { data, error } = await _supabase.auth.signUp({ 
+        email, 
+        password,
+        options: { emailRedirectTo: 'https://bookmcq.com/admin.html' }  // ← FIXED: Use your live URL
+    });
         
         if (error) {
             showToast('Signup failed: ' + error.message);
