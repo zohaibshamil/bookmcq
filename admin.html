@@ -4,8 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>BookMCQ - Admin Panel</title>
+    <!-- Tailwind CSS - OK for development -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); min-height: 100vh; }
@@ -21,9 +24,9 @@
     <div class="text-center mb-8">
         <div class="inline-flex items-center gap-2 bg-white/10 backdrop-blur rounded-full px-6 py-2 mb-4">
             <i class="fas fa-shield-alt text-white"></i>
-            <span class="text-white font-semibold">Secure Admin Panel</span>
+            <span class="text-white font-semibold">BookMCQ Admin</span>
         </div>
-        <h1 class="text-3xl md:text-4xl font-bold text-white">BookMCQ Management</h1>
+        <h1 class="text-3xl md:text-4xl font-bold text-white">Admin Panel</h1>
     </div>
 
     <!-- Login Screen -->
@@ -33,75 +36,80 @@
             <h2 class="text-2xl font-bold">Admin Login</h2>
         </div>
         
+        <!-- Login Form -->
         <div id="loginForm">
             <input type="email" id="loginEmail" placeholder="Email Address" class="w-full p-3 border rounded-xl mb-3">
             <input type="password" id="loginPassword" placeholder="Password" class="w-full p-3 border rounded-xl mb-4">
-            <button onclick="login()" class="w-full bg-purple-600 text-white font-bold py-3 rounded-xl hover:bg-purple-700">
+            <button id="loginBtn" class="w-full bg-purple-600 text-white font-bold py-3 rounded-xl hover:bg-purple-700">
                 <i class="fas fa-sign-in-alt mr-2"></i> Login
             </button>
-            <button onclick="showSignup()" class="w-full text-purple-600 mt-3 text-sm hover:underline">
+            <button id="showSignupBtn" class="w-full text-purple-600 mt-3 text-sm hover:underline">
                 Don't have an account? Sign up
             </button>
         </div>
         
+        <!-- Signup Form -->
         <div id="signupForm" class="hidden">
             <input type="email" id="signupEmail" placeholder="Email Address" class="w-full p-3 border rounded-xl mb-3">
             <input type="password" id="signupPassword" placeholder="Password (min 6 characters)" class="w-full p-3 border rounded-xl mb-4">
-            <button onclick="signup()" class="w-full bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-700">
+            <button id="signupBtn" class="w-full bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-700">
                 <i class="fas fa-user-plus mr-2"></i> Create Account
             </button>
-            <button onclick="showLogin()" class="w-full text-purple-600 mt-3 text-sm hover:underline">
+            <button id="showLoginBtn" class="w-full text-purple-600 mt-3 text-sm hover:underline">
                 Back to Login
             </button>
         </div>
     </div>
 
-    <!-- Admin Dashboard (Hidden) -->
+    <!-- Admin Dashboard -->
     <div id="adminDashboard" class="hidden admin-card p-6 shadow-xl">
         <div class="flex justify-between items-center mb-6">
             <div class="flex items-center gap-2">
                 <i class="fas fa-user-circle text-2xl text-purple-600"></i>
                 <span class="font-semibold" id="userEmail">Loading...</span>
             </div>
-            <button onclick="logout()" class="bg-red-600 text-white px-4 py-2 rounded-lg">
+            <button id="logoutBtn" class="bg-red-600 text-white px-4 py-2 rounded-lg">
                 <i class="fas fa-sign-out-alt mr-2"></i> Logout
             </button>
         </div>
         
         <div class="flex flex-wrap gap-2 mb-6">
-            <button onclick="showTab('books')" id="tabBooks" class="px-4 py-2 rounded-lg font-semibold bg-purple-600 text-white">📚 Books</button>
-            <button onclick="showTab('topics')" id="tabTopics" class="px-4 py-2 rounded-lg font-semibold bg-gray-200">🏷️ Topics</button>
-            <button onclick="showTab('admins')" id="tabAdmins" class="px-4 py-2 rounded-lg font-semibold bg-gray-200">👑 Admins</button>
+            <button id="tabBooksBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-purple-600 text-white">📚 Books</button>
+            <button id="tabTopicsBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">🏷️ Topics</button>
+            <button id="tabAdminsBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">👑 Admins</button>
         </div>
 
+        <!-- Books Tab -->
         <div id="booksTab">
             <h2 class="text-xl font-bold mb-4">Books</h2>
-            <button onclick="showAddBookForm()" class="bg-green-600 text-white px-4 py-2 rounded-lg mb-4">+ Add Book</button>
+            <button id="showAddBookBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg mb-4">+ Add Book</button>
             <div id="addBookForm" class="hidden bg-gray-50 p-4 rounded-lg mb-4">
                 <input type="text" id="bookTitle" placeholder="Book Title" class="w-full p-2 border rounded mb-2">
                 <input type="text" id="bookAuthor" placeholder="Author" class="w-full p-2 border rounded mb-2">
-                <button onclick="addBook()" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
-                <button onclick="hideAddBookForm()" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
+                <button id="saveBookBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
+                <button id="cancelBookBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
             </div>
             <div id="booksList">Loading...</div>
         </div>
 
+        <!-- Topics Tab -->
         <div id="topicsTab" class="hidden">
             <h2 class="text-xl font-bold mb-4">Topics</h2>
-            <button onclick="showAddTopicForm()" class="bg-green-600 text-white px-4 py-2 rounded-lg mb-4">+ Add Topic</button>
+            <button id="showAddTopicBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg mb-4">+ Add Topic</button>
             <div id="addTopicForm" class="hidden bg-gray-50 p-4 rounded-lg mb-4">
                 <select id="topicBookId" class="w-full p-2 border rounded mb-2"></select>
                 <input type="text" id="topicName" placeholder="Topic Name" class="w-full p-2 border rounded mb-2">
-                <button onclick="addTopic()" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
-                <button onclick="hideAddTopicForm()" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
+                <button id="saveTopicBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
+                <button id="cancelTopicBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
             </div>
             <div id="topicsList">Loading...</div>
         </div>
 
+        <!-- Admins Tab -->
         <div id="adminsTab" class="hidden">
             <h2 class="text-xl font-bold mb-4">Admin Users</h2>
             <div id="adminsList">Loading...</div>
-            <p class="text-sm text-gray-500 mt-4">Add yourself as admin after signing up</p>
+            <p class="text-sm text-gray-500 mt-4">After signing up, go to Supabase → Authentication → Users → Copy your User ID, then run SQL: INSERT INTO admin_roles (user_id, user_email) VALUES ('your-id', 'your-email');</p>
         </div>
     </div>
 </div>
@@ -110,235 +118,24 @@
 
 <script>
     // ============================================
-    // SUPABASE CONFIGURATION - WORKING CREDENTIALS
+    // SUPABASE CONFIGURATION
     // ============================================
     const SUPABASE_URL = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
     
-    // Create supabase client
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // Initialize Supabase client (ONLY ONCE)
+    const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
-    let currentUser = null;
+    let _currentUser = null;
 
-    // ============ AUTHENTICATION FUNCTIONS ============
-    
-    window.showSignup = function() {
-        document.getElementById('loginForm').classList.add('hidden');
-        document.getElementById('signupForm').classList.remove('hidden');
-    };
-    
-    window.showLogin = function() {
-        document.getElementById('signupForm').classList.add('hidden');
-        document.getElementById('loginForm').classList.remove('hidden');
-    };
-    
-    window.login = async function() {
-        const email = document.getElementById('loginEmail').value;
-        const password = document.getElementById('loginPassword').value;
-        
-        if (!email || !password) {
-            showToast('Please enter email and password', 'error');
-            return;
-        }
-        
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        
-        if (error) {
-            showToast('Login failed: ' + error.message, 'error');
-        } else {
-            showToast('Login successful!', 'success');
-            currentUser = data.user;
-            document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('adminDashboard').classList.remove('hidden');
-            document.getElementById('userEmail').textContent = currentUser.email;
-            loadBooks();
-            loadTopics();
-            loadAdmins();
-        }
-    };
-    
-    window.signup = async function() {
-        const email = document.getElementById('signupEmail').value;
-        const password = document.getElementById('signupPassword').value;
-        
-        if (!email || !password) {
-            showToast('Please enter email and password', 'error');
-            return;
-        }
-        
-        if (password.length < 6) {
-            showToast('Password must be at least 6 characters', 'error');
-            return;
-        }
-        
-        const { data, error } = await supabase.auth.signUp({ 
-            email, 
-            password,
-            options: { emailRedirectTo: window.location.origin + '/admin.html' }
-        });
-        
-        if (error) {
-            showToast('Signup failed: ' + error.message, 'error');
-        } else {
-            showToast('Account created! Check your email to confirm.', 'success');
-            showLogin();
-        }
-    };
-    
-    window.logout = async function() {
-        await supabase.auth.signOut();
-        currentUser = null;
-        document.getElementById('adminDashboard').classList.add('hidden');
-        document.getElementById('loginScreen').classList.remove('hidden');
-        showToast('Logged out', 'success');
-    };
-    
-    function showToast(message, type) {
+    // Helper functions
+    function showToast(message, isError = false) {
         const toast = document.getElementById('toast');
         toast.textContent = message;
         toast.classList.remove('hidden');
         setTimeout(() => toast.classList.add('hidden'), 3000);
     }
-    
-    // ============ TAB FUNCTIONS ============
-    window.showTab = function(tab) {
-        document.getElementById('booksTab').classList.add('hidden');
-        document.getElementById('topicsTab').classList.add('hidden');
-        document.getElementById('adminsTab').classList.add('hidden');
-        document.getElementById(`${tab}Tab`).classList.remove('hidden');
-        
-        // Update button styles
-        const buttons = ['books', 'topics', 'admins'];
-        buttons.forEach(t => {
-            const btn = document.getElementById(`tab${t.charAt(0).toUpperCase() + t.slice(1)}`);
-            if (btn) {
-                if (t === tab) {
-                    btn.classList.remove('bg-gray-200');
-                    btn.classList.add('bg-purple-600', 'text-white');
-                } else {
-                    btn.classList.remove('bg-purple-600', 'text-white');
-                    btn.classList.add('bg-gray-200');
-                }
-            }
-        });
-    };
-    
-    // ============ BOOKS FUNCTIONS ============
-    async function loadBooks() {
-        const { data, error } = await supabase.from('books').select('*').order('id', { ascending: false });
-        if (error) {
-            document.getElementById('booksList').innerHTML = '<p class="text-gray-500">No books yet. Add your first book!</p>';
-            return;
-        }
-        if (!data || data.length === 0) {
-            document.getElementById('booksList').innerHTML = '<p class="text-gray-500">No books yet. Add your first book!</p>';
-            return;
-        }
-        document.getElementById('booksList').innerHTML = data.map(book => `
-            <div class="bg-gray-50 p-3 rounded-lg mb-2 flex justify-between">
-                <div><strong>${escapeHtml(book.title)}</strong> ${book.author ? `by ${escapeHtml(book.author)}` : ''}</div>
-                <button onclick="deleteBook(${book.id})" class="text-red-600"><i class="fas fa-trash"></i></button>
-            </div>
-        `).join('');
-    }
-    
-    window.addBook = async function() {
-        const title = document.getElementById('bookTitle').value;
-        const author = document.getElementById('bookAuthor').value;
-        if (!title) { showToast('Enter book title', 'error'); return; }
-        
-        const { error } = await supabase.from('books').insert([{ title, author }]);
-        if (error) { showToast('Error: ' + error.message, 'error'); }
-        else {
-            showToast('Book added!', 'success');
-            hideAddBookForm();
-            loadBooks();
-        }
-    };
-    
-    window.deleteBook = async function(id) {
-        if (confirm('Delete this book? This will also delete all related topics and questions.')) {
-            await supabase.from('books').delete().eq('id', id);
-            loadBooks();
-            loadTopics();
-            showToast('Book deleted', 'success');
-        }
-    };
-    
-    window.showAddBookForm = function() { document.getElementById('addBookForm').classList.remove('hidden'); };
-    window.hideAddBookForm = function() { 
-        document.getElementById('addBookForm').classList.add('hidden');
-        document.getElementById('bookTitle').value = '';
-        document.getElementById('bookAuthor').value = '';
-    };
-    
-    // ============ TOPICS FUNCTIONS ============
-    async function loadTopics() {
-        const { data, error } = await supabase.from('topics').select('*, books(title)').order('id', { ascending: false });
-        if (error || !data || data.length === 0) {
-            document.getElementById('topicsList').innerHTML = '<p class="text-gray-500">No topics yet. Add your first topic!</p>';
-            return;
-        }
-        document.getElementById('topicsList').innerHTML = data.map(topic => `
-            <div class="bg-gray-50 p-3 rounded-lg mb-2 flex justify-between">
-                <div><strong>${escapeHtml(topic.name)}</strong> (${escapeHtml(topic.books?.title || 'Unknown')})</div>
-                <button onclick="deleteTopic(${topic.id})" class="text-red-600"><i class="fas fa-trash"></i></button>
-            </div>
-        `).join('');
-    }
-    
-    window.addTopic = async function() {
-        const bookId = document.getElementById('topicBookId').value;
-        const name = document.getElementById('topicName').value;
-        if (!bookId || !name) { showToast('Select book and enter topic name', 'error'); return; }
-        
-        const { error } = await supabase.from('topics').insert([{ book_id: parseInt(bookId), name }]);
-        if (error) { showToast('Error: ' + error.message, 'error'); }
-        else {
-            showToast('Topic added!', 'success');
-            hideAddTopicForm();
-            loadTopics();
-        }
-    };
-    
-    window.deleteTopic = async function(id) {
-        if (confirm('Delete this topic? All questions in this topic will also be deleted.')) {
-            await supabase.from('topics').delete().eq('id', id);
-            loadTopics();
-            showToast('Topic deleted', 'success');
-        }
-    };
-    
-    window.showAddTopicForm = async function() {
-        const { data } = await supabase.from('books').select('id, title');
-        const select = document.getElementById('topicBookId');
-        select.innerHTML = '<option value="">Select Book</option>';
-        data?.forEach(book => { select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`; });
-        document.getElementById('addTopicForm').classList.remove('hidden');
-    };
-    
-    window.hideAddTopicForm = function() {
-        document.getElementById('addTopicForm').classList.add('hidden');
-        document.getElementById('topicName').value = '';
-    };
-    
-    // ============ ADMIN FUNCTIONS ============
-    async function loadAdmins() {
-        const { data, error } = await supabase.from('admin_roles').select('*');
-        if (error || !data || data.length === 0) {
-            document.getElementById('adminsList').innerHTML = '<p class="text-gray-500">No admins yet. Add yourself as admin.</p><p class="text-sm">After signing up, copy your User ID from Authentication → Users and run SQL: INSERT INTO admin_roles (user_id, user_email) VALUES (your-id, your-email);</p>';
-            return;
-        }
-        document.getElementById('adminsList').innerHTML = data.map(admin => `
-            <div class="bg-gray-50 p-3 rounded-lg mb-2">
-                <i class="fas fa-user-shield text-purple-600 mr-2"></i>
-                ${escapeHtml(admin.user_email || admin.user_id)}
-                ${admin.user_id === currentUser?.id ? ' <span class="text-green-600 text-sm">(You)</span>' : ''}
-            </div>
-        `).join('');
-    }
-    
-    // ============ HELPER FUNCTIONS ============
+
     function escapeHtml(str) {
         if (!str) return '';
         return str.replace(/[&<>]/g, function(m) {
@@ -348,22 +145,280 @@
             return m;
         });
     }
-    
-    // ============ CHECK EXISTING SESSION ============
-    async function checkSession() {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-            currentUser = session.user;
+
+    // ============ AUTHENTICATION ============
+    async function handleLogin() {
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+        
+        if (!email || !password) {
+            showToast('Please enter email and password');
+            return;
+        }
+        
+        const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+        
+        if (error) {
+            showToast('Login failed: ' + error.message);
+        } else {
+            showToast('Login successful!');
+            _currentUser = data.user;
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('adminDashboard').classList.remove('hidden');
-            document.getElementById('userEmail').textContent = currentUser.email;
+            document.getElementById('userEmail').textContent = _currentUser.email;
             loadBooks();
             loadTopics();
             loadAdmins();
         }
     }
-    
-    // Start
+
+    async function handleSignup() {
+        const email = document.getElementById('signupEmail').value;
+        const password = document.getElementById('signupPassword').value;
+        
+        if (!email || !password) {
+            showToast('Please enter email and password');
+            return;
+        }
+        
+        if (password.length < 6) {
+            showToast('Password must be at least 6 characters');
+            return;
+        }
+        
+        const { data, error } = await _supabase.auth.signUp({ 
+            email, 
+            password,
+            options: { emailRedirectTo: window.location.origin + '/admin.html' }
+        });
+        
+        if (error) {
+            showToast('Signup failed: ' + error.message);
+        } else {
+            showToast('Account created! Check your email to confirm.');
+            document.getElementById('signupForm').classList.add('hidden');
+            document.getElementById('loginForm').classList.remove('hidden');
+        }
+    }
+
+    async function handleLogout() {
+        await _supabase.auth.signOut();
+        _currentUser = null;
+        document.getElementById('adminDashboard').classList.add('hidden');
+        document.getElementById('loginScreen').classList.remove('hidden');
+        showToast('Logged out');
+    }
+
+    function showSignupForm() {
+        document.getElementById('loginForm').classList.add('hidden');
+        document.getElementById('signupForm').classList.remove('hidden');
+    }
+
+    function showLoginForm() {
+        document.getElementById('signupForm').classList.add('hidden');
+        document.getElementById('loginForm').classList.remove('hidden');
+    }
+
+    // ============ TAB MANAGEMENT ============
+    function showTab(tabName) {
+        // Hide all tabs
+        document.getElementById('booksTab').classList.add('hidden');
+        document.getElementById('topicsTab').classList.add('hidden');
+        document.getElementById('adminsTab').classList.add('hidden');
+        
+        // Show selected tab
+        document.getElementById(`${tabName}Tab`).classList.remove('hidden');
+        
+        // Update button styles
+        const buttons = ['Books', 'Topics', 'Admins'];
+        buttons.forEach(btn => {
+            const btnElement = document.getElementById(`tab${btn}Btn`);
+            if (btnElement) {
+                if (btn.toLowerCase() === tabName) {
+                    btnElement.classList.remove('bg-gray-200');
+                    btnElement.classList.add('bg-purple-600', 'text-white');
+                } else {
+                    btnElement.classList.remove('bg-purple-600', 'text-white');
+                    btnElement.classList.add('bg-gray-200');
+                }
+            }
+        });
+    }
+
+    // ============ BOOKS CRUD ============
+    async function loadBooks() {
+        const { data, error } = await _supabase.from('books').select('*').order('id', { ascending: false });
+        const container = document.getElementById('booksList');
+        
+        if (error || !data || data.length === 0) {
+            container.innerHTML = '<p class="text-gray-500">No books yet. Add your first book!</p>';
+            return;
+        }
+        
+        container.innerHTML = data.map(book => `
+            <div class="bg-gray-50 p-3 rounded-lg mb-2 flex justify-between items-center">
+                <div><strong>${escapeHtml(book.title)}</strong> ${book.author ? `by ${escapeHtml(book.author)}` : ''}</div>
+                <button onclick="deleteBook(${book.id})" class="text-red-600"><i class="fas fa-trash"></i></button>
+            </div>
+        `).join('');
+    }
+
+    window.deleteBook = async function(id) {
+        if (confirm('Delete this book? This will also delete all related topics and questions.')) {
+            await _supabase.from('books').delete().eq('id', id);
+            loadBooks();
+            loadTopics();
+            showToast('Book deleted');
+        }
+    };
+
+    async function addBook() {
+        const title = document.getElementById('bookTitle').value;
+        const author = document.getElementById('bookAuthor').value;
+        
+        if (!title) {
+            showToast('Please enter a book title');
+            return;
+        }
+        
+        const { error } = await _supabase.from('books').insert([{ title, author }]);
+        if (error) {
+            showToast('Error: ' + error.message);
+        } else {
+            showToast('Book added successfully!');
+            document.getElementById('addBookForm').classList.add('hidden');
+            document.getElementById('bookTitle').value = '';
+            document.getElementById('bookAuthor').value = '';
+            loadBooks();
+        }
+    }
+
+    // ============ TOPICS CRUD ============
+    async function loadTopics() {
+        const { data, error } = await _supabase.from('topics').select('*, books(title)').order('id', { ascending: false });
+        const container = document.getElementById('topicsList');
+        
+        if (error || !data || data.length === 0) {
+            container.innerHTML = '<p class="text-gray-500">No topics yet. Add your first topic!</p>';
+            return;
+        }
+        
+        container.innerHTML = data.map(topic => `
+            <div class="bg-gray-50 p-3 rounded-lg mb-2 flex justify-between items-center">
+                <div><strong>${escapeHtml(topic.name)}</strong> (${escapeHtml(topic.books?.title || 'Unknown')})</div>
+                <button onclick="deleteTopic(${topic.id})" class="text-red-600"><i class="fas fa-trash"></i></button>
+            </div>
+        `).join('');
+    }
+
+    window.deleteTopic = async function(id) {
+        if (confirm('Delete this topic? All questions in this topic will also be deleted.')) {
+            await _supabase.from('topics').delete().eq('id', id);
+            loadTopics();
+            showToast('Topic deleted');
+        }
+    };
+
+    async function addTopic() {
+        const bookId = document.getElementById('topicBookId').value;
+        const name = document.getElementById('topicName').value;
+        
+        if (!bookId || !name) {
+            showToast('Please select a book and enter a topic name');
+            return;
+        }
+        
+        const { error } = await _supabase.from('topics').insert([{ book_id: parseInt(bookId), name }]);
+        if (error) {
+            showToast('Error: ' + error.message);
+        } else {
+            showToast('Topic added successfully!');
+            document.getElementById('addTopicForm').classList.add('hidden');
+            document.getElementById('topicName').value = '';
+            loadTopics();
+        }
+    }
+
+    async function loadBookSelectForTopics() {
+        const { data } = await _supabase.from('books').select('id, title');
+        const select = document.getElementById('topicBookId');
+        select.innerHTML = '<option value="">Select Book</option>';
+        if (data) {
+            data.forEach(book => {
+                select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+            });
+        }
+    }
+
+    // ============ ADMINS CRUD ============
+    async function loadAdmins() {
+        const { data, error } = await _supabase.from('admin_roles').select('*');
+        const container = document.getElementById('adminsList');
+        
+        if (error || !data || data.length === 0) {
+            container.innerHTML = '<p class="text-gray-500">No admins yet.</p>';
+            return;
+        }
+        
+        container.innerHTML = data.map(admin => `
+            <div class="bg-gray-50 p-3 rounded-lg mb-2">
+                <i class="fas fa-user-shield text-purple-600 mr-2"></i>
+                ${escapeHtml(admin.user_email || admin.user_id)}
+                ${admin.user_id === _currentUser?.id ? ' <span class="text-green-600 text-sm">(You)</span>' : ''}
+            </div>
+        `).join('');
+    }
+
+    // ============ CHECK EXISTING SESSION ============
+    async function checkSession() {
+        const { data: { session } } = await _supabase.auth.getSession();
+        if (session) {
+            _currentUser = session.user;
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('adminDashboard').classList.remove('hidden');
+            document.getElementById('userEmail').textContent = _currentUser.email;
+            loadBooks();
+            loadTopics();
+            loadAdmins();
+        }
+    }
+
+    // ============ SETUP EVENT LISTENERS ============
+    function setupEventListeners() {
+        // Auth buttons
+        document.getElementById('loginBtn').addEventListener('click', handleLogin);
+        document.getElementById('signupBtn').addEventListener('click', handleSignup);
+        document.getElementById('showSignupBtn').addEventListener('click', showSignupForm);
+        document.getElementById('showLoginBtn').addEventListener('click', showLoginForm);
+        document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+        
+        // Tab buttons
+        document.getElementById('tabBooksBtn').addEventListener('click', () => showTab('books'));
+        document.getElementById('tabTopicsBtn').addEventListener('click', () => showTab('topics'));
+        document.getElementById('tabAdminsBtn').addEventListener('click', () => showTab('admins'));
+        
+        // Book buttons
+        document.getElementById('showAddBookBtn').addEventListener('click', () => {
+            document.getElementById('addBookForm').classList.remove('hidden');
+        });
+        document.getElementById('cancelBookBtn').addEventListener('click', () => {
+            document.getElementById('addBookForm').classList.add('hidden');
+        });
+        document.getElementById('saveBookBtn').addEventListener('click', addBook);
+        
+        // Topic buttons
+        document.getElementById('showAddTopicBtn').addEventListener('click', async () => {
+            await loadBookSelectForTopics();
+            document.getElementById('addTopicForm').classList.remove('hidden');
+        });
+        document.getElementById('cancelTopicBtn').addEventListener('click', () => {
+            document.getElementById('addTopicForm').classList.add('hidden');
+        });
+        document.getElementById('saveTopicBtn').addEventListener('click', addTopic);
+    }
+
+    // Initialize everything
+    setupEventListeners();
     checkSession();
 </script>
 </body>
