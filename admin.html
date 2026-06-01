@@ -2,119 +2,41 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>BookMCQ - Mobile Admin Panel</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>BookMCQ - Admin Panel</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* Mobile optimizations */
-        body { 
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); 
-            min-height: 100vh;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .admin-card { 
-            background: rgba(255,255,255,0.95); 
-            border-radius: 1rem;
-            overflow: hidden;
-        }
-        .nav-tab { 
-            cursor: pointer; 
-            transition: all 0.2s;
-            white-space: nowrap;
-        }
-        .nav-tab.active { 
-            background: #667eea; 
-            color: white; 
-        }
-        .form-input:focus { 
-            outline: none; 
-            ring: 2px solid #667eea; 
-        }
-        .toast { 
-            position: fixed; 
-            bottom: 20px; 
-            left: 20px;
-            right: 20px;
-            z-index: 1000;
-            text-align: center;
-        }
-        /* Better touch targets on mobile */
-        button, .nav-tab, .option-btn {
-            touch-action: manipulation;
-        }
-        /* Smooth scrolling */
-        html {
-            scroll-behavior: smooth;
-        }
-        /* Prevent zoom on input focus on iOS */
-        @media (max-width: 768px) {
-            input, select, textarea {
-                font-size: 16px !important;
-            }
-        }
-        /* Mobile bottom navigation */
-        @media (max-width: 640px) {
-            .mobile-bottom-nav {
-                position: fixed;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                background: white;
-                display: flex;
-                justify-content: space-around;
-                padding: 10px;
-                box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-                z-index: 100;
-            }
-            .mobile-bottom-nav .nav-item {
-                flex: 1;
-                text-align: center;
-                padding: 8px;
-                border-radius: 10px;
-            }
-            body {
-                padding-bottom: 80px;
-            }
-        }
-        @media (min-width: 641px) {
-            .mobile-bottom-nav {
-                display: none;
-            }
-            .desktop-nav {
-                display: flex;
-            }
-        }
+        body { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); min-height: 100vh; }
+        .admin-card { background: rgba(255,255,255,0.95); border-radius: 1rem; }
+        .toast { position: fixed; bottom: 20px; left: 20px; right: 20px; z-index: 1000; text-align: center; }
     </style>
 </head>
-<body class="p-3 md:p-8">
+<body class="p-4 md:p-8">
 
 <div class="max-w-6xl mx-auto">
     
-    <!-- Header - Mobile Optimized -->
-    <div class="text-center mb-4 md:mb-8">
-        <div class="inline-flex items-center gap-2 bg-white/10 backdrop-blur rounded-full px-4 py-2 md:px-6 md:py-2 mb-3">
-            <i class="fas fa-shield-alt text-white text-sm md:text-base"></i>
-            <span class="text-white font-semibold text-sm md:text-base">Secure Admin Panel</span>
+    <!-- Header -->
+    <div class="text-center mb-8">
+        <div class="inline-flex items-center gap-2 bg-white/10 backdrop-blur rounded-full px-6 py-2 mb-4">
+            <i class="fas fa-shield-alt text-white"></i>
+            <span class="text-white font-semibold">Secure Admin Panel</span>
         </div>
-        <h1 class="text-2xl md:text-4xl font-bold text-white">BookMCQ Manager</h1>
-        <p class="text-white/70 text-sm md:text-base mt-1">Manage books, topics & questions</p>
+        <h1 class="text-3xl md:text-4xl font-bold text-white">BookMCQ Management</h1>
     </div>
 
-    <!-- Login Screen - Mobile Optimized -->
-    <div id="loginScreen" class="admin-card max-w-md mx-auto p-5 md:p-8 shadow-xl">
-        <div class="text-center mb-5">
-            <i class="fas fa-lock text-4xl md:text-5xl text-purple-600 mb-3"></i>
-            <h2 class="text-xl md:text-2xl font-bold">Admin Login</h2>
-            <p class="text-gray-500 text-xs md:text-sm mt-1">Sign in with your email</p>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="admin-card max-w-md mx-auto p-8 shadow-xl">
+        <div class="text-center mb-6">
+            <i class="fas fa-lock text-5xl text-purple-600 mb-3"></i>
+            <h2 class="text-2xl font-bold">Admin Login</h2>
         </div>
         
-        <!-- Login Form -->
         <div id="loginForm">
-            <input type="email" id="loginEmail" placeholder="Email Address" class="w-full p-3 border rounded-xl mb-3 form-input text-base">
-            <input type="password" id="loginPassword" placeholder="Password" class="w-full p-3 border rounded-xl mb-4 form-input text-base">
-            <button onclick="login()" class="w-full bg-purple-600 text-white font-bold py-3 rounded-xl hover:bg-purple-700 transition active:scale-95">
+            <input type="email" id="loginEmail" placeholder="Email Address" class="w-full p-3 border rounded-xl mb-3">
+            <input type="password" id="loginPassword" placeholder="Password" class="w-full p-3 border rounded-xl mb-4">
+            <button onclick="login()" class="w-full bg-purple-600 text-white font-bold py-3 rounded-xl hover:bg-purple-700">
                 <i class="fas fa-sign-in-alt mr-2"></i> Login
             </button>
             <button onclick="showSignup()" class="w-full text-purple-600 mt-3 text-sm hover:underline">
@@ -122,225 +44,95 @@
             </button>
         </div>
         
-        <!-- Signup Form -->
         <div id="signupForm" class="hidden">
-            <input type="email" id="signupEmail" placeholder="Email Address" class="w-full p-3 border rounded-xl mb-3 form-input text-base">
-            <input type="password" id="signupPassword" placeholder="Password (min 6 characters)" class="w-full p-3 border rounded-xl mb-4 form-input text-base">
-            <button onclick="signup()" class="w-full bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-700 transition active:scale-95">
+            <input type="email" id="signupEmail" placeholder="Email Address" class="w-full p-3 border rounded-xl mb-3">
+            <input type="password" id="signupPassword" placeholder="Password (min 6 characters)" class="w-full p-3 border rounded-xl mb-4">
+            <button onclick="signup()" class="w-full bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-700">
                 <i class="fas fa-user-plus mr-2"></i> Create Account
             </button>
             <button onclick="showLogin()" class="w-full text-purple-600 mt-3 text-sm hover:underline">
                 Back to Login
             </button>
         </div>
-        
-        <p class="text-xs text-gray-500 text-center mt-4">Secure authentication</p>
     </div>
 
-    <!-- Admin Dashboard -->
-    <div id="adminDashboard" class="hidden">
-        
-        <!-- User Bar - Mobile Optimized -->
-        <div class="flex justify-between items-center mb-4 bg-white/10 backdrop-blur rounded-xl p-3 md:p-4">
+    <!-- Admin Dashboard (Hidden) -->
+    <div id="adminDashboard" class="hidden admin-card p-6 shadow-xl">
+        <div class="flex justify-between items-center mb-6">
             <div class="flex items-center gap-2">
-                <i class="fas fa-user-circle text-white text-xl md:text-2xl"></i>
-                <span class="text-white text-sm md:text-base font-medium truncate max-w-[150px] md:max-w-full" id="userEmail">Loading...</span>
+                <i class="fas fa-user-circle text-2xl text-purple-600"></i>
+                <span class="font-semibold" id="userEmail">Loading...</span>
             </div>
-            <button onclick="logout()" class="bg-red-600 text-white px-3 py-2 md:px-4 rounded-lg hover:bg-red-700 transition text-sm">
-                <i class="fas fa-sign-out-alt mr-1 md:mr-2"></i> <span class="hidden md:inline">Logout</span>
+            <button onclick="logout()" class="bg-red-600 text-white px-4 py-2 rounded-lg">
+                <i class="fas fa-sign-out-alt mr-2"></i> Logout
             </button>
         </div>
         
-        <!-- Desktop Navigation (hidden on mobile) -->
-        <div class="desktop-nav flex-wrap gap-2 mb-6 bg-white/10 backdrop-blur rounded-xl p-2 hidden md:flex">
-            <button onclick="showTab('books')" id="tabBooks" class="nav-tab px-6 py-3 rounded-lg font-semibold active">📚 Books</button>
-            <button onclick="showTab('topics')" id="tabTopics" class="nav-tab px-6 py-3 rounded-lg font-semibold">🏷️ Topics</button>
-            <button onclick="showTab('questions')" id="tabQuestions" class="nav-tab px-6 py-3 rounded-lg font-semibold">❓ Questions</button>
-            <button onclick="showTab('submissions')" id="tabSubmissions" class="nav-tab px-6 py-3 rounded-lg font-semibold">📥 Submissions</button>
-            <button onclick="showTab('stats')" id="tabStats" class="nav-tab px-6 py-3 rounded-lg font-semibold">📊 Stats</button>
-            <button onclick="showTab('admins')" id="tabAdmins" class="nav-tab px-6 py-3 rounded-lg font-semibold">👑 Admins</button>
+        <div class="flex flex-wrap gap-2 mb-6">
+            <button onclick="showTab('books')" id="tabBooks" class="px-4 py-2 rounded-lg font-semibold bg-purple-600 text-white">📚 Books</button>
+            <button onclick="showTab('topics')" id="tabTopics" class="px-4 py-2 rounded-lg font-semibold bg-gray-200">🏷️ Topics</button>
+            <button onclick="showTab('admins')" id="tabAdmins" class="px-4 py-2 rounded-lg font-semibold bg-gray-200">👑 Admins</button>
         </div>
 
-        <!-- Mobile Bottom Navigation -->
-        <div class="mobile-bottom-nav">
-            <div class="nav-item" onclick="showTab('books')">
-                <i class="fas fa-book text-xl"></i>
-                <div class="text-xs">Books</div>
+        <div id="booksTab">
+            <h2 class="text-xl font-bold mb-4">Books</h2>
+            <button onclick="showAddBookForm()" class="bg-green-600 text-white px-4 py-2 rounded-lg mb-4">+ Add Book</button>
+            <div id="addBookForm" class="hidden bg-gray-50 p-4 rounded-lg mb-4">
+                <input type="text" id="bookTitle" placeholder="Book Title" class="w-full p-2 border rounded mb-2">
+                <input type="text" id="bookAuthor" placeholder="Author" class="w-full p-2 border rounded mb-2">
+                <button onclick="addBook()" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
+                <button onclick="hideAddBookForm()" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
             </div>
-            <div class="nav-item" onclick="showTab('topics')">
-                <i class="fas fa-tags text-xl"></i>
-                <div class="text-xs">Topics</div>
-            </div>
-            <div class="nav-item" onclick="showTab('questions')">
-                <i class="fas fa-question-circle text-xl"></i>
-                <div class="text-xs">Questions</div>
-            </div>
-            <div class="nav-item" onclick="showTab('submissions')">
-                <i class="fas fa-inbox text-xl"></i>
-                <div class="text-xs">Submissions</div>
-            </div>
-            <div class="nav-item" onclick="showTab('stats')">
-                <i class="fas fa-chart-bar text-xl"></i>
-                <div class="text-xs">Stats</div>
-            </div>
-            <div class="nav-item" onclick="showTab('admins')">
-                <i class="fas fa-user-shield text-xl"></i>
-                <div class="text-xs">Admins</div>
-            </div>
+            <div id="booksList">Loading...</div>
         </div>
 
-        <!-- Books Tab -->
-        <div id="booksTab" class="admin-card p-4 md:p-6 shadow-xl">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-                <h2 class="text-xl md:text-2xl font-bold"><i class="fas fa-book text-purple-600 mr-2"></i> Books</h2>
-                <button onclick="showAddBookForm()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 w-full sm:w-auto">
-                    <i class="fas fa-plus mr-2"></i> Add Book
-                </button>
+        <div id="topicsTab" class="hidden">
+            <h2 class="text-xl font-bold mb-4">Topics</h2>
+            <button onclick="showAddTopicForm()" class="bg-green-600 text-white px-4 py-2 rounded-lg mb-4">+ Add Topic</button>
+            <div id="addTopicForm" class="hidden bg-gray-50 p-4 rounded-lg mb-4">
+                <select id="topicBookId" class="w-full p-2 border rounded mb-2"></select>
+                <input type="text" id="topicName" placeholder="Topic Name" class="w-full p-2 border rounded mb-2">
+                <button onclick="addTopic()" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
+                <button onclick="hideAddTopicForm()" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
             </div>
-            
-            <div id="addBookForm" class="hidden bg-gray-50 p-4 rounded-xl mb-4">
-                <h3 class="font-bold mb-3">Add New Book</h3>
-                <input type="text" id="bookTitle" placeholder="Book Title" class="w-full p-3 border rounded-lg mb-2 text-base">
-                <input type="text" id="bookAuthor" placeholder="Author Name" class="w-full p-3 border rounded-lg mb-2 text-base">
-                <div class="flex flex-col sm:flex-row gap-2">
-                    <button onclick="addBook()" class="bg-blue-600 text-white px-4 py-2 rounded-lg flex-1">Save Book</button>
-                    <button onclick="hideAddBookForm()" class="bg-gray-400 text-white px-4 py-2 rounded-lg flex-1">Cancel</button>
-                </div>
-            </div>
-            
-            <div id="booksList" class="space-y-2">Loading...</div>
+            <div id="topicsList">Loading...</div>
         </div>
 
-        <!-- Topics Tab -->
-        <div id="topicsTab" class="admin-card p-4 md:p-6 shadow-xl hidden">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-                <h2 class="text-xl md:text-2xl font-bold"><i class="fas fa-tags text-purple-600 mr-2"></i> Topics</h2>
-                <button onclick="showAddTopicForm()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 w-full sm:w-auto">
-                    <i class="fas fa-plus mr-2"></i> Add Topic
-                </button>
-            </div>
-            
-            <div id="addTopicForm" class="hidden bg-gray-50 p-4 rounded-xl mb-4">
-                <h3 class="font-bold mb-3">Add New Topic</h3>
-                <select id="topicBookId" class="w-full p-3 border rounded-lg mb-2 text-base"></select>
-                <input type="text" id="topicName" placeholder="Topic Name" class="w-full p-3 border rounded-lg mb-2 text-base">
-                <input type="number" id="chapterNumber" placeholder="Chapter Number" class="w-full p-3 border rounded-lg mb-2 text-base">
-                <div class="flex flex-col sm:flex-row gap-2">
-                    <button onclick="addTopic()" class="bg-blue-600 text-white px-4 py-2 rounded-lg flex-1">Save Topic</button>
-                    <button onclick="hideAddTopicForm()" class="bg-gray-400 text-white px-4 py-2 rounded-lg flex-1">Cancel</button>
-                </div>
-            </div>
-            
-            <div id="topicsList" class="space-y-2">Loading...</div>
+        <div id="adminsTab" class="hidden">
+            <h2 class="text-xl font-bold mb-4">Admin Users</h2>
+            <div id="adminsList">Loading...</div>
+            <p class="text-sm text-gray-500 mt-4">Add yourself as admin after signing up</p>
         </div>
-
-        <!-- Questions Tab -->
-        <div id="questionsTab" class="admin-card p-4 md:p-6 shadow-xl hidden">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-                <h2 class="text-xl md:text-2xl font-bold"><i class="fas fa-question-circle text-purple-600 mr-2"></i> Questions</h2>
-                <button onclick="showAddQuestionForm()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 w-full sm:w-auto">
-                    <i class="fas fa-plus mr-2"></i> Add Question
-                </button>
-            </div>
-            
-            <div id="addQuestionForm" class="hidden bg-gray-50 p-4 rounded-xl mb-4 max-h-[80vh] overflow-y-auto">
-                <h3 class="font-bold mb-3">Add New Question</h3>
-                <select id="questionBookId" class="w-full p-3 border rounded-lg mb-2 text-base" onchange="loadTopicsForQuestion()">
-                    <option value="">Select Book</option>
-                </select>
-                <select id="questionTopicId" class="w-full p-3 border rounded-lg mb-2 text-base">
-                    <option value="">Select Topic</option>
-                </select>
-                <select id="questionDifficulty" class="w-full p-3 border rounded-lg mb-2 text-base">
-                    <option value="easy">Easy</option>
-                    <option value="medium">Medium</option>
-                    <option value="hard">Hard</option>
-                </select>
-                <textarea id="questionText" rows="3" placeholder="Question Text" class="w-full p-3 border rounded-lg mb-2 text-base"></textarea>
-                <input type="text" id="option0" placeholder="Option A" class="w-full p-3 border rounded-lg mb-2 text-base">
-                <input type="text" id="option1" placeholder="Option B" class="w-full p-3 border rounded-lg mb-2 text-base">
-                <input type="text" id="option2" placeholder="Option C" class="w-full p-3 border rounded-lg mb-2 text-base">
-                <input type="text" id="option3" placeholder="Option D" class="w-full p-3 border rounded-lg mb-2 text-base">
-                <select id="correctAnswer" class="w-full p-3 border rounded-lg mb-2 text-base">
-                    <option value="0">Option A is correct</option>
-                    <option value="1">Option B is correct</option>
-                    <option value="2">Option C is correct</option>
-                    <option value="3">Option D is correct</option>
-                </select>
-                <textarea id="explanation" rows="2" placeholder="Explanation" class="w-full p-3 border rounded-lg mb-2 text-base"></textarea>
-                <div class="flex flex-col sm:flex-row gap-2">
-                    <button onclick="addQuestion()" class="bg-blue-600 text-white px-4 py-2 rounded-lg flex-1">Save Question</button>
-                    <button onclick="hideAddQuestionForm()" class="bg-gray-400 text-white px-4 py-2 rounded-lg flex-1">Cancel</button>
-                </div>
-            </div>
-            
-            <div id="questionsList" class="space-y-3">Loading...</div>
-        </div>
-
-        <!-- Submissions Tab -->
-        <div id="submissionsTab" class="admin-card p-4 md:p-6 shadow-xl hidden">
-            <h2 class="text-xl md:text-2xl font-bold mb-4"><i class="fas fa-users text-purple-600 mr-2"></i> User Submissions</h2>
-            <div id="submissionsList" class="space-y-3">Loading...</div>
-        </div>
-
-        <!-- Stats Tab -->
-        <div id="statsTab" class="admin-card p-4 md:p-6 shadow-xl hidden">
-            <h2 class="text-xl md:text-2xl font-bold mb-4"><i class="fas fa-chart-bar text-purple-600 mr-2"></i> Statistics</h2>
-            <div id="statsData" class="grid grid-cols-2 md:grid-cols-4 gap-3">Loading...</div>
-        </div>
-
-        <!-- Admins Tab -->
-        <div id="adminsTab" class="admin-card p-4 md:p-6 shadow-xl hidden">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-                <h2 class="text-xl md:text-2xl font-bold"><i class="fas fa-user-shield text-purple-600 mr-2"></i> Admin Users</h2>
-                <button onclick="showAddAdminForm()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 w-full sm:w-auto">
-                    <i class="fas fa-plus mr-2"></i> Add Admin
-                </button>
-            </div>
-            
-            <div id="addAdminForm" class="hidden bg-gray-50 p-4 rounded-xl mb-4">
-                <h3 class="font-bold mb-3">Add New Admin</h3>
-                <input type="email" id="newAdminEmail" placeholder="Admin Email" class="w-full p-3 border rounded-lg mb-2 text-base">
-                <div class="flex flex-col sm:flex-row gap-2">
-                    <button onclick="addAdmin()" class="bg-blue-600 text-white px-4 py-2 rounded-lg flex-1">Send Invite</button>
-                    <button onclick="hideAddAdminForm()" class="bg-gray-400 text-white px-4 py-2 rounded-lg flex-1">Cancel</button>
-                </div>
-            </div>
-            
-            <div id="adminsList" class="space-y-2">Loading...</div>
-            <p class="text-xs text-gray-500 mt-3"><i class="fas fa-info-circle"></i> Only the first admin can add/remove others</p>
-        </div>
-
     </div>
 </div>
 
-<!-- Toast Notification -->
-<div id="toast" class="toast hidden bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg text-sm"></div>
+<div id="toast" class="toast hidden bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg"></div>
 
 <script>
     // ============================================
-    // SUPABASE CONFIGURATION
+    // SUPABASE CONFIGURATION - WORKING CREDENTIALS
     // ============================================
-const SUPABASE_URL = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
+    const SUPABASE_URL = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
+    
+    // Create supabase client
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
     let currentUser = null;
 
     // ============ AUTHENTICATION FUNCTIONS ============
     
-    async function checkSession() {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-            currentUser = session.user;
-            document.getElementById('userEmail').textContent = currentUser.email;
-            document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('adminDashboard').classList.remove('hidden');
-            loadAllData();
-        }
-    }
+    window.showSignup = function() {
+        document.getElementById('loginForm').classList.add('hidden');
+        document.getElementById('signupForm').classList.remove('hidden');
+    };
     
-    async function login() {
+    window.showLogin = function() {
+        document.getElementById('signupForm').classList.add('hidden');
+        document.getElementById('loginForm').classList.remove('hidden');
+    };
+    
+    window.login = async function() {
         const email = document.getElementById('loginEmail').value;
         const password = document.getElementById('loginPassword').value;
         
@@ -359,11 +151,13 @@ const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('adminDashboard').classList.remove('hidden');
             document.getElementById('userEmail').textContent = currentUser.email;
-            loadAllData();
+            loadBooks();
+            loadTopics();
+            loadAdmins();
         }
-    }
+    };
     
-    async function signup() {
+    window.signup = async function() {
         const email = document.getElementById('signupEmail').value;
         const password = document.getElementById('signupPassword').value;
         
@@ -377,33 +171,27 @@ const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
             return;
         }
         
-        const { data, error } = await supabase.auth.signUp({ email, password });
+        const { data, error } = await supabase.auth.signUp({ 
+            email, 
+            password,
+            options: { emailRedirectTo: window.location.origin + '/admin.html' }
+        });
         
         if (error) {
             showToast('Signup failed: ' + error.message, 'error');
         } else {
-            showToast('Account created! Please check your email to confirm.', 'success');
+            showToast('Account created! Check your email to confirm.', 'success');
             showLogin();
         }
-    }
+    };
     
-    async function logout() {
+    window.logout = async function() {
         await supabase.auth.signOut();
         currentUser = null;
         document.getElementById('adminDashboard').classList.add('hidden');
         document.getElementById('loginScreen').classList.remove('hidden');
-        showToast('Logged out successfully', 'success');
-    }
-    
-    function showSignup() {
-        document.getElementById('loginForm').classList.add('hidden');
-        document.getElementById('signupForm').classList.remove('hidden');
-    }
-    
-    function showLogin() {
-        document.getElementById('signupForm').classList.add('hidden');
-        document.getElementById('loginForm').classList.remove('hidden');
-    }
+        showToast('Logged out', 'success');
+    };
     
     function showToast(message, type) {
         const toast = document.getElementById('toast');
@@ -412,385 +200,145 @@ const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
         setTimeout(() => toast.classList.add('hidden'), 3000);
     }
     
-    // ============ TAB NAVIGATION ============
-    function showTab(tab) {
+    // ============ TAB FUNCTIONS ============
+    window.showTab = function(tab) {
         document.getElementById('booksTab').classList.add('hidden');
         document.getElementById('topicsTab').classList.add('hidden');
-        document.getElementById('questionsTab').classList.add('hidden');
-        document.getElementById('submissionsTab').classList.add('hidden');
-        document.getElementById('statsTab').classList.add('hidden');
         document.getElementById('adminsTab').classList.add('hidden');
-        
         document.getElementById(`${tab}Tab`).classList.remove('hidden');
         
-        // Update active styles for desktop tabs
-        document.querySelectorAll('.desktop-nav .nav-tab').forEach(btn => btn.classList.remove('active'));
-        const activeDesktopTab = document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
-        if (activeDesktopTab) activeDesktopTab.classList.add('active');
-        
-        // Refresh data
-        if (tab === 'books') loadBooksList();
-        if (tab === 'topics') loadTopicsList();
-        if (tab === 'questions') loadQuestionsList();
-        if (tab === 'submissions') loadSubmissions();
-        if (tab === 'stats') loadStats();
-        if (tab === 'admins') loadAdminsList();
-        
-        // Scroll to top on mobile
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+        // Update button styles
+        const buttons = ['books', 'topics', 'admins'];
+        buttons.forEach(t => {
+            const btn = document.getElementById(`tab${t.charAt(0).toUpperCase() + t.slice(1)}`);
+            if (btn) {
+                if (t === tab) {
+                    btn.classList.remove('bg-gray-200');
+                    btn.classList.add('bg-purple-600', 'text-white');
+                } else {
+                    btn.classList.remove('bg-purple-600', 'text-white');
+                    btn.classList.add('bg-gray-200');
+                }
+            }
+        });
+    };
     
-    // ============ LOAD ALL DATA ============
-    async function loadAllData() {
-        loadBooksList();
-        loadTopicsList();
-        loadQuestionsList();
-        loadSubmissions();
-        loadStats();
-        loadAdminsList();
-        loadBookSelects();
-        loadBookSelectsForTopics();
-    }
-    
-    // ============ BOOKS CRUD ============
-    async function loadBooksList() {
+    // ============ BOOKS FUNCTIONS ============
+    async function loadBooks() {
         const { data, error } = await supabase.from('books').select('*').order('id', { ascending: false });
-        if (error) return;
-        
-        const container = document.getElementById('booksList');
-        if (!data.length) {
-            container.innerHTML = '<p class="text-gray-500 text-center py-4 text-sm">No books yet. Add your first book!</p>';
+        if (error) {
+            document.getElementById('booksList').innerHTML = '<p class="text-gray-500">No books yet. Add your first book!</p>';
             return;
         }
-        
-        container.innerHTML = data.map(book => `
-            <div class="bg-gray-50 p-3 md:p-4 rounded-lg flex justify-between items-center">
-                <div class="flex-1">
-                    <span class="font-bold text-sm md:text-base">${escapeHtml(book.title)}</span>
-                    ${book.author ? `<span class="text-gray-600 text-xs md:text-sm ml-2">by ${escapeHtml(book.author)}</span>` : ''}
-                </div>
-                <button onclick="deleteBook(${book.id})" class="text-red-600 hover:text-red-800 p-2">
-                    <i class="fas fa-trash"></i>
-                </button>
+        if (!data || data.length === 0) {
+            document.getElementById('booksList').innerHTML = '<p class="text-gray-500">No books yet. Add your first book!</p>';
+            return;
+        }
+        document.getElementById('booksList').innerHTML = data.map(book => `
+            <div class="bg-gray-50 p-3 rounded-lg mb-2 flex justify-between">
+                <div><strong>${escapeHtml(book.title)}</strong> ${book.author ? `by ${escapeHtml(book.author)}` : ''}</div>
+                <button onclick="deleteBook(${book.id})" class="text-red-600"><i class="fas fa-trash"></i></button>
             </div>
         `).join('');
     }
     
-    async function addBook() {
+    window.addBook = async function() {
         const title = document.getElementById('bookTitle').value;
         const author = document.getElementById('bookAuthor').value;
-        
-        if (!title) { showToast('Please enter book title', 'error'); return; }
+        if (!title) { showToast('Enter book title', 'error'); return; }
         
         const { error } = await supabase.from('books').insert([{ title, author }]);
         if (error) { showToast('Error: ' + error.message, 'error'); }
         else {
-            showToast('Book added successfully!', 'success');
+            showToast('Book added!', 'success');
             hideAddBookForm();
-            loadBooksList();
-            loadBookSelects();
-            loadBookSelectsForTopics();
+            loadBooks();
         }
-    }
+    };
     
-    async function deleteBook(id) {
-        if (confirm('Are you sure? This will delete all related topics and questions!')) {
+    window.deleteBook = async function(id) {
+        if (confirm('Delete this book? This will also delete all related topics and questions.')) {
             await supabase.from('books').delete().eq('id', id);
-            loadBooksList();
-            loadTopicsList();
-            loadQuestionsList();
+            loadBooks();
+            loadTopics();
             showToast('Book deleted', 'success');
         }
-    }
+    };
     
-    function showAddBookForm() { document.getElementById('addBookForm').classList.remove('hidden'); }
-    function hideAddBookForm() { document.getElementById('addBookForm').classList.add('hidden'); document.getElementById('bookTitle').value = ''; document.getElementById('bookAuthor').value = ''; }
+    window.showAddBookForm = function() { document.getElementById('addBookForm').classList.remove('hidden'); };
+    window.hideAddBookForm = function() { 
+        document.getElementById('addBookForm').classList.add('hidden');
+        document.getElementById('bookTitle').value = '';
+        document.getElementById('bookAuthor').value = '';
+    };
     
-    // ============ TOPICS CRUD ============
-    async function loadTopicsList() {
+    // ============ TOPICS FUNCTIONS ============
+    async function loadTopics() {
         const { data, error } = await supabase.from('topics').select('*, books(title)').order('id', { ascending: false });
-        if (error) return;
-        
-        const container = document.getElementById('topicsList');
-        if (!data.length) {
-            container.innerHTML = '<p class="text-gray-500 text-center py-4 text-sm">No topics yet. Add your first topic!</p>';
+        if (error || !data || data.length === 0) {
+            document.getElementById('topicsList').innerHTML = '<p class="text-gray-500">No topics yet. Add your first topic!</p>';
             return;
         }
-        
-        container.innerHTML = data.map(topic => `
-            <div class="bg-gray-50 p-3 md:p-4 rounded-lg flex justify-between items-center">
-                <div class="flex-1">
-                    <span class="font-bold text-sm md:text-base">${escapeHtml(topic.name)}</span>
-                    <span class="text-gray-600 text-xs md:text-sm ml-2">(${escapeHtml(topic.books?.title || 'Unknown')})</span>
-                    ${topic.chapter_number ? `<span class="text-gray-500 text-xs ml-2">Ch ${topic.chapter_number}</span>` : ''}
-                </div>
-                <button onclick="deleteTopic(${topic.id})" class="text-red-600 hover:text-red-800 p-2">
-                    <i class="fas fa-trash"></i>
-                </button>
+        document.getElementById('topicsList').innerHTML = data.map(topic => `
+            <div class="bg-gray-50 p-3 rounded-lg mb-2 flex justify-between">
+                <div><strong>${escapeHtml(topic.name)}</strong> (${escapeHtml(topic.books?.title || 'Unknown')})</div>
+                <button onclick="deleteTopic(${topic.id})" class="text-red-600"><i class="fas fa-trash"></i></button>
             </div>
         `).join('');
     }
     
-    async function addTopic() {
+    window.addTopic = async function() {
         const bookId = document.getElementById('topicBookId').value;
         const name = document.getElementById('topicName').value;
-        const chapterNumber = document.getElementById('chapterNumber').value;
+        if (!bookId || !name) { showToast('Select book and enter topic name', 'error'); return; }
         
-        if (!bookId || !name) { showToast('Please select book and enter topic name', 'error'); return; }
-        
-        const { error } = await supabase.from('topics').insert([{ book_id: parseInt(bookId), name, chapter_number: chapterNumber ? parseInt(chapterNumber) : null }]);
+        const { error } = await supabase.from('topics').insert([{ book_id: parseInt(bookId), name }]);
         if (error) { showToast('Error: ' + error.message, 'error'); }
         else {
-            showToast('Topic added successfully!', 'success');
+            showToast('Topic added!', 'success');
             hideAddTopicForm();
-            loadTopicsList();
-            loadTopicSelects();
+            loadTopics();
         }
-    }
+    };
     
-    async function deleteTopic(id) {
-        if (confirm('Are you sure? This will delete all questions in this topic!')) {
+    window.deleteTopic = async function(id) {
+        if (confirm('Delete this topic? All questions in this topic will also be deleted.')) {
             await supabase.from('topics').delete().eq('id', id);
-            loadTopicsList();
-            loadQuestionsList();
+            loadTopics();
             showToast('Topic deleted', 'success');
         }
-    }
+    };
     
-    function showAddTopicForm() { loadBookSelectsForTopics(); document.getElementById('addTopicForm').classList.remove('hidden'); }
-    function hideAddTopicForm() { document.getElementById('addTopicForm').classList.add('hidden'); document.getElementById('topicName').value = ''; document.getElementById('chapterNumber').value = ''; }
-    
-    async function loadBookSelectsForTopics() {
+    window.showAddTopicForm = async function() {
         const { data } = await supabase.from('books').select('id, title');
         const select = document.getElementById('topicBookId');
         select.innerHTML = '<option value="">Select Book</option>';
         data?.forEach(book => { select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`; });
-    }
+        document.getElementById('addTopicForm').classList.remove('hidden');
+    };
     
-    // ============ QUESTIONS CRUD ============
-    async function loadQuestionsList() {
-        const { data, error } = await supabase.from('questions').select('*, topics(name, books(title))').order('id', { ascending: false }).limit(50);
-        if (error) return;
-        
-        const container = document.getElementById('questionsList');
-        if (!data.length) {
-            container.innerHTML = '<p class="text-gray-500 text-center py-4 text-sm">No questions yet. Add your first question!</p>';
+    window.hideAddTopicForm = function() {
+        document.getElementById('addTopicForm').classList.add('hidden');
+        document.getElementById('topicName').value = '';
+    };
+    
+    // ============ ADMIN FUNCTIONS ============
+    async function loadAdmins() {
+        const { data, error } = await supabase.from('admin_roles').select('*');
+        if (error || !data || data.length === 0) {
+            document.getElementById('adminsList').innerHTML = '<p class="text-gray-500">No admins yet. Add yourself as admin.</p><p class="text-sm">After signing up, copy your User ID from Authentication → Users and run SQL: INSERT INTO admin_roles (user_id, user_email) VALUES (your-id, your-email);</p>';
             return;
         }
-        
-        container.innerHTML = data.map(q => `
-            <div class="bg-gray-50 p-3 md:p-4 rounded-lg">
-                <p class="font-bold text-sm md:text-base mb-2">${escapeHtml(q.question_text)}</p>
-                <p class="text-xs md:text-sm text-gray-600">Topic: ${escapeHtml(q.topics?.name || 'Unknown')} | Book: ${escapeHtml(q.topics?.books?.title || 'Unknown')} | Difficulty: ${q.difficulty}</p>
-                <button onclick="deleteQuestion(${q.id})" class="text-red-600 hover:text-red-800 text-xs md:text-sm mt-2">
-                    <i class="fas fa-trash"></i> Delete
-                </button>
+        document.getElementById('adminsList').innerHTML = data.map(admin => `
+            <div class="bg-gray-50 p-3 rounded-lg mb-2">
+                <i class="fas fa-user-shield text-purple-600 mr-2"></i>
+                ${escapeHtml(admin.user_email || admin.user_id)}
+                ${admin.user_id === currentUser?.id ? ' <span class="text-green-600 text-sm">(You)</span>' : ''}
             </div>
         `).join('');
     }
     
-    async function loadBookSelects() {
-        const { data } = await supabase.from('books').select('id, title');
-        const select = document.getElementById('questionBookId');
-        select.innerHTML = '<option value="">Select Book</option>';
-        data?.forEach(book => { select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`; });
-    }
-    
-    async function loadTopicsForQuestion() {
-        const bookId = document.getElementById('questionBookId').value;
-        if (!bookId) return;
-        
-        const { data } = await supabase.from('topics').select('id, name').eq('book_id', bookId);
-        const select = document.getElementById('questionTopicId');
-        select.innerHTML = '<option value="">Select Topic</option>';
-        data?.forEach(topic => { select.innerHTML += `<option value="${topic.id}">${escapeHtml(topic.name)}</option>`; });
-    }
-    
-    async function addQuestion() {
-        const topicId = document.getElementById('questionTopicId').value;
-        const difficulty = document.getElementById('questionDifficulty').value;
-        const questionText = document.getElementById('questionText').value;
-        const options = [document.getElementById('option0').value, document.getElementById('option1').value, document.getElementById('option2').value, document.getElementById('option3').value];
-        const correctAnswer = parseInt(document.getElementById('correctAnswer').value);
-        const explanation = document.getElementById('explanation').value;
-        
-        if (!topicId || !questionText || options.some(opt => !opt)) {
-            showToast('Please fill all required fields', 'error');
-            return;
-        }
-        
-        const { data: qData, error: qError } = await supabase.from('questions').insert([{ topic_id: parseInt(topicId), question_text: questionText, difficulty, correct_answer: correctAnswer, explanation }]).select();
-        if (qError) { showToast('Error: ' + qError.message, 'error'); return; }
-        
-        for (let i = 0; i < options.length; i++) {
-            await supabase.from('options').insert([{ question_id: qData[0].id, option_text: options[i], option_index: i }]);
-        }
-        
-        showToast('Question added successfully!', 'success');
-        hideAddQuestionForm();
-        loadQuestionsList();
-    }
-    
-    async function deleteQuestion(id) {
-        if (confirm('Are you sure?')) {
-            await supabase.from('options').delete().eq('question_id', id);
-            await supabase.from('questions').delete().eq('id', id);
-            loadQuestionsList();
-            showToast('Question deleted', 'success');
-        }
-    }
-    
-    function showAddQuestionForm() { loadBookSelects(); document.getElementById('addQuestionForm').classList.remove('hidden'); }
-    function hideAddQuestionForm() { document.getElementById('addQuestionForm').classList.add('hidden'); document.getElementById('questionText').value = ''; document.getElementById('option0').value = ''; document.getElementById('option1').value = ''; document.getElementById('option2').value = ''; document.getElementById('option3').value = ''; document.getElementById('explanation').value = ''; }
-    
-    // ============ SUBMISSIONS ============
-    async function loadSubmissions() {
-        const { data, error } = await supabase.from('submissions').select('*').eq('status', 'pending').order('submitted_at', { ascending: false });
-        if (error) return;
-        
-        const container = document.getElementById('submissionsList');
-        if (!data.length) {
-            container.innerHTML = '<p class="text-gray-500 text-center py-4 text-sm">No pending submissions</p>';
-            return;
-        }
-        
-        container.innerHTML = data.map(sub => `
-            <div class="bg-gray-50 p-3 md:p-4 rounded-lg">
-                <p class="text-sm"><strong>Book:</strong> ${escapeHtml(sub.book_title)}</p>
-                <p class="text-sm"><strong>Topic:</strong> ${escapeHtml(sub.topic_name)}</p>
-                <p class="text-sm font-bold mt-2">${escapeHtml(sub.question_text)}</p>
-                <p class="text-xs text-gray-500 mt-1">From: ${escapeHtml(sub.contributor_email)}</p>
-                <div class="flex gap-2 mt-3">
-                    <button onclick="approveSubmission(${sub.id})" class="bg-green-600 text-white px-3 py-2 rounded-lg text-sm flex-1">✅ Approve</button>
-                    <button onclick="rejectSubmission(${sub.id})" class="bg-red-600 text-white px-3 py-2 rounded-lg text-sm flex-1">❌ Reject</button>
-                </div>
-            </div>
-        `).join('');
-    }
-    
-    async function approveSubmission(id) {
-        const { data: sub } = await supabase.from('submissions').select('*').eq('id', id).single();
-        if (!sub) return;
-        
-        let { data: existingBook } = await supabase.from('books').select('id').eq('title', sub.book_title).single();
-        let bookId;
-        if (!existingBook) {
-            const { data: newBook } = await supabase.from('books').insert([{ title: sub.book_title, author: sub.book_author }]).select();
-            bookId = newBook[0].id;
-        } else { bookId = existingBook.id; }
-        
-        let { data: existingTopic } = await supabase.from('topics').select('id').eq('name', sub.topic_name).eq('book_id', bookId).single();
-        let topicId;
-        if (!existingTopic) {
-            const { data: newTopic } = await supabase.from('topics').insert([{ book_id: bookId, name: sub.topic_name }]).select();
-            topicId = newTopic[0].id;
-        } else { topicId = existingTopic.id; }
-        
-        const { data: newQuestion } = await supabase.from('questions').insert([{ topic_id: topicId, question_text: sub.question_text, difficulty: sub.difficulty, correct_answer: sub.correct_answer, explanation: sub.explanation }]).select();
-        
-        const options = [sub.option_a, sub.option_b, sub.option_c, sub.option_d];
-        for (let i = 0; i < options.length; i++) {
-            await supabase.from('options').insert([{ question_id: newQuestion[0].id, option_text: options[i], option_index: i }]);
-        }
-        
-        await supabase.from('submissions').update({ status: 'approved', reviewed_at: new Date() }).eq('id', id);
-        showToast('Submission approved!', 'success');
-        loadSubmissions();
-        loadQuestionsList();
-    }
-    
-    async function rejectSubmission(id) {
-        await supabase.from('submissions').update({ status: 'rejected', reviewed_at: new Date() }).eq('id', id);
-        showToast('Submission rejected', 'success');
-        loadSubmissions();
-    }
-    
-    // ============ STATS ============
-    async function loadStats() {
-        const { count: booksCount } = await supabase.from('books').select('*', { count: 'exact', head: true });
-        const { count: topicsCount } = await supabase.from('topics').select('*', { count: 'exact', head: true });
-        const { count: questionsCount } = await supabase.from('questions').select('*', { count: 'exact', head: true });
-        const { count: submissionsCount } = await supabase.from('submissions').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-        
-        document.getElementById('statsData').innerHTML = `
-            <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded-xl text-center">
-                <i class="fas fa-book text-2xl mb-1"></i>
-                <p class="text-xl font-bold">${booksCount || 0}</p>
-                <p class="text-xs">Books</p>
-            </div>
-            <div class="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-xl text-center">
-                <i class="fas fa-tags text-2xl mb-1"></i>
-                <p class="text-xl font-bold">${topicsCount || 0}</p>
-                <p class="text-xs">Topics</p>
-            </div>
-            <div class="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-4 rounded-xl text-center">
-                <i class="fas fa-question-circle text-2xl mb-1"></i>
-                <p class="text-xl font-bold">${questionsCount || 0}</p>
-                <p class="text-xs">Questions</p>
-            </div>
-            <div class="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-4 rounded-xl text-center">
-                <i class="fas fa-clock text-2xl mb-1"></i>
-                <p class="text-xl font-bold">${submissionsCount || 0}</p>
-                <p class="text-xs">Pending</p>
-            </div>
-        `;
-    }
-    
-    // ============ ADMIN MANAGEMENT ============
-    async function loadAdminsList() {
-        const { data, error } = await supabase.from('admin_roles').select('*').order('created_at', { ascending: false });
-        if (error) return;
-        
-        const container = document.getElementById('adminsList');
-        if (!data.length) {
-            container.innerHTML = '<p class="text-gray-500 text-center py-4 text-sm">No admin users. Add your first admin!</p>';
-            return;
-        }
-        
-        container.innerHTML = data.map(admin => `
-            <div class="bg-gray-50 p-3 md:p-4 rounded-lg flex justify-between items-center">
-                <div class="flex-1">
-                    <i class="fas fa-user-shield text-purple-600 mr-2"></i>
-                    <span class="font-bold text-sm">${escapeHtml(admin.user_email || admin.user_id)}</span>
-                    <span class="text-gray-500 text-xs ml-2">${new Date(admin.created_at).toLocaleDateString()}</span>
-                </div>
-                ${admin.user_id !== currentUser?.id ? `<button onclick="removeAdmin('${admin.user_id}')" class="text-red-600 hover:text-red-800 p-2"><i class="fas fa-trash"></i></button>` : '<span class="text-gray-400 text-xs">(You)</span>'}
-            </div>
-        `).join('');
-    }
-    
-    async function addAdmin() {
-        const email = document.getElementById('newAdminEmail').value;
-        if (!email) { showToast('Please enter email', 'error'); return; }
-        
-        const { data: { user }, error } = await supabase.auth.admin.getUserByEmail(email);
-        if (error || !user) {
-            showToast('User not found. They need to sign up first.', 'error');
-            return;
-        }
-        
-        const { error: insertError } = await supabase.from('admin_roles').insert([{ user_id: user.id, user_email: email }]);
-        if (insertError) {
-            showToast('Error: ' + insertError.message, 'error');
-        } else {
-            showToast(`Admin added: ${email}`, 'success');
-            hideAddAdminForm();
-            loadAdminsList();
-        }
-    }
-    
-    async function removeAdmin(userId) {
-        if (confirm('Remove this admin?')) {
-            await supabase.from('admin_roles').delete().eq('user_id', userId);
-            loadAdminsList();
-            showToast('Admin removed', 'success');
-        }
-    }
-    
-    function showAddAdminForm() { document.getElementById('addAdminForm').classList.remove('hidden'); }
-    function hideAddAdminForm() { document.getElementById('addAdminForm').classList.add('hidden'); document.getElementById('newAdminEmail').value = ''; }
-    
-    // Helper function
+    // ============ HELPER FUNCTIONS ============
     function escapeHtml(str) {
         if (!str) return '';
         return str.replace(/[&<>]/g, function(m) {
@@ -801,11 +349,21 @@ const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
         });
     }
     
-    async function loadTopicSelects() {
-        // Placeholder
+    // ============ CHECK EXISTING SESSION ============
+    async function checkSession() {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+            currentUser = session.user;
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('adminDashboard').classList.remove('hidden');
+            document.getElementById('userEmail').textContent = currentUser.email;
+            loadBooks();
+            loadTopics();
+            loadAdmins();
+        }
     }
     
-    // Initialize
+    // Start
     checkSession();
 </script>
 </body>
