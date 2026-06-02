@@ -21,16 +21,12 @@
         .modal-content { background: white; border-radius: 1rem; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; }
         .category-badge { background: #e0e7ff; color: #4338ca; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-left: 8px; cursor: pointer; }
         .category-badge:hover { background: #c7d2fe; }
-        .session-timer { position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.7); color: white; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-family: monospace; z-index: 1000; }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
 <div class="max-w-6xl mx-auto">
     
-    <!-- Session Timer Display -->
-    <div id="sessionTimer" class="session-timer hidden"></div>
-
     <!-- Header -->
     <div class="text-center mb-8">
         <div class="inline-flex items-center gap-2 bg-white/20 backdrop-blur rounded-full px-6 py-2 mb-4">
@@ -226,22 +222,21 @@
                 </div>
             </div>
 
-            <!-- Bulk Upload Tab -->
-            <div id="bulkUploadTab" class="hidden">
-                <div class="text-center py-12">
-                    <i class="fas fa-upload text-6xl text-purple-500 mb-4"></i>
-                    <h2 class="text-2xl font-bold mb-3">Bulk Upload Questions</h2>
-                    <p class="text-gray-600 mb-6">Upload hundreds of questions at once using a CSV file</p>
-                    <div class="flex gap-4 justify-center">
-                        <button onclick="openBulkUploadWithSession()" class="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 inline-flex items-center gap-2">
-                            <i class="fas fa-external-link-alt"></i>
-                            Open Bulk Upload Page
-                        </button>
-                    </div>
-                    <p class="text-sm text-gray-500 mt-4">Click to open bulk upload with your current session</p>
-                </div>
-            </div>
-            
+<!-- Bulk Upload Tab - Opens Separate Page with Session -->
+<div id="bulkUploadTab" class="hidden">
+    <div class="text-center py-12">
+        <i class="fas fa-upload text-6xl text-purple-500 mb-4"></i>
+        <h2 class="text-2xl font-bold mb-3">Bulk Upload Questions</h2>
+        <p class="text-gray-600 mb-6">Upload hundreds of questions at once using a CSV file</p>
+        <div class="flex gap-4 justify-center">
+            <button onclick="openBulkUploadWithSession()" class="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 inline-flex items-center gap-2">
+                <i class="fas fa-external-link-alt"></i>
+                Open Bulk Upload Page
+            </button>
+        </div>
+        <p class="text-sm text-gray-500 mt-4">Click to open bulk upload with your current session</p>
+    </div>
+</div>
             <!-- Admins Tab -->
             <div id="adminsTab" class="hidden">
                 <h2 class="text-xl font-bold mb-4">👑 Admin Users</h2>
@@ -348,89 +343,46 @@
     let currentFilters = { bookId: '', topicId: '', difficulty: '' };
     let currentTopicBookFilter = '';
     
-    // ============ SESSION TIMEOUT ============
+    // ============ SESSION TIMEOUT (10 minutes = 600000 ms) ============
     let sessionTimeout;
-    const SESSION_DURATION = 30 * 60 * 1000; // 30 minutes
-    let sessionTimerInterval;
-    let timeLeft = SESSION_DURATION / 1000;
-
-    function updateTimerDisplay() {
-        const timerDiv = document.getElementById('sessionTimer');
-        if (timerDiv && _currentUser && _isAdmin) {
-            const minutes = Math.floor(timeLeft / 60);
-            const seconds = timeLeft % 60;
-            timerDiv.textContent = `⏱️ Session: ${minutes}:${seconds.toString().padStart(2, '0')}`;
-            timerDiv.classList.remove('hidden');
-        }
-    }
-
+    const SESSION_DURATION = 10 * 60 * 1000; // 10 minutes
+    
     function resetSessionTimer() {
         if (sessionTimeout) clearTimeout(sessionTimeout);
-        if (sessionTimerInterval) clearInterval(sessionTimerInterval);
-        
-        timeLeft = SESSION_DURATION / 1000;
-        updateTimerDisplay();
-        
-        sessionTimerInterval = setInterval(() => {
-            if (timeLeft > 0) {
-                timeLeft--;
-                updateTimerDisplay();
-            }
-        }, 1000);
-        
         sessionTimeout = setTimeout(async () => {
             if (_currentUser && _isAdmin) {
                 showToast('Session expired due to inactivity. Please login again.');
                 await handleLogout();
-                window.location.reload();
             }
         }, SESSION_DURATION);
     }
-
+    
     function trackUserActivity() {
         if (_currentUser && _isAdmin) {
             resetSessionTimer();
         }
     }
-
+    
+    // Add activity listeners
     const activityEvents = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
     activityEvents.forEach(event => {
         document.addEventListener(event, trackUserActivity);
     });
+    
+    // ============ CACHE SYSTEM ============
+    let booksCache = null;
+    let topicsCache = {};
+    let categoriesCache = null;
+    let booksListCache = null;
+    let isLoadingBooks = false;
+    let isLoadingTopics = false;
 
-    // ============ DUPLICATE CHECK FUNCTIONS ============
-    async function checkDuplicateBook(title, category, excludeId = null) {
-        let query = _supabase.from('books').select('id').eq('title', title).eq('category', category);
-        if (excludeId) query = query.neq('id', excludeId);
-        const { data } = await query;
-        return data && data.length > 0;
-    }
-
-    async function checkDuplicateTopic(bookId, name, excludeId = null) {
-        let query = _supabase.from('topics').select('id').eq('book_id', parseInt(bookId)).eq('name', name);
-        if (excludeId) query = query.neq('id', excludeId);
-        const { data } = await query;
-        return data && data.length > 0;
-    }
-
-    async function checkDuplicateCategory(name, excludeId = null) {
-        let query = _supabase.from('categories').select('id').eq('name', name);
-        if (excludeId) query = query.neq('id', excludeId);
-        const { data } = await query;
-        return data && data.length > 0;
-    }
-
-    async function checkDuplicateQuestion(topicId, questionText, excludeId = null) {
-        let query = _supabase.from('questions').select('id').eq('topic_id', parseInt(topicId)).eq('question_text', questionText);
-        if (excludeId) query = query.neq('id', excludeId);
-        const { data } = await query;
-        return data && data.length > 0;
-    }
-
-    function showToast(message) {
+    function showToast(message, isError = false) {
         const toast = document.getElementById('toast');
         toast.textContent = message;
         toast.classList.remove('hidden');
+        if (isError) toast.classList.add('bg-red-600');
+        else toast.classList.remove('bg-red-600');
         setTimeout(() => toast.classList.add('hidden'), 3000);
     }
 
@@ -464,20 +416,49 @@
         return data && data.length > 0;
     }
 
+    // ============ DUPLICATE CHECK FUNCTIONS ============
+    async function checkDuplicateBook(title, category, excludeId = null) {
+        let query = _supabase.from('books').select('id').eq('title', title).eq('category', category);
+        if (excludeId) query = query.neq('id', excludeId);
+        const { data } = await query;
+        return data && data.length > 0;
+    }
+    
+    async function checkDuplicateTopic(name, bookId, excludeId = null) {
+        let query = _supabase.from('topics').select('id').eq('name', name).eq('book_id', bookId);
+        if (excludeId) query = query.neq('id', excludeId);
+        const { data } = await query;
+        return data && data.length > 0;
+    }
+    
+    async function checkDuplicateCategory(name, excludeId = null) {
+        let query = _supabase.from('categories').select('id').eq('name', name);
+        if (excludeId) query = query.neq('id', excludeId);
+        const { data } = await query;
+        return data && data.length > 0;
+    }
+    
+    async function checkDuplicateQuestion(questionText, topicId, excludeId = null) {
+        let query = _supabase.from('questions').select('id').eq('question_text', questionText).eq('topic_id', topicId);
+        if (excludeId) query = query.neq('id', excludeId);
+        const { data } = await query;
+        return data && data.length > 0;
+    }
+
     // ============ AUTHENTICATION ============
     async function handleLogin() {
         const email = document.getElementById('loginEmail').value;
         const password = document.getElementById('loginPassword').value;
         
         if (!email || !password) {
-            showToast('Please enter email and password');
+            showToast('Please enter email and password', true);
             return;
         }
         
         const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
         
         if (error) {
-            showToast('Login failed: ' + error.message);
+            showToast('Login failed: ' + error.message, true);
         } else {
             showToast('Login successful!');
             _currentUser = data.user;
@@ -492,8 +473,6 @@
                 document.getElementById('adminFeatures').classList.remove('hidden');
                 document.getElementById('nonAdminView').classList.add('hidden');
                 
-                resetSessionTimer();
-                
                 await Promise.all([
                     loadBooksCached(),
                     loadTopicsCached(),
@@ -504,6 +483,7 @@
                     loadTopicFilterBooksCached(),
                     loadCategoriesCached()
                 ]);
+                resetSessionTimer();
             } else {
                 document.getElementById('adminBadge').classList.add('hidden');
                 document.getElementById('adminFeatures').classList.add('hidden');
@@ -517,12 +497,12 @@
         const password = document.getElementById('signupPassword').value;
         
         if (!email || !password) {
-            showToast('Please enter email and password');
+            showToast('Please enter email and password', true);
             return;
         }
         
         if (password.length < 6) {
-            showToast('Password must be at least 6 characters');
+            showToast('Password must be at least 6 characters', true);
             return;
         }
         
@@ -532,7 +512,7 @@
         });
         
         if (error) {
-            showToast('Signup failed: ' + error.message);
+            showToast('Signup failed: ' + error.message, true);
         } else {
             showToast('Account created! Check your email to confirm.');
             document.getElementById('signupForm').classList.add('hidden');
@@ -541,13 +521,10 @@
     }
 
     async function handleLogout() {
-        if (sessionTimeout) clearTimeout(sessionTimeout);
-        if (sessionTimerInterval) clearInterval(sessionTimerInterval);
-        document.getElementById('sessionTimer').classList.add('hidden');
-        
         await _supabase.auth.signOut();
         _currentUser = null;
         _isAdmin = false;
+        if (sessionTimeout) clearTimeout(sessionTimeout);
         booksCache = null;
         topicsCache = {};
         categoriesCache = null;
@@ -567,25 +544,26 @@
         document.getElementById('loginForm').classList.remove('hidden');
     }
 
-    // ============ OPEN BULK UPLOAD SECURELY ============
-    window.openBulkUploadWithSession = async function() {
-        showToast('Opening bulk upload...');
-        try {
-            const { data: { session } } = await _supabase.auth.getSession();
-            if (!session) {
-                showToast('Please login first', true);
-                return;
-            }
-            const SECRET_KEY = 'BookMCQ_Admin_Secure_Key_2024';
-            sessionStorage.setItem('bookmcq_bulk_access', SECRET_KEY);
-            window.open('bulk-upload.html', '_blank');
-            showToast('Opening bulk upload...');
-        } catch(e) {
-            showToast('Error: ' + e.message, true);
+// ============ OPEN BULK UPLOAD SECURELY ============
+window.openBulkUploadWithSession = async function() {
+    showToast('Opening bulk upload...');
+    try {
+        const { data: { session } } = await _supabase.auth.getSession();
+        if (!session) {
+            showToast('Please login first', true);
+            return;
         }
-    };
+        
+        const SECRET_KEY = 'BookMCQ_Admin_Secure_Key_2024';
+        sessionStorage.setItem('bookmcq_bulk_access', SECRET_KEY);
+        window.open('bulk-upload.html', '_blank');
+        showToast('Opening bulk upload...');
+    } catch(e) {
+        showToast('Error: ' + e.message, true);
+    }
+};
 
-    // ============ CACHED CATEGORIES ============
+    // ============ CACHED CATEGORIES with Duplicate Check ============
     async function loadCategoriesCached() {
         if (categoriesCache !== null) {
             renderCategories(categoriesCache);
@@ -649,19 +627,19 @@
         const name = document.getElementById('editCategoryName').value;
         
         if (!name) {
-            showToast('Please enter a category name');
+            showToast('Please enter a category name', true);
             return;
         }
         
-        const isDuplicate = await checkDuplicateCategory(name, id);
-        if (isDuplicate) {
-            showToast('❌ Category with this name already exists!');
+        const duplicate = await checkDuplicateCategory(name, id);
+        if (duplicate) {
+            showToast('Category already exists!', true);
             return;
         }
         
         const { error } = await _supabase.from('categories').update({ name }).eq('id', id);
         if (error) {
-            showToast('Error: ' + error.message);
+            showToast('Error: ' + error.message, true);
         } else {
             showToast('Category updated!');
             document.getElementById('editCategoryModal').classList.add('hidden');
@@ -685,19 +663,19 @@
         const name = document.getElementById('categoryName').value;
         
         if (!name) {
-            showToast('Please enter a category name');
+            showToast('Please enter a category name', true);
             return;
         }
         
-        const isDuplicate = await checkDuplicateCategory(name);
-        if (isDuplicate) {
-            showToast('❌ Category with this name already exists!');
+        const duplicate = await checkDuplicateCategory(name);
+        if (duplicate) {
+            showToast('Category already exists!', true);
             return;
         }
         
         const { error } = await _supabase.from('categories').insert([{ name }]);
         if (error) {
-            showToast('Error: ' + error.message);
+            showToast('Error: ' + error.message, true);
         } else {
             showToast('Category added!');
             document.getElementById('addCategoryForm').classList.add('hidden');
@@ -708,7 +686,7 @@
         }
     }
 
-    // ============ CACHED BOOKS ============
+    // ============ CACHED BOOKS with Duplicate Check ============
     async function loadBooksCached() {
         const container = document.getElementById('booksList');
         
@@ -808,19 +786,19 @@
         const author = document.getElementById('bookAuthor').value;
         
         if (!category || !title) {
-            showToast('Please select a category and enter a book title');
+            showToast('Please select a category and enter a book title', true);
             return;
         }
         
-        const isDuplicate = await checkDuplicateBook(title, category);
-        if (isDuplicate) {
-            showToast('❌ A book with this title and category already exists!');
+        const duplicate = await checkDuplicateBook(title, category);
+        if (duplicate) {
+            showToast('Book already exists in this category!', true);
             return;
         }
         
         const { error } = await _supabase.from('books').insert([{ category, title, author }]);
         if (error) {
-            showToast('Error: ' + error.message);
+            showToast('Error: ' + error.message, true);
         } else {
             showToast('Book added!');
             document.getElementById('addBookForm').classList.add('hidden');
@@ -847,19 +825,19 @@
         const author = document.getElementById('editBookAuthor').value;
         
         if (!category || !title) {
-            showToast('Please select a category and enter a book title');
+            showToast('Please select a category and enter a book title', true);
             return;
         }
         
-        const isDuplicate = await checkDuplicateBook(title, category, id);
-        if (isDuplicate) {
-            showToast('❌ A book with this title and category already exists!');
+        const duplicate = await checkDuplicateBook(title, category, id);
+        if (duplicate) {
+            showToast('Another book with same title already exists in this category!', true);
             return;
         }
         
         const { error } = await _supabase.from('books').update({ category, title, author }).eq('id', id);
         if (error) {
-            showToast('Error: ' + error.message);
+            showToast('Error: ' + error.message, true);
         } else {
             showToast('Book updated!');
             document.getElementById('editBookModal').classList.add('hidden');
@@ -868,7 +846,7 @@
         }
     }
 
-    // ============ CACHED TOPICS ============
+    // ============ CACHED TOPICS with Duplicate Check ============
     async function loadTopicFilterBooksCached() {
         if (booksCache !== null) {
             renderTopicFilterBooks(booksCache);
@@ -947,13 +925,13 @@
         const chapterNumber = document.getElementById('chapterNumber').value;
         
         if (!bookId || !name) {
-            showToast('Please select a book and enter a topic name');
+            showToast('Please select a book and enter a topic name', true);
             return;
         }
         
-        const isDuplicate = await checkDuplicateTopic(bookId, name);
-        if (isDuplicate) {
-            showToast('❌ A topic with this name already exists for this book!');
+        const duplicate = await checkDuplicateTopic(name, parseInt(bookId));
+        if (duplicate) {
+            showToast('Topic already exists for this book!', true);
             return;
         }
         
@@ -965,7 +943,7 @@
         
         const { error } = await _supabase.from('topics').insert([topicData]);
         if (error) {
-            showToast('Error: ' + error.message);
+            showToast('Error: ' + error.message, true);
         } else {
             showToast('Topic added!');
             document.getElementById('addTopicForm').classList.add('hidden');
@@ -990,13 +968,17 @@
         const bookId = document.getElementById('editTopicBookId')?.value;
         
         if (!name) {
-            showToast('Please enter a topic name');
+            showToast('Please enter a topic name', true);
             return;
         }
         
-        const isDuplicate = await checkDuplicateTopic(bookId, name, id);
-        if (isDuplicate) {
-            showToast('❌ A topic with this name already exists for this book!');
+        // Get current topic to find its book_id
+        const { data: currentTopic } = await _supabase.from('topics').select('book_id').eq('id', id).single();
+        const targetBookId = bookId || currentTopic?.book_id;
+        
+        const duplicate = await checkDuplicateTopic(name, targetBookId, id);
+        if (duplicate) {
+            showToast('Another topic with same name already exists for this book!', true);
             return;
         }
         
@@ -1006,12 +988,47 @@
         }).eq('id', id);
         
         if (error) {
-            showToast('Error: ' + error.message);
+            showToast('Error: ' + error.message, true);
         } else {
             showToast('Topic updated!');
             document.getElementById('editTopicModal').classList.add('hidden');
             topicsCache = {};
             await Promise.all([loadTopicsCached(), loadFilterBooksCached()]);
+        }
+    }
+    
+    // Add book_id to edit topic modal
+    window.openEditTopicModal = function(id, name, chapterNumber) {
+        document.getElementById('editTopicId').value = id;
+        document.getElementById('editTopicName').value = name;
+        document.getElementById('editChapterNumber').value = chapterNumber;
+        // Load books into edit topic modal
+        loadBookSelectForEditTopic();
+        document.getElementById('editTopicModal').classList.remove('hidden');
+    };
+    
+    async function loadBookSelectForEditTopic() {
+        if (booksCache !== null) {
+            const select = document.getElementById('editTopicBookId');
+            if (select) {
+                select.innerHTML = '<option value="">Select Book</option>';
+                booksCache.forEach(book => {
+                    select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+                });
+            }
+            return;
+        }
+        
+        const { data } = await _supabase.from('books').select('id, title');
+        if (data) {
+            booksCache = data;
+            const select = document.getElementById('editTopicBookId');
+            if (select) {
+                select.innerHTML = '<option value="">Select Book</option>';
+                data.forEach(book => {
+                    select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+                });
+            }
         }
     }
 
@@ -1036,18 +1053,9 @@
                 select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
             });
         }
-        
-        // Also populate for edit modal
-        const editSelect = document.getElementById('editTopicBookId');
-        if (editSelect && books) {
-            editSelect.innerHTML = '<option value="">Select Book</option>';
-            books.forEach(book => {
-                editSelect.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
-            });
-        }
     }
 
-    // ============ CACHED QUESTIONS HELPERS ============
+    // ============ CACHED QUESTIONS HELPERS with Duplicate Check ============
     async function loadBookSelectsCached() {
         if (booksCache !== null) {
             renderBookSelects(booksCache);
@@ -1164,7 +1172,7 @@
         topicSelect.value = '';
     }
 
-    // ============ QUESTIONS ============
+    // ============ QUESTIONS with Duplicate Check ============
     async function loadQuestions() {
         const container = document.getElementById('questionsList');
         container.innerHTML = '<div class="skeleton h-24 rounded-lg mb-2"></div><div class="skeleton h-24 rounded-lg"></div>';
@@ -1275,7 +1283,7 @@
         }
     }
 
-    // ============ SINGLE QUESTION ADD ============
+    // ============ SINGLE QUESTION ADD with Duplicate Check ============
     window.deleteQuestion = async function(id) {
         if (confirm('Delete this question?')) {
             await _supabase.from('options').delete().eq('question_id', id);
@@ -1299,13 +1307,13 @@
         const explanation = document.getElementById('explanation').value;
         
         if (!topicId || !questionText || options.some(opt => !opt)) {
-            showToast('Please fill all required fields');
+            showToast('Please fill all required fields', true);
             return;
         }
         
-        const isDuplicate = await checkDuplicateQuestion(topicId, questionText);
-        if (isDuplicate) {
-            showToast('❌ This question already exists in the selected topic!');
+        const duplicate = await checkDuplicateQuestion(questionText, parseInt(topicId));
+        if (duplicate) {
+            showToast('This question already exists in this topic!', true);
             return;
         }
         
@@ -1318,7 +1326,7 @@
         }]).select();
         
         if (qError) {
-            showToast('Error: ' + qError.message);
+            showToast('Error: ' + qError.message, true);
             return;
         }
         
@@ -1344,7 +1352,7 @@
     window.openEditQuestionModal = async function(id) {
         const { data, error } = await _supabase.from('questions').select('*, options(*)').eq('id', id).single();
         if (error) {
-            showToast('Error loading question');
+            showToast('Error loading question', true);
             return;
         }
         
@@ -1377,16 +1385,15 @@
         const explanation = document.getElementById('editExplanation').value;
         
         if (!questionText || options.some(opt => !opt)) {
-            showToast('Please fill all required fields');
+            showToast('Please fill all required fields', true);
             return;
         }
         
-        // Get current question to check topic_id
+        // Get current question to find its topic_id
         const { data: currentQ } = await _supabase.from('questions').select('topic_id').eq('id', id).single();
-        
-        const isDuplicate = await checkDuplicateQuestion(currentQ.topic_id, questionText, id);
-        if (isDuplicate) {
-            showToast('❌ This question already exists in the selected topic!');
+        const duplicate = await checkDuplicateQuestion(questionText, currentQ.topic_id, id);
+        if (duplicate) {
+            showToast('Another question with same text already exists in this topic!', true);
             return;
         }
         
@@ -1398,7 +1405,7 @@
         }).eq('id', id);
         
         if (qError) {
-            showToast('Error: ' + qError.message);
+            showToast('Error: ' + qError.message, true);
             return;
         }
         
@@ -1498,19 +1505,6 @@
         }
     }
 
-    // Add editTopicBookId to edit modal
-    const editTopicModal = document.getElementById('editTopicModal');
-    if (editTopicModal) {
-        const modalContent = editTopicModal.querySelector('.modal-content');
-        if (modalContent && !document.getElementById('editTopicBookId')) {
-            const bookSelect = document.createElement('select');
-            bookSelect.id = 'editTopicBookId';
-            bookSelect.className = 'w-full p-2 border rounded mb-2';
-            bookSelect.innerHTML = '<option value="">Select Book</option>';
-            modalContent.insertBefore(bookSelect, modalContent.querySelector('#editTopicName'));
-        }
-    }
-
     function setupEventListeners() {
         document.getElementById('loginBtn').addEventListener('click', handleLogin);
         document.getElementById('signupBtn').addEventListener('click', handleSignup);
@@ -1601,6 +1595,16 @@
         document.getElementById('closeQuestionModal').addEventListener('click', () => {
             document.getElementById('editQuestionModal').classList.add('hidden');
         });
+    }
+
+    // Add missing edit topic book select
+    const editTopicModal = document.getElementById('editTopicModal');
+    if (editTopicModal) {
+        const bookSelectHtml = '<select id="editTopicBookId" class="w-full p-2 border rounded mb-2"><option value="">Select Book</option></select>';
+        const topicNameInput = document.getElementById('editTopicName');
+        if (topicNameInput) {
+            topicNameInput.insertAdjacentHTML('beforebegin', bookSelectHtml);
+        }
     }
 
     setupEventListeners();
