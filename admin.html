@@ -222,7 +222,6 @@
                 </div>
             </div>
 
-            <!-- Bulk Upload Tab - Opens Separate Page -->
 <!-- Bulk Upload Tab - Opens Separate Page with Session -->
 <div id="bulkUploadTab" class="hidden">
     <div class="text-center py-12">
@@ -238,7 +237,6 @@
         <p class="text-sm text-gray-500 mt-4">Click to open bulk upload with your current session</p>
     </div>
 </div>
-
             <!-- Admins Tab -->
             <div id="adminsTab" class="hidden">
                 <h2 class="text-xl font-bold mb-4">👑 Admin Users</h2>
@@ -1470,6 +1468,39 @@ async function openBulkUploadWithSession() {
 
     setupEventListeners();
     checkSession();
+    // ============ OPEN BULK UPLOAD WITH SESSION USING LOCALSTORAGE ============
+async function openBulkUploadWithSession() {
+    showToast('Opening bulk upload...');
+    
+    try {
+        // Get current session
+        const { data: { session } } = await _supabase.auth.getSession();
+        
+        if (!session) {
+            showToast('Please login first', true);
+            return;
+        }
+        
+        // Store session in localStorage for the bulk upload page to read
+        localStorage.setItem('bulk_upload_session', JSON.stringify({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+            expires_at: session.expires_at
+        }));
+        
+        // Open bulk upload page
+        window.open('bulk-upload.html', '_blank');
+        
+        // Clear after 30 seconds (so it doesn't stay forever)
+        setTimeout(() => {
+            localStorage.removeItem('bulk_upload_session');
+        }, 30000);
+        
+        showToast('Opening bulk upload...');
+    } catch(e) {
+        showToast('Error: ' + e.message, true);
+    }
+}
 </script>
 </body>
 </html>
