@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Bulk Upload - BookMCQ</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
@@ -23,7 +23,6 @@
 
 <div class="max-w-4xl mx-auto">
     
-    <!-- Header -->
     <div class="text-center mb-8">
         <div class="inline-flex items-center gap-2 bg-white/20 backdrop-blur rounded-full px-6 py-2 mb-4">
             <i class="fas fa-upload text-white"></i>
@@ -33,17 +32,14 @@
         <p class="text-white/70 mt-2">Upload hundreds of MCQs at once using CSV or Excel files</p>
     </div>
 
-    <!-- Main Card -->
     <div class="upload-card p-6 md:p-8 shadow-xl">
         
-        <!-- Back Link -->
         <div class="mb-6">
             <a href="admin.html" class="text-purple-600 hover:text-purple-800 inline-flex items-center gap-2">
                 <i class="fas fa-arrow-left"></i> Back to Admin Panel
             </a>
         </div>
 
-        <!-- Step 1: Select Book -->
         <div class="bg-blue-50 p-4 rounded-lg mb-6">
             <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
                 <span class="bg-blue-600 text-white rounded-full w-6 h-6 inline-flex items-center justify-center text-sm">1</span>
@@ -54,7 +50,6 @@
             </div>
         </div>
 
-        <!-- Step 2: Select Topic -->
         <div class="bg-blue-50 p-4 rounded-lg mb-6">
             <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
                 <span class="bg-blue-600 text-white rounded-full w-6 h-6 inline-flex items-center justify-center text-sm">2</span>
@@ -65,7 +60,6 @@
             </select>
         </div>
 
-        <!-- Step 3: Download Template -->
         <div class="bg-green-50 p-4 rounded-lg mb-6">
             <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
                 <span class="bg-green-600 text-white rounded-full w-6 h-6 inline-flex items-center justify-center text-sm">3</span>
@@ -77,7 +71,6 @@
             </button>
         </div>
 
-        <!-- Step 4: Upload File -->
         <div class="bg-purple-50 p-4 rounded-lg mb-6">
             <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
                 <span class="bg-purple-600 text-white rounded-full w-6 h-6 inline-flex items-center justify-center text-sm">4</span>
@@ -89,31 +82,50 @@
             </button>
         </div>
         
-        <!-- Preview Section -->
         <div id="previewDiv" style="margin-top: 15px; display: none;"></div>
     </div>
 </div>
 
 <script>
-    // ============ SUPABASE CONFIGURATION ============
+    // Get token from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const accessToken = urlParams.get('token');
+    
     const SUPABASE_URL = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
     
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    
-    // ============ CACHE SYSTEM ============
+    let supabase = null;
     let booksCache = null;
     let topicsCache = {};
     let isLoading = false;
     let currentQuestions = [];
     
-    // Load books with caching
+    async function initSupabase() {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // If we have a token from URL, set the session
+        if (accessToken) {
+            try {
+                // Get user info from token
+                const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+                if (!error && user) {
+                    // Set the session
+                    await supabase.auth.setSession({ access_token: accessToken, refresh_token: '' });
+                }
+            } catch(e) {
+                console.log('Token auth error:', e);
+            }
+        }
+        
+        // Now load books
+        loadBooks();
+    }
+    
     async function loadBooks() {
         if (booksCache !== null) {
             renderBookSelect(booksCache);
             return;
         }
-        
         if (isLoading) return;
         isLoading = true;
         
@@ -123,18 +135,15 @@
             booksCache = data;
             renderBookSelect(data);
         } catch(e) {
-            renderBookSelect(null, e.message);
+            console.error('Error loading books:', e);
+            document.getElementById('bookSelectContainer').innerHTML = '<div class="text-red-600 p-3 border rounded-xl bg-red-50">Error loading books. Please make sure you are logged in.</div>';
         } finally {
             isLoading = false;
         }
     }
     
-    function renderBookSelect(books, errorMsg = null) {
+    function renderBookSelect(books) {
         const container = document.getElementById('bookSelectContainer');
-        if (errorMsg) {
-            container.innerHTML = `<div class="text-red-600 p-3 border rounded-xl bg-red-50">Error: ${errorMsg}</div>`;
-            return;
-        }
         if (!books || books.length === 0) {
             container.innerHTML = '<select id="bookSelect" class="w-full p-3 border rounded-xl bg-white"><option value="">-- No books found --</option></select>';
             return;
@@ -189,15 +198,6 @@
         topicSelect.innerHTML = html;
     }
     
-    async function preloadTopicsForBooks(books) {
-        if (!books || books.length === 0) return;
-        const promises = books.map(book => 
-            supabase.from('topics').select('id, name, chapter_number').eq('book_id', book.id)
-                .then(({ data }) => { if (data) topicsCache[book.id] = data; })
-        );
-        await Promise.all(promises);
-    }
-    
     function downloadTemplate() {
         const headers = ['question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'difficulty', 'explanation'];
         const example = ['What does typeof null return?', 'null', 'undefined', 'object', 'number', '2', 'easy', 'Historical bug'];
@@ -224,7 +224,7 @@
                 const previewDiv = document.getElementById('previewDiv');
                 const uploadBtn = document.getElementById('uploadBtn');
                 let html = '<h3 class="font-bold text-gray-700 mb-2">📋 Preview (first 3 rows):</h3>';
-                html += '<div class="preview-table">58bye';
+                html += '<div class="preview-table"><table>';
                 const headers = Object.keys(rows[0]);
                 html += '<thead><tr style="background:#0f0f1a;">' + headers.map(h => `<th style="padding:8px; border:1px solid #ccc; text-align:left;">${h}</th>`).join('') + '</thead><tbody>';
                 for (let i = 0; i < Math.min(3, rows.length); i++) {
@@ -288,7 +288,6 @@
         return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
     }
     
-    // Set up event listeners
     document.addEventListener('change', function(e) {
         if (e.target && e.target.id === 'bookSelect') loadTopics();
     });
@@ -298,10 +297,8 @@
     });
     document.getElementById('uploadBtn').addEventListener('click', uploadToDatabase);
     
-    // Start loading books
-    loadBooks().then(() => {
-        if (booksCache && booksCache.length > 0) preloadTopicsForBooks(booksCache);
-    });
+    // Start
+    initSupabase();
 </script>
 </body>
 </html>
