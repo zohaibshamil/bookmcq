@@ -113,7 +113,7 @@
                 <div id="topicsList"></div>
             </div>
 
-            <!-- Questions Tab with Fixed Filter -->
+            <!-- Questions Tab -->
             <div id="questionsTab" class="hidden">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-xl font-bold">Questions</h2>
@@ -216,7 +216,7 @@
                         <div class="overflow-x-auto">
                             <table id="previewTable" class="min-w-full bg-white border rounded-lg text-sm">
                                 <thead class="bg-gray-100">
-                                    <tr id="previewHeader"></table>
+                                    <tr id="previewHeader"><tr>
                                 </thead>
                                 <tbody id="previewBody"></tbody>
                             </table>
@@ -349,6 +349,7 @@
     const PAGE_SIZE = 15;
     let totalQuestions = 0;
     let currentFilters = { bookId: '', topicId: '', difficulty: '' };
+    let allQuestions = []; // Store all questions for sequential numbering
 
     function showToast(message) {
         const toast = document.getElementById('toast');
@@ -479,7 +480,7 @@
         document.getElementById('loginForm').classList.remove('hidden');
     }
 
-    // ============ BOOKS with Edit ============
+    // ============ BOOKS ============
     async function loadBooks() {
         const { data, error } = await _supabase.from('books').select('*').order('id', { ascending: false });
         const container = document.getElementById('booksList');
@@ -561,7 +562,7 @@
         }
     }
 
-    // ============ TOPICS with Edit ============
+    // ============ TOPICS ============
     async function loadTopics() {
         const { data, error } = await _supabase.from('topics').select('*, books(title)').order('chapter_number', { ascending: true, nullsFirst: false }).order('id', { ascending: true });
         const container = document.getElementById('topicsList');
@@ -670,14 +671,13 @@
         }
     }
 
-    // ============ QUESTIONS with Fixed Filter ============
+    // ============ QUESTIONS with Sequential Numbering ============
     async function loadQuestions() {
         const container = document.getElementById('questionsList');
         container.innerHTML = '<div class="skeleton h-24 rounded-lg mb-2"></div><div class="skeleton h-24 rounded-lg"></div>';
         
         let query = _supabase.from('questions').select('*, topics(name, chapter_number, book_id)', { count: 'exact' });
         
-        // Apply filters correctly
         if (currentFilters.topicId && currentFilters.topicId !== '') {
             query = query.eq('topic_id', parseInt(currentFilters.topicId));
         }
@@ -688,7 +688,7 @@
         const from = (currentPage - 1) * PAGE_SIZE;
         const to = from + PAGE_SIZE - 1;
         
-        const { data, error, count } = await query.range(from, to).order('id', { ascending: false });
+        const { data, error, count } = await query.range(from, to).order('id', { ascending: true });
         
         if (error) {
             container.innerHTML = '<p class="text-gray-500">Error loading questions</p>';
@@ -703,7 +703,11 @@
             return;
         }
         
-        container.innerHTML = data.map(q => {
+        // Calculate sequential numbering based on page and index
+        const startNumber = (currentPage - 1) * PAGE_SIZE + 1;
+        
+        container.innerHTML = data.map((q, index) => {
+            const sequentialNumber = startNumber + index;
             const topicDisplay = q.topics?.chapter_number ? 
                 `Ch ${q.topics.chapter_number}: ${escapeHtml(q.topics.name)}` : 
                 escapeHtml(q.topics?.name || 'Unknown');
@@ -711,7 +715,7 @@
             <div class="bg-gray-50 p-3 rounded-lg mb-2">
                 <div class="flex justify-between items-start">
                     <div class="flex-1">
-                        <p class="font-bold text-sm">Q${q.id}. ${escapeHtml(q.question_text)}</p>
+                        <p class="font-bold text-sm">Q${sequentialNumber}. ${escapeHtml(q.question_text)}</p>
                         <p class="text-xs text-gray-600 mt-1">Topic: ${topicDisplay} | Difficulty: ${q.difficulty}</p>
                     </div>
                     <div class="flex gap-2 ml-2">
@@ -751,19 +755,15 @@
             });
         }
         
-        // Reset topic filter when book changes
         currentFilters.topicId = '';
         topicSelect.value = '';
     }
     
-    // Apply filters and reload questions
     async function applyFilters() {
         currentFilters.bookId = document.getElementById('filterBookId').value;
         currentFilters.topicId = document.getElementById('filterTopicId').value;
         currentFilters.difficulty = document.getElementById('filterDifficulty').value;
         currentPage = 1;
-        
-        // Reload questions with new filters
         await loadQuestions();
     }
     
@@ -1269,7 +1269,7 @@
         document.getElementById('saveQuestionBtn').addEventListener('click', addQuestion);
         document.getElementById('questionBookId').addEventListener('change', loadTopicsForQuestion);
         
-        // Fixed: Filter events
+        // Filter events
         const filterBook = document.getElementById('filterBookId');
         if (filterBook) {
             filterBook.addEventListener('change', async () => {
