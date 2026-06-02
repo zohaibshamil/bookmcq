@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk Upload - BookMCQ</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #1a1a2e; color: #eee; }
+        .container { max-width: 800px; margin: 0 auto; background: #16213e; padding: 20px; border-radius: 10px; }
+        select, button, input { padding: 10px; margin: 5px; border-radius: 5px; border: none; background: #0f0f1a; color: white; width: 100%; box-sizing: border-box; }
+        button { background: #0f3460; cursor: pointer; }
+        button:hover { background: #e94560; }
+        .log { background: #0f0f1a; padding: 10px; margin-top: 20px; border-radius: 5px; height: 200px; overflow-y: auto; font-size: 11px; font-family: monospace; }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .info { color: #2196F3; }
+        .section { margin-top: 20px; }
+        .back-link { display: inline-block; margin-bottom: 20px; color: #60a5fa; text-decoration: none; }
+        .back-link:hover { text-decoration: underline; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+<div class="container">
+    <a href="admin.html" class="back-link">← Back to Admin Panel</a>
+    <h1>📤 Bulk Upload Questions</h1>
+    
+    <div class="log" id="log">
+        <div class="info">[Initializing] Loading...</div>
+    </div>
+    
+    <div class="section">
+        <h3>Step 1: Select Book</h3>
+        <select id="bookSelect">
+            <option>Loading books...</option>
+        </select>
+    </div>
+    
+    <div class="section">
+        <h3>Step 2: Select Topic</h3>
+        <select id="topicSelect">
+            <option>Select book first</option>
+        </select>
+    </div>
+    
+    <div class="section">
+        <h3>Step 3: Download Template</h3>
+        <button id="downloadBtn">📥 Download CSV Template</button>
+    </div>
+    
+    <div class="section">
+        <h3>Step 4: Upload CSV/Excel File</h3>
+        <input type="file" id="fileInput" accept=".csv,.xlsx,.xls">
+        <button id="uploadBtn" style="display: none; margin-top: 10px;">📤 Upload to Database</button>
+    </div>
+    
+    <div id="previewDiv" style="margin-top: 15px; display: none;"></div>
+</div>
+
+<script>
+    // Log function
+    function addLog(msg, type = 'info') {
+        const logDiv = document.getElementById('log');
+        const entry = document.createElement('div');
+        entry.className = type;
+        entry.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        logDiv.appendChild(entry);
+        logDiv.scrollTop = logDiv.scrollHeight;
+        console.log(msg);
+    }
+    
+    addLog('Script started', 'info');
+    
+    // Supabase config
+    const SUPABASE_URL = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
+    
+    let supabase = null;
+    let currentQuestions = [];
+    
+    // Initialize Supabase
+    function init() {
+        addLog('Creating Supabase client...', 'info');
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        addLog('✅ Supabase client ready', 'success');
+        loadBooks();
+    }
+    
+    // Load books
+    async function loadBooks() {
+        addLog('Fetching books from database...', 'info');
+        try {
+            const { data, error } = await supabase.from('books').select('id, title').order('title');
+            if (error) throw error;
+            
+            addLog(`✅ Found ${data.length} books`, 'success');
+            const select = document.getElementById('bookSelect');
+            select.innerHTML = '<option value="">-- Select a Book --</option>';
+            data.forEach(book => {
+                select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+            });
+        } catch(e) {
+            addLog(`❌ Error: ${e.message}`, 'error');
+        }
+    }
+    
+    // Load topics
+    async function loadTopics() {
+        const bookId = document.getElementById('bookSelect').value;
+        if (!bookId) {
+            document.getElementById('topicSelect').innerHTML = '<option>Select book first</option>';
+            return;
+        }
+        
+        addLog(`Loading topics for book ${bookId}...`, 'info');
+        try {
+            const { data, error } = await supabase.from('topics')
+                .select('id, name, chapter_number')
+                .eq('book_id', parseInt(bookId))
+                .order('chapter_number');
+            
+            if (error) throw error;
+            
+            addLog(`✅ Found ${data.length} topics`, 'success');
+            const select = document.getElementById('topicSelect');
+            select.innerHTML = '<option value="">-- Select a Topic --</option>';
+            data.forEach(topic => {
+                const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
+                select.innerHTML += `<option value="${topic.id}">${display}</option>`;
+            });
+        } catch(e) {
+            addLog(`❌ Error: ${e.message}`, 'error');
+        }
+    }
+    
+    // Download template
+    function downloadTemplate() {
+        addLog('Generating CSV template...', 'info');
+        const headers = ['question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'difficulty', 'explanation'];
+        const example = ['What does typeof null return?', 'null', 'undefined', 'object', 'number', '2', 'easy', 'Historical bug'];
+        const csv = [headers.join(','), example.join(',')].join('\n');
+        
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'bookmcq_template.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+        addLog('✅ Template downloaded', 'success');
+    }
+    
+    // Process uploaded file
+    function processFile(file) {
+        addLog(`Processing: ${file.name}`, 'info');
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(sheet);
+                
+                addLog(`✅ Loaded ${rows.length} questions`, 'success');
+                if (rows.length === 0) return;
+                
+                currentQuestions = rows;
+                
+                // Show preview
+                const previewDiv = document.getElementById('previewDiv');
+                const uploadBtn = document.getElementById('uploadBtn');
+                
+                let html = '<h3>Preview (first 3 rows):</h3>';
+                html += '<div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse;">';
+                const headers = Object.keys(rows[0]);
+                html += '<tr style="background:#0f0f1a;">' + headers.map(h => `<th style="padding:8px; border:1px solid #333; text-align:left;">${h}</th>`).join('') + '</tr>';
+                for (let i = 0; i < Math.min(3, rows.length); i++) {
+                    html += '<tr>' + headers.map(h => `<td style="padding:8px; border:1px solid #333;">${escapeHtml(String(rows[i][h] || '').substring(0, 50))}</td>`).join('') + '</tr>';
+                }
+                html += '</table></div>';
+                html += `<p style="margin-top:10px;"><strong>✅ ${rows.length} questions ready to upload</strong></p>`;
+                
+                previewDiv.innerHTML = html;
+                previewDiv.style.display = 'block';
+                uploadBtn.style.display = 'inline-block';
+            } catch(e) {
+                addLog(`❌ Parse error: ${e.message}`, 'error');
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+    
+    // Upload to database
+    async function uploadToDatabase() {
+        const bookId = document.getElementById('bookSelect').value;
+        const topicId = document.getElementById('topicSelect').value;
+        
+        if (!bookId || !topicId) {
+            addLog('❌ Please select both a book and a topic', 'error');
+            return;
+        }
+        
+        if (!currentQuestions.length) {
+            addLog('❌ No questions to upload', 'error');
+            return;
+        }
+        
+        addLog(`📤 Uploading ${currentQuestions.length} questions...`, 'info');
+        let success = 0, failed = 0;
+        
+        for (let i = 0; i < currentQuestions.length; i++) {
+            const q = currentQuestions[i];
+            try {
+                const { data, error } = await supabase.from('questions').insert({
+                    topic_id: parseInt(topicId),
+                    question_text: q.question_text,
+                    difficulty: q.difficulty || 'medium',
+                    correct_answer: parseInt(q.correct_answer),
+                    explanation: q.explanation || ''
+                }).select();
+                
+                if (error) throw error;
+                
+                const options = [q.option_a, q.option_b, q.option_c, q.option_d];
+                for (let j = 0; j < options.length; j++) {
+                    await supabase.from('options').insert({
+                        question_id: data[0].id,
+                        option_text: options[j],
+                        option_index: j
+                    });
+                }
+                success++;
+                addLog(`✅ ${i+1}/${currentQuestions.length} uploaded`, 'success');
+            } catch(e) {
+                failed++;
+                addLog(`❌ ${i+1}/${currentQuestions.length} failed: ${e.message}`, 'error');
+            }
+        }
+        
+        addLog(`📊 Complete: ${success} uploaded, ${failed} failed`, success > 0 ? 'success' : 'error');
+        alert(`Upload complete!\n${success} questions added\n${failed} failed`);
+        
+        if (success > 0) {
+            document.getElementById('previewDiv').style.display = 'none';
+            document.getElementById('uploadBtn').style.display = 'none';
+            document.getElementById('fileInput').value = '';
+            currentQuestions = [];
+        }
+    }
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
+    }
+    
+    // Set up event listeners
+    document.getElementById('bookSelect').addEventListener('change', loadTopics);
+    document.getElementById('downloadBtn').addEventListener('click', downloadTemplate);
+    document.getElementById('fileInput').addEventListener('change', e => {
+        if (e.target.files && e.target.files[0]) processFile(e.target.files[0]);
+    });
+    document.getElementById('uploadBtn').addEventListener('click', uploadToDatabase);
+    
+    // Start
+    init();
+</script>
+</body>
+</html>
