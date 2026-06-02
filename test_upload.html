@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Bulk Upload Test</title>
+    <title>Debug Bulk Upload</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
@@ -11,11 +11,18 @@
 <body class="p-8 bg-gray-100">
 
 <div class="max-w-2xl mx-auto bg-white rounded-xl p-8 shadow-lg">
-    <h1 class="text-2xl font-bold mb-6">Simple Bulk Upload Test</h1>
+    <h1 class="text-2xl font-bold mb-6">Debug Bulk Upload</h1>
     
-    <!-- Simple visible status -->
-    <div id="simpleStatus" class="mb-4 p-3 bg-blue-100 rounded-lg font-bold">
-        Loading...
+    <!-- Error Display -->
+    <div id="errorBox" class="mb-4 p-3 bg-red-100 border border-red-400 rounded-lg hidden">
+        <strong class="text-red-700">Error:</strong>
+        <p id="errorMessage" class="text-red-600 text-sm mt-1"></p>
+    </div>
+    
+    <!-- Success Display -->
+    <div id="successBox" class="mb-4 p-3 bg-green-100 border border-green-400 rounded-lg hidden">
+        <strong class="text-green-700">Success:</strong>
+        <p id="successMessage" class="text-green-600 text-sm mt-1"></p>
     </div>
     
     <!-- Step 1: Select Book and Topic -->
@@ -66,14 +73,35 @@
             <p id="progressText" class="text-sm text-gray-600 mt-1"></p>
         </div>
     </div>
+    
+    <!-- Status -->
+    <div id="statusDiv" class="p-3 bg-gray-100 rounded-lg text-sm">
+        Waiting for action...
+    </div>
 </div>
 
 <script>
-    // Show status
-    function setStatus(message, isError = false) {
-        const statusDiv = document.getElementById('simpleStatus');
+    function showError(message) {
+        const errorBox = document.getElementById('errorBox');
+        const errorMessage = document.getElementById('errorMessage');
+        errorMessage.innerHTML = message;
+        errorBox.classList.remove('hidden');
+        setTimeout(() => errorBox.classList.add('hidden'), 8000);
+        console.error(message);
+    }
+    
+    function showSuccess(message) {
+        const successBox = document.getElementById('successBox');
+        const successMessage = document.getElementById('successMessage');
+        successMessage.innerHTML = message;
+        successBox.classList.remove('hidden');
+        setTimeout(() => successBox.classList.add('hidden'), 5000);
+        console.log(message);
+    }
+    
+    function updateStatus(message) {
+        const statusDiv = document.getElementById('statusDiv');
         statusDiv.innerHTML = message;
-        statusDiv.className = `mb-4 p-3 rounded-lg font-bold ${isError ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`;
         console.log(message);
     }
     
@@ -81,37 +109,69 @@
     const SUPABASE_URL = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
     
-    setStatus('Initializing Supabase...');
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    setStatus('Supabase initialized. Loading books...');
+    updateStatus('Initializing Supabase connection...');
     
+    let supabase;
     let currentQuestions = [];
+    
+    try {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        updateStatus('✅ Supabase client created. Testing connection...');
+        testConnection();
+    } catch(e) {
+        showError('Failed to create Supabase client: ' + e.message);
+        updateStatus('❌ Connection failed');
+    }
+    
+    // Test connection
+    async function testConnection() {
+        try {
+            updateStatus('Testing database connection...');
+            const { data, error } = await supabase.from('books').select('count', { count: 'exact', head: true });
+            
+            if (error) {
+                showError('Database connection failed: ' + error.message);
+                updateStatus('❌ Cannot connect to database. Check your internet connection.');
+                return;
+            }
+            
+            updateStatus('✅ Connected to database! Loading books...');
+            loadBooks();
+        } catch(e) {
+            showError('Connection test error: ' + e.message);
+            updateStatus('❌ Connection error: ' + e.message);
+        }
+    }
     
     // Load books
     async function loadBooks() {
         try {
-            setStatus('Fetching books from database...');
+            updateStatus('Fetching books from database...');
             const { data, error } = await supabase.from('books').select('id, title').order('title');
             
             if (error) {
-                setStatus('Error loading books: ' + error.message, true);
+                showError('Error loading books: ' + error.message);
+                updateStatus('❌ Failed to load books');
                 return;
             }
             
             const select = document.getElementById('bookSelect');
-            select.innerHTML = '<option value="">-- Select a Book --</option>';
             
             if (data && data.length > 0) {
+                select.innerHTML = '<option value="">-- Select a Book --</option>';
                 data.forEach(book => {
-                    select.innerHTML += `<option value="${book.id}">${book.title}</option>`;
+                    select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
                 });
-                setStatus(`✅ Loaded ${data.length} books. Select a book to continue.`);
+                updateStatus(`✅ Loaded ${data.length} books. Select a book to continue.`);
+                showSuccess(`Loaded ${data.length} books successfully!`);
             } else {
                 select.innerHTML = '<option value="">No books found</option>';
-                setStatus('❌ No books found. Please add books first.', true);
+                updateStatus('⚠️ No books found. Please add books in the Books tab first.');
+                showError('No books in database. Go to Books tab and add some books first.');
             }
         } catch(e) {
-            setStatus('Error: ' + e.message, true);
+            showError('Load books error: ' + e.message);
+            updateStatus('❌ Error loading books');
         }
     }
     
@@ -122,10 +182,11 @@
         
         if (!bookId) {
             topicSelect.innerHTML = '<option value="">Select book first</option>';
+            updateStatus('Select a book to load its topics');
             return;
         }
         
-        setStatus(`Loading topics for selected book...`);
+        updateStatus(`Loading topics for book ID: ${bookId}...`);
         
         try {
             const { data, error } = await supabase.from('topics')
@@ -134,7 +195,8 @@
                 .order('chapter_number', { ascending: true });
             
             if (error) {
-                setStatus('Error loading topics: ' + error.message, true);
+                showError('Error loading topics: ' + error.message);
+                updateStatus('❌ Failed to load topics');
                 return;
             }
             
@@ -145,44 +207,59 @@
                     const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
                     topicSelect.innerHTML += `<option value="${topic.id}">${display}</option>`;
                 });
-                setStatus(`✅ Loaded ${data.length} topics. Select a topic to continue.`);
+                updateStatus(`✅ Loaded ${data.length} topics for this book.`);
             } else {
                 topicSelect.innerHTML = '<option value="">No topics found</option>';
-                setStatus('❌ No topics found for this book. Please add topics first.', true);
+                updateStatus('⚠️ No topics found for this book. Add topics in Topics tab first.');
+                showError('No topics found for this book. Add topics first.');
             }
         } catch(e) {
-            setStatus('Error: ' + e.message, true);
+            showError('Load topics error: ' + e.message);
+            updateStatus('❌ Error loading topics');
         }
     }
     
     // Download template
     function downloadTemplate() {
-        const headers = ['question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'difficulty', 'explanation'];
-        const exampleRow = [
-            'What does typeof null return?',
-            'null',
-            'undefined',
-            'object',
-            'number',
-            '2',
-            'easy',
-            'This is a historical bug in JavaScript'
-        ];
-        
-        const csvContent = [headers.join(','), exampleRow.join(',')].join('\n');
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'bookmcq_template.csv';
-        a.click();
-        URL.revokeObjectURL(url);
-        setStatus('Template downloaded!');
+        try {
+            const headers = ['question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'difficulty', 'explanation'];
+            const exampleRow = [
+                'What does typeof null return?',
+                'null',
+                'undefined',
+                'object',
+                'number',
+                '2',
+                'easy',
+                'This is a historical bug in JavaScript'
+            ];
+            
+            const csvContent = [headers.join(','), exampleRow.join(',')].join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'bookmcq_template.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            updateStatus('✅ Template downloaded successfully!');
+            showSuccess('CSV template downloaded. Open it in Excel to add your questions.');
+        } catch(e) {
+            showError('Download failed: ' + e.message);
+            updateStatus('❌ Failed to download template');
+        }
     }
     
     // Process file
     function processFile(file) {
-        setStatus(`Processing ${file.name}...`);
+        if (!file) {
+            showError('No file selected');
+            return;
+        }
+        
+        updateStatus(`Processing file: ${file.name} (${Math.round(file.size/1024)} KB)...`);
         
         const reader = new FileReader();
         reader.onload = function(e) {
@@ -193,7 +270,8 @@
                 const rows = XLSX.utils.sheet_to_json(firstSheet);
                 
                 if (rows.length === 0) {
-                    setStatus('No data found in file', true);
+                    showError('No data found in file');
+                    updateStatus('❌ File is empty');
                     return;
                 }
                 
@@ -204,27 +282,32 @@
                 const previewContent = document.getElementById('previewContent');
                 
                 const headers = Object.keys(rows[0]);
-                let html = '<table class="min-w-full border">';
+                let html = '<table class="min-w-full border text-xs">';
                 html += '<tr class="bg-gray-100">';
-                headers.forEach(h => { html += `<th class="border p-1 text-left text-xs">${h}</th>`; });
+                headers.forEach(h => { html += `<th class="border p-1">${h}</th>`; });
                 html += '</tr>';
                 
                 for (let i = 0; i < Math.min(3, rows.length); i++) {
                     html += '<tr>';
-                    headers.forEach(h => { html += `<td class="border p-1 text-xs">${escapeHtml(String(rows[i][h] || ''))}</td>`; });
+                    headers.forEach(h => { html += `<td class="border p-1">${escapeHtml(String(rows[i][h] || ''))}</td>`; });
                     html += '</tr>';
                 }
                 html += '</table>';
-                html += `<p class="mt-2 text-sm">Total: ${rows.length} questions loaded</p>`;
+                html += `<p class="mt-2 text-sm">✅ Total: ${rows.length} questions loaded successfully!</p>`;
                 
                 previewContent.innerHTML = html;
                 previewDiv.classList.remove('hidden');
-                setStatus(`✅ Loaded ${rows.length} questions. Ready to upload.`);
+                updateStatus(`✅ Loaded ${rows.length} questions. Ready to upload.`);
+                showSuccess(`${rows.length} questions loaded. Click "Upload to Database" to add them.`);
             } catch(err) {
-                setStatus('Error parsing file: ' + err.message, true);
+                showError('Error parsing file: ' + err.message);
+                updateStatus('❌ Failed to parse file');
             }
         };
-        reader.onerror = () => setStatus('Error reading file', true);
+        reader.onerror = () => {
+            showError('Error reading file');
+            updateStatus('❌ File read error');
+        };
         reader.readAsArrayBuffer(file);
     }
     
@@ -234,12 +317,14 @@
         const topicId = document.getElementById('topicSelect').value;
         
         if (!bookId || !topicId) {
-            setStatus('Please select both a book and a topic', true);
+            showError('Please select both a book and a topic');
+            updateStatus('❌ Missing book or topic selection');
             return;
         }
         
         if (!currentQuestions || currentQuestions.length === 0) {
-            setStatus('No questions to upload. Please select a file first.', true);
+            showError('No questions to upload. Please select a file first.');
+            updateStatus('❌ No questions loaded');
             return;
         }
         
@@ -248,7 +333,7 @@
         const progressText = document.getElementById('progressText');
         
         progressDiv.classList.remove('hidden');
-        setStatus(`Uploading ${currentQuestions.length} questions...`);
+        updateStatus(`Uploading ${currentQuestions.length} questions to database...`);
         
         let success = 0;
         let failed = 0;
@@ -283,12 +368,13 @@
                 success++;
             } catch(err) {
                 failed++;
-                console.error('Error:', err);
+                console.error('Upload error:', err);
             }
         }
         
         progressText.textContent = `Complete! ${success} uploaded, ${failed} failed`;
-        setStatus(`✅ Upload complete: ${success} questions added, ${failed} failed`);
+        updateStatus(`✅ Upload complete: ${success} questions added, ${failed} failed`);
+        showSuccess(`${success} questions added to database! ${failed > 0 ? `${failed} failed.` : ''}`);
         
         setTimeout(() => {
             progressDiv.classList.add('hidden');
@@ -317,9 +403,6 @@
         }
     });
     document.getElementById('uploadBtn').addEventListener('click', uploadToDatabase);
-    
-    // Load books on page load
-    loadBooks();
 </script>
 </body>
 </html>
