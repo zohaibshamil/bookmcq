@@ -5,134 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Bulk Upload - BookMCQ</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        body { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-        .auth-checking { text-align: center; color: white; }
-        .spinner { border: 3px solid rgba(255,255,255,0.3); border-top: 3px solid white; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 15px; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .hidden { display: none; }
-        .error-message { color: #f87171; margin-top: 10px; }
+        body { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); min-height: 100vh; }
+        .upload-card { background: rgba(255,255,255,0.95); border-radius: 1rem; }
+        .preview-table { overflow-x: auto; }
+        .preview-table table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .preview-table th, .preview-table td { border: 1px solid #e2e8f0; padding: 8px; text-align: left; }
+        .preview-table th { background: #f1f5f9; font-weight: 600; }
+        .skeleton { background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; height: 48px; width: 100%; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
     </style>
 </head>
-<body>
-<div id="authChecking" class="auth-checking">
-    <div class="spinner"></div>
-    <p>Verifying access...</p>
-</div>
+<body class="p-4 md:p-8">
 
-<script>
-    // ============ INSTANT AUTHENTICATION USING LOCALSTORAGE ============
-    const SUPABASE_URL = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
-    
-    let supabase = null;
-    
-    async function verifyAndStart() {
-        try {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-            
-            // First, check if there's a session in localStorage (passed from admin panel)
-            const storedSession = localStorage.getItem('bulk_upload_session');
-            let sessionValid = false;
-            
-            if (storedSession) {
-                try {
-                    const sessionData = JSON.parse(storedSession);
-                    if (sessionData.access_token && sessionData.expires_at > Date.now() / 1000) {
-                        // Set the session using the token
-                        const { data, error } = await supabase.auth.setSession({
-                            access_token: sessionData.access_token,
-                            refresh_token: sessionData.refresh_token
-                        });
-                        if (!error && data.session) {
-                            sessionValid = true;
-                        }
-                    }
-                } catch(e) {
-                    console.log('Error parsing stored session', e);
-                }
-            }
-            
-            // If no valid session from localStorage, check existing session
-            if (!sessionValid) {
-                const { data: { session } } = await supabase.auth.getSession();
-                if (session) {
-                    sessionValid = true;
-                }
-            }
-            
-            if (!sessionValid) {
-                document.getElementById('authChecking').innerHTML = `
-                    <div class="spinner"></div>
-                    <p>Session expired. Redirecting to login...</p>
-                `;
-                setTimeout(() => {
-                    window.location.href = 'admin.html';
-                }, 1500);
-                return;
-            }
-            
-            // Verify admin status
-            const { data: adminData, error: adminError } = await supabase
-                .from('admin_roles')
-                .select('user_id')
-                .limit(1);
-            
-            if (adminError || !adminData || adminData.length === 0) {
-                document.getElementById('authChecking').innerHTML = `
-                    <div class="spinner"></div>
-                    <p>Not authorized. Redirecting...</p>
-                `;
-                setTimeout(() => {
-                    window.location.href = 'admin.html';
-                }, 1500);
-                return;
-            }
-            
-            // Clear the stored session after use
-            localStorage.removeItem('bulk_upload_session');
-            
-            // Authentication successful - load the full page
-            loadFullPage();
-            
-        } catch(e) {
-            document.getElementById('authChecking').innerHTML = `
-                <div class="spinner"></div>
-                <p>Error: ${e.message}. Redirecting...</p>
-            `;
-            setTimeout(() => {
-                window.location.href = 'admin.html';
-            }, 2000);
-        }
-    }
-    
-    function loadFullPage() {
-        // Remove auth checking screen
-        document.getElementById('authChecking').style.display = 'none';
-        document.body.innerHTML = '';
-        
-        // Load all resources
-        const tailwindLink = document.createElement('link');
-        tailwindLink.rel = 'stylesheet';
-        tailwindLink.href = 'https://cdn.tailwindcss.com';
-        document.head.appendChild(tailwindLink);
-        
-        const faLink = document.createElement('link');
-        faLink.rel = 'stylesheet';
-        faLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css';
-        document.head.appendChild(faLink);
-        
-        const sheetScript = document.createElement('script');
-        sheetScript.src = 'https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js';
-        sheetScript.onload = () => {
-            initializeUploadPage();
-        };
-        document.head.appendChild(sheetScript);
-    }
-    
-    function initializeUploadPage() {
-        document.body.innerHTML = `
-<div class="max-w-4xl mx-auto p-4 md:p-8">
+<div class="max-w-4xl mx-auto">
     
     <!-- Header -->
     <div class="text-center mb-8">
@@ -145,7 +34,7 @@
     </div>
 
     <!-- Main Card -->
-    <div class="upload-card p-6 md:p-8 shadow-xl" style="background: rgba(255,255,255,0.95); border-radius: 1rem;">
+    <div class="upload-card p-6 md:p-8 shadow-xl">
         
         <!-- Back Link -->
         <div class="mb-6">
@@ -161,7 +50,7 @@
                 Select Book
             </h3>
             <div id="bookSelectContainer">
-                <div class="skeleton" style="background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; height: 48px; width: 100%;"></div>
+                <div class="skeleton"></div>
             </div>
         </div>
 
@@ -205,26 +94,12 @@
     </div>
 </div>
 
-<style>
-    .upload-card { background: rgba(255,255,255,0.95); border-radius: 1rem; }
-    .preview-table { overflow-x: auto; }
-    .preview-table table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    .preview-table th, .preview-table td { border: 1px solid #e2e8f0; padding: 8px; text-align: left; }
-    .preview-table th { background: #f1f5f9; font-weight: 600; }
-    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-    body { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); min-height: 100vh; }
-</style>
-
 <script>
-    // Log function
-    function addLog(msg, type = 'info') {
-        console.log(msg);
-    }
+    // ============ SUPABASE CONFIGURATION ============
+    const SUPABASE_URL = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
     
-    addLog('Script started', 'info');
-    
-    // Supabase client
-    const supabase = window.supabase.createClient('${SUPABASE_URL}', '${SUPABASE_KEY}');
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
     // ============ CACHE SYSTEM ============
     let booksCache = null;
@@ -235,28 +110,19 @@
     // Load books with caching
     async function loadBooks() {
         if (booksCache !== null) {
-            addLog(`📦 Using cached books (${booksCache.length} books)`, 'success');
             renderBookSelect(booksCache);
             return;
         }
         
-        if (isLoading) {
-            addLog('⏳ Books already loading, waiting...', 'info');
-            return;
-        }
-        
+        if (isLoading) return;
         isLoading = true;
-        addLog('Fetching books from database...', 'info');
         
         try {
             const { data, error } = await supabase.from('books').select('id, title').order('title');
             if (error) throw error;
-            
             booksCache = data;
-            addLog(`✅ Found ${data.length} books (cached)`, 'success');
             renderBookSelect(data);
         } catch(e) {
-            addLog(`❌ Error: ${e.message}`, 'error');
             renderBookSelect(null, e.message);
         } finally {
             isLoading = false;
@@ -265,109 +131,77 @@
     
     function renderBookSelect(books, errorMsg = null) {
         const container = document.getElementById('bookSelectContainer');
-        
         if (errorMsg) {
-            container.innerHTML = '<div class="text-red-600 p-3 border rounded-xl bg-red-50">Error: ' + errorMsg + '</div>';
+            container.innerHTML = `<div class="text-red-600 p-3 border rounded-xl bg-red-50">Error: ${errorMsg}</div>`;
             return;
         }
-        
         if (!books || books.length === 0) {
             container.innerHTML = '<select id="bookSelect" class="w-full p-3 border rounded-xl bg-white"><option value="">-- No books found --</option></select>';
             return;
         }
-        
         let html = '<select id="bookSelect" class="w-full p-3 border rounded-xl bg-white">';
         html += '<option value="">-- Select a Book --</option>';
         books.forEach(book => {
             html += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
         });
         html += '</select>';
-        
         container.innerHTML = html;
-        
         const newSelect = document.getElementById('bookSelect');
-        if (newSelect) {
-            newSelect.addEventListener('change', loadTopics);
-        }
+        if (newSelect) newSelect.addEventListener('change', loadTopics);
     }
     
     async function loadTopics() {
         const bookId = document.getElementById('bookSelect')?.value;
         const topicSelect = document.getElementById('topicSelect');
-        
         if (!bookId) {
             topicSelect.innerHTML = '<option>Select book first</option>';
             return;
         }
-        
         if (topicsCache[bookId] !== undefined) {
-            addLog(`📦 Using cached topics for book ${bookId} (${topicsCache[bookId].length} topics)`, 'success');
             renderTopicSelect(topicsCache[bookId]);
             return;
         }
-        
-        addLog(`Loading topics for book ${bookId}...`, 'info');
         topicSelect.innerHTML = '<option>Loading topics...</option>';
-        
         try {
             const { data, error } = await supabase.from('topics')
                 .select('id, name, chapter_number')
                 .eq('book_id', parseInt(bookId))
                 .order('chapter_number');
-            
             if (error) throw error;
-            
             topicsCache[bookId] = data;
-            addLog(`✅ Found ${data.length} topics (cached)`, 'success');
             renderTopicSelect(data);
         } catch(e) {
-            addLog(`❌ Error: ${e.message}`, 'error');
             topicSelect.innerHTML = '<option>Error loading topics</option>';
         }
     }
     
     function renderTopicSelect(topics) {
         const topicSelect = document.getElementById('topicSelect');
-        
         if (!topics || topics.length === 0) {
             topicSelect.innerHTML = '<option value="">-- No topics found --</option>';
             return;
         }
-        
         let html = '<option value="">-- Select a Topic --</option>';
         topics.forEach(topic => {
             const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
             html += `<option value="${topic.id}">${escapeHtml(display)}</option>`;
         });
-        
         topicSelect.innerHTML = html;
     }
     
     async function preloadTopicsForBooks(books) {
         if (!books || books.length === 0) return;
-        
-        addLog('🔄 Preloading topics in background...', 'info');
         const promises = books.map(book => 
-            supabase.from('topics')
-                .select('id, name, chapter_number')
-                .eq('book_id', book.id)
-                .then(({ data, error }) => {
-                    if (!error && data) {
-                        topicsCache[book.id] = data;
-                    }
-                })
+            supabase.from('topics').select('id, name, chapter_number').eq('book_id', book.id)
+                .then(({ data }) => { if (data) topicsCache[book.id] = data; })
         );
-        
         await Promise.all(promises);
-        addLog('✅ Topics preloaded successfully', 'success');
     }
     
     function downloadTemplate() {
-        addLog('Generating CSV template...', 'info');
         const headers = ['question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'difficulty', 'explanation'];
         const example = ['What does typeof null return?', 'null', 'undefined', 'object', 'number', '2', 'easy', 'Historical bug'];
         const csv = [headers.join(','), example.join(',')].join('\n');
-        
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -375,11 +209,9 @@
         a.download = 'bookmcq_template.csv';
         a.click();
         URL.revokeObjectURL(url);
-        addLog('✅ Template downloaded', 'success');
     }
     
     function processFile(file) {
-        addLog(`Processing: ${file.name}`, 'info');
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
@@ -387,17 +219,12 @@
                 const workbook = XLSX.read(data, { type: 'array' });
                 const sheet = workbook.Sheets[workbook.SheetNames[0]];
                 const rows = XLSX.utils.sheet_to_json(sheet);
-                
-                addLog(`✅ Loaded ${rows.length} questions`, 'success');
                 if (rows.length === 0) return;
-                
                 currentQuestions = rows;
-                
                 const previewDiv = document.getElementById('previewDiv');
                 const uploadBtn = document.getElementById('uploadBtn');
-                
                 let html = '<h3 class="font-bold text-gray-700 mb-2">📋 Preview (first 3 rows):</h3>';
-                html += '<div class="preview-table"></table>';
+                html += '<div class="preview-table">58bye';
                 const headers = Object.keys(rows[0]);
                 html += '<thead><tr style="background:#0f0f1a;">' + headers.map(h => `<th style="padding:8px; border:1px solid #ccc; text-align:left;">${h}</th>`).join('') + '</thead><tbody>';
                 for (let i = 0; i < Math.min(3, rows.length); i++) {
@@ -405,13 +232,10 @@
                 }
                 html += '</tbody></table></div>';
                 html += `<p class="text-green-600 text-sm mt-2"><i class="fas fa-check-circle"></i> ✅ ${rows.length} questions ready to upload</p>`;
-                
                 previewDiv.innerHTML = html;
                 previewDiv.style.display = 'block';
                 uploadBtn.style.display = 'inline-flex';
-            } catch(e) {
-                addLog(`❌ Parse error: ${e.message}`, 'error');
-            }
+            } catch(e) {}
         };
         reader.readAsArrayBuffer(file);
     }
@@ -419,22 +243,15 @@
     async function uploadToDatabase() {
         const bookId = document.getElementById('bookSelect')?.value;
         const topicId = document.getElementById('topicSelect').value;
-        
         if (!bookId || !topicId) {
-            addLog('❌ Please select both a book and a topic', 'error');
             alert('Please select both a book and a topic');
             return;
         }
-        
         if (!currentQuestions.length) {
-            addLog('❌ No questions to upload', 'error');
             alert('No questions to upload. Please select a file first.');
             return;
         }
-        
-        addLog(`📤 Uploading ${currentQuestions.length} questions...`, 'info');
         let success = 0, failed = 0;
-        
         for (let i = 0; i < currentQuestions.length; i++) {
             const q = currentQuestions[i];
             try {
@@ -445,9 +262,7 @@
                     correct_answer: parseInt(q.correct_answer),
                     explanation: q.explanation || ''
                 }).select();
-                
                 if (error) throw error;
-                
                 const options = [q.option_a, q.option_b, q.option_c, q.option_d];
                 for (let j = 0; j < options.length; j++) {
                     await supabase.from('options').insert({
@@ -457,16 +272,9 @@
                     });
                 }
                 success++;
-                addLog(`✅ ${i+1}/${currentQuestions.length} uploaded`, 'success');
-            } catch(e) {
-                failed++;
-                addLog(`❌ ${i+1}/${currentQuestions.length} failed: ${e.message}`, 'error');
-            }
+            } catch(e) { failed++; }
         }
-        
-        addLog(`📊 Complete: ${success} uploaded, ${failed} failed`, success > 0 ? 'success' : 'error');
         alert(`Upload complete!\n${success} questions added\n${failed} failed`);
-        
         if (success > 0) {
             document.getElementById('previewDiv').style.display = 'none';
             document.getElementById('uploadBtn').style.display = 'none';
@@ -482,37 +290,18 @@
     
     // Set up event listeners
     document.addEventListener('change', function(e) {
-        if (e.target && e.target.id === 'bookSelect') {
-            loadTopics();
-        }
+        if (e.target && e.target.id === 'bookSelect') loadTopics();
     });
-    
     document.getElementById('downloadBtn').addEventListener('click', downloadTemplate);
     document.getElementById('fileInput').addEventListener('change', e => {
         if (e.target.files && e.target.files[0]) processFile(e.target.files[0]);
     });
     document.getElementById('uploadBtn').addEventListener('click', uploadToDatabase);
     
-    // Add skeleton style
-    const style = document.createElement('style');
-    style.textContent = \`
-        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-        .skeleton { background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; height: 48px; width: 100%; }
-    \`;
-    document.head.appendChild(style);
-    
     // Start loading books
     loadBooks().then(() => {
-        if (booksCache && booksCache.length > 0) {
-            preloadTopicsForBooks(booksCache);
-        }
+        if (booksCache && booksCache.length > 0) preloadTopicsForBooks(booksCache);
     });
-</script>
-`;
-    }
-    
-    // Start the verification
-    verifyAndStart();
 </script>
 </body>
 </html>
