@@ -26,13 +26,20 @@
     <!-- Custom Styles -->
     <link rel="stylesheet" href="styles.css">
     <style>
-        /* Enhanced prominent stats cards */
+        /* Light colored prominent stats cards - Pastel gradients */
         .stats-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #c7d2fe 0%, #ddd6fe 100%);
             transition: all 0.3s ease;
             cursor: pointer;
             position: relative;
             overflow: hidden;
+            color: #4c1d95;
+        }
+        .stats-card:nth-child(2) {
+            background: linear-gradient(135deg, #bfdbfe 0%, #c7d2fe 100%);
+        }
+        .stats-card:nth-child(3) {
+            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
         }
         .stats-card::before {
             content: '';
@@ -41,7 +48,7 @@
             left: -50%;
             width: 200%;
             height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
             opacity: 0;
             transition: opacity 0.5s ease;
         }
@@ -50,17 +57,23 @@
         }
         .stats-card:hover {
             transform: translateY(-8px);
-            box-shadow: 0 25px 40px -12px rgba(0,0,0,0.3);
+            box-shadow: 0 25px 40px -12px rgba(0,0,0,0.2);
         }
         .stats-number {
             font-size: 2.5rem;
             font-weight: 800;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            color: #4c1d95;
         }
         @media (min-width: 768px) {
             .stats-number {
                 font-size: 3rem;
             }
+        }
+        .stats-card p {
+            color: #5b21b6;
+        }
+        .stats-card .text-xs {
+            color: #6d28d9;
         }
         
         /* AI Chat Button */
@@ -161,6 +174,11 @@
         .page-link {
             cursor: pointer;
         }
+
+        /* About preview card styles */
+        .about-preview {
+            background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+        }
     </style>
 </head>
 <body class="disable-select">
@@ -176,12 +194,11 @@
                 <span class="text-white/60 text-xs hidden sm:inline">| Master Every Chapter</span>
             </div>
             
-            <!-- Desktop Menu - All using page navigation (no HTML files visible) -->
+            <!-- Desktop Menu - About page removed -->
             <div class="desktop-menu flex gap-3 md:gap-6">
                 <a href="#" onclick="navigation.showPage('home'); return false;" id="navHome" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap page-link">🏠 Home</a>
                 <a href="#" onclick="navigation.showPage('quiz'); return false;" id="navQuiz" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap page-link">📝 Quiz</a>
                 <a href="#" onclick="navigation.showPage('practice'); return false;" id="navPractice" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap page-link">📚 Practice</a>
-                <a href="#" onclick="navigation.showPage('about'); return false;" id="navAbout" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap page-link">📖 About</a>
                 <a href="#" onclick="navigation.showPage('contact'); return false;" id="navContact" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap page-link">📧 Contact</a>
                 <a href="#" onclick="navigation.showPage('privacy'); return false;" id="navPrivacy" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap page-link">🔒 Privacy</a>
             </div>
@@ -195,7 +212,6 @@
                     <a href="#" onclick="navigation.showPage('home'); mobileMenu.close(); return false;" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition page-link">🏠 Home</a>
                     <a href="#" onclick="navigation.showPage('quiz'); mobileMenu.close(); return false;" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition page-link">📝 Quiz</a>
                     <a href="#" onclick="navigation.showPage('practice'); mobileMenu.close(); return false;" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition page-link">📚 Practice</a>
-                    <a href="#" onclick="navigation.showPage('about'); mobileMenu.close(); return false;" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition page-link">📖 About</a>
                     <a href="#" onclick="navigation.showPage('contact'); mobileMenu.close(); return false;" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition page-link">📧 Contact</a>
                     <a href="#" onclick="navigation.showPage('privacy'); mobileMenu.close(); return false;" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition page-link">🔒 Privacy</a>
                 </div>
@@ -204,36 +220,60 @@
     </nav>
 
     <!-- Home Page -->
-    <div id="homePage" class="quiz-card rounded-2xl p-6 md:p-8 shadow-xl text-center">
+    <div id="homePage" class="quiz-card rounded-2xl p-6 md:p-8 shadow-xl">
         <div class="flex flex-col items-center">
             <div class="bg-gradient-to-r from-purple-100 to-indigo-100 rounded-full p-4 mb-6">
                 <i class="fas fa-graduation-cap text-5xl text-purple-600"></i>
             </div>
             <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">Welcome to BookMCQ</h2>
-            <p class="text-gray-600 text-base md:text-lg max-w-2xl mx-auto mb-8">
+            <p class="text-gray-600 text-base md:text-lg max-w-2xl mx-auto mb-8 text-center">
                 Your ultimate platform for chapter-wise practice tests from hundreds of books. 
                 Master any subject with our difficulty-based MCQ system.
             </p>
             
-            <!-- Prominent Clickable Stats Cards with Animation -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 md:gap-8 w-full mt-4">
-                <div id="categoryBooks" class="stats-card rounded-2xl p-5 md:p-7 text-center cursor-pointer text-white shadow-xl">
-                    <i class="fas fa-book text-4xl md:text-5xl mb-3 opacity-90"></i>
+            <!-- About Content Section - Displayed Above Cards -->
+            <div class="about-preview rounded-2xl p-6 mb-8 w-full text-left">
+                <div class="flex items-center gap-3 mb-4">
+                    <i class="fas fa-book-open text-2xl text-purple-600"></i>
+                    <h3 class="text-xl font-bold text-gray-800">About BookMCQ</h3>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <p class="text-gray-600 leading-relaxed text-sm md:text-base">Our mission is to provide a comprehensive, accessible, and effective platform for students and professionals to test their knowledge across hundreds of books and subjects.</p>
+                    </div>
+                    <div>
+                        <ul class="space-y-2 text-gray-600 text-sm md:text-base">
+                            <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Chapter-wise MCQs from popular books</li>
+                            <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Difficulty-based questions (Easy, Medium, Hard)</li>
+                            <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Instant feedback and explanations</li>
+                            <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Progress tracking</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="mt-4 p-3 bg-purple-100 rounded-lg">
+                    <p class="text-gray-700 text-sm">✨ With hundreds of books and thousands of carefully crafted questions, BookMCQ is the most comprehensive MCQ platform for students and professionals preparing for exams and interviews.</p>
+                </div>
+            </div>
+            
+            <!-- Prominent Clickable Stats Cards with Light Colors -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 md:gap-8 w-full mt-2">
+                <div id="categoryBooks" class="stats-card rounded-2xl p-5 md:p-7 text-center cursor-pointer shadow-xl">
+                    <i class="fas fa-book text-4xl md:text-5xl mb-3 opacity-80"></i>
                     <div class="stats-number" id="statBooks">Loading...</div>
-                    <p class="text-sm md:text-base mt-2 font-medium opacity-90">Books & Categories</p>
-                    <p class="text-xs mt-1 opacity-75">Browse by subject →</p>
+                    <p class="text-sm md:text-base mt-2 font-semibold">Books & Categories</p>
+                    <p class="text-xs mt-1 opacity-70">Browse by subject →</p>
                 </div>
-                <div id="categoryMcqs" class="stats-card rounded-2xl p-5 md:p-7 text-center cursor-pointer text-white shadow-xl">
-                    <i class="fas fa-question-circle text-4xl md:text-5xl mb-3 opacity-90"></i>
+                <div id="categoryMcqs" class="stats-card rounded-2xl p-5 md:p-7 text-center cursor-pointer shadow-xl">
+                    <i class="fas fa-question-circle text-4xl md:text-5xl mb-3 opacity-80"></i>
                     <div class="stats-number" id="statMcqs">Loading...</div>
-                    <p class="text-sm md:text-base mt-2 font-medium opacity-90">Practice Questions</p>
-                    <p class="text-xs mt-1 opacity-75">Start quiz now →</p>
+                    <p class="text-sm md:text-base mt-2 font-semibold">Practice Questions</p>
+                    <p class="text-xs mt-1 opacity-70">Start quiz now →</p>
                 </div>
-                <div id="categoryProgress" class="stats-card rounded-2xl p-5 md:p-7 text-center cursor-pointer text-white shadow-xl">
-                    <i class="fas fa-chart-line text-4xl md:text-5xl mb-3 opacity-90"></i>
+                <div id="categoryProgress" class="stats-card rounded-2xl p-5 md:p-7 text-center cursor-pointer shadow-xl">
+                    <i class="fas fa-chart-line text-4xl md:text-5xl mb-3 opacity-80"></i>
                     <div class="stats-number">Track</div>
-                    <p class="text-sm md:text-base mt-2 font-medium opacity-90">Your Progress</p>
-                    <p class="text-xs mt-1 opacity-75">Monitor improvement →</p>
+                    <p class="text-sm md:text-base mt-2 font-semibold">Your Progress</p>
+                    <p class="text-xs mt-1 opacity-70">Monitor improvement →</p>
                 </div>
             </div>
             
@@ -359,42 +399,9 @@
         </div>
     </div>
 
-    <!-- About Page (Now merged into index.html) -->
-    <div id="aboutPage" class="hidden quiz-card rounded-2xl p-6 md:p-8 shadow-xl">
-        <div class="text-center mb-8">
-            <i class="fas fa-book-open text-5xl text-purple-600 mb-4"></i>
-            <h2 class="text-3xl font-bold mb-4">About BookMCQ</h2>
-            <p class="text-gray-600 max-w-2xl mx-auto">Your trusted companion for exam preparation and knowledge testing</p>
-        </div>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
-            <div>
-                <h3 class="text-xl font-bold mb-3">Our Mission</h3>
-                <p class="text-gray-600 leading-relaxed">To provide a comprehensive, accessible, and effective platform for students and professionals to test their knowledge across hundreds of books and subjects.</p>
-            </div>
-            <div>
-                <h3 class="text-xl font-bold mb-3">What We Offer</h3>
-                <ul class="space-y-2 text-gray-600">
-                    <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Chapter-wise MCQs from popular books</li>
-                    <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Difficulty-based questions (Easy, Medium, Hard)</li>
-                    <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Instant feedback and explanations</li>
-                    <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Progress tracking</li>
-                </ul>
-            </div>
-        </div>
-        
-        <div class="mt-8 p-6 bg-purple-50 rounded-xl">
-            <h3 class="text-xl font-bold mb-3">Why Choose Us?</h3>
-            <p class="text-gray-600">With hundreds of books and thousands of carefully crafted questions, BookMCQ is the most comprehensive MCQ platform for students and professionals preparing for exams and interviews.</p>
-        </div>
-        
-        <!-- Missing Book Request inside About as well -->
-        <div class="mt-8 p-5 bg-amber-50 rounded-xl border border-amber-200">
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
-                <span class="text-amber-800 text-sm">📖 Want a book that's not listed?</span>
-                <button onclick="navigation.showPage('contact')" class="text-amber-700 underline text-sm font-medium">Let us know →</button>
-            </div>
-        </div>
+    <!-- About Page (Hidden - Content moved to Home page, kept for navigation compatibility) -->
+    <div id="aboutPage" class="hidden">
+        <!-- This div is kept empty as content is now on home page -->
     </div>
 
     <!-- Contact Page -->
@@ -670,7 +677,7 @@
             const targetPage = document.getElementById(`${pageName}Page`);
             if (targetPage) targetPage.classList.remove('hidden');
             this.#currentPage = pageName;
-            const navLinks = ['Home', 'Quiz', 'Practice', 'About', 'Contact', 'Privacy'];
+            const navLinks = ['Home', 'Quiz', 'Practice', 'Contact', 'Privacy'];
             navLinks.forEach(link => {
                 const navElement = document.getElementById(`nav${link}`);
                 if (navElement) {
