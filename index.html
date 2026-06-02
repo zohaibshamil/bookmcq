@@ -301,18 +301,14 @@
                     <p class="text-gray-700 text-sm">✨ With hundreds of books and thousands of carefully crafted questions, BookMCQ is the most comprehensive MCQ platform for students and professionals preparing for exams and interviews.</p>
                 </div>
                 
-                <!-- Categories Section - Added at the end of About -->
+                <!-- Categories Section - Dynamically loaded from database -->
                 <div class="mt-6 pt-4 border-t border-purple-200">
                     <h4 class="font-bold text-gray-800 mb-3 flex items-center gap-2"><i class="fas fa-tags text-purple-600"></i> Browse by Category</h4>
                     <div id="categoryFilters" class="flex flex-wrap gap-2 mb-4">
-                        <button data-category="programming" class="category-filter-btn px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm font-medium hover:bg-purple-600 hover:text-white transition">💻 Programming</button>
-                        <button data-category="web-development" class="category-filter-btn px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm font-medium hover:bg-purple-600 hover:text-white transition">🌐 Web Development</button>
-                        <button data-category="data-science" class="category-filter-btn px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm font-medium hover:bg-purple-600 hover:text-white transition">📊 Data Science</button>
-                        <button data-category="interview" class="category-filter-btn px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm font-medium hover:bg-purple-600 hover:text-white transition">🎯 Interview Prep</button>
-                        <button data-category="all" class="category-filter-btn px-4 py-2 bg-purple-600 text-white rounded-full text-sm font-medium">📚 All Books</button>
+                        <div class="text-gray-500 text-sm py-2">Loading categories...</div>
                     </div>
                     <div id="booksByCategory" class="bg-white/50 rounded-xl p-4 max-h-80 overflow-y-auto">
-                        <p class="text-gray-500 text-sm text-center py-4">Click on a category to see books</p>
+                        <p class="text-gray-500 text-sm text-center py-4">Select a category to see books</p>
                     </div>
                 </div>
             </div>
@@ -693,6 +689,19 @@
             this.#cache.set('stats', stats);
             return stats;
         }
+        
+        // New method to get categories from database
+        async getCategories() {
+            const cached = this.#cache.get('categories');
+            if (cached) return cached;
+            const { data, error } = await this.#supabase.from('categories').select('*').order('name');
+            if (error) {
+                console.error('Error loading categories:', error);
+                return [];
+            }
+            this.#cache.set('categories', data);
+            return data;
+        }
     }
 
     // AI Chat Manager
@@ -939,10 +948,11 @@
         }
     }
 
-    // Category Books Display Manager
+    // Category Books Display Manager - Now using database categories
     class CategoryBooksManager {
         #supabaseService;
         #booksData = [];
+        #categoriesData = [];
         
         constructor(supabaseService) {
             this.#supabaseService = supabaseService;
@@ -953,25 +963,58 @@
             return this.#booksData;
         }
         
-        getBooksByCategory(category) {
-            // Map categories to keyword matching in book titles
-            const categoryKeywords = {
-                'programming': ['javascript', 'python', 'java', 'c++', 'programming', 'coding', 'algorithm', 'data structures'],
-                'web-development': ['html', 'css', 'react', 'angular', 'vue', 'node', 'express', 'web', 'frontend', 'backend', 'full stack'],
-                'data-science': ['data science', 'machine learning', 'artificial intelligence', 'deep learning', 'pandas', 'numpy', 'tensorflow', 'statistics', 'analytics'],
-                'interview': ['interview', 'cracking', 'coding interview', 'placement', 'aptitude', 'reasoning']
-            };
-            
-            if (category === 'all') {
+        async loadCategories() {
+            this.#categoriesData = await this.#supabaseService.getCategories();
+            return this.#categoriesData;
+        }
+        
+        getBooksByCategory(categoryId, categoryKeyword = null) {
+            if (categoryId === 'all') {
                 return this.#booksData;
             }
             
-            const keywords = categoryKeywords[category] || [];
-            if (keywords.length === 0) return [];
+            // Find the category to get its keyword
+            const category = this.#categoriesData.find(c => c.id == categoryId || c.name.toLowerCase() === categoryId);
+            if (!category) return [];
+            
+            const keyword = (category.keyword || category.name).toLowerCase();
             
             return this.#booksData.filter(book => {
                 const titleLower = book.title.toLowerCase();
-                return keywords.some(keyword => titleLower.includes(keyword));
+                return titleLower.includes(keyword);
+            });
+        }
+        
+        renderCategories(containerId, onCategoryClick) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            if (!this.#categoriesData || this.#categoriesData.length === 0) {
+                container.innerHTML = '<div class="text-gray-500 text-sm py-2">No categories available</div>';
+                return;
+            }
+            
+            // Create category buttons
+            let buttonsHtml = '';
+            
+            // Add "All Books" button first
+            buttonsHtml += `<button data-category="all" class="category-filter-btn px-4 py-2 bg-purple-600 text-white rounded-full text-sm font-medium">📚 All Books</button>`;
+            
+            // Add category buttons from database
+            this.#categoriesData.forEach(category => {
+                const icon = category.icon || '📖';
+                buttonsHtml += `<button data-category="${category.id}" class="category-filter-btn px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm font-medium hover:bg-purple-600 hover:text-white transition">${icon} ${category.name}</button>`;
+            });
+            
+            container.innerHTML = buttonsHtml;
+            
+            // Add click handlers
+            const categoryButtons = document.querySelectorAll('.category-filter-btn');
+            categoryButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const categoryId = btn.getAttribute('data-category');
+                    onCategoryClick(categoryId);
+                });
             });
         }
         
@@ -1075,33 +1118,42 @@
         });
     }
     
-    // Category filter handler
+    // Category filter handler - Now using database categories
     async function initCategoryFilters(supabaseService) {
         const categoryBooksManager = new CategoryBooksManager(supabaseService);
         await categoryBooksManager.loadBooks();
+        await categoryBooksManager.loadCategories();
         
-        const categoryButtons = document.querySelectorAll('.category-filter-btn');
-        const booksContainer = document.getElementById('booksByCategory');
-        
-        // Set default active state on "All Books"
-        document.querySelector('.category-filter-btn[data-category="all"]').classList.add('active');
-        
-        // Display all books by default
-        const allBooks = categoryBooksManager.getBooksByCategory('all');
-        categoryBooksManager.displayBooks(allBooks, 'booksByCategory');
-        
-        categoryButtons.forEach(btn => {
-            btn.addEventListener('click', async () => {
-                // Remove active class from all buttons
-                categoryButtons.forEach(b => b.classList.remove('active'));
-                // Add active class to clicked button
-                btn.classList.add('active');
-                
-                const category = btn.getAttribute('data-category');
-                const filteredBooks = categoryBooksManager.getBooksByCategory(category);
-                categoryBooksManager.displayBooks(filteredBooks, 'booksByCategory');
+        // Render category buttons from database
+        categoryBooksManager.renderCategories('categoryFilters', async (categoryId) => {
+            // Remove active class from all buttons
+            document.querySelectorAll('.category-filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.classList.add('bg-purple-100', 'text-purple-700');
+                btn.classList.remove('bg-purple-600', 'text-white');
             });
+            
+            // Add active class to clicked button
+            const clickedBtn = document.querySelector(`.category-filter-btn[data-category="${categoryId}"]`);
+            if (clickedBtn) {
+                clickedBtn.classList.add('active', 'bg-purple-600', 'text-white');
+                clickedBtn.classList.remove('bg-purple-100', 'text-purple-700');
+            }
+            
+            const filteredBooks = categoryBooksManager.getBooksByCategory(categoryId);
+            categoryBooksManager.displayBooks(filteredBooks, 'booksByCategory');
         });
+        
+        // Set default active state on "All Books" and display all books
+        setTimeout(() => {
+            const allBooksBtn = document.querySelector('.category-filter-btn[data-category="all"]');
+            if (allBooksBtn) {
+                allBooksBtn.classList.add('active', 'bg-purple-600', 'text-white');
+                allBooksBtn.classList.remove('bg-purple-100', 'text-purple-700');
+            }
+            const allBooks = categoryBooksManager.getBooksByCategory('all');
+            categoryBooksManager.displayBooks(allBooks, 'booksByCategory');
+        }, 100);
     }
 
     // Initialize everything
