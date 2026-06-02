@@ -15,7 +15,7 @@
         .upload-zone { border: 2px dashed #cbd5e1; transition: all 0.3s; cursor: pointer; }
         .upload-zone:hover { border-color: #8b5cf6; background-color: #f3e8ff; }
         .progress-bar { transition: width 0.3s ease; }
-        .skeleton { animation: pulse 1.5s ease-in-out infinite; background: #e2e8f0; }
+        .skeleton { animation: pulse 1.5s ease-in-out infinite; background: #e2e8f0; border-radius: 8px; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
         .modal-content { background: white; border-radius: 1rem; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; }
@@ -121,7 +121,7 @@
                         <button id="cancelBookBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
                     </div>
                 </div>
-                <div id="booksList"></div>
+                <div id="booksList"><div class="skeleton h-12 w-full mb-2"></div><div class="skeleton h-12 w-full mb-2"></div><div class="skeleton h-12 w-full"></div></div>
             </div>
 
             <!-- Topics Tab -->
@@ -141,7 +141,7 @@
                     <button id="saveTopicBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
                     <button id="cancelTopicBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
                 </div>
-                <div id="topicsList"></div>
+                <div id="topicsList"><div class="skeleton h-12 w-full mb-2"></div><div class="skeleton h-12 w-full mb-2"></div></div>
             </div>
 
             <!-- Categories Tab -->
@@ -213,7 +213,7 @@
                     <button id="cancelQuestionBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
                 </div>
                 
-                <div id="questionsList"></div>
+                <div id="questionsList"><div class="skeleton h-24 w-full mb-2"></div><div class="skeleton h-24 w-full mb-2"></div></div>
                 
                 <div class="flex justify-between items-center mt-4">
                     <button id="prevPageBtn" class="bg-gray-500 text-white px-4 py-2 rounded-lg disabled:opacity-50" disabled>Previous</button>
@@ -347,6 +347,14 @@
     let totalQuestions = 0;
     let currentFilters = { bookId: '', topicId: '', difficulty: '' };
     let currentTopicBookFilter = '';
+    
+    // ============ CACHE SYSTEM ============
+    let booksCache = null;
+    let topicsCache = {};
+    let categoriesCache = null;
+    let booksListCache = null;
+    let isLoadingBooks = false;
+    let isLoadingTopics = false;
 
     function showToast(message) {
         const toast = document.getElementById('toast');
@@ -413,15 +421,16 @@
                 document.getElementById('adminFeatures').classList.remove('hidden');
                 document.getElementById('nonAdminView').classList.add('hidden');
                 
+                // Load all data in parallel with caching
                 await Promise.all([
-                    loadBooks(),
-                    loadTopics(),
+                    loadBooksCached(),
+                    loadTopicsCached(),
                     loadQuestions(),
                     loadAdmins(),
-                    loadBookSelects(),
-                    loadFilterBooks(),
-                    loadTopicFilterBooks(),
-                    loadCategories()
+                    loadBookSelectsCached(),
+                    loadFilterBooksCached(),
+                    loadTopicFilterBooksCached(),
+                    loadCategoriesCached()
                 ]);
             } else {
                 document.getElementById('adminBadge').classList.add('hidden');
@@ -463,6 +472,11 @@
         await _supabase.auth.signOut();
         _currentUser = null;
         _isAdmin = false;
+        // Clear caches on logout
+        booksCache = null;
+        topicsCache = {};
+        categoriesCache = null;
+        booksListCache = null;
         document.getElementById('adminDashboard').classList.add('hidden');
         document.getElementById('loginScreen').classList.remove('hidden');
         showToast('Logged out');
@@ -478,15 +492,21 @@
         document.getElementById('loginForm').classList.remove('hidden');
     }
 
-    // ============ CATEGORIES ============
-    async function loadCategories() {
-        const { data, error } = await _supabase.from('categories').select('*').order('name', { ascending: true });
-        
-        if (error) {
-            console.error('Error loading categories:', error);
+    // ============ CACHED CATEGORIES ============
+    async function loadCategoriesCached() {
+        if (categoriesCache !== null) {
+            renderCategories(categoriesCache);
             return;
         }
         
+        const { data, error } = await _supabase.from('categories').select('*').order('name', { ascending: true });
+        if (!error && data) {
+            categoriesCache = data;
+            renderCategories(data);
+        }
+    }
+    
+    function renderCategories(data) {
         const categoriesList = document.getElementById('categoriesList');
         if (categoriesList) {
             if (!data || data.length === 0) {
@@ -546,16 +566,18 @@
         } else {
             showToast('Category updated!');
             document.getElementById('editCategoryModal').classList.add('hidden');
-            await loadCategories();
-            await loadBooks();
+            categoriesCache = null; // Invalidate cache
+            await loadCategoriesCached();
+            await loadBooksCached();
         }
     }
     
     window.deleteCategory = async function(id) {
         if (confirm('Delete this category?')) {
             await _supabase.from('categories').delete().eq('id', id);
-            await loadCategories();
-            await loadBooks();
+            categoriesCache = null; // Invalidate cache
+            await loadCategoriesCached();
+            await loadBooksCached();
             showToast('Category deleted');
         }
     };
@@ -575,27 +597,45 @@
             showToast('Category added!');
             document.getElementById('addCategoryForm').classList.add('hidden');
             document.getElementById('categoryName').value = '';
-            await loadCategories();
-            await loadBooks();
+            categoriesCache = null; // Invalidate cache
+            await loadCategoriesCached();
+            await loadBooksCached();
         }
     }
 
-    // ============ BOOKS ============
-    async function loadBooks() {
-        let query = _supabase.from('books').select('*');
+    // ============ CACHED BOOKS ============
+    async function loadBooksCached() {
+        const container = document.getElementById('booksList');
         
+        if (booksCache !== null) {
+            renderBooksList(booksCache);
+            return;
+        }
+        
+        if (isLoadingBooks) return;
+        isLoadingBooks = true;
+        
+        let query = _supabase.from('books').select('*');
         const categoryFilter = document.getElementById('categoryFilter')?.value;
         if (categoryFilter && categoryFilter !== '') {
             query = query.eq('category', categoryFilter);
         }
         
         const { data, error } = await query.order('id', { ascending: false });
+        isLoadingBooks = false;
         
         if (error) {
             console.error('Error loading books:', error);
+            container.innerHTML = '<p class="text-gray-500">Error loading books</p>';
             return;
         }
         
+        booksCache = data;
+        renderBooksList(data);
+    }
+    
+    function renderBooksList(data) {
+        const container = document.getElementById('booksList');
         const searchTerm = document.getElementById('bookSearchInput')?.value.toLowerCase() || '';
         let filteredData = data || [];
         
@@ -605,8 +645,6 @@
                 (book.author && book.author.toLowerCase().includes(searchTerm))
             );
         }
-        
-        const container = document.getElementById('booksList');
         
         if (!filteredData || filteredData.length === 0) {
             container.innerHTML = '<p class="text-gray-500">No books found. Add your first book!</p>';
@@ -636,17 +674,26 @@
         const searchInput = document.getElementById('bookSearchInput');
         
         if (categoryFilter) {
-            categoryFilter.addEventListener('change', () => loadBooks());
+            categoryFilter.addEventListener('change', () => {
+                booksCache = null; // Invalidate cache on filter change
+                loadBooksCached();
+            });
         }
         if (searchInput) {
-            searchInput.addEventListener('input', () => loadBooks());
+            searchInput.addEventListener('input', () => {
+                // Just re-render from cache with new search term
+                if (booksCache) renderBooksList(booksCache);
+                else loadBooksCached();
+            });
         }
     }
 
     window.deleteBook = async function(id) {
         if (confirm('Delete this book? This will also delete all topics and questions in this book.')) {
             await _supabase.from('books').delete().eq('id', id);
-            await Promise.all([loadBooks(), loadTopics(), loadFilterBooks(), loadBookSelects(), loadTopicFilterBooks()]);
+            booksCache = null; // Invalidate cache
+            topicsCache = {}; // Invalidate topics cache
+            await Promise.all([loadBooksCached(), loadTopicsCached(), loadFilterBooksCached(), loadBookSelectsCached(), loadTopicFilterBooksCached()]);
             showToast('Book deleted');
         }
     };
@@ -670,7 +717,8 @@
             document.getElementById('bookCategory').value = '';
             document.getElementById('bookTitle').value = '';
             document.getElementById('bookAuthor').value = '';
-            await Promise.all([loadBooks(), loadFilterBooks(), loadBookSelects(), loadTopicFilterBooks()]);
+            booksCache = null; // Invalidate cache
+            await Promise.all([loadBooksCached(), loadFilterBooksCached(), loadBookSelectsCached(), loadTopicFilterBooksCached()]);
         }
     }
 
@@ -699,23 +747,36 @@
         } else {
             showToast('Book updated!');
             document.getElementById('editBookModal').classList.add('hidden');
-            await Promise.all([loadBooks(), loadFilterBooks(), loadBookSelects(), loadTopicFilterBooks()]);
+            booksCache = null; // Invalidate cache
+            await Promise.all([loadBooksCached(), loadFilterBooksCached(), loadBookSelectsCached(), loadTopicFilterBooksCached()]);
         }
     }
 
-    // ============ TOPICS ============
-    async function loadTopicFilterBooks() {
+    // ============ CACHED TOPICS ============
+    async function loadTopicFilterBooksCached() {
+        if (booksCache !== null) {
+            renderTopicFilterBooks(booksCache);
+            return;
+        }
+        
         const { data } = await _supabase.from('books').select('id, title');
+        if (data) {
+            booksCache = data;
+            renderTopicFilterBooks(data);
+        }
+    }
+    
+    function renderTopicFilterBooks(books) {
         const select = document.getElementById('topicFilterBookId');
         select.innerHTML = '<option value="">All Books</option>';
-        if (data) {
-            data.forEach(book => {
+        if (books) {
+            books.forEach(book => {
                 select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
             });
         }
     }
     
-    async function loadTopics() {
+    async function loadTopicsCached() {
         let query = _supabase.from('topics').select('*, books(title)');
         
         if (currentTopicBookFilter && currentTopicBookFilter !== '') {
@@ -752,13 +813,14 @@
     
     async function applyTopicFilter() {
         currentTopicBookFilter = document.getElementById('topicFilterBookId').value;
-        await loadTopics();
+        await loadTopicsCached();
     }
 
     window.deleteTopic = async function(id) {
         if (confirm('Delete this topic? This will also delete all questions in this topic.')) {
             await _supabase.from('topics').delete().eq('id', id);
-            await Promise.all([loadTopics(), loadQuestions(), loadFilterBooks()]);
+            topicsCache = {}; // Invalidate topics cache
+            await Promise.all([loadTopicsCached(), loadQuestions(), loadFilterBooksCached()]);
             showToast('Topic deleted');
         }
     };
@@ -787,7 +849,8 @@
             document.getElementById('addTopicForm').classList.add('hidden');
             document.getElementById('topicName').value = '';
             document.getElementById('chapterNumber').value = '';
-            await Promise.all([loadTopics(), loadFilterBooks()]);
+            topicsCache = {}; // Invalidate cache
+            await Promise.all([loadTopicsCached(), loadFilterBooksCached()]);
         }
     }
 
@@ -818,19 +881,151 @@
         } else {
             showToast('Topic updated!');
             document.getElementById('editTopicModal').classList.add('hidden');
-            await Promise.all([loadTopics(), loadFilterBooks()]);
+            topicsCache = {}; // Invalidate cache
+            await Promise.all([loadTopicsCached(), loadFilterBooksCached()]);
         }
     }
 
     async function loadBookSelectForTopics() {
+        if (booksCache !== null) {
+            renderBookSelectForTopics(booksCache);
+            return;
+        }
+        
         const { data } = await _supabase.from('books').select('id, title');
+        if (data) {
+            booksCache = data;
+            renderBookSelectForTopics(data);
+        }
+    }
+    
+    function renderBookSelectForTopics(books) {
         const select = document.getElementById('topicBookId');
         select.innerHTML = '<option value="">Select Book</option>';
-        if (data) {
-            data.forEach(book => {
+        if (books) {
+            books.forEach(book => {
                 select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
             });
         }
+    }
+
+    // ============ CACHED QUESTIONS HELPERS ============
+    async function loadBookSelectsCached() {
+        if (booksCache !== null) {
+            renderBookSelects(booksCache);
+            return;
+        }
+        
+        const { data } = await _supabase.from('books').select('id, title');
+        if (data) {
+            booksCache = data;
+            renderBookSelects(data);
+        }
+    }
+    
+    function renderBookSelects(books) {
+        const select = document.getElementById('questionBookId');
+        select.innerHTML = '<option value="">Select Book</option>';
+        if (books) {
+            books.forEach(book => {
+                select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+            });
+        }
+    }
+
+    async function loadTopicsForQuestion() {
+        const bookId = document.getElementById('questionBookId').value;
+        if (!bookId || bookId === '') {
+            document.getElementById('questionTopicId').innerHTML = '<option value="">Select Topic</option>';
+            return;
+        }
+        
+        // Check cache first
+        if (topicsCache[bookId]) {
+            renderTopicsForQuestion(topicsCache[bookId]);
+            return;
+        }
+        
+        const { data } = await _supabase.from('topics').select('id, name, chapter_number').eq('book_id', parseInt(bookId)).order('chapter_number', { ascending: true });
+        if (data) {
+            topicsCache[bookId] = data;
+            renderTopicsForQuestion(data);
+        }
+    }
+    
+    function renderTopicsForQuestion(topics) {
+        const select = document.getElementById('questionTopicId');
+        select.innerHTML = '<option value="">Select Topic</option>';
+        if (topics && topics.length > 0) {
+            topics.forEach(topic => {
+                const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
+                select.innerHTML += `<option value="${topic.id}">${escapeHtml(display)}</option>`;
+            });
+        }
+    }
+
+    // ============ CACHED FILTERS ============
+    async function loadFilterBooksCached() {
+        if (booksCache !== null) {
+            renderFilterBooks(booksCache);
+            return;
+        }
+        
+        const { data } = await _supabase.from('books').select('id, title');
+        if (data) {
+            booksCache = data;
+            renderFilterBooks(data);
+        }
+    }
+    
+    function renderFilterBooks(books) {
+        const select = document.getElementById('filterBookId');
+        select.innerHTML = '<option value="">All Books</option>';
+        if (books) {
+            books.forEach(book => {
+                select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+            });
+        }
+    }
+    
+    async function loadFilterTopics() {
+        const bookId = document.getElementById('filterBookId').value;
+        const topicSelect = document.getElementById('filterTopicId');
+        
+        if (!bookId || bookId === '') {
+            topicSelect.innerHTML = '<option value="">All Topics</option>';
+            currentFilters.topicId = '';
+            return;
+        }
+        
+        // Check cache
+        if (topicsCache[bookId]) {
+            renderFilterTopics(topicsCache[bookId]);
+            return;
+        }
+        
+        const { data } = await _supabase.from('topics')
+            .select('id, name, chapter_number')
+            .eq('book_id', parseInt(bookId))
+            .order('chapter_number', { ascending: true });
+        
+        if (data) {
+            topicsCache[bookId] = data;
+            renderFilterTopics(data);
+        }
+    }
+    
+    function renderFilterTopics(topics) {
+        const topicSelect = document.getElementById('filterTopicId');
+        topicSelect.innerHTML = '<option value="">All Topics</option>';
+        if (topics && topics.length > 0) {
+            topics.forEach(topic => {
+                const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
+                topicSelect.innerHTML += `<option value="${topic.id}">${escapeHtml(display)}</option>`;
+            });
+        }
+        currentFilters.topicId = '';
+        topicSelect.value = '';
     }
 
     // ============ QUESTIONS ============
@@ -914,50 +1109,12 @@
         `}).join('');
     }
     
-    async function loadFilterTopics() {
-        const bookId = document.getElementById('filterBookId').value;
-        const topicSelect = document.getElementById('filterTopicId');
-        
-        if (!bookId || bookId === '') {
-            topicSelect.innerHTML = '<option value="">All Topics</option>';
-            currentFilters.topicId = '';
-            return;
-        }
-        
-        const { data } = await _supabase.from('topics')
-            .select('id, name, chapter_number')
-            .eq('book_id', parseInt(bookId))
-            .order('chapter_number', { ascending: true });
-        
-        topicSelect.innerHTML = '<option value="">All Topics</option>';
-        if (data && data.length > 0) {
-            data.forEach(topic => {
-                const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
-                topicSelect.innerHTML += `<option value="${topic.id}">${escapeHtml(display)}</option>`;
-            });
-        }
-        
-        currentFilters.topicId = '';
-        topicSelect.value = '';
-    }
-    
     async function applyFilters() {
         currentFilters.bookId = document.getElementById('filterBookId').value;
         currentFilters.topicId = document.getElementById('filterTopicId').value;
         currentFilters.difficulty = document.getElementById('filterDifficulty').value;
         currentPage = 1;
         await loadQuestions();
-    }
-    
-    async function loadFilterBooks() {
-        const { data } = await _supabase.from('books').select('id, title');
-        const select = document.getElementById('filterBookId');
-        select.innerHTML = '<option value="">All Books</option>';
-        if (data) {
-            data.forEach(book => {
-                select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
-            });
-        }
     }
     
     function updatePaginationButtons() {
@@ -991,35 +1148,6 @@
             showToast('Question deleted');
         }
     };
-
-    async function loadBookSelects() {
-        const { data } = await _supabase.from('books').select('id, title');
-        const select = document.getElementById('questionBookId');
-        select.innerHTML = '<option value="">Select Book</option>';
-        if (data) {
-            data.forEach(book => {
-                select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
-            });
-        }
-    }
-
-    async function loadTopicsForQuestion() {
-        const bookId = document.getElementById('questionBookId').value;
-        if (!bookId || bookId === '') {
-            document.getElementById('questionTopicId').innerHTML = '<option value="">Select Topic</option>';
-            return;
-        }
-        
-        const { data } = await _supabase.from('topics').select('id, name, chapter_number').eq('book_id', parseInt(bookId)).order('chapter_number', { ascending: true });
-        const select = document.getElementById('questionTopicId');
-        select.innerHTML = '<option value="">Select Topic</option>';
-        if (data && data.length > 0) {
-            data.forEach(topic => {
-                const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
-                select.innerHTML += `<option value="${topic.id}">${escapeHtml(display)}</option>`;
-            });
-        }
-    }
 
     async function addQuestion() {
         const topicId = document.getElementById('questionTopicId').value;
@@ -1157,7 +1285,6 @@
         // If bulk upload tab is clicked, open in new tab and stay on current tab
         if (tabName === 'bulkupload') {
             window.open('bulk-upload.html', '_blank');
-            // Don't change the displayed tab - stay where you are
             return;
         }
         
@@ -1184,7 +1311,7 @@
         });
         
         if (tabName === 'questions') loadQuestions();
-        if (tabName === 'categories') loadCategories();
+        if (tabName === 'categories') loadCategoriesCached();
     }
 
     async function checkSession() {
@@ -1202,14 +1329,14 @@
                 document.getElementById('adminFeatures').classList.remove('hidden');
                 document.getElementById('nonAdminView').classList.add('hidden');
                 await Promise.all([
-                    loadBooks(),
-                    loadTopics(),
+                    loadBooksCached(),
+                    loadTopicsCached(),
                     loadQuestions(),
                     loadAdmins(),
-                    loadBookSelects(),
-                    loadFilterBooks(),
-                    loadTopicFilterBooks(),
-                    loadCategories()
+                    loadBookSelectsCached(),
+                    loadFilterBooksCached(),
+                    loadTopicFilterBooksCached(),
+                    loadCategoriesCached()
                 ]);
                 setupBookFilters();
             } else {
@@ -1266,7 +1393,7 @@
         
         // Question events
         document.getElementById('showAddQuestionBtn').addEventListener('click', async () => {
-            await loadBookSelects();
+            await loadBookSelectsCached();
             document.getElementById('addQuestionForm').classList.remove('hidden');
         });
         document.getElementById('cancelQuestionBtn').addEventListener('click', () => {
