@@ -3,90 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>QuizMaster | Modern MCQ Platform</title>
+    <title>BookMCQ - Master Any Book with Chapter-wise MCQs</title>
+    <meta name="description" content="Practice topic-wise and difficulty-based MCQs from hundreds of books. Perfect for students, interview preparation, and competitive exams.">
+    <meta name="keywords" content="MCQ, practice questions, book quiz, exam preparation, online test, study guide">
+    <meta name="author" content="BookMCQ">
+    <meta name="robots" content="index, follow">
+    <meta property="og:title" content="BookMCQ - Master Any Book">
+    <meta property="og:description" content="Practice MCQs topic by topic, difficulty by difficulty">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://bookmcq.com">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="BookMCQ - Master Any Book">
+    
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <style>
-        * {
-            font-family: 'Inter', sans-serif;
-        }
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-        }
-        .quiz-card {
-            backdrop-filter: blur(10px);
-            background: rgba(255, 255, 255, 0.95);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        .quiz-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-        }
-        .option-btn {
-            transition: all 0.2s ease;
-            border: 2px solid #e2e8f0;
-        }
-        .option-btn:hover:not(:disabled) {
-            background-color: #667eea;
-            border-color: #667eea;
-            color: white;
-            transform: scale(1.02);
-        }
-        .selected-option {
-            background-color: #667eea !important;
-            border-color: #667eea !important;
-            color: white !important;
-        }
-        .correct-feedback {
-            background-color: #10b981;
-            animation: fadeInUp 0.4s ease;
-        }
-        .wrong-feedback {
-            background-color: #ef4444;
-            animation: fadeInUp 0.4s ease;
-        }
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        .progress-bar {
-            transition: width 0.5s ease;
-        }
-        @media (max-width: 640px) {
-            .quiz-card {
-                margin: 1rem;
-                border-radius: 1.5rem;
-            }
-        }
+        * { font-family: 'Inter', sans-serif; }
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .quiz-card { backdrop-filter: blur(10px); background: rgba(255, 255, 255, 0.95); transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .quiz-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+        .option-btn { transition: all 0.2s ease; border: 2px solid #e2e8f0; cursor: pointer; }
+        .option-btn:hover:not(:disabled) { background-color: #667eea; border-color: #667eea; color: white; transform: scale(1.02); }
+        .selected-option { background-color: #667eea !important; border-color: #667eea !important; color: white !important; }
+        .correct-feedback { background-color: #10b981; animation: fadeInUp 0.4s ease; }
+        .wrong-feedback { background-color: #ef4444; animation: fadeInUp 0.4s ease; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .progress-bar { transition: width 0.5s ease; }
+        .nav-link { position: relative; transition: all 0.3s ease; }
+        .nav-link::after { content: ''; position: absolute; bottom: -5px; left: 0; width: 0; height: 2px; background: white; transition: width 0.3s ease; }
+        .nav-link:hover::after { width: 100%; }
+        .nav-link.active::after { width: 100%; }
+        .skeleton { background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        @media (max-width: 768px) { .mobile-menu { position: fixed; top: 0; left: -100%; width: 80%; height: 100%; background: white; z-index: 1000; transition: left 0.3s ease; padding: 20px; } .mobile-menu.open { left: 0; } .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; display: none; } .overlay.show { display: block; } }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; }
+        .disable-select { user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="disable-select">
 
-    <!-- Main Container -->
-    <div class="max-w-6xl mx-auto">
-        
-        <!-- Header -->
-        <div class="text-center mb-8 md:mb-12">
-            <div class="inline-flex items-center gap-2 bg-white/20 backdrop-blur rounded-full px-6 py-2 mb-4">
-                <i class="fas fa-graduation-cap text-white text-xl"></i>
-                <span class="text-white font-semibold">QuizMaster Pro</span>
+<!-- Mobile Menu Overlay -->
+<div id="mobileOverlay" class="overlay" onclick="closeMobileMenu()"></div>
+
+<!-- Mobile Menu -->
+<div id="mobileMenu" class="mobile-menu">
+    <div class="flex justify-between items-center mb-8">
+        <i class="fas fa-graduation-cap text-2xl text-purple-600"></i>
+        <button onclick="closeMobileMenu()" class="text-gray-600"><i class="fas fa-times text-2xl"></i></button>
+    </div>
+    <div class="flex flex-col gap-4">
+        <a href="#" onclick="showPage('home'); closeMobileMenu();" class="nav-link py-2 text-gray-700 font-semibold">🏠 Home</a>
+        <a href="#" onclick="showPage('quiz'); closeMobileMenu();" class="nav-link py-2 text-gray-700 font-semibold">📝 Take Quiz</a>
+        <a href="#" onclick="showPage('about'); closeMobileMenu();" class="nav-link py-2 text-gray-700 font-semibold">📖 About Us</a>
+        <a href="#" onclick="showPage('contact'); closeMobileMenu();" class="nav-link py-2 text-gray-700 font-semibold">📧 Contact</a>
+        <a href="#" onclick="showPage('privacy'); closeMobileMenu();" class="nav-link py-2 text-gray-700 font-semibold">🔒 Privacy Policy</a>
+    </div>
+</div>
+
+<div class="max-w-6xl mx-auto px-4">
+    
+    <!-- Modern Navigation Bar -->
+    <nav class="bg-white/10 backdrop-blur-lg rounded-full px-6 py-3 mb-8 sticky top-4 z-50 shadow-lg">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-graduation-cap text-white text-2xl"></i>
+                <span class="text-white font-bold text-xl">BookMCQ</span>
+                <span class="text-white/60 text-sm hidden md:inline">| Master Every Chapter</span>
             </div>
-            <h1 class="text-4xl md:text-6xl font-bold text-white mb-3">Master Any Subject</h1>
-            <p class="text-white/90 text-lg md:text-xl max-w-2xl mx-auto">Topic-wise & difficulty-based MCQs from hundreds of books</p>
+            
+            <!-- Desktop Menu -->
+            <div class="hidden md:flex gap-6">
+                <a href="#" onclick="showPage('home')" id="navHome" class="nav-link text-white/80 hover:text-white transition">🏠 Home</a>
+                <a href="#" onclick="showPage('quiz')" id="navQuiz" class="nav-link text-white/80 hover:text-white transition">📝 Take Quiz</a>
+                <a href="#" onclick="showPage('about')" id="navAbout" class="nav-link text-white/80 hover:text-white transition">📖 About Us</a>
+                <a href="#" onclick="showPage('contact')" id="navContact" class="nav-link text-white/80 hover:text-white transition">📧 Contact</a>
+                <a href="#" onclick="showPage('privacy')" id="navPrivacy" class="nav-link text-white/80 hover:text-white transition">🔒 Privacy</a>
+            </div>
+            
+            <!-- Mobile Menu Button -->
+            <button onclick="openMobileMenu()" class="md:hidden text-white text-2xl">
+                <i class="fas fa-bars"></i>
+            </button>
         </div>
+    </nav>
 
-        <!-- Filter Section (Books, Topic, Difficulty) -->
+    <!-- Home Page -->
+    <div id="homePage" class="quiz-card rounded-2xl p-8 shadow-xl text-center">
+        <div class="flex flex-col items-center">
+            <div class="bg-gradient-to-r from-purple-100 to-indigo-100 rounded-full p-4 mb-6">
+                <i class="fas fa-graduation-cap text-5xl text-purple-600"></i>
+            </div>
+            <h2 class="text-4xl font-bold text-gray-800 mb-4">Welcome to BookMCQ</h2>
+            <p class="text-gray-600 text-lg max-w-2xl mx-auto mb-8">
+                Your ultimate platform for chapter-wise practice tests from hundreds of books. 
+                Master any subject with our difficulty-based MCQ system.
+            </p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mt-6">
+                <div class="bg-purple-50 rounded-xl p-6 text-center">
+                    <i class="fas fa-book text-3xl text-purple-600 mb-3"></i>
+                    <h3 class="font-bold text-lg mb-2">500+ Books</h3>
+                    <p class="text-gray-600 text-sm">From Computer Science to Mathematics</p>
+                </div>
+                <div class="bg-purple-50 rounded-xl p-6 text-center">
+                    <i class="fas fa-question-circle text-3xl text-purple-600 mb-3"></i>
+                    <h3 class="font-bold text-lg mb-2">10,000+ MCQs</h3>
+                    <p class="text-gray-600 text-sm">Topic-wise and difficulty-based</p>
+                </div>
+                <div class="bg-purple-50 rounded-xl p-6 text-center">
+                    <i class="fas fa-chart-line text-3xl text-purple-600 mb-3"></i>
+                    <h3 class="font-bold text-lg mb-2">Track Progress</h3>
+                    <p class="text-gray-600 text-sm">Monitor your improvement</p>
+                </div>
+            </div>
+            
+            <button onclick="showPage('quiz')" class="mt-8 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-3 rounded-full font-bold hover:opacity-90 transition shadow-lg">
+                Start Practicing Now <i class="fas fa-arrow-right ml-2"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Quiz Page -->
+    <div id="quizPage" class="hidden">
+        
+        <!-- Filter Section -->
         <div class="quiz-card rounded-2xl p-6 mb-8 shadow-xl">
             <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                 <i class="fas fa-filter text-purple-600"></i> Filter Questions
@@ -95,17 +142,13 @@
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">📚 Select Book</label>
                     <select id="bookSelect" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500">
-                        <option value="js">JavaScript: The Definitive Guide</option>
-                        <option value="python">Python Crash Course</option>
-                        <option value="react">React - The Complete Guide</option>
+                        <option value="">Loading books...</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">🏷️ Topic</label>
-                    <select id="topicSelect" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500">
-                        <option value="basics">Basics & Fundamentals</option>
-                        <option value="advanced">Advanced Concepts</option>
-                        <option value="interview">Interview Prep</option>
+                    <select id="topicSelect" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" disabled>
+                        <option value="">Select a book first</option>
                     </select>
                 </div>
                 <div>
@@ -122,35 +165,24 @@
             </button>
         </div>
 
-        <!-- Quiz Area (Initially Hidden) -->
+        <!-- Quiz Area -->
         <div id="quizArea" class="hidden quiz-card rounded-2xl p-6 md:p-8 shadow-xl">
-            <!-- Progress & Stats -->
             <div class="flex justify-between items-center mb-6 flex-wrap gap-3">
                 <div class="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-full">
                     <i class="fas fa-question-circle text-purple-600"></i>
-                    <span id="questionCounter" class="font-bold">Question 1 / 5</span>
+                    <span id="questionCounter" class="font-bold">Question 1 / 0</span>
                 </div>
                 <div class="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-full">
                     <i class="fas fa-star text-yellow-500"></i>
                     <span id="scoreDisplay" class="font-bold">Score: 0</span>
                 </div>
             </div>
-            
-            <!-- Progress Bar -->
             <div class="w-full bg-gray-200 rounded-full h-2 mb-6">
                 <div id="progressFill" class="progress-bar bg-gradient-to-r from-purple-600 to-indigo-600 h-2 rounded-full" style="width: 0%"></div>
             </div>
-
-            <!-- Question Text -->
             <h3 id="questionText" class="text-xl md:text-2xl font-bold text-gray-800 mb-6">Loading question...</h3>
-
-            <!-- Options Container -->
             <div id="optionsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6"></div>
-
-            <!-- Feedback Message -->
             <div id="feedbackMessage" class="mb-6 hidden p-4 rounded-xl text-white font-semibold"></div>
-
-            <!-- Next Button -->
             <button id="nextBtn" class="w-full bg-gray-800 text-white font-bold py-3 rounded-xl hover:bg-gray-900 transition disabled:opacity-50 disabled:cursor-not-allowed">
                 Next Question <i class="fas fa-arrow-right ml-2"></i>
             </button>
@@ -171,204 +203,499 @@
         </div>
     </div>
 
-    <script>
-        // ========================
-        // SAMPLE MCQ DATABASE (Can be expanded to hundreds of books)
-        // ========================
-        const questionBank = {
-            js: {
-                basics: {
-                    easy: [
-                        { text: "What does `typeof null` return in JavaScript?", options: ["'null'", "'undefined'", "'object'", "'number'"], correct: 2, explanation: "In JavaScript, `typeof null` returns 'object' due to a historical bug." },
-                        { text: "Which keyword is used to declare a variable in JavaScript?", options: ["var", "let", "const", "All of the above"], correct: 3, explanation: "var, let, and const are all used to declare variables." }
-                    ],
-                    medium: [
-                        { text: "What is closure in JavaScript?", options: ["A function inside a function", "A function with access to outer scope even after outer function returns", "A block of code", "A loop construct"], correct: 1, explanation: "Closures allow inner functions to access outer variables." }
-                    ],
-                    hard: [
-                        { text: "What will `console.log([] == ![])` output?", options: ["true", "false", "undefined", "TypeError"], correct: 0, explanation: "Abstract equality coercion leads to true." }
-                    ]
-                },
-                interview: {
-                    easy: [ { text: "What is the event loop?", options: ["A loop for events", "Handles async operations", "A type of array", "None"], correct: 1, explanation: "Event loop handles asynchronous callbacks." } ],
-                    medium: [ { text: "Explain `this` in arrow functions.", options: ["Lexical scope", "Dynamic scope", "Window object", "Undefined"], correct: 0, explanation: "Arrow functions inherit `this` from parent scope." } ],
-                    hard: [ { text: "What is prototypal inheritance?", options: ["Class inheritance", "Objects inherit from other objects", "Functional inheritance", "None"], correct: 1, explanation: "JavaScript uses prototype-based inheritance." } ]
-                }
-            },
-            python: {
-                basics: {
-                    easy: [ { text: "What is the output of `print(2**3)`?", options: ["6", "8", "9", "5"], correct: 1, explanation: "** is exponentiation operator." } ],
-                    medium: [ { text: "Which of the following is mutable?", options: ["Tuple", "String", "List", "Int"], correct: 2, explanation: "Lists are mutable in Python." } ],
-                    hard: [ { text: "What is a decorator?", options: ["Design pattern", "Function that modifies another function", "Class method", "None"], correct: 1, explanation: "Decorators wrap functions to add functionality." } ]
-                },
-                interview: {
-                    easy: [ { text: "What is PEP 8?", options: ["Python Editor", "Style Guide", "Library", "Framework"], correct: 1, explanation: "PEP 8 is Python's style guide." } ]
-                }
-            },
-            react: {
-                basics: {
-                    easy: [ { text: "What is JSX?", options: ["JavaScript XML", "Java Extension", "React Syntax", "None"], correct: 0, explanation: "JSX allows HTML in JavaScript." } ],
-                    medium: [ { text: "What is the virtual DOM?", options: ["Real DOM copy", "Lightweight representation", "Browser API", "None"], correct: 1, explanation: "Virtual DOM improves performance." } ],
-                    hard: [ { text: "What are hooks?", options: ["Functions", "Classes", "Components", "APIs"], correct: 0, explanation: "Hooks let you use state in functional components." } ]
-                },
-                interview: {
-                    easy: [ { text: "What is useState?", options: ["Hook", "Method", "Class", "Object"], correct: 0, explanation: "useState is a React Hook for state." } ]
-                }
-            }
-        };
+    <!-- About Us Page -->
+    <div id="aboutPage" class="hidden quiz-card rounded-2xl p-8 shadow-xl">
+        <div class="text-center mb-8">
+            <i class="fas fa-book-open text-5xl text-purple-600 mb-4"></i>
+            <h2 class="text-3xl font-bold mb-4">About BookMCQ</h2>
+            <p class="text-gray-600 max-w-2xl mx-auto">Your trusted companion for exam preparation and knowledge testing</p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+            <div>
+                <h3 class="text-xl font-bold mb-3">Our Mission</h3>
+                <p class="text-gray-600 leading-relaxed">To provide a comprehensive, accessible, and effective platform for students and professionals to test their knowledge across hundreds of books and subjects.</p>
+            </div>
+            <div>
+                <h3 class="text-xl font-bold mb-3">What We Offer</h3>
+                <ul class="space-y-2 text-gray-600">
+                    <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Chapter-wise MCQs from popular books</li>
+                    <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Difficulty-based questions (Easy, Medium, Hard)</li>
+                    <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Instant feedback and explanations</li>
+                    <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Progress tracking</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="mt-8 p-6 bg-purple-50 rounded-xl">
+            <h3 class="text-xl font-bold mb-3">Why Choose Us?</h3>
+            <p class="text-gray-600">With over 500+ books and 10,000+ carefully crafted questions, BookMCQ is the most comprehensive MCQ platform for students and professionals preparing for exams and interviews.</p>
+        </div>
+    </div>
 
-        // Helper to get questions based on filters
-        function getQuestions(book, topic, difficulty) {
+    <!-- Contact Page -->
+    <div id="contactPage" class="hidden quiz-card rounded-2xl p-8 shadow-xl">
+        <div class="text-center mb-8">
+            <i class="fas fa-envelope text-5xl text-purple-600 mb-4"></i>
+            <h2 class="text-3xl font-bold mb-4">Contact Us</h2>
+            <p class="text-gray-600">Have questions? We'd love to hear from you!</p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+                <h3 class="text-xl font-bold mb-4">Get in Touch</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-envelope text-purple-600 w-6"></i>
+                        <span class="text-gray-600">support@bookmcq.com</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <i class="fab fa-twitter text-purple-600 w-6"></i>
+                        <span class="text-gray-600">@bookmcq</span>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <h3 class="text-xl font-bold mb-4">Send a Message</h3>
+                <form id="contactForm">
+                    <input type="text" placeholder="Your Name" class="w-full p-3 border rounded-xl mb-3" required>
+                    <input type="email" placeholder="Your Email" class="w-full p-3 border rounded-xl mb-3" required>
+                    <textarea rows="4" placeholder="Your Message" class="w-full p-3 border rounded-xl mb-3" required></textarea>
+                    <button type="submit" class="bg-purple-600 text-white px-6 py-2 rounded-xl hover:bg-purple-700 transition">Send Message</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Privacy Policy Page -->
+    <div id="privacyPage" class="hidden quiz-card rounded-2xl p-8 shadow-xl">
+        <div class="text-center mb-8">
+            <i class="fas fa-shield-alt text-5xl text-purple-600 mb-4"></i>
+            <h2 class="text-3xl font-bold mb-4">Privacy Policy</h2>
+        </div>
+        <div class="prose max-w-none">
+            <p class="text-gray-600 mb-4">At BookMCQ, we respect your privacy and are committed to protecting your personal data.</p>
+            <h3 class="text-xl font-bold mt-6 mb-3">Information We Collect</h3>
+            <p class="text-gray-600">We only collect essential information like email address for authentication and quiz progress tracking.</p>
+            <h3 class="text-xl font-bold mt-6 mb-3">How We Use Your Information</h3>
+            <p class="text-gray-600">We use your information solely to provide and improve our services, track your quiz performance, and communicate with you about updates.</p>
+            <h3 class="text-xl font-bold mt-6 mb-3">Data Security</h3>
+            <p class="text-gray-600">We implement industry-standard security measures to protect your data from unauthorized access.</p>
+            <p class="text-gray-500 text-sm mt-8">Last updated: January 2024</p>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-12 text-center text-white/60 text-sm py-6">
+        <p>&copy; 2024 BookMCQ. All rights reserved. | Master Every Chapter</p>
+    </footer>
+</div>
+
+<!-- Toast Notification -->
+<div id="toast" class="toast hidden bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg"></div>
+
+<script>
+    // ============================================
+    // ADVANCED SECURITY FEATURES
+    // ============================================
+    
+    // Disable right click
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        return false;
+    });
+    
+    // Disable keyboard shortcuts (PrintScreen, etc.)
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'PrintScreen' || e.key === 'F12' || 
+            (e.ctrlKey && e.shiftKey && e.key === 'I') ||
+            (e.ctrlKey && e.shiftKey && e.key === 'C') ||
+            (e.ctrlKey && e.key === 'u')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+    
+    // Disable drag and drop
+    document.addEventListener('dragstart', function(e) {
+        e.preventDefault();
+        return false;
+    });
+    
+    // Disable text selection (already handled by CSS)
+    document.addEventListener('selectstart', function(e) {
+        e.preventDefault();
+        return false;
+    });
+    
+    // Show toast function
+    function showToast(message, isError = false) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.classList.remove('hidden');
+        toast.style.background = isError ? '#ef4444' : '#1f2937';
+        setTimeout(() => toast.classList.add('hidden'), 3000);
+    }
+    
+    // ============================================
+    // OOP ENCAPSULATION - Quiz Manager Class
+    // ============================================
+    class QuizManager {
+        #currentQuestions = [];
+        #currentIndex = 0;
+        #score = 0;
+        #answerLocked = false;
+        #supabase = null;
+        
+        constructor() {
+            this.#initSupabase();
+        }
+        
+        #initSupabase() {
+            const SUPABASE_URL = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
+            const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
+            this.#supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        }
+        
+        async loadBooks() {
             try {
-                let questions = questionBank[book]?.[topic]?.[difficulty];
-                if (!questions || questions.length === 0) {
-                    // Fallback to any question
-                    for (let b in questionBank) {
-                        for (let t in questionBank[b]) {
-                            for (let d in questionBank[b][t]) {
-                                if (questionBank[b][t][d].length) {
-                                    return questionBank[b][t][d];
-                                }
-                            }
-                        }
-                    }
-                }
-                return questions || [];
+                const { data, error } = await this.#supabase.from('books').select('id, title').order('title');
+                if (error) throw error;
+                return data || [];
             } catch(e) {
+                console.error('Error loading books:', e);
                 return [];
             }
         }
-
-        // Global quiz state
-        let currentQuestions = [];
-        let currentIndex = 0;
-        let score = 0;
-        let selectedOptionIndex = null;
-        let answerLocked = false;
-
-        // DOM Elements
-        const quizArea = document.getElementById('quizArea');
-        const resultsArea = document.getElementById('resultsArea');
-        const startBtn = document.getElementById('startQuizBtn');
-        const restartBtn = document.getElementById('restartBtn');
-        const nextBtn = document.getElementById('nextBtn');
-        const questionTextEl = document.getElementById('questionText');
-        const optionsContainer = document.getElementById('optionsContainer');
-        const feedbackMessage = document.getElementById('feedbackMessage');
-        const questionCounter = document.getElementById('questionCounter');
-        const scoreDisplay = document.getElementById('scoreDisplay');
-        const progressFill = document.getElementById('progressFill');
-        const finalScoreSpan = document.getElementById('finalScore');
-        const totalQuestionsSpan = document.getElementById('totalQuestions');
-        const resultProgress = document.getElementById('resultProgress');
-
-        function renderCurrentQuestion() {
-            if (!currentQuestions.length || currentIndex >= currentQuestions.length) return;
-            const q = currentQuestions[currentIndex];
-            questionTextEl.textContent = q.text;
-            questionCounter.textContent = `Question ${currentIndex + 1} / ${currentQuestions.length}`;
-            scoreDisplay.textContent = `Score: ${score}`;
-            const progressPercent = ((currentIndex + 1) / currentQuestions.length) * 100;
-            progressFill.style.width = `${progressPercent}%`;
-            
-            // Render options
-            optionsContainer.innerHTML = '';
-            q.options.forEach((opt, idx) => {
-                const btn = document.createElement('button');
-                btn.textContent = `${String.fromCharCode(65+idx)}. ${opt}`;
-                btn.className = `option-btn w-full text-left p-3 rounded-xl bg-white text-gray-800 font-medium transition`;
-                btn.dataset.index = idx;
-                btn.addEventListener('click', () => handleAnswer(idx));
-                optionsContainer.appendChild(btn);
-            });
-            
-            // Reset feedback and next button
-            feedbackMessage.classList.add('hidden');
-            nextBtn.disabled = true;
-            answerLocked = false;
-            selectedOptionIndex = null;
+        
+        async loadTopics(bookId) {
+            if (!bookId) return [];
+            try {
+                const { data, error } = await this.#supabase.from('topics')
+                    .select('id, name, chapter_number')
+                    .eq('book_id', parseInt(bookId))
+                    .order('chapter_number', { ascending: true });
+                if (error) throw error;
+                return data || [];
+            } catch(e) {
+                console.error('Error loading topics:', e);
+                return [];
+            }
         }
-
-        function handleAnswer(selectedIdx) {
-            if (answerLocked) return;
-            const currentQ = currentQuestions[currentIndex];
-            const isCorrect = (selectedIdx === currentQ.correct);
-            
-            // Highlight selected option
-            const allOptions = document.querySelectorAll('.option-btn');
-            allOptions.forEach((btn, idx) => {
-                btn.classList.remove('selected-option');
-                if (idx === selectedIdx) {
-                    btn.classList.add('selected-option');
+        
+        async loadQuestions(topicId, difficulty, limit = 10) {
+            if (!topicId) return [];
+            try {
+                let query = this.#supabase.from('questions')
+                    .select(`
+                        id,
+                        question_text,
+                        difficulty,
+                        correct_answer,
+                        explanation,
+                        options (option_text, option_index)
+                    `)
+                    .eq('topic_id', parseInt(topicId))
+                    .eq('difficulty', difficulty)
+                    .limit(limit);
+                
+                const { data, error } = await query;
+                if (error) throw error;
+                
+                // Format questions for display
+                return (data || []).map(q => ({
+                    id: q.id,
+                    text: q.question_text,
+                    options: (q.options || []).sort((a,b) => a.option_index - b.option_index).map(o => o.option_text),
+                    correct: q.correct_answer,
+                    explanation: q.explanation || 'No explanation available'
+                }));
+            } catch(e) {
+                console.error('Error loading questions:', e);
+                return [];
+            }
+        }
+        
+        setQuestions(questions) {
+            this.#currentQuestions = [...questions];
+            this.#currentIndex = 0;
+            this.#score = 0;
+            this.#answerLocked = false;
+        }
+        
+        getCurrentQuestion() {
+            if (this.#currentIndex >= this.#currentQuestions.length) return null;
+            return this.#currentQuestions[this.#currentIndex];
+        }
+        
+        checkAnswer(selectedIndex) {
+            const currentQ = this.getCurrentQuestion();
+            const isCorrect = (selectedIndex === currentQ.correct);
+            if (isCorrect) this.#score++;
+            this.#answerLocked = true;
+            return { isCorrect, correctAnswer: currentQ.correct, explanation: currentQ.explanation };
+        }
+        
+        nextQuestion() {
+            if (!this.#answerLocked) return false;
+            this.#currentIndex++;
+            this.#answerLocked = false;
+            return this.#currentIndex < this.#currentQuestions.length;
+        }
+        
+        isQuizComplete() {
+            return this.#currentIndex >= this.#currentQuestions.length;
+        }
+        
+        getScore() { return this.#score; }
+        getTotalQuestions() { return this.#currentQuestions.length; }
+        getCurrentIndex() { return this.#currentIndex + 1; }
+        getProgress() { return (this.#currentIndex / this.#currentQuestions.length) * 100; }
+        canAnswer() { return !this.#answerLocked; }
+    }
+    
+    // ============================================
+    // PAGE NAVIGATION
+    // ============================================
+    function showPage(pageName) {
+        document.getElementById('homePage').classList.add('hidden');
+        document.getElementById('quizPage').classList.add('hidden');
+        document.getElementById('aboutPage').classList.add('hidden');
+        document.getElementById('contactPage').classList.add('hidden');
+        document.getElementById('privacyPage').classList.add('hidden');
+        
+        document.getElementById(`${pageName}Page`).classList.remove('hidden');
+        
+        // Update active nav links
+        const navLinks = ['Home', 'Quiz', 'About', 'Contact', 'Privacy'];
+        navLinks.forEach(link => {
+            const navElement = document.getElementById(`nav${link}`);
+            if (navElement) {
+                if (link.toLowerCase() === pageName.toLowerCase()) {
+                    navElement.classList.add('active');
+                } else {
+                    navElement.classList.remove('active');
                 }
-            });
-            
-            if (isCorrect) {
-                score++;
-                feedbackMessage.className = "correct-feedback p-4 rounded-xl text-white font-semibold mb-6";
-                feedbackMessage.innerHTML = `<i class="fas fa-check-circle mr-2"></i> ✅ Correct! ${currentQ.explanation || ''}`;
-                scoreDisplay.textContent = `Score: ${score}`;
-            } else {
-                const correctLetter = String.fromCharCode(65+currentQ.correct);
-                feedbackMessage.className = "wrong-feedback p-4 rounded-xl text-white font-semibold mb-6";
-                feedbackMessage.innerHTML = `<i class="fas fa-times-circle mr-2"></i> ❌ Wrong! Correct answer: ${correctLetter}. ${currentQ.explanation || ''}`;
             }
-            
-            feedbackMessage.classList.remove('hidden');
-            answerLocked = true;
-            nextBtn.disabled = false;
+        });
+        
+        // Reload books when showing quiz page
+        if (pageName === 'quiz' && quizManager) {
+            loadBooksToSelect();
         }
-
-        function nextQuestion() {
-            if (!answerLocked) return;
-            currentIndex++;
-            if (currentIndex < currentQuestions.length) {
-                renderCurrentQuestion();
-            } else {
-                finishQuiz();
-            }
+        
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    
+    function openMobileMenu() {
+        document.getElementById('mobileMenu').classList.add('open');
+        document.getElementById('mobileOverlay').classList.add('show');
+    }
+    
+    function closeMobileMenu() {
+        document.getElementById('mobileMenu').classList.remove('open');
+        document.getElementById('mobileOverlay').classList.remove('show');
+    }
+    
+    // ============================================
+    // UI UPDATE FUNCTIONS
+    // ============================================
+    let quizManager = null;
+    let currentQuizQuestions = [];
+    
+    async function loadBooksToSelect() {
+        const bookSelect = document.getElementById('bookSelect');
+        bookSelect.innerHTML = '<option value="">Loading books...</option>';
+        const books = await quizManager.loadBooks();
+        
+        if (books.length === 0) {
+            bookSelect.innerHTML = '<option value="">No books available</option>';
+            return;
         }
-
-        function finishQuiz() {
-            quizArea.classList.add('hidden');
-            resultsArea.classList.remove('hidden');
-            finalScoreSpan.textContent = score;
-            totalQuestionsSpan.textContent = currentQuestions.length;
-            const percent = (score / currentQuestions.length) * 100;
-            resultProgress.style.width = `${percent}%`;
+        
+        bookSelect.innerHTML = '<option value="">-- Select a Book --</option>';
+        books.forEach(book => {
+            bookSelect.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+        });
+    }
+    
+    async function loadTopicsForBook() {
+        const bookId = document.getElementById('bookSelect').value;
+        const topicSelect = document.getElementById('topicSelect');
+        
+        if (!bookId) {
+            topicSelect.innerHTML = '<option value="">Select a book first</option>';
+            topicSelect.disabled = true;
+            return;
         }
-
-        function startQuiz() {
-            const book = document.getElementById('bookSelect').value;
-            const topic = document.getElementById('topicSelect').value;
-            const difficulty = document.getElementById('difficultySelect').value;
-            
-            let questions = getQuestions(book, topic, difficulty);
-            if (!questions || questions.length === 0) {
-                alert("No questions found for these filters. Showing sample questions instead.");
-                // Fallback to any available questions
-                questions = getQuestions('js', 'basics', 'easy');
-            }
-            currentQuestions = [...questions];
-            currentIndex = 0;
-            score = 0;
-            selectedOptionIndex = null;
-            answerLocked = false;
-            
-            if (currentQuestions.length === 0) {
-                alert("No questions available. Please check back later.");
-                return;
-            }
-            
-            quizArea.classList.remove('hidden');
-            resultsArea.classList.add('hidden');
-            renderCurrentQuestion();
+        
+        topicSelect.innerHTML = '<option value="">Loading topics...</option>';
+        topicSelect.disabled = false;
+        
+        const topics = await quizManager.loadTopics(bookId);
+        
+        if (topics.length === 0) {
+            topicSelect.innerHTML = '<option value="">No topics available</option>';
+            return;
         }
-
-        // Event Listeners
-        startBtn.addEventListener('click', startQuiz);
-        restartBtn.addEventListener('click', startQuiz);
-        nextBtn.addEventListener('click', nextQuestion);
-    </script>
+        
+        topicSelect.innerHTML = '<option value="">-- Select a Topic --</option>';
+        topics.forEach(topic => {
+            const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
+            topicSelect.innerHTML += `<option value="${topic.id}">${escapeHtml(display)}</option>`;
+        });
+    }
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    // ============================================
+    // QUIZ UI FUNCTIONS
+    // ============================================
+    let quizQuestions = [];
+    let quizIndex = 0;
+    let quizScore = 0;
+    let quizLocked = false;
+    
+    function renderQuestion() {
+        if (!quizQuestions.length || quizIndex >= quizQuestions.length) return;
+        
+        const q = quizQuestions[quizIndex];
+        document.getElementById('questionText').textContent = q.text;
+        document.getElementById('questionCounter').textContent = `Question ${quizIndex + 1} / ${quizQuestions.length}`;
+        document.getElementById('scoreDisplay').textContent = `Score: ${quizScore}`;
+        document.getElementById('progressFill').style.width = `${((quizIndex + 1) / quizQuestions.length) * 100}%`;
+        
+        const container = document.getElementById('optionsContainer');
+        container.innerHTML = '';
+        
+        q.options.forEach((opt, idx) => {
+            const btn = document.createElement('button');
+            btn.textContent = `${String.fromCharCode(65+idx)}. ${opt}`;
+            btn.className = `option-btn w-full text-left p-3 rounded-xl bg-white text-gray-800 font-medium transition`;
+            btn.addEventListener('click', () => handleAnswer(idx));
+            container.appendChild(btn);
+        });
+        
+        document.getElementById('feedbackMessage').classList.add('hidden');
+        document.getElementById('nextBtn').disabled = true;
+        quizLocked = false;
+    }
+    
+    function handleAnswer(selectedIdx) {
+        if (quizLocked) return;
+        
+        const q = quizQuestions[quizIndex];
+        const isCorrect = (selectedIdx === q.correct);
+        
+        const allOptions = document.querySelectorAll('.option-btn');
+        allOptions.forEach((btn, idx) => {
+            btn.classList.remove('selected-option');
+            if (idx === selectedIdx) btn.classList.add('selected-option');
+        });
+        
+        const feedbackDiv = document.getElementById('feedbackMessage');
+        if (isCorrect) {
+            quizScore++;
+            feedbackDiv.className = "correct-feedback p-4 rounded-xl text-white font-semibold mb-6";
+            feedbackDiv.innerHTML = `<i class="fas fa-check-circle mr-2"></i> ✅ Correct! ${q.explanation || ''}`;
+            document.getElementById('scoreDisplay').textContent = `Score: ${quizScore}`;
+        } else {
+            const correctLetter = String.fromCharCode(65+q.correct);
+            feedbackDiv.className = "wrong-feedback p-4 rounded-xl text-white font-semibold mb-6";
+            feedbackDiv.innerHTML = `<i class="fas fa-times-circle mr-2"></i> ❌ Wrong! Correct answer: ${correctLetter}. ${q.explanation || ''}`;
+        }
+        
+        feedbackDiv.classList.remove('hidden');
+        quizLocked = true;
+        document.getElementById('nextBtn').disabled = false;
+    }
+    
+    function nextQuestion() {
+        if (!quizLocked) return;
+        quizIndex++;
+        
+        if (quizIndex < quizQuestions.length) {
+            renderQuestion();
+        } else {
+            finishQuiz();
+        }
+    }
+    
+    function finishQuiz() {
+        document.getElementById('quizArea').classList.add('hidden');
+        document.getElementById('resultsArea').classList.remove('hidden');
+        document.getElementById('finalScore').textContent = quizScore;
+        document.getElementById('totalQuestions').textContent = quizQuestions.length;
+        document.getElementById('resultProgress').style.width = `${(quizScore / quizQuestions.length) * 100}%`;
+    }
+    
+    async function startQuiz() {
+        const bookId = document.getElementById('bookSelect').value;
+        const topicId = document.getElementById('topicSelect').value;
+        const difficulty = document.getElementById('difficultySelect').value;
+        
+        if (!bookId || !topicId) {
+            showToast('Please select both a book and a topic', true);
+            return;
+        }
+        
+        showToast('Loading questions...');
+        
+        const questions = await quizManager.loadQuestions(topicId, difficulty, 15);
+        
+        if (!questions || questions.length === 0) {
+            showToast('No questions found for these filters. Try different options!', true);
+            return;
+        }
+        
+        quizQuestions = questions;
+        quizIndex = 0;
+        quizScore = 0;
+        quizLocked = false;
+        
+        document.getElementById('quizArea').classList.remove('hidden');
+        document.getElementById('resultsArea').classList.add('hidden');
+        renderQuestion();
+        showToast(`Loaded ${questions.length} questions!`);
+    }
+    
+    // ============================================
+    // INITIALIZATION
+    // ============================================
+    window.showPage = showPage;
+    window.openMobileMenu = openMobileMenu;
+    window.closeMobileMenu = closeMobileMenu;
+    
+    // Initialize Quiz Manager
+    quizManager = new QuizManager();
+    
+    // Setup event listeners
+    document.getElementById('startQuizBtn').addEventListener('click', startQuiz);
+    document.getElementById('restartBtn').addEventListener('click', startQuiz);
+    document.getElementById('nextBtn').addEventListener('click', nextQuestion);
+    document.getElementById('bookSelect').addEventListener('change', loadTopicsForBook);
+    
+    // Contact form handler
+    document.getElementById('contactForm')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        showToast('Thank you for your message! We\'ll get back to you soon.');
+        this.reset();
+    });
+    
+    // Load initial books
+    loadBooksToSelect();
+    
+    // Set default page
+    showPage('home');
+</script>
 </body>
 </html>
