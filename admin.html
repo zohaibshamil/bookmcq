@@ -17,6 +17,8 @@
         .progress-bar { transition: width 0.3s ease; }
         .skeleton { animation: pulse 1.5s ease-in-out infinite; background: #e2e8f0; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: white; border-radius: 1rem; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -84,7 +86,7 @@
                 <button id="tabAdminsBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">👑 Admins</button>
             </div>
 
-            <!-- Books Tab -->
+            <!-- Books Tab with Edit -->
             <div id="booksTab">
                 <h2 class="text-xl font-bold mb-4">Books</h2>
                 <button id="showAddBookBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg mb-4">+ Add Book</button>
@@ -94,24 +96,24 @@
                     <button id="saveBookBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
                     <button id="cancelBookBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
                 </div>
-                <div id="booksList"><div class="skeleton h-12 rounded-lg mb-2"></div><div class="skeleton h-12 rounded-lg"></div></div>
+                <div id="booksList"></div>
             </div>
 
-            <!-- Topics Tab with Chapter Number -->
+            <!-- Topics Tab with Edit and Chapter Number -->
             <div id="topicsTab" class="hidden">
                 <h2 class="text-xl font-bold mb-4">Topics</h2>
                 <button id="showAddTopicBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg mb-4">+ Add Topic</button>
                 <div id="addTopicForm" class="hidden bg-gray-50 p-4 rounded-lg mb-4">
                     <select id="topicBookId" class="w-full p-2 border rounded mb-2"></select>
                     <input type="text" id="topicName" placeholder="Topic Name" class="w-full p-2 border rounded mb-2">
-                    <input type="number" id="chapterNumber" placeholder="Chapter Number (optional)" class="w-full p-2 border rounded mb-2">
+                    <input type="number" id="chapterNumber" placeholder="Chapter Number (1, 2, 3...)" class="w-full p-2 border rounded mb-2">
                     <button id="saveTopicBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
                     <button id="cancelTopicBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
                 </div>
-                <div id="topicsList"><div class="skeleton h-12 rounded-lg mb-2"></div><div class="skeleton h-12 rounded-lg"></div></div>
+                <div id="topicsList"></div>
             </div>
 
-            <!-- Questions Tab -->
+            <!-- Questions Tab with Edit -->
             <div id="questionsTab" class="hidden">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-xl font-bold">Questions</h2>
@@ -161,7 +163,7 @@
                     <button id="cancelQuestionBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
                 </div>
                 
-                <div id="questionsList"><div class="skeleton h-24 rounded-lg mb-2"></div><div class="skeleton h-24 rounded-lg"></div></div>
+                <div id="questionsList"></div>
                 
                 <div class="flex justify-between items-center mt-4">
                     <button id="prevPageBtn" class="bg-gray-500 text-white px-4 py-2 rounded-lg disabled:opacity-50" disabled>Previous</button>
@@ -170,7 +172,7 @@
                 </div>
             </div>
 
-            <!-- Bulk Upload Tab - Fixed -->
+            <!-- Bulk Upload Tab -->
             <div id="bulkUploadTab" class="hidden">
                 <h2 class="text-xl font-bold mb-4">📤 Bulk Upload Questions</h2>
                 
@@ -186,7 +188,7 @@
                         <div>
                             <label class="block text-sm font-semibold mb-2">Select Topic</label>
                             <select id="bulkTopicId" class="w-full p-2 border rounded-lg">
-                                <option value="">Select Topic</option>
+                                <option value="">First select a book</option>
                             </select>
                         </div>
                     </div>
@@ -214,7 +216,7 @@
                         <div class="overflow-x-auto">
                             <table id="previewTable" class="min-w-full bg-white border rounded-lg text-sm">
                                 <thead class="bg-gray-100">
-                                    <tr id="previewHeader"><tr>
+                                    <tr id="previewHeader"></tr>
                                 </thead>
                                 <tbody id="previewBody"></tbody>
                             </table>
@@ -272,11 +274,66 @@
     </div>
 </div>
 
+<!-- Edit Modals -->
+<div id="editBookModal" class="hidden modal">
+    <div class="modal-content p-6">
+        <h3 class="text-xl font-bold mb-4">Edit Book</h3>
+        <input type="text" id="editBookId" class="hidden">
+        <input type="text" id="editBookTitle" placeholder="Book Title" class="w-full p-2 border rounded mb-2">
+        <input type="text" id="editBookAuthor" placeholder="Author" class="w-full p-2 border rounded mb-4">
+        <div class="flex gap-2">
+            <button id="updateBookBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Update</button>
+            <button id="closeBookModal" class="bg-gray-400 text-white px-4 py-2 rounded">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<div id="editTopicModal" class="hidden modal">
+    <div class="modal-content p-6">
+        <h3 class="text-xl font-bold mb-4">Edit Topic</h3>
+        <input type="text" id="editTopicId" class="hidden">
+        <input type="text" id="editTopicName" placeholder="Topic Name" class="w-full p-2 border rounded mb-2">
+        <input type="number" id="editChapterNumber" placeholder="Chapter Number" class="w-full p-2 border rounded mb-4">
+        <div class="flex gap-2">
+            <button id="updateTopicBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Update</button>
+            <button id="closeTopicModal" class="bg-gray-400 text-white px-4 py-2 rounded">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<div id="editQuestionModal" class="hidden modal">
+    <div class="modal-content p-6" style="max-width: 600px;">
+        <h3 class="text-xl font-bold mb-4">Edit Question</h3>
+        <input type="text" id="editQuestionId" class="hidden">
+        <textarea id="editQuestionText" rows="3" placeholder="Question Text" class="w-full p-2 border rounded mb-2"></textarea>
+        <input type="text" id="editOption0" placeholder="Option A" class="w-full p-2 border rounded mb-2">
+        <input type="text" id="editOption1" placeholder="Option B" class="w-full p-2 border rounded mb-2">
+        <input type="text" id="editOption2" placeholder="Option C" class="w-full p-2 border rounded mb-2">
+        <input type="text" id="editOption3" placeholder="Option D" class="w-full p-2 border rounded mb-2">
+        <select id="editCorrectAnswer" class="w-full p-2 border rounded mb-2">
+            <option value="0">Option A is correct</option>
+            <option value="1">Option B is correct</option>
+            <option value="2">Option C is correct</option>
+            <option value="3">Option D is correct</option>
+        </select>
+        <select id="editDifficulty" class="w-full p-2 border rounded mb-2">
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
+        </select>
+        <textarea id="editExplanation" rows="2" placeholder="Explanation" class="w-full p-2 border rounded mb-4"></textarea>
+        <div class="flex gap-2">
+            <button id="updateQuestionBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Update</button>
+            <button id="closeQuestionModal" class="bg-gray-400 text-white px-4 py-2 rounded">Cancel</button>
+        </div>
+    </div>
+</div>
+
 <div id="toast" class="toast hidden bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg"></div>
 
 <script>
     // ============================================
-    // OPTIMIZED ADMIN PANEL WITH PAGINATION
+    // SUPABASE CONFIGURATION
     // ============================================
     const SUPABASE_URL = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
@@ -422,106 +479,7 @@
         document.getElementById('loginForm').classList.remove('hidden');
     }
 
-    // ============ OPTIMIZED QUESTIONS WITH PAGINATION ============
-    async function loadQuestions() {
-        const container = document.getElementById('questionsList');
-        container.innerHTML = '<div class="skeleton h-24 rounded-lg mb-2"></div><div class="skeleton h-24 rounded-lg"></div>';
-        
-        let query = _supabase.from('questions').select('*, topics(name, chapter_number)', { count: 'exact' });
-        
-        if (currentFilters.topicId) {
-            query = query.eq('topic_id', parseInt(currentFilters.topicId));
-        }
-        if (currentFilters.difficulty) {
-            query = query.eq('difficulty', currentFilters.difficulty);
-        }
-        
-        const from = (currentPage - 1) * PAGE_SIZE;
-        const to = from + PAGE_SIZE - 1;
-        
-        const { data, error, count } = await query.range(from, to).order('id', { ascending: false });
-        
-        if (error) {
-            container.innerHTML = '<p class="text-gray-500">Error loading questions</p>';
-            return;
-        }
-        
-        totalQuestions = count || 0;
-        updatePaginationButtons();
-        
-        if (!data || data.length === 0) {
-            container.innerHTML = '<p class="text-gray-500">No questions yet. Add your first question!</p>';
-            return;
-        }
-        
-        container.innerHTML = data.map(q => {
-            const topicDisplay = q.topics?.chapter_number ? 
-                `Ch ${q.topics.chapter_number}: ${escapeHtml(q.topics.name)}` : 
-                escapeHtml(q.topics?.name || 'Unknown');
-            return `
-            <div class="bg-gray-50 p-3 rounded-lg mb-2">
-                <p class="font-bold text-sm">Q${q.id}. ${escapeHtml(q.question_text)}</p>
-                <p class="text-xs text-gray-600 mt-1">Topic: ${topicDisplay} | Difficulty: ${q.difficulty}</p>
-                <button onclick="deleteQuestion(${q.id})" class="text-red-600 text-xs mt-1"><i class="fas fa-trash"></i> Delete</button>
-            </div>
-        `}).join('');
-    }
-    
-    function updatePaginationButtons() {
-        const totalPages = Math.ceil(totalQuestions / PAGE_SIZE);
-        document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages || 1}`;
-        document.getElementById('prevPageBtn').disabled = currentPage === 1;
-        document.getElementById('nextPageBtn').disabled = currentPage >= totalPages;
-    }
-    
-    async function goToPrevPage() {
-        if (currentPage > 1) {
-            currentPage--;
-            await loadQuestions();
-        }
-    }
-    
-    async function goToNextPage() {
-        const totalPages = Math.ceil(totalQuestions / PAGE_SIZE);
-        if (currentPage < totalPages) {
-            currentPage++;
-            await loadQuestions();
-        }
-    }
-    
-    async function applyFilters() {
-        currentFilters.bookId = document.getElementById('filterBookId').value;
-        currentFilters.topicId = document.getElementById('filterTopicId').value;
-        currentFilters.difficulty = document.getElementById('filterDifficulty').value;
-        currentPage = 1;
-        
-        if (currentFilters.bookId) {
-            const { data } = await _supabase.from('topics').select('id, name').eq('book_id', currentFilters.bookId);
-            const topicSelect = document.getElementById('filterTopicId');
-            topicSelect.innerHTML = '<option value="">All Topics</option>';
-            data?.forEach(topic => {
-                topicSelect.innerHTML += `<option value="${topic.id}">${escapeHtml(topic.name)}</option>`;
-            });
-        } else {
-            document.getElementById('filterTopicId').innerHTML = '<option value="">All Topics</option>';
-            currentFilters.topicId = '';
-        }
-        
-        await loadQuestions();
-    }
-    
-    async function loadFilterBooks() {
-        const { data } = await _supabase.from('books').select('id, title');
-        const select = document.getElementById('filterBookId');
-        select.innerHTML = '<option value="">All Books</option>';
-        if (data) {
-            data.forEach(book => {
-                select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
-            });
-        }
-    }
-
-    // ============ BOOKS ============
+    // ============ BOOKS with Edit ============
     async function loadBooks() {
         const { data, error } = await _supabase.from('books').select('*').order('id', { ascending: false });
         const container = document.getElementById('booksList');
@@ -534,13 +492,20 @@
         container.innerHTML = data.map(book => `
             <div class="bg-gray-50 p-3 rounded-lg mb-2 flex justify-between items-center">
                 <div><strong>${escapeHtml(book.title)}</strong> ${book.author ? `by ${escapeHtml(book.author)}` : ''}</div>
-                <button onclick="deleteBook(${book.id})" class="text-red-600"><i class="fas fa-trash"></i></button>
+                <div class="flex gap-2">
+                    <button onclick="openEditBookModal(${book.id}, '${escapeHtml(book.title)}', '${escapeHtml(book.author || '')}')" class="text-blue-600 hover:text-blue-800">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="deleteBook(${book.id})" class="text-red-600 hover:text-red-800">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
             </div>
         `).join('');
     }
 
     window.deleteBook = async function(id) {
-        if (confirm('Delete this book?')) {
+        if (confirm('Delete this book? This will also delete all topics and questions in this book.')) {
             await _supabase.from('books').delete().eq('id', id);
             await Promise.all([loadBooks(), loadTopics(), loadFilterBooks(), loadBookSelects(), loadBulkBookSelects()]);
             showToast('Book deleted');
@@ -568,7 +533,35 @@
         }
     }
 
-    // ============ TOPICS with Chapter Number ============
+    // Edit Book Functions
+    window.openEditBookModal = function(id, title, author) {
+        document.getElementById('editBookId').value = id;
+        document.getElementById('editBookTitle').value = title;
+        document.getElementById('editBookAuthor').value = author;
+        document.getElementById('editBookModal').classList.remove('hidden');
+    };
+
+    async function updateBook() {
+        const id = document.getElementById('editBookId').value;
+        const title = document.getElementById('editBookTitle').value;
+        const author = document.getElementById('editBookAuthor').value;
+        
+        if (!title) {
+            showToast('Please enter a book title');
+            return;
+        }
+        
+        const { error } = await _supabase.from('books').update({ title, author }).eq('id', id);
+        if (error) {
+            showToast('Error: ' + error.message);
+        } else {
+            showToast('Book updated!');
+            document.getElementById('editBookModal').classList.add('hidden');
+            await Promise.all([loadBooks(), loadFilterBooks(), loadBookSelects(), loadBulkBookSelects()]);
+        }
+    }
+
+    // ============ TOPICS with Edit and Chapter Number ============
     async function loadTopics() {
         const { data, error } = await _supabase.from('topics').select('*, books(title)').order('chapter_number', { ascending: true, nullsFirst: false }).order('id', { ascending: true });
         const container = document.getElementById('topicsList');
@@ -578,15 +571,24 @@
             return;
         }
         
-        container.innerHTML = data.map(topic => `
+        container.innerHTML = data.map(topic => {
+            const chapterDisplay = topic.chapter_number ? `Ch ${topic.chapter_number}: ` : '';
+            return `
             <div class="bg-gray-50 p-3 rounded-lg mb-2 flex justify-between items-center">
                 <div>
-                    <strong>${topic.chapter_number ? `Ch ${topic.chapter_number}: ` : ''}${escapeHtml(topic.name)}</strong>
+                    <strong>${chapterDisplay}${escapeHtml(topic.name)}</strong>
                     <span class="text-gray-600 text-sm ml-2">(${escapeHtml(topic.books?.title || 'Unknown')})</span>
                 </div>
-                <button onclick="deleteTopic(${topic.id})" class="text-red-600"><i class="fas fa-trash"></i></button>
+                <div class="flex gap-2">
+                    <button onclick="openEditTopicModal(${topic.id}, '${escapeHtml(topic.name)}', ${topic.chapter_number || ''})" class="text-blue-600 hover:text-blue-800">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="deleteTopic(${topic.id})" class="text-red-600 hover:text-red-800">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
             </div>
-        `).join('');
+        `}).join('');
     }
 
     window.deleteTopic = async function(id) {
@@ -625,6 +627,215 @@
         }
     }
 
+    // Edit Topic Functions
+    window.openEditTopicModal = function(id, name, chapterNumber) {
+        document.getElementById('editTopicId').value = id;
+        document.getElementById('editTopicName').value = name;
+        document.getElementById('editChapterNumber').value = chapterNumber;
+        document.getElementById('editTopicModal').classList.remove('hidden');
+    };
+
+    async function updateTopic() {
+        const id = document.getElementById('editTopicId').value;
+        const name = document.getElementById('editTopicName').value;
+        const chapterNumber = document.getElementById('editChapterNumber').value;
+        
+        if (!name) {
+            showToast('Please enter a topic name');
+            return;
+        }
+        
+        const { error } = await _supabase.from('topics').update({ 
+            name: name,
+            chapter_number: chapterNumber ? parseInt(chapterNumber) : null
+        }).eq('id', id);
+        
+        if (error) {
+            showToast('Error: ' + error.message);
+        } else {
+            showToast('Topic updated!');
+            document.getElementById('editTopicModal').classList.add('hidden');
+            await Promise.all([loadTopics(), loadFilterBooks()]);
+        }
+    }
+
+    // ============ QUESTIONS with Edit ============
+    async function loadQuestions() {
+        const container = document.getElementById('questionsList');
+        container.innerHTML = '<div class="skeleton h-24 rounded-lg mb-2"></div><div class="skeleton h-24 rounded-lg"></div>';
+        
+        let query = _supabase.from('questions').select('*, topics(name, chapter_number)', { count: 'exact' });
+        
+        if (currentFilters.topicId) {
+            query = query.eq('topic_id', parseInt(currentFilters.topicId));
+        }
+        if (currentFilters.difficulty) {
+            query = query.eq('difficulty', currentFilters.difficulty);
+        }
+        
+        const from = (currentPage - 1) * PAGE_SIZE;
+        const to = from + PAGE_SIZE - 1;
+        
+        const { data, error, count } = await query.range(from, to).order('id', { ascending: false });
+        
+        if (error) {
+            container.innerHTML = '<p class="text-gray-500">Error loading questions</p>';
+            return;
+        }
+        
+        totalQuestions = count || 0;
+        updatePaginationButtons();
+        
+        if (!data || data.length === 0) {
+            container.innerHTML = '<p class="text-gray-500">No questions yet. Add your first question!</p>';
+            return;
+        }
+        
+        container.innerHTML = data.map(q => {
+            const topicDisplay = q.topics?.chapter_number ? 
+                `Ch ${q.topics.chapter_number}: ${escapeHtml(q.topics.name)}` : 
+                escapeHtml(q.topics?.name || 'Unknown');
+            return `
+            <div class="bg-gray-50 p-3 rounded-lg mb-2">
+                <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                        <p class="font-bold text-sm">Q${q.id}. ${escapeHtml(q.question_text)}</p>
+                        <p class="text-xs text-gray-600 mt-1">Topic: ${topicDisplay} | Difficulty: ${q.difficulty}</p>
+                    </div>
+                    <div class="flex gap-2 ml-2">
+                        <button onclick="openEditQuestionModal(${q.id})" class="text-blue-600 hover:text-blue-800 text-sm">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="deleteQuestion(${q.id})" class="text-red-600 hover:text-red-800 text-sm">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `}).join('');
+    }
+    
+    // Edit Question Functions
+    window.openEditQuestionModal = async function(id) {
+        const { data, error } = await _supabase.from('questions').select('*, options(*)').eq('id', id).single();
+        if (error) {
+            showToast('Error loading question');
+            return;
+        }
+        
+        const options = data.options.sort((a,b) => a.option_index - b.option_index);
+        
+        document.getElementById('editQuestionId').value = data.id;
+        document.getElementById('editQuestionText').value = data.question_text;
+        document.getElementById('editOption0').value = options[0]?.option_text || '';
+        document.getElementById('editOption1').value = options[1]?.option_text || '';
+        document.getElementById('editOption2').value = options[2]?.option_text || '';
+        document.getElementById('editOption3').value = options[3]?.option_text || '';
+        document.getElementById('editCorrectAnswer').value = data.correct_answer;
+        document.getElementById('editDifficulty').value = data.difficulty;
+        document.getElementById('editExplanation').value = data.explanation || '';
+        
+        document.getElementById('editQuestionModal').classList.remove('hidden');
+    };
+    
+    async function updateQuestion() {
+        const id = document.getElementById('editQuestionId').value;
+        const questionText = document.getElementById('editQuestionText').value;
+        const options = [
+            document.getElementById('editOption0').value,
+            document.getElementById('editOption1').value,
+            document.getElementById('editOption2').value,
+            document.getElementById('editOption3').value
+        ];
+        const correctAnswer = parseInt(document.getElementById('editCorrectAnswer').value);
+        const difficulty = document.getElementById('editDifficulty').value;
+        const explanation = document.getElementById('editExplanation').value;
+        
+        if (!questionText || options.some(opt => !opt)) {
+            showToast('Please fill all required fields');
+            return;
+        }
+        
+        // Update question
+        const { error: qError } = await _supabase.from('questions').update({
+            question_text: questionText,
+            correct_answer: correctAnswer,
+            difficulty: difficulty,
+            explanation: explanation
+        }).eq('id', id);
+        
+        if (qError) {
+            showToast('Error: ' + qError.message);
+            return;
+        }
+        
+        // Update options
+        for (let i = 0; i < options.length; i++) {
+            await _supabase.from('options').update({
+                option_text: options[i]
+            }).eq('question_id', id).eq('option_index', i);
+        }
+        
+        showToast('Question updated!');
+        document.getElementById('editQuestionModal').classList.add('hidden');
+        await loadQuestions();
+    }
+    
+    function updatePaginationButtons() {
+        const totalPages = Math.ceil(totalQuestions / PAGE_SIZE);
+        document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages || 1}`;
+        document.getElementById('prevPageBtn').disabled = currentPage === 1;
+        document.getElementById('nextPageBtn').disabled = currentPage >= totalPages;
+    }
+    
+    async function goToPrevPage() {
+        if (currentPage > 1) {
+            currentPage--;
+            await loadQuestions();
+        }
+    }
+    
+    async function goToNextPage() {
+        const totalPages = Math.ceil(totalQuestions / PAGE_SIZE);
+        if (currentPage < totalPages) {
+            currentPage++;
+            await loadQuestions();
+        }
+    }
+    
+    async function applyFilters() {
+        currentFilters.bookId = document.getElementById('filterBookId').value;
+        currentFilters.topicId = document.getElementById('filterTopicId').value;
+        currentFilters.difficulty = document.getElementById('filterDifficulty').value;
+        currentPage = 1;
+        
+        if (currentFilters.bookId) {
+            const { data } = await _supabase.from('topics').select('id, name, chapter_number').eq('book_id', currentFilters.bookId).order('chapter_number', { ascending: true });
+            const topicSelect = document.getElementById('filterTopicId');
+            topicSelect.innerHTML = '<option value="">All Topics</option>';
+            data?.forEach(topic => {
+                const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
+                topicSelect.innerHTML += `<option value="${topic.id}">${escapeHtml(display)}</option>`;
+            });
+        } else {
+            document.getElementById('filterTopicId').innerHTML = '<option value="">All Topics</option>';
+            currentFilters.topicId = '';
+        }
+        
+        await loadQuestions();
+    }
+    
+    async function loadFilterBooks() {
+        const { data } = await _supabase.from('books').select('id, title');
+        const select = document.getElementById('filterBookId');
+        select.innerHTML = '<option value="">All Books</option>';
+        if (data) {
+            data.forEach(book => {
+                select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+            });
+        }
+    }
+
     async function loadBookSelectForTopics() {
         const { data } = await _supabase.from('books').select('id, title');
         const select = document.getElementById('topicBookId');
@@ -636,7 +847,7 @@
         }
     }
 
-    // ============ SINGLE QUESTION ============
+    // ============ SINGLE QUESTION ADD ============
     window.deleteQuestion = async function(id) {
         if (confirm('Delete this question?')) {
             await _supabase.from('options').delete().eq('question_id', id);
@@ -737,7 +948,7 @@
     async function loadBulkTopicSelects() {
         const bookId = document.getElementById('bulkBookId').value;
         if (!bookId) {
-            document.getElementById('bulkTopicId').innerHTML = '<option value="">Select Topic</option>';
+            document.getElementById('bulkTopicId').innerHTML = '<option value="">First select a book</option>';
             return;
         }
         
@@ -1006,6 +1217,7 @@
         document.getElementById('tabBulkUploadBtn').addEventListener('click', () => showTab('bulkupload'));
         document.getElementById('tabAdminsBtn').addEventListener('click', () => showTab('admins'));
         
+        // Book events
         document.getElementById('showAddBookBtn').addEventListener('click', () => {
             document.getElementById('addBookForm').classList.remove('hidden');
         });
@@ -1014,6 +1226,7 @@
         });
         document.getElementById('saveBookBtn').addEventListener('click', addBook);
         
+        // Topic events
         document.getElementById('showAddTopicBtn').addEventListener('click', async () => {
             await loadBookSelectForTopics();
             document.getElementById('addTopicForm').classList.remove('hidden');
@@ -1023,6 +1236,7 @@
         });
         document.getElementById('saveTopicBtn').addEventListener('click', addTopic);
         
+        // Question events
         document.getElementById('showAddQuestionBtn').addEventListener('click', async () => {
             await loadBookSelects();
             document.getElementById('addQuestionForm').classList.remove('hidden');
@@ -1033,6 +1247,7 @@
         document.getElementById('saveQuestionBtn').addEventListener('click', addQuestion);
         document.getElementById('questionBookId').addEventListener('change', loadTopicsForQuestion);
         
+        // Bulk upload events
         const bulkBookId = document.getElementById('bulkBookId');
         if (bulkBookId) bulkBookId.addEventListener('change', loadBulkTopicSelects);
         
@@ -1051,6 +1266,7 @@
             });
         }
         
+        // Filter events
         const filterBook = document.getElementById('filterBookId');
         if (filterBook) filterBook.addEventListener('change', applyFilters);
         
@@ -1060,11 +1276,28 @@
         const filterDiff = document.getElementById('filterDifficulty');
         if (filterDiff) filterDiff.addEventListener('change', applyFilters);
         
+        // Pagination events
         const prevBtn = document.getElementById('prevPageBtn');
         if (prevBtn) prevBtn.addEventListener('click', goToPrevPage);
         
         const nextBtn = document.getElementById('nextPageBtn');
         if (nextBtn) nextBtn.addEventListener('click', goToNextPage);
+        
+        // Modal events
+        document.getElementById('updateBookBtn').addEventListener('click', updateBook);
+        document.getElementById('closeBookModal').addEventListener('click', () => {
+            document.getElementById('editBookModal').classList.add('hidden');
+        });
+        
+        document.getElementById('updateTopicBtn').addEventListener('click', updateTopic);
+        document.getElementById('closeTopicModal').addEventListener('click', () => {
+            document.getElementById('editTopicModal').classList.add('hidden');
+        });
+        
+        document.getElementById('updateQuestionBtn').addEventListener('click', updateQuestion);
+        document.getElementById('closeQuestionModal').addEventListener('click', () => {
+            document.getElementById('editQuestionModal').classList.add('hidden');
+        });
         
         setupFileUpload();
     }
