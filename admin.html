@@ -89,7 +89,7 @@
                 <button id="tabAdminsBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">👑 Admins</button>
             </div>
 
-            <!-- Books Tab with Categories -->
+            <!-- Books Tab -->
             <div id="booksTab">
                 <h2 class="text-xl font-bold mb-4">Books</h2>
                 
@@ -144,7 +144,7 @@
                 <div id="topicsList"></div>
             </div>
 
-            <!-- Categories Tab - Manage Categories -->
+            <!-- Categories Tab -->
             <div id="categoriesTab" class="hidden">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-xl font-bold">📁 Manage Categories</h2>
@@ -222,10 +222,11 @@
                 </div>
             </div>
 
-            <!-- Bulk Upload Tab -->
+            <!-- Bulk Upload Tab - FIXED -->
             <div id="bulkUploadTab" class="hidden">
                 <h2 class="text-xl font-bold mb-4">📤 Bulk Upload Questions</h2>
                 
+                <!-- Step 1: Select Target -->
                 <div class="bg-blue-50 p-4 rounded-lg mb-6">
                     <h3 class="font-bold mb-3">Step 1: Select Target</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -244,6 +245,7 @@
                     </div>
                 </div>
 
+                <!-- Step 2: Download Template -->
                 <div class="bg-green-50 p-4 rounded-lg mb-6">
                     <h3 class="font-bold mb-3">Step 2: Download CSV Template</h3>
                     <p class="text-sm text-gray-600 mb-3">Download the template, fill with your questions, then upload back.</p>
@@ -252,6 +254,7 @@
                     </button>
                 </div>
 
+                <!-- Step 3: Upload File -->
                 <div class="bg-purple-50 p-4 rounded-lg mb-6">
                     <h3 class="font-bold mb-3">Step 3: Upload Your CSV/Excel File</h3>
                     <div id="uploadZone" class="upload-zone bg-white p-8 rounded-lg text-center cursor-pointer">
@@ -293,6 +296,7 @@
                     </div>
                 </div>
 
+                <!-- Instructions -->
                 <div class="bg-yellow-50 p-4 rounded-lg">
                     <h3 class="font-bold mb-2">📋 CSV Format Instructions</h3>
                     <p class="text-sm text-gray-700 mb-2">Your CSV file must have these columns (in this order):</p>
@@ -623,7 +627,6 @@
     }
     
     window.deleteCategory = async function(id) {
-        // Check if any books use this category
         const categoryName = document.getElementById(`cat_name_${id}`)?.innerText || '';
         const { count, error } = await _supabase.from('books').select('*', { count: 'exact', head: true }).eq('category', categoryName);
         
@@ -1221,33 +1224,42 @@
 
     // ============ BULK UPLOAD ============
     async function loadBulkBookSelects() {
-        const { data } = await _supabase.from('books').select('id, title');
+        const { data, error } = await _supabase.from('books').select('id, title').order('title', { ascending: true });
         const select = document.getElementById('bulkBookId');
-        select.innerHTML = '<option value="">Select Book</option>';
-        if (data) {
-            data.forEach(book => {
-                select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
-            });
+        if (select) {
+            select.innerHTML = '<option value="">Select Book</option>';
+            if (data && data.length > 0) {
+                data.forEach(book => {
+                    select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+                });
+            }
         }
     }
 
     async function loadBulkTopicSelects() {
         const bookId = document.getElementById('bulkBookId').value;
+        const topicSelect = document.getElementById('bulkTopicId');
+        
         if (!bookId || bookId === '') {
-            document.getElementById('bulkTopicId').innerHTML = '<option value="">First select a book</option>';
+            if (topicSelect) topicSelect.innerHTML = '<option value="">First select a book</option>';
             return;
         }
         
-        const { data } = await _supabase.from('topics').select('id, name, chapter_number').eq('book_id', parseInt(bookId)).order('chapter_number', { ascending: true });
-        const select = document.getElementById('bulkTopicId');
-        select.innerHTML = '<option value="">Select Topic</option>';
-        if (data && data.length > 0) {
-            data.forEach(topic => {
-                const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
-                select.innerHTML += `<option value="${topic.id}">${escapeHtml(display)}</option>`;
-            });
-        } else {
-            select.innerHTML = '<option value="">No topics found for this book</option>';
+        const { data, error } = await _supabase.from('topics')
+            .select('id, name, chapter_number')
+            .eq('book_id', parseInt(bookId))
+            .order('chapter_number', { ascending: true });
+        
+        if (topicSelect) {
+            topicSelect.innerHTML = '<option value="">Select Topic</option>';
+            if (data && data.length > 0) {
+                data.forEach(topic => {
+                    const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
+                    topicSelect.innerHTML += `<option value="${topic.id}">${escapeHtml(display)}</option>`;
+                });
+            } else {
+                topicSelect.innerHTML = '<option value="">No topics found for this book</option>';
+            }
         }
     }
 
@@ -1280,24 +1292,35 @@
         const fileInput = document.getElementById('fileInput');
         
         if (uploadZone) {
-            uploadZone.addEventListener('click', () => fileInput.click());
-            uploadZone.addEventListener('dragover', (e) => {
+            // Remove existing listeners to prevent duplicates
+            const newUploadZone = uploadZone.cloneNode(true);
+            uploadZone.parentNode.replaceChild(newUploadZone, uploadZone);
+            
+            newUploadZone.addEventListener('click', (e) => {
                 e.preventDefault();
-                uploadZone.classList.add('border-purple-500', 'bg-purple-50');
+                document.getElementById('fileInput').click();
             });
-            uploadZone.addEventListener('dragleave', () => {
-                uploadZone.classList.remove('border-purple-500', 'bg-purple-50');
-            });
-            uploadZone.addEventListener('drop', (e) => {
+            
+            newUploadZone.addEventListener('dragover', (e) => {
                 e.preventDefault();
-                uploadZone.classList.remove('border-purple-500', 'bg-purple-50');
+                newUploadZone.classList.add('border-purple-500', 'bg-purple-50');
+            });
+            
+            newUploadZone.addEventListener('dragleave', () => {
+                newUploadZone.classList.remove('border-purple-500', 'bg-purple-50');
+            });
+            
+            newUploadZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                newUploadZone.classList.remove('border-purple-500', 'bg-purple-50');
                 const file = e.dataTransfer.files[0];
                 if (file) processFile(file);
             });
         }
         
-        if (fileInput) {
-            fileInput.addEventListener('change', (e) => {
+        const newFileInput = document.getElementById('fileInput');
+        if (newFileInput) {
+            newFileInput.addEventListener('change', (e) => {
                 if (e.target.files[0]) processFile(e.target.files[0]);
             });
         }
@@ -1576,19 +1599,26 @@
         
         // Bulk upload events
         const bulkBookId = document.getElementById('bulkBookId');
-        if (bulkBookId) bulkBookId.addEventListener('change', loadBulkTopicSelects);
+        if (bulkBookId) {
+            bulkBookId.addEventListener('change', loadBulkTopicSelects);
+        }
         
         const downloadBtn = document.getElementById('downloadTemplateBtn');
-        if (downloadBtn) downloadBtn.addEventListener('click', downloadTemplate);
+        if (downloadBtn) {
+            downloadBtn.addEventListener('click', downloadTemplate);
+        }
         
         const confirmBtn = document.getElementById('confirmUploadBtn');
-        if (confirmBtn) confirmBtn.addEventListener('click', confirmUpload);
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', confirmUpload);
+        }
         
         const cancelBtn = document.getElementById('cancelUploadBtn');
         if (cancelBtn) {
             cancelBtn.addEventListener('click', () => {
                 document.getElementById('previewSection').classList.add('hidden');
-                document.getElementById('fileInput').value = '';
+                const fileInput = document.getElementById('fileInput');
+                if (fileInput) fileInput.value = '';
                 _pendingData = [];
             });
         }
