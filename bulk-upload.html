@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Bulk Upload - BookMCQ</title>
-    <!-- Load only essential CSS first -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
         .auth-checking { text-align: center; color: white; }
@@ -20,17 +20,42 @@
 </div>
 
 <script>
-    // ============ INSTANT AUTHENTICATION (BEFORE ANYTHING ELSE) ============
+    // ============ INSTANT AUTHENTICATION WITH TOKEN ============
     const SUPABASE_URL = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
     
+    let supabase = null;
     let authPassed = false;
     
-    async function verifyAuth() {
+    async function verifyAuthWithToken() {
         try {
-            // Create Supabase client
-            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-            const { data: { session } } = await supabase.auth.getSession();
+            // Check for tokens in URL hash (passed from admin panel)
+            const hashParams = new URLSearchParams(window.location.hash.substring(1));
+            const accessToken = hashParams.get('access_token');
+            const refreshToken = hashParams.get('refresh_token');
+            
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            
+            let session = null;
+            
+            // If tokens are provided in URL, use them
+            if (accessToken && refreshToken) {
+                // Set session with the provided tokens
+                const { data, error } = await supabase.auth.setSession({
+                    access_token: accessToken,
+                    refresh_token: refreshToken
+                });
+                
+                if (!error && data) {
+                    session = data.session;
+                }
+            }
+            
+            // If no tokens in URL or setting session failed, check existing session
+            if (!session) {
+                const { data } = await supabase.auth.getSession();
+                session = data.session;
+            }
             
             if (!session) {
                 window.location.href = 'admin.html';
@@ -58,7 +83,7 @@
     
     // Load libraries after auth
     async function loadLibrariesAndStart() {
-        authPassed = await verifyAuth();
+        authPassed = await verifyAuthWithToken();
         if (!authPassed) return;
         
         // Remove auth checking screen
@@ -85,7 +110,7 @@
     }
     
     function loadFullPage() {
-        // Create full page content
+        // Create full page content (same as before)
         document.body.innerHTML = `
 <div class="max-w-4xl mx-auto p-4 md:p-8">
     
@@ -178,7 +203,7 @@
     
     addLog('Script started', 'info');
     
-    // Supabase client
+    // Supabase client (reuse existing)
     const supabase = window.supabase.createClient('${SUPABASE_URL}', '${SUPABASE_KEY}');
     
     // ============ CACHE SYSTEM ============
