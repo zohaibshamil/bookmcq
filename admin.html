@@ -226,11 +226,14 @@
                 </div>
             </div>
 
-            <!-- Bulk Upload Tab - INTEGRATED PERFECT VERSION -->
+            <!-- Bulk Upload Tab - USING THE WORKING CODE -->
             <div id="bulkUploadTab" class="hidden">
                 <h2 class="text-xl font-bold mb-4">📤 Bulk Upload Questions</h2>
                 
-                <!-- Step 1: Select Target -->
+                <div class="log mb-4" id="bulkLog">
+                    <div class="info">📋 Initializing bulk upload...</div>
+                </div>
+                
                 <div class="bg-blue-50 p-4 rounded-lg mb-6">
                     <h3 class="font-bold mb-3">Step 1: Select Target</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -243,13 +246,12 @@
                         <div>
                             <label class="block text-sm font-semibold mb-2">Select Topic</label>
                             <select id="bulkTopicId" class="w-full p-2 border rounded-lg">
-                                <option value="">Select a book first</option>
+                                <option value="">Select book first</option>
                             </select>
                         </div>
                     </div>
                 </div>
 
-                <!-- Step 2: Download Template -->
                 <div class="bg-green-50 p-4 rounded-lg mb-6">
                     <h3 class="font-bold mb-3">Step 2: Download CSV Template</h3>
                     <p class="text-sm text-gray-600 mb-3">Download the template, fill with your questions, then upload back.</p>
@@ -258,7 +260,6 @@
                     </button>
                 </div>
 
-                <!-- Step 3: Upload File -->
                 <div class="bg-purple-50 p-4 rounded-lg mb-6">
                     <h3 class="font-bold mb-3">Step 3: Upload Your CSV/Excel File</h3>
                     <div id="uploadZone" class="upload-zone bg-white p-8 rounded-lg text-center">
@@ -301,14 +302,8 @@
                         </div>
                         <p id="progressStatus" class="text-sm text-gray-600 mt-2">Preparing...</p>
                     </div>
-                    
-                    <!-- Activity Log -->
-                    <div id="bulkLog" class="log mt-4">
-                        <div class="info">📋 Ready to upload questions...</div>
-                    </div>
                 </div>
 
-                <!-- Instructions -->
                 <div class="bg-yellow-50 p-4 rounded-lg">
                     <h3 class="font-bold mb-2">📋 CSV Format Instructions</h3>
                     <p class="text-sm text-gray-700 mb-2">Your CSV file must have these columns (in this order):</p>
@@ -1236,7 +1231,7 @@
         await loadQuestions();
     }
 
-    // ============ BULK UPLOAD - INTEGRATED PERFECT VERSION ============
+    // ============ BULK UPLOAD - WORKING VERSION ============
     async function loadBulkBooks() {
         const { data, error } = await _supabase.from('books').select('id, title').order('title');
         const select = document.getElementById('bulkBookId');
@@ -1246,11 +1241,12 @@
                 data.forEach(book => {
                     select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
                 });
+                addBulkLog(`Loaded ${data.length} books`, 'success');
             } else {
                 select.innerHTML = '<option value="">No books found</option>';
+                addBulkLog('No books found in database', 'error');
             }
         }
-        addBulkLog('Books loaded successfully', 'success');
     }
 
     async function loadBulkTopics() {
@@ -1305,12 +1301,13 @@
         a.download = 'bookmcq_template.csv';
         a.click();
         URL.revokeObjectURL(url);
-        addBulkLog('Template downloaded successfully', 'success');
+        addBulkLog('Template downloaded', 'success');
         showToast('Template downloaded!');
     }
 
     function processBulkFile(file) {
-        addBulkLog(`Processing file: ${file.name}`, 'info');
+        addBulkLog(`Processing file: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`, 'info');
+        
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
@@ -1383,7 +1380,7 @@
         let success = 0;
         let failed = 0;
         
-        addBulkLog(`Starting upload of ${pendingQuestions.length} questions to topic ID ${topicId}`, 'info');
+        addBulkLog(`Starting upload of ${pendingQuestions.length} questions...`, 'info');
         
         for (let i = 0; i < pendingQuestions.length; i++) {
             const q = pendingQuestions[i];
@@ -1529,7 +1526,7 @@
         if (tabName === 'bulkupload') {
             // Refresh books and topics when tab is shown
             loadBulkBooks();
-            addBulkLog('Bulk upload tab ready', 'info');
+            addBulkLog('Bulk upload tab ready - select a book and topic', 'info');
         }
     }
 
