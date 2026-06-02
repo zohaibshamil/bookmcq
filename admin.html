@@ -1638,6 +1638,237 @@
 
     setupEventListeners();
     checkSession();
+    // ============ FORCE FIX FOR BULK UPLOAD ============
+// This ensures bulk upload works even if initialization order is wrong
+
+function forceBulkUploadSetup() {
+    console.log("Force setting up bulk upload...");
+    
+    // Get elements
+    const bulkBookId = document.getElementById('bulkBookId');
+    const bulkTopicId = document.getElementById('bulkTopicId');
+    const downloadBtn = document.getElementById('downloadTemplateBtn');
+    const fileInput = document.getElementById('fileInput');
+    const confirmBtn = document.getElementById('confirmUploadBtn');
+    const cancelBtn = document.getElementById('cancelUploadBtn');
+    const uploadZone = document.getElementById('uploadZone');
+    const selectFileBtn = document.getElementById('selectFileBtn');
+    
+    // Load books into dropdown
+    async function loadBooksIntoDropdown() {
+        if (!bulkBookId) return;
+        const { data, error } = await _supabase.from('books').select('id, title').order('title');
+        if (data && data.length > 0) {
+            bulkBookId.innerHTML = '<option value="">-- Select Book --</option>';
+            data.forEach(book => {
+                bulkBookId.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+            });
+        }
+    }
+    
+    // Load topics when book changes
+    async function loadTopicsForBook() {
+        const bookId = bulkBookId?.value;
+        if (!bookId) {
+            if (bulkTopicId) bulkTopicId.innerHTML = '<option value="">-- Select Book First --</option>';
+            return;
+        }
+        const { data, error } = await _supabase.from('topics')
+            .select('id, name, chapter_number')
+            .eq('book_id', parseInt(bookId))
+            .order('chapter_number', { ascending: true });
+        
+        if (bulkTopicId) {
+            bulkTopicId.innerHTML = '<option value="">-- Select Topic --</option>';
+            if (data && data.length > 0) {
+                data.forEach(topic => {
+                    const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
+                    bulkTopicId.innerHTML += `<option value="${topic.id}">${escapeHtml(display)}</option>`;
+                });
+            }
+        }
+    }
+    
+    // Download template
+    function handleDownload() {
+        const headers = ['question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'difficulty', 'explanation'];
+        const exampleRow = ['What does typeof null return?', 'null', 'undefined', 'object', 'number', '2', 'easy', 'Historical bug'];
+        const csv = [headers.join(','), exampleRow.join(',')].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'bookmcq_template.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('Template downloaded!');
+    }
+    
+    let pendingQuestions = [];
+    
+    // Process file
+    function handleFileSelect(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        showToast(`Processing ${file.name}...`);
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            try {
+                const data = new Uint8Array(ev.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(sheet);
+                
+                if (rows.length === 0) {
+                    showToast('No data found', true);
+                    return;
+                }
+                
+                pendingQuestions = rows;
+                
+                const previewSection = document.getElementById('previewSection');
+                const previewHeader = document.getElementById('previewHeader');
+                const previewBody = document.getElementById('previewBody');
+                const confirmUploadBtn = document.getElementById('confirmUploadBtn');
+                
+                if (previewHeader && previewBody) {
+                    const headers = Object.keys(rows[0]);
+                    previewHeader.innerHTML = headers.map(h => `<th class="p-2 border text-left">${h}</th>`).join('');
+                    const previewRows = rows.slice(0, 5);
+                    previewBody.innerHTML = previewRows.map(row => `
+                        <tr>
+                            ${headers.map(h => `<td class="p-2 border">${escapeHtml(String(row[h] || ''))}</td>`).join('')}
+                        </tr>
+                    `).join('');
+                }
+                
+                if (confirmUploadBtn) {
+                    confirmUploadBtn.innerHTML = `<i class="fas fa-check mr-2"></i> Upload (${rows.length} questions)`;
+                }
+                if (previewSection) previewSection.classList.remove('hidden');
+                showToast(`Loaded ${rows.length} questions. Ready to upload!`);
+            } catch(err) {
+                showToast('Error parsing file: ' + err.message, true);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+    
+    // Upload to database
+    async function handleUpload() {
+        const bookId = bulkBookId?.value;
+        const topicId = bulkTopicId?.value;
+        
+        if (!bookId || !topicId) {
+            showToast('Please select both a book and a topic', true);
+            return;
+        }
+        
+        if (!pendingQuestions || pendingQuestions.length === 0) {
+            showToast('No questions to upload. Please select a file first.', true);
+            return;
+        }
+        
+        const progressDiv = document.getElementById('uploadProgress');
+        const progressFill = document.getElementById('progressFill');
+        const progressPercent = document.getElementById('progressPercent');
+        const progressStatus = document.getElementById('progressStatus');
+        
+        if (progressDiv) progressDiv.classList.remove('hidden');
+        
+        let success = 0;
+        let failed = 0;
+        
+        for (let i = 0; i < pendingQuestions.length; i++) {
+            const q = pendingQuestions[i];
+            const percent = Math.round(((i + 1) / pendingQuestions.length) * 100);
+            if (progressFill) progressFill.style.width = `${percent}%`;
+            if (progressPercent) progressPercent.textContent = `${percent}%`;
+            if (progressStatus) progressStatus.textContent = `Processing question ${i + 1} of ${pendingQuestions.length}...`;
+            
+            try {
+                const { data: qData, error: qError } = await _supabase.from('questions').insert({
+                    topic_id: parseInt(topicId),
+                    question_text: q.question_text,
+                    difficulty: q.difficulty || 'medium',
+                    correct_answer: parseInt(q.correct_answer),
+                    explanation: q.explanation || ''
+                }).select();
+                
+                if (qError) throw qError;
+                
+                const options = [q.option_a, q.option_b, q.option_c, q.option_d];
+                for (let j = 0; j < options.length; j++) {
+                    await _supabase.from('options').insert({
+                        question_id: qData[0].id,
+                        option_text: options[j],
+                        option_index: j
+                    });
+                }
+                success++;
+            } catch(err) {
+                failed++;
+                console.error('Upload error:', err);
+            }
+        }
+        
+        if (progressStatus) progressStatus.textContent = `Complete! ${success} uploaded, ${failed} failed.`;
+        showToast(`Upload complete: ${success} questions added, ${failed} failed`);
+        
+        setTimeout(() => {
+            if (progressDiv) progressDiv.classList.add('hidden');
+            const previewSection = document.getElementById('previewSection');
+            if (previewSection) previewSection.classList.add('hidden');
+            if (fileInput) fileInput.value = '';
+            pendingQuestions = [];
+            if (typeof loadQuestions === 'function') loadQuestions();
+        }, 3000);
+    }
+    
+    function handleCancel() {
+        const previewSection = document.getElementById('previewSection');
+        if (previewSection) previewSection.classList.add('hidden');
+        if (fileInput) fileInput.value = '';
+        pendingQuestions = [];
+    }
+    
+    // Attach event listeners
+    if (bulkBookId) {
+        bulkBookId.addEventListener('change', loadTopicsForBook);
+        loadBooksIntoDropdown();
+    }
+    if (downloadBtn) downloadBtn.addEventListener('click', handleDownload);
+    if (fileInput) fileInput.addEventListener('change', handleFileSelect);
+    if (confirmBtn) confirmBtn.addEventListener('click', handleUpload);
+    if (cancelBtn) cancelBtn.addEventListener('click', handleCancel);
+    
+    // Setup click handlers for upload zone
+    if (selectFileBtn) {
+        selectFileBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (fileInput) fileInput.click();
+        });
+    }
+    if (uploadZone) {
+        uploadZone.addEventListener('click', (e) => {
+            if (e.target !== selectFileBtn && fileInput) {
+                fileInput.click();
+            }
+        });
+    }
+}
+
+// Run force setup when bulk upload tab is clicked
+const bulkUploadTabBtn = document.getElementById('tabBulkUploadBtn');
+if (bulkUploadTabBtn) {
+    bulkUploadTabBtn.addEventListener('click', function() {
+        setTimeout(forceBulkUploadSetup, 100);
+    });
+}
+
+// Also run it once when page loads (in case tab is already active)
+setTimeout(forceBulkUploadSetup, 500);
 </script>
 </body>
 </html>
