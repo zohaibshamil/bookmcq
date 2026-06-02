@@ -19,6 +19,7 @@
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
         .modal-content { background: white; border-radius: 1rem; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; }
+        .category-badge { background: #e0e7ff; color: #4338ca; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-left: 8px; }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -86,15 +87,38 @@
                 <button id="tabAdminsBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">👑 Admins</button>
             </div>
 
-            <!-- Books Tab -->
+            <!-- Books Tab with Categories and Search -->
             <div id="booksTab">
                 <h2 class="text-xl font-bold mb-4">Books</h2>
+                
+                <!-- Category Filter and Search -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-semibold mb-2">Filter by Category:</label>
+                        <select id="categoryFilter" class="w-full p-2 border rounded-lg">
+                            <option value="">All Categories</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-2">Search Books:</label>
+                        <div class="relative">
+                            <input type="text" id="bookSearchInput" placeholder="Search by title or author..." class="w-full p-2 border rounded-lg pl-8">
+                            <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+                
                 <button id="showAddBookBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg mb-4">+ Add Book</button>
                 <div id="addBookForm" class="hidden bg-gray-50 p-4 rounded-lg mb-4">
+                    <select id="bookCategory" class="w-full p-2 border rounded mb-2">
+                        <option value="">Select Category</option>
+                    </select>
                     <input type="text" id="bookTitle" placeholder="Book Title" class="w-full p-2 border rounded mb-2">
                     <input type="text" id="bookAuthor" placeholder="Author" class="w-full p-2 border rounded mb-2">
-                    <button id="saveBookBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
-                    <button id="cancelBookBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
+                    <div class="flex gap-2">
+                        <button id="saveBookBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
+                        <button id="cancelBookBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
+                    </div>
                 </div>
                 <div id="booksList"></div>
             </div>
@@ -119,7 +143,7 @@
                 <div id="topicsList"></div>
             </div>
 
-            <!-- Questions Tab with Fixed Filter -->
+            <!-- Questions Tab -->
             <div id="questionsTab" class="hidden">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-xl font-bold">Questions</h2>
@@ -285,6 +309,9 @@
     <div class="modal-content p-6">
         <h3 class="text-xl font-bold mb-4">Edit Book</h3>
         <input type="text" id="editBookId" class="hidden">
+        <select id="editBookCategory" class="w-full p-2 border rounded mb-2">
+            <option value="">Select Category</option>
+        </select>
         <input type="text" id="editBookTitle" placeholder="Book Title" class="w-full p-2 border rounded mb-2">
         <input type="text" id="editBookAuthor" placeholder="Author" class="w-full p-2 border rounded mb-4">
         <div class="flex gap-2">
@@ -356,6 +383,9 @@
     let totalQuestions = 0;
     let currentFilters = { bookId: '', topicId: '', difficulty: '' };
     let currentTopicBookFilter = '';
+    
+    // Categories array
+    const categories = ['Computer Science', 'Mathematics', 'Physics', 'Chemistry', 'Biology', 'English Literature', 'History', 'Economics', 'Business', 'Fine Arts', 'Psychology', 'Sociology', 'Law', 'Medicine', 'Engineering', 'Other'];
 
     function showToast(message) {
         const toast = document.getElementById('toast');
@@ -430,7 +460,8 @@
                     loadBookSelects(),
                     loadBulkBookSelects(),
                     loadFilterBooks(),
-                    loadTopicFilterBooks()
+                    loadTopicFilterBooks(),
+                    loadCategoryDropdowns()
                 ]);
             } else {
                 document.getElementById('adminBadge').classList.add('hidden');
@@ -487,21 +518,63 @@
         document.getElementById('loginForm').classList.remove('hidden');
     }
 
-    // ============ BOOKS ============
+    // ============ CATEGORY DROPDOWNS ============
+    function loadCategoryDropdowns() {
+        const dropdowns = ['bookCategory', 'editBookCategory', 'categoryFilter'];
+        dropdowns.forEach(id => {
+            const select = document.getElementById(id);
+            if (select) {
+                select.innerHTML = '<option value="">All Categories</option>';
+                categories.forEach(cat => {
+                    select.innerHTML += `<option value="${cat}">${cat}</option>`;
+                });
+            }
+        });
+    }
+
+    // ============ BOOKS with Categories and Search ============
     async function loadBooks() {
-        const { data, error } = await _supabase.from('books').select('*').order('id', { ascending: false });
-        const container = document.getElementById('booksList');
+        let query = _supabase.from('books').select('*');
         
-        if (error || !data || data.length === 0) {
-            container.innerHTML = '<p class="text-gray-500">No books yet. Add your first book!</p>';
+        // Apply category filter
+        const categoryFilter = document.getElementById('categoryFilter')?.value;
+        if (categoryFilter && categoryFilter !== '') {
+            query = query.eq('category', categoryFilter);
+        }
+        
+        const { data, error } = await query.order('id', { ascending: false });
+        
+        if (error) {
+            console.error('Error loading books:', error);
             return;
         }
         
-        container.innerHTML = data.map(book => `
+        // Apply search filter on client side
+        const searchTerm = document.getElementById('bookSearchInput')?.value.toLowerCase() || '';
+        let filteredData = data || [];
+        
+        if (searchTerm) {
+            filteredData = filteredData.filter(book => 
+                book.title.toLowerCase().includes(searchTerm) || 
+                (book.author && book.author.toLowerCase().includes(searchTerm))
+            );
+        }
+        
+        const container = document.getElementById('booksList');
+        
+        if (!filteredData || filteredData.length === 0) {
+            container.innerHTML = '<p class="text-gray-500">No books found. Add your first book!</p>';
+            return;
+        }
+        
+        container.innerHTML = filteredData.map(book => `
             <div class="bg-gray-50 p-3 rounded-lg mb-2 flex justify-between items-center">
-                <div><strong>${escapeHtml(book.title)}</strong> ${book.author ? `by ${escapeHtml(book.author)}` : ''}</div>
+                <div>
+                    <strong>${escapeHtml(book.title)}</strong> ${book.author ? `by ${escapeHtml(book.author)}` : ''}
+                    ${book.category ? `<span class="category-badge">${escapeHtml(book.category)}</span>` : ''}
+                </div>
                 <div class="flex gap-2">
-                    <button onclick="openEditBookModal(${book.id}, '${escapeHtml(book.title)}', '${escapeHtml(book.author || '')}')" class="text-blue-600 hover:text-blue-800">
+                    <button onclick="openEditBookModal(${book.id}, '${escapeHtml(book.category || '')}', '${escapeHtml(book.title)}', '${escapeHtml(book.author || '')}')" class="text-blue-600 hover:text-blue-800">
                         <i class="fas fa-edit"></i>
                     </button>
                     <button onclick="deleteBook(${book.id})" class="text-red-600 hover:text-red-800">
@@ -510,6 +583,19 @@
                 </div>
             </div>
         `).join('');
+    }
+    
+    // Add event listeners for category filter and search
+    function setupBookFilters() {
+        const categoryFilter = document.getElementById('categoryFilter');
+        const searchInput = document.getElementById('bookSearchInput');
+        
+        if (categoryFilter) {
+            categoryFilter.addEventListener('change', () => loadBooks());
+        }
+        if (searchInput) {
+            searchInput.addEventListener('input', () => loadBooks());
+        }
     }
 
     window.deleteBook = async function(id) {
@@ -521,28 +607,31 @@
     };
 
     async function addBook() {
+        const category = document.getElementById('bookCategory').value;
         const title = document.getElementById('bookTitle').value;
         const author = document.getElementById('bookAuthor').value;
         
-        if (!title) {
-            showToast('Please enter a book title');
+        if (!category || !title) {
+            showToast('Please select a category and enter a book title');
             return;
         }
         
-        const { error } = await _supabase.from('books').insert([{ title, author }]);
+        const { error } = await _supabase.from('books').insert([{ category, title, author }]);
         if (error) {
             showToast('Error: ' + error.message);
         } else {
             showToast('Book added!');
             document.getElementById('addBookForm').classList.add('hidden');
+            document.getElementById('bookCategory').value = '';
             document.getElementById('bookTitle').value = '';
             document.getElementById('bookAuthor').value = '';
             await Promise.all([loadBooks(), loadFilterBooks(), loadBookSelects(), loadBulkBookSelects(), loadTopicFilterBooks()]);
         }
     }
 
-    window.openEditBookModal = function(id, title, author) {
+    window.openEditBookModal = function(id, category, title, author) {
         document.getElementById('editBookId').value = id;
+        document.getElementById('editBookCategory').value = category;
         document.getElementById('editBookTitle').value = title;
         document.getElementById('editBookAuthor').value = author;
         document.getElementById('editBookModal').classList.remove('hidden');
@@ -550,15 +639,16 @@
 
     async function updateBook() {
         const id = document.getElementById('editBookId').value;
+        const category = document.getElementById('editBookCategory').value;
         const title = document.getElementById('editBookTitle').value;
         const author = document.getElementById('editBookAuthor').value;
         
-        if (!title) {
-            showToast('Please enter a book title');
+        if (!category || !title) {
+            showToast('Please select a category and enter a book title');
             return;
         }
         
-        const { error } = await _supabase.from('books').update({ title, author }).eq('id', id);
+        const { error } = await _supabase.from('books').update({ category, title, author }).eq('id', id);
         if (error) {
             showToast('Error: ' + error.message);
         } else {
@@ -698,12 +788,11 @@
         }
     }
 
-    // ============ QUESTIONS with Proper Book Filter ============
+    // ============ QUESTIONS ============
     async function loadQuestions() {
         const container = document.getElementById('questionsList');
         container.innerHTML = '<div class="skeleton h-24 rounded-lg mb-2"></div><div class="skeleton h-24 rounded-lg"></div>';
         
-        // Start building the query with joins to get book and topic info
         let query = _supabase
             .from('questions')
             .select(`
@@ -720,18 +809,14 @@
                 )
             `, { count: 'exact' });
         
-        // Apply book filter - this is the key fix!
         if (currentFilters.bookId && currentFilters.bookId !== '') {
-            // Filter by book_id through the topics relation
             query = query.eq('topics.book_id', parseInt(currentFilters.bookId));
         }
         
-        // Apply topic filter
         if (currentFilters.topicId && currentFilters.topicId !== '') {
             query = query.eq('topic_id', parseInt(currentFilters.topicId));
         }
         
-        // Apply difficulty filter
         if (currentFilters.difficulty && currentFilters.difficulty !== '') {
             query = query.eq('difficulty', currentFilters.difficulty);
         }
@@ -784,7 +869,6 @@
         `}).join('');
     }
     
-    // Load topics for the filter dropdown based on selected book
     async function loadFilterTopics() {
         const bookId = document.getElementById('filterBookId').value;
         const topicSelect = document.getElementById('filterTopicId');
@@ -808,12 +892,10 @@
             });
         }
         
-        // Reset topic filter when book changes
         currentFilters.topicId = '';
         topicSelect.value = '';
     }
     
-    // Apply all filters and reload questions
     async function applyFilters() {
         currentFilters.bookId = document.getElementById('filterBookId').value;
         currentFilters.topicId = document.getElementById('filterTopicId').value;
@@ -1271,8 +1353,10 @@
                     loadBookSelects(),
                     loadBulkBookSelects(),
                     loadFilterBooks(),
-                    loadTopicFilterBooks()
+                    loadTopicFilterBooks(),
+                    loadCategoryDropdowns()
                 ]);
+                setupBookFilters();
             } else {
                 document.getElementById('adminBadge').classList.add('hidden');
                 document.getElementById('adminFeatures').classList.add('hidden');
@@ -1325,7 +1409,7 @@
         document.getElementById('saveQuestionBtn').addEventListener('click', addQuestion);
         document.getElementById('questionBookId').addEventListener('change', loadTopicsForQuestion);
         
-        // Filter events - CRITICAL FIX: Book filter now properly filters questions
+        // Filter events
         const filterBook = document.getElementById('filterBookId');
         if (filterBook) {
             filterBook.addEventListener('change', async () => {
