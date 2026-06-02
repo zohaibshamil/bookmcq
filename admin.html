@@ -14,7 +14,6 @@
         .toast { position: fixed; bottom: 20px; left: 20px; right: 20px; z-index: 1000; text-align: center; }
         .upload-zone { border: 2px dashed #cbd5e1; transition: all 0.3s; cursor: pointer; }
         .upload-zone:hover { border-color: #8b5cf6; background-color: #f3e8ff; }
-        .upload-zone.drag-over { border-color: #8b5cf6; background-color: #f3e8ff; }
         .progress-bar { transition: width 0.3s ease; }
         .skeleton { animation: pulse 1.5s ease-in-out infinite; background: #e2e8f0; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
@@ -223,7 +222,7 @@
                 </div>
             </div>
 
-            <!-- Bulk Upload Tab - WORKING VERSION FROM TEST -->
+            <!-- Bulk Upload Tab - SIMPLE WORKING VERSION -->
             <div id="bulkUploadTab" class="hidden">
                 <h2 class="text-xl font-bold mb-4">📤 Bulk Upload Questions</h2>
                 
@@ -234,13 +233,13 @@
                         <div>
                             <label class="block text-sm font-semibold mb-2">Select Book</label>
                             <select id="bulkBookId" class="w-full p-2 border rounded-lg">
-                                <option value="">Select Book</option>
+                                <option value="">Loading books...</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-sm font-semibold mb-2">Select Topic</label>
                             <select id="bulkTopicId" class="w-full p-2 border rounded-lg">
-                                <option value="">First select a book</option>
+                                <option value="">Select a book first</option>
                             </select>
                         </div>
                     </div>
@@ -415,7 +414,6 @@
     
     let _currentUser = null;
     let _isAdmin = false;
-    let _pendingData = [];
     
     // Pagination variables
     let currentPage = 1;
@@ -423,6 +421,9 @@
     let totalQuestions = 0;
     let currentFilters = { bookId: '', topicId: '', difficulty: '' };
     let currentTopicBookFilter = '';
+
+    // Bulk upload variables
+    let pendingQuestions = [];
 
     function showToast(message) {
         const toast = document.getElementById('toast');
@@ -489,6 +490,7 @@
                 document.getElementById('adminFeatures').classList.remove('hidden');
                 document.getElementById('nonAdminView').classList.add('hidden');
                 
+                // Load all data
                 await Promise.all([
                     loadBooks(),
                     loadTopics(),
@@ -500,6 +502,7 @@
                     loadCategories(),
                     loadBulkBooks()
                 ]);
+                setupBulkUploadEvents();
             } else {
                 document.getElementById('adminBadge').classList.add('hidden');
                 document.getElementById('adminFeatures').classList.add('hidden');
@@ -555,7 +558,7 @@
         document.getElementById('loginForm').classList.remove('hidden');
     }
 
-    // ============ CATEGORY MANAGEMENT ============
+    // ============ CATEGORIES ============
     async function loadCategories() {
         const { data, error } = await _supabase.from('categories').select('*').order('name', { ascending: true });
         
@@ -629,19 +632,6 @@
     }
     
     window.deleteCategory = async function(id) {
-        const categoryName = document.getElementById(`cat_name_${id}`)?.innerText || '';
-        const { count, error } = await _supabase.from('books').select('*', { count: 'exact', head: true }).eq('category', categoryName);
-        
-        if (error) {
-            showToast('Error checking category usage');
-            return;
-        }
-        
-        if (count > 0) {
-            showToast(`Cannot delete: ${count} book(s) are using this category. Reassign them first.`);
-            return;
-        }
-        
         if (confirm('Delete this category?')) {
             await _supabase.from('categories').delete().eq('id', id);
             await loadCategories();
@@ -1225,8 +1215,6 @@
     }
 
     // ============ BULK UPLOAD - WORKING VERSION ============
-    let pendingQuestions = [];
-
     async function loadBulkBooks() {
         const { data, error } = await _supabase.from('books').select('id, title').order('title');
         const select = document.getElementById('bulkBookId');
@@ -1236,6 +1224,8 @@
                 data.forEach(book => {
                     select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
                 });
+            } else {
+                select.innerHTML = '<option value="">No books found</option>';
             }
         }
     }
@@ -1261,6 +1251,8 @@
                     const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
                     topicSelect.innerHTML += `<option value="${topic.id}">${escapeHtml(display)}</option>`;
                 });
+            } else {
+                topicSelect.innerHTML = '<option value="">No topics found</option>';
             }
         }
     }
@@ -1415,14 +1407,17 @@
         
         if (bulkBookId) bulkBookId.addEventListener('change', loadBulkTopics);
         if (downloadBtn) downloadBtn.addEventListener('click', downloadBulkTemplate);
-        if (fileInput) fileInput.addEventListener('change', (e) => {
-            if (e.target.files && e.target.files[0]) processBulkFile(e.target.files[0]);
-        });
+        if (fileInput) {
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files && e.target.files[0]) processBulkFile(e.target.files[0]);
+            });
+        }
         if (confirmBtn) confirmBtn.addEventListener('click', confirmBulkUpload);
         if (cancelBtn) {
             cancelBtn.addEventListener('click', () => {
-                document.getElementById('previewSection').classList.add('hidden');
-                document.getElementById('fileInput').value = '';
+                const previewSection = document.getElementById('previewSection');
+                if (previewSection) previewSection.classList.add('hidden');
+                if (fileInput) fileInput.value = '';
                 pendingQuestions = [];
             });
         }
