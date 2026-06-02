@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Bulk Upload</title>
+    <title>Test Bulk Upload - Debug Version</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
@@ -11,7 +11,12 @@
 <body class="p-8 bg-gray-100">
 
 <div class="max-w-2xl mx-auto bg-white rounded-xl p-8 shadow-lg">
-    <h1 class="text-2xl font-bold mb-6">Bulk Upload Test</h1>
+    <h1 class="text-2xl font-bold mb-6">Bulk Upload Test - Debug Version</h1>
+    
+    <!-- Debug Info -->
+    <div id="debugInfo" class="mb-4 p-3 bg-yellow-50 rounded-lg text-sm font-mono">
+        Checking connection...
+    </div>
     
     <!-- Step 1: Select Book and Topic -->
     <div class="mb-6">
@@ -36,7 +41,7 @@
     <div class="mb-6 p-4 bg-green-50 rounded-lg">
         <h2 class="font-bold mb-3">Step 2: Download CSV Template</h2>
         <button id="testDownloadBtn" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-            <i class="fas fa-download mr-2"></i> Download CSV Template
+            📥 Download CSV Template
         </button>
     </div>
 
@@ -45,7 +50,7 @@
         <h2 class="font-bold mb-3">Step 3: Upload CSV/Excel File</h2>
         
         <div id="testUploadZone" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-purple-500 hover:bg-purple-50 transition">
-            <p class="text-gray-600">Click or drag & drop CSV/Excel file here</p>
+            <p class="text-gray-600">📁 Click or drag & drop CSV/Excel file here</p>
             <p class="text-gray-400 text-sm mt-1">Supports .csv, .xlsx, .xls</p>
             <input type="file" id="testFileInput" accept=".csv,.xlsx,.xls" class="hidden">
         </div>
@@ -59,7 +64,7 @@
                 </table>
             </div>
             <button id="testUploadBtn" class="mt-4 bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
-                Upload to Database
+                📤 Upload to Database
             </button>
         </div>
         
@@ -83,9 +88,24 @@
     // Supabase configuration
     const SUPABASE_URL = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
+    let supabase;
     let pendingData = [];
+    
+    // Initialize Supabase
+    try {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        updateDebugInfo('Supabase initialized', 'success');
+    } catch(e) {
+        updateDebugInfo('Supabase init error: ' + e.message, 'error');
+    }
+    
+    function updateDebugInfo(message, type) {
+        const debugDiv = document.getElementById('debugInfo');
+        const color = type === 'error' ? 'text-red-600' : (type === 'success' ? 'text-green-600' : 'text-blue-600');
+        debugDiv.innerHTML += `<div class="${color}">${new Date().toLocaleTimeString()}: ${message}</div>`;
+        debugDiv.scrollTop = debugDiv.scrollHeight;
+    }
     
     function showStatus(message, isError = false) {
         const statusDiv = document.getElementById('testStatus');
@@ -99,22 +119,53 @@
         }, 3000);
     }
     
+    // Test connection
+    async function testConnection() {
+        try {
+            updateDebugInfo('Testing Supabase connection...', 'info');
+            const { data, error } = await supabase.from('books').select('count');
+            if (error) {
+                updateDebugInfo('Connection failed: ' + error.message, 'error');
+                return false;
+            }
+            updateDebugInfo('Connection successful!', 'success');
+            return true;
+        } catch(e) {
+            updateDebugInfo('Connection error: ' + e.message, 'error');
+            return false;
+        }
+    }
+    
     // Load books
     async function loadBooks() {
-        const { data, error } = await supabase.from('books').select('id, title').order('title');
+        updateDebugInfo('Loading books...', 'info');
         const select = document.getElementById('testBookId');
-        if (error) {
+        
+        try {
+            const { data, error } = await supabase.from('books').select('id, title').order('title');
+            
+            if (error) {
+                updateDebugInfo('Books error: ' + error.message, 'error');
+                select.innerHTML = '<option value="">Error: ' + error.message + '</option>';
+                showStatus('Error loading books: ' + error.message, true);
+                return;
+            }
+            
+            updateDebugInfo(`Found ${data ? data.length : 0} books`, 'success');
+            
+            if (data && data.length > 0) {
+                select.innerHTML = '<option value="">-- Select Book --</option>';
+                data.forEach(book => {
+                    select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+                });
+                showStatus(`Loaded ${data.length} books`);
+            } else {
+                select.innerHTML = '<option value="">No books found. Please add a book first.</option>';
+                showStatus('No books found. Go to Books tab to add one.', true);
+            }
+        } catch(e) {
+            updateDebugInfo('Books exception: ' + e.message, 'error');
             select.innerHTML = '<option value="">Error loading books</option>';
-            showStatus('Error loading books: ' + error.message, true);
-            return;
-        }
-        select.innerHTML = '<option value="">-- Select Book --</option>';
-        if (data && data.length > 0) {
-            data.forEach(book => {
-                select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
-            });
-        } else {
-            select.innerHTML = '<option value="">No books found. Add a book first.</option>';
         }
     }
     
@@ -128,24 +179,35 @@
             return;
         }
         
-        const { data, error } = await supabase.from('topics')
-            .select('id, name, chapter_number')
-            .eq('book_id', parseInt(bookId))
-            .order('chapter_number', { ascending: true });
+        updateDebugInfo(`Loading topics for book ID: ${bookId}`, 'info');
         
-        if (error) {
+        try {
+            const { data, error } = await supabase.from('topics')
+                .select('id, name, chapter_number')
+                .eq('book_id', parseInt(bookId))
+                .order('chapter_number', { ascending: true });
+            
+            if (error) {
+                updateDebugInfo('Topics error: ' + error.message, 'error');
+                topicSelect.innerHTML = '<option value="">Error loading topics</option>';
+                return;
+            }
+            
+            updateDebugInfo(`Found ${data ? data.length : 0} topics`, 'success');
+            
+            topicSelect.innerHTML = '<option value="">-- Select Topic --</option>';
+            if (data && data.length > 0) {
+                data.forEach(topic => {
+                    const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
+                    topicSelect.innerHTML += `<option value="${topic.id}">${escapeHtml(display)}</option>`;
+                });
+            } else {
+                topicSelect.innerHTML = '<option value="">No topics found for this book</option>';
+                showStatus('No topics for this book. Add topics first.', true);
+            }
+        } catch(e) {
+            updateDebugInfo('Topics exception: ' + e.message, 'error');
             topicSelect.innerHTML = '<option value="">Error loading topics</option>';
-            return;
-        }
-        
-        topicSelect.innerHTML = '<option value="">-- Select Topic --</option>';
-        if (data && data.length > 0) {
-            data.forEach(topic => {
-                const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
-                topicSelect.innerHTML += `<option value="${topic.id}">${escapeHtml(display)}</option>`;
-            });
-        } else {
-            topicSelect.innerHTML = '<option value="">No topics found for this book</option>';
         }
     }
     
@@ -172,6 +234,7 @@
         a.click();
         URL.revokeObjectURL(url);
         showStatus('Template downloaded!');
+        updateDebugInfo('Template downloaded', 'success');
     }
     
     // Setup file upload
@@ -179,13 +242,22 @@
         const uploadZone = document.getElementById('testUploadZone');
         const fileInput = document.getElementById('testFileInput');
         
+        if (!uploadZone) {
+            updateDebugInfo('Upload zone not found!', 'error');
+            return;
+        }
+        
+        updateDebugInfo('Setting up file upload handlers', 'info');
+        
         // Click on upload zone triggers file input
         uploadZone.addEventListener('click', () => {
+            updateDebugInfo('Upload zone clicked', 'info');
             fileInput.click();
         });
         
         // File input change
         fileInput.addEventListener('change', (e) => {
+            updateDebugInfo('File selected: ' + (e.target.files[0] ? e.target.files[0].name : 'none'), 'info');
             if (e.target.files && e.target.files[0]) {
                 processFile(e.target.files[0]);
             }
@@ -205,6 +277,7 @@
             e.preventDefault();
             uploadZone.classList.remove('border-purple-500', 'bg-purple-50');
             const file = e.dataTransfer.files[0];
+            updateDebugInfo('File dropped: ' + (file ? file.name : 'none'), 'info');
             if (file) {
                 processFile(file);
             }
@@ -213,6 +286,8 @@
     
     // Process uploaded file
     function processFile(file) {
+        updateDebugInfo(`Processing file: ${file.name} (${Math.round(file.size/1024)} KB)`, 'info');
+        
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
@@ -221,6 +296,8 @@
                 const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                 const rows = XLSX.utils.sheet_to_json(firstSheet);
                 
+                updateDebugInfo(`Parsed ${rows.length} rows from file`, 'success');
+                
                 if (rows.length === 0) {
                     showStatus('No data found in file', true);
                     return;
@@ -228,12 +305,16 @@
                 
                 pendingData = rows;
                 displayPreview(rows);
-                showStatus(`Loaded ${rows.length} questions from ${file.name}`);
+                showStatus(`✅ Loaded ${rows.length} questions from ${file.name}`);
             } catch (err) {
+                updateDebugInfo('Parse error: ' + err.message, 'error');
                 showStatus('Error reading file: ' + err.message, true);
             }
         };
-        reader.onerror = () => showStatus('Error reading file', true);
+        reader.onerror = () => {
+            updateDebugInfo('FileReader error', 'error');
+            showStatus('Error reading file', true);
+        };
         reader.readAsArrayBuffer(file);
     }
     
@@ -256,6 +337,7 @@
         `).join('');
         
         previewSection.classList.remove('hidden');
+        updateDebugInfo(`Preview displayed with ${headers.length} columns`, 'success');
     }
     
     // Upload to database
@@ -263,13 +345,17 @@
         const bookId = document.getElementById('testBookId').value;
         const topicId = document.getElementById('testTopicId').value;
         
+        updateDebugInfo(`Upload requested - Book ID: ${bookId}, Topic ID: ${topicId}`, 'info');
+        
         if (!bookId || !topicId) {
             showStatus('Please select both a book and a topic', true);
+            updateDebugInfo('Missing book or topic selection', 'error');
             return;
         }
         
         if (!pendingData || pendingData.length === 0) {
             showStatus('No data to upload. Please select a file first.', true);
+            updateDebugInfo('No pending data to upload', 'error');
             return;
         }
         
@@ -279,6 +365,7 @@
         const progressStatus = document.getElementById('testProgressStatus');
         
         progressDiv.classList.remove('hidden');
+        updateDebugInfo(`Starting upload of ${pendingData.length} questions`, 'info');
         
         let successCount = 0;
         let errorCount = 0;
@@ -314,12 +401,13 @@
                 successCount++;
             } catch (err) {
                 errorCount++;
-                console.error('Error:', err);
+                updateDebugInfo(`Error on row ${i+1}: ${err.message}`, 'error');
             }
         }
         
         progressStatus.textContent = `Complete! ${successCount} uploaded, ${errorCount} failed.`;
-        showStatus(`Upload complete: ${successCount} questions added, ${errorCount} failed`);
+        updateDebugInfo(`Upload complete: ${successCount} success, ${errorCount} failed`, 'success');
+        showStatus(`✅ Upload complete: ${successCount} questions added, ${errorCount} failed`);
         
         setTimeout(() => {
             progressDiv.classList.add('hidden');
@@ -339,16 +427,33 @@
         });
     }
     
-    // Event listeners
-    document.getElementById('testBookId').addEventListener('change', loadTopics);
-    document.getElementById('testDownloadBtn').addEventListener('click', downloadTemplate);
-    document.getElementById('testUploadBtn').addEventListener('click', uploadToDatabase);
+    // Initialize everything
+    async function init() {
+        updateDebugInfo('Initializing test page...', 'info');
+        
+        // Test connection first
+        const connected = await testConnection();
+        if (!connected) {
+            showStatus('Cannot connect to database. Check your credentials.', true);
+            return;
+        }
+        
+        // Load books
+        await loadBooks();
+        
+        // Setup event listeners
+        document.getElementById('testBookId').addEventListener('change', loadTopics);
+        document.getElementById('testDownloadBtn').addEventListener('click', downloadTemplate);
+        document.getElementById('testUploadBtn').addEventListener('click', uploadToDatabase);
+        
+        // Setup file upload
+        setupFileUpload();
+        
+        showStatus('✅ Ready! Select a book and topic, then upload your CSV file');
+    }
     
-    // Initialize
-    loadBooks();
-    setupFileUpload();
-    
-    showStatus('Ready - Select a book and topic, then upload your CSV file');
+    // Start
+    init();
 </script>
 </body>
 </html>
