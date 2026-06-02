@@ -15,6 +15,8 @@
         .upload-zone { border: 2px dashed #cbd5e1; transition: all 0.3s; }
         .upload-zone:hover { border-color: #8b5cf6; background-color: #f3e8ff; }
         .progress-bar { transition: width 0.3s ease; }
+        .skeleton { animation: pulse 1.5s ease-in-out infinite; background: #e2e8f0; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -73,7 +75,6 @@
             </button>
         </div>
         
-        <!-- Admin Features -->
         <div id="adminFeatures" class="hidden">
             <div class="flex flex-wrap gap-2 mb-6">
                 <button id="tabBooksBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-purple-600 text-white">📚 Books</button>
@@ -93,7 +94,7 @@
                     <button id="saveBookBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
                     <button id="cancelBookBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
                 </div>
-                <div id="booksList">Loading...</div>
+                <div id="booksList"><div class="skeleton h-12 rounded-lg mb-2"></div><div class="skeleton h-12 rounded-lg"></div></div>
             </div>
 
             <!-- Topics Tab -->
@@ -106,13 +107,32 @@
                     <button id="saveTopicBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
                     <button id="cancelTopicBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
                 </div>
-                <div id="topicsList">Loading...</div>
+                <div id="topicsList"><div class="skeleton h-12 rounded-lg mb-2"></div><div class="skeleton h-12 rounded-lg"></div></div>
             </div>
 
-            <!-- Questions Tab -->
+            <!-- Questions Tab (Optimized with Pagination) -->
             <div id="questionsTab" class="hidden">
-                <h2 class="text-xl font-bold mb-4">Questions</h2>
-                <button id="showAddQuestionBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg mb-4">+ Add Question</button>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">Questions</h2>
+                    <button id="showAddQuestionBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg">+ Add Question</button>
+                </div>
+                
+                <!-- Filters for Questions -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                    <select id="filterBookId" class="p-2 border rounded-lg">
+                        <option value="">All Books</option>
+                    </select>
+                    <select id="filterTopicId" class="p-2 border rounded-lg">
+                        <option value="">All Topics</option>
+                    </select>
+                    <select id="filterDifficulty" class="p-2 border rounded-lg">
+                        <option value="">All Difficulties</option>
+                        <option value="easy">Easy</option>
+                        <option value="medium">Medium</option>
+                        <option value="hard">Hard</option>
+                    </select>
+                </div>
+                
                 <div id="addQuestionForm" class="hidden bg-gray-50 p-4 rounded-lg mb-4">
                     <select id="questionBookId" class="w-full p-2 border rounded mb-2">
                         <option value="">Select Book</option>
@@ -140,7 +160,15 @@
                     <button id="saveQuestionBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Save Question</button>
                     <button id="cancelQuestionBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
                 </div>
-                <div id="questionsList">Loading...</div>
+                
+                <div id="questionsList"><div class="skeleton h-24 rounded-lg mb-2"></div><div class="skeleton h-24 rounded-lg"></div></div>
+                
+                <!-- Pagination -->
+                <div class="flex justify-between items-center mt-4">
+                    <button id="prevPageBtn" class="bg-gray-500 text-white px-4 py-2 rounded-lg disabled:opacity-50" disabled>Previous</button>
+                    <span id="pageInfo" class="text-sm">Page 1</span>
+                    <button id="nextPageBtn" class="bg-gray-500 text-white px-4 py-2 rounded-lg">Next</button>
+                </div>
             </div>
 
             <!-- Bulk Upload Tab -->
@@ -187,7 +215,7 @@
                         <div class="overflow-x-auto">
                             <table id="previewTable" class="min-w-full bg-white border rounded-lg text-sm">
                                 <thead class="bg-gray-100">
-                                    <tr id="previewHeader"><tr>
+                                    <tr id="previewHeader"></table>
                                 </thead>
                                 <tbody id="previewBody"></tbody>
                             </table>
@@ -227,7 +255,6 @@
                         <li><code class="bg-gray-100 px-1 rounded">difficulty</code> - easy, medium, or hard</li>
                         <li><code class="bg-gray-100 px-1 rounded">explanation</code> - Explanation (optional)</li>
                     </ul>
-                    <p class="text-sm text-gray-600 mt-3">⚠️ The book and topic are selected from the dropdown above - you don't need to include them in the CSV.</p>
                 </div>
             </div>
 
@@ -250,7 +277,7 @@
 
 <script>
     // ============================================
-    // SUPABASE CONFIGURATION
+    // OPTIMIZED ADMIN PANEL WITH PAGINATION
     // ============================================
     const SUPABASE_URL = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
@@ -260,6 +287,12 @@
     let _currentUser = null;
     let _isAdmin = false;
     let _pendingData = [];
+    
+    // Pagination variables
+    let currentPage = 1;
+    const PAGE_SIZE = 15;
+    let totalQuestions = 0;
+    let currentFilters = { bookId: '', topicId: '', difficulty: '' };
 
     function showToast(message) {
         const toast = document.getElementById('toast');
@@ -278,7 +311,6 @@
         });
     }
 
-    // ============ KEYBOARD HANDLERS ============
     function handleLoginKeyPress(event) {
         if (event.key === 'Enter') {
             event.preventDefault();
@@ -293,13 +325,9 @@
         }
     }
 
-    // ============ CHECK IF USER IS ADMIN ============
     async function checkIsAdmin(userId) {
         if (!userId) return false;
-        const { data, error } = await _supabase
-            .from('admin_roles')
-            .select('user_id')
-            .eq('user_id', userId);
+        const { data } = await _supabase.from('admin_roles').select('user_id').eq('user_id', userId);
         return data && data.length > 0;
     }
 
@@ -330,12 +358,17 @@
                 document.getElementById('adminBadge').classList.remove('hidden');
                 document.getElementById('adminFeatures').classList.remove('hidden');
                 document.getElementById('nonAdminView').classList.add('hidden');
-                loadBooks();
-                loadTopics();
-                loadQuestions();
-                loadAdmins();
-                loadBookSelects();
-                loadBulkBookSelects();
+                
+                // Load all data in parallel (faster)
+                await Promise.all([
+                    loadBooks(),
+                    loadTopics(),
+                    loadQuestions(),
+                    loadAdmins(),
+                    loadBookSelects(),
+                    loadBulkBookSelects(),
+                    loadFilterBooks()
+                ]);
             } else {
                 document.getElementById('adminBadge').classList.add('hidden');
                 document.getElementById('adminFeatures').classList.add('hidden');
@@ -358,9 +391,8 @@
             return;
         }
         
-        const { data, error } = await _supabase.auth.signUp({ 
-            email, 
-            password,
+        const { error } = await _supabase.auth.signUp({ 
+            email, password,
             options: { emailRedirectTo: 'https://bookmcq.com/admin.html' }
         });
         
@@ -392,33 +424,103 @@
         document.getElementById('loginForm').classList.remove('hidden');
     }
 
-    // ============ TAB MANAGEMENT ============
-    function showTab(tabName) {
-        document.getElementById('booksTab').classList.add('hidden');
-        document.getElementById('topicsTab').classList.add('hidden');
-        document.getElementById('questionsTab').classList.add('hidden');
-        document.getElementById('bulkUploadTab').classList.add('hidden');
-        document.getElementById('adminsTab').classList.add('hidden');
+    // ============ OPTIMIZED QUESTIONS WITH PAGINATION ============
+    async function loadQuestions() {
+        const container = document.getElementById('questionsList');
+        container.innerHTML = '<div class="skeleton h-24 rounded-lg mb-2"></div><div class="skeleton h-24 rounded-lg"></div>';
         
-        document.getElementById(`${tabName}Tab`).classList.remove('hidden');
+        let query = _supabase.from('questions').select('*, topics(name)', { count: 'exact' });
         
-        const buttons = ['Books', 'Topics', 'Questions', 'BulkUpload', 'Admins'];
-        buttons.forEach(btn => {
-            const btnId = `tab${btn}Btn`;
-            const btnElement = document.getElementById(btnId);
-            if (btnElement) {
-                if (btn.toLowerCase() === tabName.toLowerCase()) {
-                    btnElement.classList.remove('bg-gray-200');
-                    btnElement.classList.add('bg-purple-600', 'text-white');
-                } else {
-                    btnElement.classList.remove('bg-purple-600', 'text-white');
-                    btnElement.classList.add('bg-gray-200');
-                }
-            }
-        });
+        if (currentFilters.topicId) {
+            query = query.eq('topic_id', parseInt(currentFilters.topicId));
+        }
+        if (currentFilters.difficulty) {
+            query = query.eq('difficulty', currentFilters.difficulty);
+        }
+        
+        const from = (currentPage - 1) * PAGE_SIZE;
+        const to = from + PAGE_SIZE - 1;
+        
+        const { data, error, count } = await query.range(from, to).order('id', { ascending: false });
+        
+        if (error) {
+            container.innerHTML = '<p class="text-gray-500">Error loading questions</p>';
+            return;
+        }
+        
+        totalQuestions = count || 0;
+        updatePaginationButtons();
+        
+        if (!data || data.length === 0) {
+            container.innerHTML = '<p class="text-gray-500">No questions yet. Add your first question!</p>';
+            return;
+        }
+        
+        container.innerHTML = data.map(q => `
+            <div class="bg-gray-50 p-3 rounded-lg mb-2">
+                <p class="font-bold text-sm">${escapeHtml(q.question_text)}</p>
+                <p class="text-xs text-gray-600 mt-1">Topic: ${escapeHtml(q.topics?.name || 'Unknown')} | Difficulty: ${q.difficulty}</p>
+                <button onclick="deleteQuestion(${q.id})" class="text-red-600 text-xs mt-1"><i class="fas fa-trash"></i> Delete</button>
+            </div>
+        `).join('');
+    }
+    
+    function updatePaginationButtons() {
+        const totalPages = Math.ceil(totalQuestions / PAGE_SIZE);
+        document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages || 1}`;
+        document.getElementById('prevPageBtn').disabled = currentPage === 1;
+        document.getElementById('nextPageBtn').disabled = currentPage >= totalPages;
+    }
+    
+    async function goToPrevPage() {
+        if (currentPage > 1) {
+            currentPage--;
+            await loadQuestions();
+        }
+    }
+    
+    async function goToNextPage() {
+        const totalPages = Math.ceil(totalQuestions / PAGE_SIZE);
+        if (currentPage < totalPages) {
+            currentPage++;
+            await loadQuestions();
+        }
+    }
+    
+    async function applyFilters() {
+        currentFilters.bookId = document.getElementById('filterBookId').value;
+        currentFilters.topicId = document.getElementById('filterTopicId').value;
+        currentFilters.difficulty = document.getElementById('filterDifficulty').value;
+        currentPage = 1;
+        
+        // If book selected, load its topics
+        if (currentFilters.bookId) {
+            const { data } = await _supabase.from('topics').select('id, name').eq('book_id', currentFilters.bookId);
+            const topicSelect = document.getElementById('filterTopicId');
+            topicSelect.innerHTML = '<option value="">All Topics</option>';
+            data?.forEach(topic => {
+                topicSelect.innerHTML += `<option value="${topic.id}">${escapeHtml(topic.name)}</option>`;
+            });
+        } else {
+            document.getElementById('filterTopicId').innerHTML = '<option value="">All Topics</option>';
+            currentFilters.topicId = '';
+        }
+        
+        await loadQuestions();
+    }
+    
+    async function loadFilterBooks() {
+        const { data } = await _supabase.from('books').select('id, title');
+        const select = document.getElementById('filterBookId');
+        select.innerHTML = '<option value="">All Books</option>';
+        if (data) {
+            data.forEach(book => {
+                select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+            });
+        }
     }
 
-    // ============ BOOKS CRUD ============
+    // ============ BOOKS ============
     async function loadBooks() {
         const { data, error } = await _supabase.from('books').select('*').order('id', { ascending: false });
         const container = document.getElementById('booksList');
@@ -439,8 +541,7 @@
     window.deleteBook = async function(id) {
         if (confirm('Delete this book?')) {
             await _supabase.from('books').delete().eq('id', id);
-            loadBooks();
-            loadTopics();
+            await Promise.all([loadBooks(), loadTopics(), loadFilterBooks(), loadBookSelects(), loadBulkBookSelects()]);
             showToast('Book deleted');
         }
     };
@@ -462,13 +563,11 @@
             document.getElementById('addBookForm').classList.add('hidden');
             document.getElementById('bookTitle').value = '';
             document.getElementById('bookAuthor').value = '';
-            loadBooks();
-            loadBookSelects();
-            loadBulkBookSelects();
+            await Promise.all([loadBooks(), loadFilterBooks(), loadBookSelects(), loadBulkBookSelects()]);
         }
     }
 
-    // ============ TOPICS CRUD ============
+    // ============ TOPICS ============
     async function loadTopics() {
         const { data, error } = await _supabase.from('topics').select('*, books(title)').order('id', { ascending: false });
         const container = document.getElementById('topicsList');
@@ -489,7 +588,7 @@
     window.deleteTopic = async function(id) {
         if (confirm('Delete this topic?')) {
             await _supabase.from('topics').delete().eq('id', id);
-            loadTopics();
+            await Promise.all([loadTopics(), loadQuestions(), loadFilterBooks()]);
             showToast('Topic deleted');
         }
     };
@@ -510,8 +609,7 @@
             showToast('Topic added!');
             document.getElementById('addTopicForm').classList.add('hidden');
             document.getElementById('topicName').value = '';
-            loadTopics();
-            loadBulkTopicSelects();
+            await Promise.all([loadTopics(), loadFilterBooks()]);
         }
     }
 
@@ -526,30 +624,12 @@
         }
     }
 
-    // ============ QUESTIONS CRUD ============
-    async function loadQuestions() {
-        const { data, error } = await _supabase.from('questions').select('*, topics(name)').order('id', { ascending: false }).limit(50);
-        const container = document.getElementById('questionsList');
-        
-        if (error || !data || data.length === 0) {
-            container.innerHTML = '<p class="text-gray-500">No questions yet. Add your first question!</p>';
-            return;
-        }
-        
-        container.innerHTML = data.map(q => `
-            <div class="bg-gray-50 p-3 rounded-lg mb-2">
-                <p class="font-bold">${escapeHtml(q.question_text)}</p>
-                <p class="text-sm text-gray-600">Topic: ${escapeHtml(q.topics?.name || 'Unknown')} | Difficulty: ${q.difficulty}</p>
-                <button onclick="deleteQuestion(${q.id})" class="text-red-600 text-sm mt-1"><i class="fas fa-trash"></i> Delete</button>
-            </div>
-        `).join('');
-    }
-
+    // ============ SINGLE QUESTION ============
     window.deleteQuestion = async function(id) {
         if (confirm('Delete this question?')) {
             await _supabase.from('options').delete().eq('question_id', id);
             await _supabase.from('questions').delete().eq('id', id);
-            loadQuestions();
+            await loadQuestions();
             showToast('Question deleted');
         }
     };
@@ -626,7 +706,7 @@
         document.getElementById('option2').value = '';
         document.getElementById('option3').value = '';
         document.getElementById('explanation').value = '';
-        loadQuestions();
+        await loadQuestions();
     }
 
     // ============ BULK UPLOAD ============
@@ -787,10 +867,7 @@
                 
                 if (qError) throw qError;
                 
-                const options = [
-                    row.option_a, row.option_b, row.option_c, row.option_d
-                ];
-                
+                const options = [row.option_a, row.option_b, row.option_c, row.option_d];
                 for (let j = 0; j < options.length; j++) {
                     await _supabase.from('options').insert([{
                         question_id: qData[0].id,
@@ -798,11 +875,9 @@
                         option_index: j
                     }]);
                 }
-                
                 successCount++;
             } catch (err) {
                 errorCount++;
-                console.error('Error uploading row:', row, err);
             }
         }
         
@@ -837,7 +912,31 @@
         `).join('');
     }
 
-    // ============ CHECK EXISTING SESSION ============
+    function showTab(tabName) {
+        document.getElementById('booksTab').classList.add('hidden');
+        document.getElementById('topicsTab').classList.add('hidden');
+        document.getElementById('questionsTab').classList.add('hidden');
+        document.getElementById('bulkUploadTab').classList.add('hidden');
+        document.getElementById('adminsTab').classList.add('hidden');
+        document.getElementById(`${tabName}Tab`).classList.remove('hidden');
+        
+        const buttons = ['Books', 'Topics', 'Questions', 'BulkUpload', 'Admins'];
+        buttons.forEach(btn => {
+            const btnElement = document.getElementById(`tab${btn}Btn`);
+            if (btnElement) {
+                if (btn.toLowerCase() === tabName.toLowerCase()) {
+                    btnElement.classList.remove('bg-gray-200');
+                    btnElement.classList.add('bg-purple-600', 'text-white');
+                } else {
+                    btnElement.classList.remove('bg-purple-600', 'text-white');
+                    btnElement.classList.add('bg-gray-200');
+                }
+            }
+        });
+        
+        if (tabName === 'questions') loadQuestions();
+    }
+
     async function checkSession() {
         const { data: { session } } = await _supabase.auth.getSession();
         if (session) {
@@ -852,12 +951,15 @@
                 document.getElementById('adminBadge').classList.remove('hidden');
                 document.getElementById('adminFeatures').classList.remove('hidden');
                 document.getElementById('nonAdminView').classList.add('hidden');
-                loadBooks();
-                loadTopics();
-                loadQuestions();
-                loadAdmins();
-                loadBookSelects();
-                loadBulkBookSelects();
+                await Promise.all([
+                    loadBooks(),
+                    loadTopics(),
+                    loadQuestions(),
+                    loadAdmins(),
+                    loadBookSelects(),
+                    loadBulkBookSelects(),
+                    loadFilterBooks()
+                ]);
             } else {
                 document.getElementById('adminBadge').classList.add('hidden');
                 document.getElementById('adminFeatures').classList.add('hidden');
@@ -866,7 +968,6 @@
         }
     }
 
-    // ============ SETUP EVENT LISTENERS ============
     function setupEventListeners() {
         document.getElementById('loginBtn').addEventListener('click', handleLogin);
         document.getElementById('signupBtn').addEventListener('click', handleSignup);
@@ -915,6 +1016,12 @@
             document.getElementById('fileInput').value = '';
             _pendingData = [];
         });
+        
+        document.getElementById('filterBookId').addEventListener('change', applyFilters);
+        document.getElementById('filterTopicId').addEventListener('change', applyFilters);
+        document.getElementById('filterDifficulty').addEventListener('change', applyFilters);
+        document.getElementById('prevPageBtn').addEventListener('click', goToPrevPage);
+        document.getElementById('nextPageBtn').addEventListener('click', goToNextPage);
         
         setupFileUpload();
     }
