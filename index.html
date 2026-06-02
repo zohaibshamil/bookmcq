@@ -20,11 +20,148 @@
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;600;700&display=swap" rel="stylesheet">
     <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Custom Styles -->
     <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Enhanced prominent stats cards */
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .stats-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        .stats-card:hover::before {
+            opacity: 1;
+        }
+        .stats-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 25px 40px -12px rgba(0,0,0,0.3);
+        }
+        .stats-number {
+            font-size: 2.5rem;
+            font-weight: 800;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        @media (min-width: 768px) {
+            .stats-number {
+                font-size: 3rem;
+            }
+        }
+        
+        /* AI Chat Button */
+        .ai-chat-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 1000;
+        }
+        .ai-chat-window {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 350px;
+            max-width: calc(100vw - 60px);
+            height: 500px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            z-index: 1001;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+        .chat-message {
+            margin-bottom: 12px;
+            display: flex;
+        }
+        .chat-message.user {
+            justify-content: flex-end;
+        }
+        .chat-message.bot {
+            justify-content: flex-start;
+        }
+        .chat-bubble {
+            max-width: 80%;
+            padding: 10px 14px;
+            border-radius: 18px;
+            font-size: 14px;
+        }
+        .chat-message.user .chat-bubble {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .chat-message.bot .chat-bubble {
+            background: #f3f4f6;
+            color: #1f2937;
+            border-bottom-left-radius: 4px;
+        }
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 10px 14px;
+        }
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background: #9ca3af;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-10px); opacity: 1; }
+        }
+        
+        /* Missing Book Request Section */
+        .missing-book-card {
+            background: linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%);
+            border: 2px solid #f59e0b;
+            transition: all 0.3s ease;
+        }
+        .missing-book-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.2);
+        }
+        
+        /* URL Encryption - Hide actual URLs */
+        .page-link {
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body class="disable-select">
 
@@ -39,14 +176,14 @@
                 <span class="text-white/60 text-xs hidden sm:inline">| Master Every Chapter</span>
             </div>
             
-            <!-- Desktop Menu -->
+            <!-- Desktop Menu - All using page navigation (no HTML files visible) -->
             <div class="desktop-menu flex gap-3 md:gap-6">
-                <a href="#" onclick="navigation.showPage('home')" id="navHome" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap">🏠 Home</a>
-                <a href="#" onclick="navigation.showPage('quiz')" id="navQuiz" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap">📝 Quiz</a>
-                <a href="#" onclick="navigation.showPage('practice')" id="navPractice" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap">📚 Practice</a>
-                <a href="about.html" id="navAbout" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap">📖 About</a>
-                <a href="contact.html" id="navContact" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap">📧 Contact</a>
-                <a href="privacy.html" id="navPrivacy" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap">🔒 Privacy</a>
+                <a href="#" onclick="navigation.showPage('home'); return false;" id="navHome" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap page-link">🏠 Home</a>
+                <a href="#" onclick="navigation.showPage('quiz'); return false;" id="navQuiz" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap page-link">📝 Quiz</a>
+                <a href="#" onclick="navigation.showPage('practice'); return false;" id="navPractice" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap page-link">📚 Practice</a>
+                <a href="#" onclick="navigation.showPage('about'); return false;" id="navAbout" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap page-link">📖 About</a>
+                <a href="#" onclick="navigation.showPage('contact'); return false;" id="navContact" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap page-link">📧 Contact</a>
+                <a href="#" onclick="navigation.showPage('privacy'); return false;" id="navPrivacy" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap page-link">🔒 Privacy</a>
             </div>
             
             <!-- Mobile Menu Button -->
@@ -55,12 +192,12 @@
                     <i class="fas fa-bars"></i>
                 </button>
                 <div id="mobileDropdown" class="hidden absolute top-full right-0 mt-2 bg-white rounded-xl shadow-xl w-48 py-2 z-50">
-                    <a href="#" onclick="navigation.showPage('home'); mobileMenu.close();" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition">🏠 Home</a>
-                    <a href="#" onclick="navigation.showPage('quiz'); mobileMenu.close();" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition">📝 Quiz</a>
-                    <a href="#" onclick="navigation.showPage('practice'); mobileMenu.close();" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition">📚 Practice</a>
-                    <a href="about.html" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition">📖 About</a>
-                    <a href="contact.html" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition">📧 Contact</a>
-                    <a href="privacy.html" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition">🔒 Privacy</a>
+                    <a href="#" onclick="navigation.showPage('home'); mobileMenu.close(); return false;" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition page-link">🏠 Home</a>
+                    <a href="#" onclick="navigation.showPage('quiz'); mobileMenu.close(); return false;" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition page-link">📝 Quiz</a>
+                    <a href="#" onclick="navigation.showPage('practice'); mobileMenu.close(); return false;" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition page-link">📚 Practice</a>
+                    <a href="#" onclick="navigation.showPage('about'); mobileMenu.close(); return false;" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition page-link">📖 About</a>
+                    <a href="#" onclick="navigation.showPage('contact'); mobileMenu.close(); return false;" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition page-link">📧 Contact</a>
+                    <a href="#" onclick="navigation.showPage('privacy'); mobileMenu.close(); return false;" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition page-link">🔒 Privacy</a>
                 </div>
             </div>
         </div>
@@ -78,22 +215,25 @@
                 Master any subject with our difficulty-based MCQ system.
             </p>
             
-            <!-- Clickable Stats -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 w-full mt-6">
-                <div id="categoryBooks" class="category-card bg-purple-50 rounded-xl p-4 md:p-6 text-center cursor-pointer hover:shadow-lg transition">
-                    <i class="fas fa-book text-3xl text-purple-600 mb-3"></i>
-                    <h3 class="font-bold text-base md:text-lg mb-2" id="statBooks">Loading...</h3>
-                    <p class="text-gray-600 text-xs md:text-sm">Browse by Category</p>
+            <!-- Prominent Clickable Stats Cards with Animation -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 md:gap-8 w-full mt-4">
+                <div id="categoryBooks" class="stats-card rounded-2xl p-5 md:p-7 text-center cursor-pointer text-white shadow-xl">
+                    <i class="fas fa-book text-4xl md:text-5xl mb-3 opacity-90"></i>
+                    <div class="stats-number" id="statBooks">Loading...</div>
+                    <p class="text-sm md:text-base mt-2 font-medium opacity-90">Books & Categories</p>
+                    <p class="text-xs mt-1 opacity-75">Browse by subject →</p>
                 </div>
-                <div id="categoryMcqs" class="category-card bg-purple-50 rounded-xl p-4 md:p-6 text-center cursor-pointer hover:shadow-lg transition">
-                    <i class="fas fa-question-circle text-3xl text-purple-600 mb-3"></i>
-                    <h3 class="font-bold text-base md:text-lg mb-2" id="statMcqs">Loading...</h3>
-                    <p class="text-gray-600 text-xs md:text-sm">Start Practicing</p>
+                <div id="categoryMcqs" class="stats-card rounded-2xl p-5 md:p-7 text-center cursor-pointer text-white shadow-xl">
+                    <i class="fas fa-question-circle text-4xl md:text-5xl mb-3 opacity-90"></i>
+                    <div class="stats-number" id="statMcqs">Loading...</div>
+                    <p class="text-sm md:text-base mt-2 font-medium opacity-90">Practice Questions</p>
+                    <p class="text-xs mt-1 opacity-75">Start quiz now →</p>
                 </div>
-                <div id="categoryProgress" class="category-card bg-purple-50 rounded-xl p-4 md:p-6 text-center cursor-pointer hover:shadow-lg transition">
-                    <i class="fas fa-chart-line text-3xl text-purple-600 mb-3"></i>
-                    <h3 class="font-bold text-base md:text-lg mb-2">Track Progress</h3>
-                    <p class="text-gray-600 text-xs md:text-sm">Monitor your improvement</p>
+                <div id="categoryProgress" class="stats-card rounded-2xl p-5 md:p-7 text-center cursor-pointer text-white shadow-xl">
+                    <i class="fas fa-chart-line text-4xl md:text-5xl mb-3 opacity-90"></i>
+                    <div class="stats-number">Track</div>
+                    <p class="text-sm md:text-base mt-2 font-medium opacity-90">Your Progress</p>
+                    <p class="text-xs mt-1 opacity-75">Monitor improvement →</p>
                 </div>
             </div>
             
@@ -201,6 +341,122 @@
             
             <div id="practicePagination" class="mt-6"></div>
         </div>
+        
+        <!-- Missing Book Request Section -->
+        <div class="missing-book-card rounded-2xl p-6 shadow-xl mt-6">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-book-open text-3xl text-amber-600"></i>
+                    <div>
+                        <h3 class="font-bold text-amber-800 text-lg">Don't see your book?</h3>
+                        <p class="text-amber-700 text-sm">Want MCQs from a specific book that's not available yet?</p>
+                    </div>
+                </div>
+                <button onclick="navigation.showPage('contact')" class="bg-amber-600 text-white px-5 py-2 rounded-full font-medium hover:bg-amber-700 transition flex items-center gap-2">
+                    <i class="fas fa-envelope"></i> Request a Book
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- About Page (Now merged into index.html) -->
+    <div id="aboutPage" class="hidden quiz-card rounded-2xl p-6 md:p-8 shadow-xl">
+        <div class="text-center mb-8">
+            <i class="fas fa-book-open text-5xl text-purple-600 mb-4"></i>
+            <h2 class="text-3xl font-bold mb-4">About BookMCQ</h2>
+            <p class="text-gray-600 max-w-2xl mx-auto">Your trusted companion for exam preparation and knowledge testing</p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+            <div>
+                <h3 class="text-xl font-bold mb-3">Our Mission</h3>
+                <p class="text-gray-600 leading-relaxed">To provide a comprehensive, accessible, and effective platform for students and professionals to test their knowledge across hundreds of books and subjects.</p>
+            </div>
+            <div>
+                <h3 class="text-xl font-bold mb-3">What We Offer</h3>
+                <ul class="space-y-2 text-gray-600">
+                    <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Chapter-wise MCQs from popular books</li>
+                    <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Difficulty-based questions (Easy, Medium, Hard)</li>
+                    <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Instant feedback and explanations</li>
+                    <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Progress tracking</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="mt-8 p-6 bg-purple-50 rounded-xl">
+            <h3 class="text-xl font-bold mb-3">Why Choose Us?</h3>
+            <p class="text-gray-600">With hundreds of books and thousands of carefully crafted questions, BookMCQ is the most comprehensive MCQ platform for students and professionals preparing for exams and interviews.</p>
+        </div>
+        
+        <!-- Missing Book Request inside About as well -->
+        <div class="mt-8 p-5 bg-amber-50 rounded-xl border border-amber-200">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+                <span class="text-amber-800 text-sm">📖 Want a book that's not listed?</span>
+                <button onclick="navigation.showPage('contact')" class="text-amber-700 underline text-sm font-medium">Let us know →</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Page -->
+    <div id="contactPage" class="hidden quiz-card rounded-2xl p-6 md:p-8 shadow-xl">
+        <div class="text-center mb-8">
+            <i class="fas fa-envelope text-5xl text-purple-600 mb-4"></i>
+            <h2 class="text-3xl font-bold mb-4">Contact Us</h2>
+            <p class="text-gray-600">Have questions or want to request a book? We'd love to hear from you!</p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+                <h3 class="text-xl font-bold mb-4">Get in Touch</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-envelope text-purple-600 w-6"></i>
+                        <span class="text-gray-600">support@bookmcq.com</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <i class="fab fa-twitter text-purple-600 w-6"></i>
+                        <span class="text-gray-600">@bookmcq</span>
+                    </div>
+                </div>
+                <div class="mt-6 p-4 bg-amber-50 rounded-xl">
+                    <h4 class="font-bold text-amber-800 mb-2"><i class="fas fa-book mr-2"></i> Book Request</h4>
+                    <p class="text-amber-700 text-sm">Don't see the book you're looking for? Email us the book title and author, and we'll add it within 48 hours!</p>
+                </div>
+            </div>
+            <div>
+                <h3 class="text-xl font-bold mb-4">Send a Message</h3>
+                <form id="contactForm">
+                    <input type="text" placeholder="Your Name" class="w-full p-3 border rounded-xl mb-3 text-sm" required>
+                    <input type="email" placeholder="Your Email" class="w-full p-3 border rounded-xl mb-3 text-sm" required>
+                    <select class="w-full p-3 border rounded-xl mb-3 text-sm">
+                        <option>General Inquiry</option>
+                        <option>Book Request</option>
+                        <option>Report an Issue</option>
+                        <option>Feature Suggestion</option>
+                    </select>
+                    <textarea id="contactMessage" rows="4" placeholder="Your Message (include book title and author if requesting)" class="w-full p-3 border rounded-xl mb-3 text-sm" required></textarea>
+                    <button type="submit" class="bg-purple-600 text-white px-6 py-2 rounded-xl hover:bg-purple-700 transition">Send Message</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Privacy Policy Page -->
+    <div id="privacyPage" class="hidden quiz-card rounded-2xl p-6 md:p-8 shadow-xl">
+        <div class="text-center mb-8">
+            <i class="fas fa-shield-alt text-5xl text-purple-600 mb-4"></i>
+            <h2 class="text-3xl font-bold mb-4">Privacy Policy</h2>
+        </div>
+        <div class="prose max-w-none">
+            <p class="text-gray-600 mb-4">At BookMCQ, we respect your privacy and are committed to protecting your personal data.</p>
+            <h3 class="text-xl font-bold mt-6 mb-3">Information We Collect</h3>
+            <p class="text-gray-600">We only collect essential information like email address for authentication and quiz progress tracking.</p>
+            <h3 class="text-xl font-bold mt-6 mb-3">How We Use Your Information</h3>
+            <p class="text-gray-600">We use your information solely to provide and improve our services, track your quiz performance, and communicate with you about updates.</p>
+            <h3 class="text-xl font-bold mt-6 mb-3">Data Security</h3>
+            <p class="text-gray-600">We implement industry-standard security measures to protect your data from unauthorized access.</p>
+            <p class="text-gray-500 text-sm mt-8">Last updated: January 2025</p>
+        </div>
     </div>
 
     <!-- Footer -->
@@ -209,9 +465,588 @@
     </footer>
 </div>
 
+<!-- AI Chat Button & Window -->
+<div class="ai-chat-btn">
+    <button id="aiChatBtn" class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 rounded-full shadow-xl hover:scale-105 transition">
+        <i class="fas fa-robot text-xl"></i>
+    </button>
+</div>
+
+<div id="aiChatWindow" class="ai-chat-window hidden">
+    <div class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-3 flex justify-between items-center">
+        <div class="flex items-center gap-2">
+            <i class="fas fa-robot"></i>
+            <span class="font-semibold">MCQ Assistant</span>
+        </div>
+        <button id="closeChatBtn" class="text-white hover:opacity-70">&times;</button>
+    </div>
+    <div id="chatMessages" class="chat-messages bg-gray-50">
+        <div class="chat-message bot">
+            <div class="chat-bubble">
+                👋 Hi! I can help you find MCQs. Ask me about any book, topic, or subject!
+            </div>
+        </div>
+    </div>
+    <div class="p-3 border-t bg-white">
+        <div class="flex gap-2">
+            <input type="text" id="chatInput" placeholder="Ask about books, topics, or MCQs..." class="flex-1 p-2 border rounded-xl text-sm">
+            <button id="sendChatBtn" class="bg-purple-600 text-white px-4 py-2 rounded-xl">Send</button>
+        </div>
+    </div>
+</div>
+
 <div id="toast" class="toast hidden"></div>
 
 <!-- Main Script -->
-<script src="script.js"></script>
+<script>
+    // ============================================
+    // BOOKMCQ - COMPLETE SCRIPT WITH AI CHAT
+    // ============================================
+
+    // Security Manager
+    class SecurityManager {
+        constructor() {
+            this.#initSecurity();
+        }
+        
+        #initSecurity() {
+            document.addEventListener('contextmenu', (e) => { e.preventDefault(); return false; });
+            document.addEventListener('keydown', (e) => {
+                const forbidden = ['PrintScreen', 'F12', 'F5', 'F11',
+                    (e.ctrlKey && e.shiftKey && e.key === 'I'),
+                    (e.ctrlKey && e.shiftKey && e.key === 'C'),
+                    (e.ctrlKey && e.key === 'u'),
+                    (e.ctrlKey && e.key === 's')];
+                if (forbidden.includes(e.key) || forbidden.some(cond => cond === true)) {
+                    e.preventDefault(); return false;
+                }
+            });
+            document.addEventListener('dragstart', (e) => { e.preventDefault(); return false; });
+            document.addEventListener('selectstart', (e) => {
+                if (!e.target.closest('input') && !e.target.closest('textarea')) {
+                    e.preventDefault(); return false;
+                }
+            });
+        }
+    }
+
+    // Cache Manager
+    class CacheManager {
+        #cachePrefix = 'bookmcq_';
+        #ttl = 3600000;
+        set(key, data, ttl = this.#ttl) {
+            try {
+                localStorage.setItem(this.#cachePrefix + key, JSON.stringify({ data, timestamp: Date.now(), ttl }));
+                return true;
+            } catch(e) { return false; }
+        }
+        get(key) {
+            try {
+                const item = localStorage.getItem(this.#cachePrefix + key);
+                if (!item) return null;
+                const parsed = JSON.parse(item);
+                if (Date.now() - parsed.timestamp > parsed.ttl) { this.remove(key); return null; }
+                return parsed.data;
+            } catch(e) { return null; }
+        }
+        remove(key) { localStorage.removeItem(this.#cachePrefix + key); }
+    }
+
+    // Supabase Service
+    class SupabaseService {
+        #supabase;
+        #cache;
+        #url = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
+        #key = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
+        constructor() {
+            this.#cache = new CacheManager();
+            this.#supabase = window.supabase.createClient(this.#url, this.#key);
+        }
+        async getBooks() {
+            const cached = this.#cache.get('books');
+            if (cached) return cached;
+            const { data, error } = await this.#supabase.from('books').select('id, title, author').order('title');
+            if (error) throw error;
+            this.#cache.set('books', data);
+            return data;
+        }
+        async getTopics(bookId) {
+            const cached = this.#cache.get(`topics_${bookId}`);
+            if (cached) return cached;
+            const { data, error } = await this.#supabase.from('topics').select('id, name, chapter_number').eq('book_id', bookId).order('chapter_number');
+            if (error) throw error;
+            this.#cache.set(`topics_${bookId}`, data);
+            return data;
+        }
+        async getQuestions(topicId, difficulty, limit = 15) {
+            const cacheKey = `questions_${topicId}_${difficulty}`;
+            const cached = this.#cache.get(cacheKey);
+            if (cached) return cached;
+            let query = this.#supabase.from('questions').select(`id, question_text, difficulty, correct_answer, explanation, options (option_text, option_index)`).eq('topic_id', topicId).eq('difficulty', difficulty).limit(limit);
+            const { data, error } = await query;
+            if (error) throw error;
+            const formatted = (data || []).map(q => ({
+                id: q.id, text: q.question_text,
+                options: (q.options || []).sort((a,b) => a.option_index - b.option_index).map(o => o.option_text),
+                correct: q.correct_answer, explanation: q.explanation || 'No explanation available', difficulty: q.difficulty
+            }));
+            this.#cache.set(cacheKey, formatted);
+            return formatted;
+        }
+        async getPaginatedQuestions(topicId, page = 1, pageSize = 20) {
+            const from = (page - 1) * pageSize;
+            const to = from + pageSize - 1;
+            const cacheKey = `questions_page_${topicId}_${page}`;
+            const cached = this.#cache.get(cacheKey);
+            if (cached) return cached;
+            const { data, error, count } = await this.#supabase.from('questions').select(`id, question_text, difficulty, correct_answer, explanation, options (option_text, option_index)`, { count: 'exact' }).eq('topic_id', topicId).range(from, to).order('id');
+            if (error) throw error;
+            const formatted = (data || []).map(q => ({
+                id: q.id, text: q.question_text,
+                options: (q.options || []).sort((a,b) => a.option_index - b.option_index).map(o => o.option_text),
+                correct: q.correct_answer, explanation: q.explanation || 'No explanation available', difficulty: q.difficulty
+            }));
+            const result = { questions: formatted, total: count || 0 };
+            this.#cache.set(cacheKey, result);
+            return result;
+        }
+        async searchQuestions(keyword, limit = 10) {
+            const { data, error } = await this.#supabase.from('questions').select(`id, question_text, difficulty, topics(name, books(title))`).ilike('question_text', `%${keyword}%`).limit(limit);
+            if (error) return [];
+            return data;
+        }
+        async getStats() {
+            const cached = this.#cache.get('stats');
+            if (cached) return cached;
+            const { count: booksCount } = await this.#supabase.from('books').select('*', { count: 'exact', head: true });
+            const { count: questionsCount } = await this.#supabase.from('questions').select('*', { count: 'exact', head: true });
+            const stats = { books: booksCount || 0, questions: questionsCount || 0 };
+            this.#cache.set('stats', stats);
+            return stats;
+        }
+    }
+
+    // AI Chat Manager
+    class AIChatManager {
+        #supabaseService;
+        constructor(supabaseService) {
+            this.#supabaseService = supabaseService;
+        }
+        async processQuery(query, chatMessages) {
+            const lowerQuery = query.toLowerCase();
+            let response = '';
+            if (lowerQuery.includes('book') || lowerQuery.includes('available')) {
+                const books = await this.#supabaseService.getBooks();
+                if (books && books.length > 0) {
+                    response = `📚 We have ${books.length} books available. Some of them include: ${books.slice(0,5).map(b => b.title).join(', ')}${books.length > 5 ? ' and more.' : '.'} You can practice MCQs from any of these books.`;
+                } else {
+                    response = "We're adding more books every day! If you don't see your book, please use the Contact page to request it.";
+                }
+            } else if (lowerQuery.includes('question') || lowerQuery.includes('mcq')) {
+                const results = await this.#supabaseService.searchQuestions(query, 5);
+                if (results && results.length > 0) {
+                    response = `🔍 Found ${results.length} questions related to "${query}". Try selecting a book and topic in the Practice section to see them!`;
+                } else {
+                    response = `I couldn't find questions about "${query}" yet. Try a different keyword or check back later as we add more content daily!`;
+                }
+            } else if (lowerQuery.includes('request') || lowerQuery.includes('add book')) {
+                response = "📖 Want to request a book? Go to the Contact page and select 'Book Request' from the dropdown. Tell us the book title and author, and we'll add it within 48 hours!";
+            } else {
+                response = `I can help you find books and MCQs. Try asking: "What books are available?" or "Show me questions about JavaScript" or "How to request a book?"`;
+            }
+            return response;
+        }
+    }
+
+    // Navigation Manager
+    class NavigationManager {
+        #currentPage = 'home';
+        showPage(pageName) {
+            const pages = ['home', 'quiz', 'practice', 'about', 'contact', 'privacy'];
+            pages.forEach(page => {
+                const element = document.getElementById(`${page}Page`);
+                if (element) element.classList.add('hidden');
+            });
+            const targetPage = document.getElementById(`${pageName}Page`);
+            if (targetPage) targetPage.classList.remove('hidden');
+            this.#currentPage = pageName;
+            const navLinks = ['Home', 'Quiz', 'Practice', 'About', 'Contact', 'Privacy'];
+            navLinks.forEach(link => {
+                const navElement = document.getElementById(`nav${link}`);
+                if (navElement) {
+                    if (link.toLowerCase() === pageName.toLowerCase()) {
+                        navElement.classList.add('active');
+                    } else {
+                        navElement.classList.remove('active');
+                    }
+                }
+            });
+            if (pageName === 'quiz') window.dispatchEvent(new Event('quizPageShown'));
+            if (pageName === 'practice') window.dispatchEvent(new Event('practicePageShown'));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        getCurrentPage() { return this.#currentPage; }
+    }
+
+    // Quiz Manager
+    class QuizManager {
+        #questions = []; #currentIndex = 0; #score = 0; #answerLocked = false;
+        setQuestions(questions) { this.#questions = [...questions]; this.#currentIndex = 0; this.#score = 0; this.#answerLocked = false; }
+        getCurrentQuestion() { return this.#currentIndex < this.#questions.length ? this.#questions[this.#currentIndex] : null; }
+        checkAnswer(selectedIndex) {
+            const currentQ = this.getCurrentQuestion();
+            const isCorrect = (selectedIndex === currentQ.correct);
+            if (isCorrect) this.#score++;
+            this.#answerLocked = true;
+            return { isCorrect, correctAnswer: currentQ.correct, explanation: currentQ.explanation, correctText: currentQ.options[currentQ.correct] };
+        }
+        nextQuestion() { if (!this.#answerLocked) return false; this.#currentIndex++; this.#answerLocked = false; return this.#currentIndex < this.#questions.length; }
+        isComplete() { return this.#currentIndex >= this.#questions.length; }
+        getScore() { return this.#score; }
+        getTotalQuestions() { return this.#questions.length; }
+        getCurrentIndex() { return this.#currentIndex + 1; }
+        getProgress() { return (this.#currentIndex / this.#questions.length) * 100; }
+        canAnswer() { return !this.#answerLocked; }
+    }
+
+    // UI Manager
+    class UIManager {
+        showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.background = isError ? '#ef4444' : '#1f2937';
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 3000);
+        }
+        renderQuestion(question, index, total, score, progress) {
+            document.getElementById('questionText').textContent = question.text;
+            document.getElementById('questionCounter').textContent = `Question ${index} / ${total}`;
+            document.getElementById('scoreDisplay').textContent = `Score: ${score}`;
+            document.getElementById('progressFill').style.width = `${progress}%`;
+            const container = document.getElementById('optionsContainer');
+            container.innerHTML = '';
+            question.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.textContent = `${String.fromCharCode(65+idx)}. ${opt}`;
+                btn.className = `option-btn w-full text-left p-3 rounded-xl bg-white text-gray-800 font-medium transition`;
+                container.appendChild(btn);
+            });
+            document.getElementById('feedbackMessage').classList.add('hidden');
+            document.getElementById('nextBtn').disabled = true;
+        }
+        showResult(score, total) {
+            document.getElementById('quizArea').classList.add('hidden');
+            document.getElementById('resultsArea').classList.remove('hidden');
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('totalQuestions').textContent = total;
+            document.getElementById('resultProgress').style.width = `${(score / total) * 100}%`;
+        }
+        resetQuizUI() { document.getElementById('quizArea').classList.remove('hidden'); document.getElementById('resultsArea').classList.add('hidden'); }
+        showFeedback(isCorrect, explanation, correctLetter, correctText) {
+            const feedbackDiv = document.getElementById('feedbackMessage');
+            if (isCorrect) {
+                feedbackDiv.className = "correct-feedback p-4 rounded-xl text-white font-semibold mb-6";
+                feedbackDiv.innerHTML = `<i class="fas fa-check-circle mr-2"></i> ✅ Correct! ${explanation || ''}`;
+            } else {
+                feedbackDiv.className = "wrong-feedback p-4 rounded-xl text-white font-semibold mb-6";
+                feedbackDiv.innerHTML = `<i class="fas fa-times-circle mr-2"></i> ❌ Wrong! Correct answer: ${correctLetter}. "${correctText}" ${explanation || ''}`;
+            }
+            feedbackDiv.classList.remove('hidden');
+        }
+        enableNextButton() { document.getElementById('nextBtn').disabled = false; }
+        lockOptions() { document.querySelectorAll('.option-btn').forEach(btn => btn.style.pointerEvents = 'none'); }
+        highlightSelectedOption(selectedIdx) {
+            document.querySelectorAll('.option-btn').forEach((btn, idx) => {
+                btn.classList.remove('selected-option');
+                if (idx === selectedIdx) btn.classList.add('selected-option');
+            });
+        }
+    }
+
+    // Practice Manager
+    class PracticeManager {
+        #supabaseService; #uiManager; #currentPage = 1; #totalPages = 0; #currentTopicId = null; #questionsCache = new Map();
+        constructor(supabaseService, uiManager) { this.#supabaseService = supabaseService; this.#uiManager = uiManager; }
+        async loadBooks(selectId) {
+            const select = document.getElementById(selectId);
+            if (!select) return;
+            select.innerHTML = '<option value="">Loading books...</option>';
+            try {
+                const books = await this.#supabaseService.getBooks();
+                if (!books || books.length === 0) { select.innerHTML = '<option value="">No books available</option>'; return; }
+                select.innerHTML = '<option value="">-- Select a Book --</option>';
+                books.forEach(book => { select.innerHTML += `<option value="${book.id}">${this.#escapeHtml(book.title)}</option>`; });
+            } catch(e) { select.innerHTML = '<option value="">Error loading books</option>'; this.#uiManager.showToast('Error loading books', true); }
+        }
+        async loadTopics(bookId, selectId) {
+            const select = document.getElementById(selectId);
+            if (!select) return;
+            if (!bookId) { select.innerHTML = '<option value="">Select a book first</option>'; select.disabled = true; return; }
+            select.innerHTML = '<option value="">Loading topics...</option>'; select.disabled = false;
+            try {
+                const topics = await this.#supabaseService.getTopics(bookId);
+                if (!topics || topics.length === 0) { select.innerHTML = '<option value="">No topics available</option>'; return; }
+                select.innerHTML = '<option value="">-- Select a Topic --</option>';
+                topics.forEach(topic => {
+                    const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
+                    select.innerHTML += `<option value="${topic.id}">${this.#escapeHtml(display)}</option>`;
+                });
+            } catch(e) { select.innerHTML = '<option value="">Error loading topics</option>'; }
+        }
+        async loadQuestions(topicId, containerId, paginationId, page = 1) {
+            if (!topicId) return;
+            this.#currentTopicId = topicId; this.#currentPage = page;
+            try {
+                const result = await this.#supabaseService.getPaginatedQuestions(topicId, page, 10);
+                this.#totalPages = Math.ceil(result.total / 10);
+                this.#renderPagination(paginationId);
+                if (!result.questions || result.questions.length === 0) {
+                    document.getElementById(containerId).innerHTML = '<div class="text-center py-8 text-gray-500">No questions found for this topic</div>';
+                    return;
+                }
+                document.getElementById(containerId).innerHTML = result.questions.map((q, idx) => {
+                    const globalNumber = (page - 1) * 10 + idx + 1;
+                    const difficultyColor = q.difficulty === 'easy' ? 'text-green-600 bg-green-50' : q.difficulty === 'medium' ? 'text-yellow-600 bg-yellow-50' : 'text-red-600 bg-red-50';
+                    return `<div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 practice-card">
+                        <div class="flex justify-between items-start mb-3 flex-wrap gap-2">
+                            <span class="font-bold text-purple-600 text-sm">Q${globalNumber}</span>
+                            <span class="px-2 py-1 rounded-full text-xs font-medium ${difficultyColor}">${q.difficulty.toUpperCase()}</span>
+                        </div>
+                        <p class="font-medium text-gray-800 mb-4">${this.#escapeHtml(q.text)}</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
+                            ${q.options.map((opt, optIdx) => `<div class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg ${optIdx === q.correct ? 'border-l-4 border-green-500' : ''}">
+                                <span class="font-semibold text-gray-600 w-6">${String.fromCharCode(65+optIdx)}.</span>
+                                <span class="text-gray-700 text-sm">${this.#escapeHtml(opt)}</span>
+                                ${optIdx === q.correct ? '<i class="fas fa-check-circle text-green-500 ml-auto"></i>' : ''}
+                            </div>`).join('')}
+                        </div>
+                        ${q.explanation ? `<div class="mt-3 p-3 bg-blue-50 rounded-lg text-sm text-gray-600"><i class="fas fa-info-circle text-blue-500 mr-2"></i>${this.#escapeHtml(q.explanation)}</div>` : ''}
+                    </div>`;
+                }).join('');
+            } catch(e) { document.getElementById(containerId).innerHTML = '<div class="text-center py-8 text-red-500">Error loading questions</div>'; }
+        }
+        #renderPagination(paginationId) {
+            const container = document.getElementById(paginationId);
+            if (!container) return;
+            container.innerHTML = `<div class="flex justify-between items-center">
+                <button id="practicePrevBtn" class="bg-gray-500 text-white px-4 py-2 rounded-lg disabled:opacity-50" ${this.#currentPage === 1 ? 'disabled' : ''}>Previous</button>
+                <span class="text-sm">Page ${this.#currentPage} of ${this.#totalPages || 1}</span>
+                <button id="practiceNextBtn" class="bg-gray-500 text-white px-4 py-2 rounded-lg disabled:opacity-50" ${this.#currentPage >= this.#totalPages ? 'disabled' : ''}>Next</button>
+            </div>`;
+            const prevBtn = document.getElementById('practicePrevBtn');
+            const nextBtn = document.getElementById('practiceNextBtn');
+            if (prevBtn) prevBtn.onclick = () => { if (this.#currentPage > 1) this.loadQuestions(this.#currentTopicId, 'practiceQuestionsContainer', 'practicePagination', this.#currentPage - 1); };
+            if (nextBtn) nextBtn.onclick = () => { if (this.#currentPage < this.#totalPages) this.loadQuestions(this.#currentTopicId, 'practiceQuestionsContainer', 'practicePagination', this.#currentPage + 1); };
+        }
+        #escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;'); }
+        resetPage() { this.#currentPage = 1; this.#currentTopicId = null; }
+    }
+
+    // Mobile Menu Manager
+    class MobileMenuManager {
+        toggle() { document.getElementById('mobileDropdown').classList.toggle('hidden'); }
+        close() { document.getElementById('mobileDropdown').classList.add('hidden'); }
+    }
+
+    // Category Manager
+    class CategoryManager {
+        #supabaseService; #uiManager;
+        constructor(supabaseService, uiManager) { this.#supabaseService = supabaseService; this.#uiManager = uiManager; }
+        async init() {
+            try {
+                const stats = await this.#supabaseService.getStats();
+                document.getElementById('statBooks').innerHTML = `${stats.books}+`;
+                document.getElementById('statMcqs').innerHTML = `${stats.questions}+`;
+            } catch(e) { console.error('Error loading stats:', e); }
+        }
+        setupClickHandlers() {
+            document.getElementById('categoryBooks')?.addEventListener('click', () => navigation.showPage('practice'));
+            document.getElementById('categoryMcqs')?.addEventListener('click', () => navigation.showPage('quiz'));
+            document.getElementById('categoryProgress')?.addEventListener('click', () => navigation.showPage('quiz'));
+        }
+    }
+
+    // AI Chat Setup
+    async function setupAIChat(supabaseService) {
+        const chatManager = new AIChatManager(supabaseService);
+        const chatBtn = document.getElementById('aiChatBtn');
+        const chatWindow = document.getElementById('aiChatWindow');
+        const closeChatBtn = document.getElementById('closeChatBtn');
+        const sendBtn = document.getElementById('sendChatBtn');
+        const chatInput = document.getElementById('chatInput');
+        const chatMessages = document.getElementById('chatMessages');
+        
+        chatBtn.onclick = () => { chatWindow.classList.toggle('hidden'); };
+        closeChatBtn.onclick = () => { chatWindow.classList.add('hidden'); };
+        
+        const addMessage = (text, isUser) => {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${isUser ? 'user' : 'bot'}`;
+            messageDiv.innerHTML = `<div class="chat-bubble">${text}</div>`;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        };
+        
+        const showTyping = () => {
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'chat-message bot';
+            typingDiv.id = 'typingIndicator';
+            typingDiv.innerHTML = `<div class="chat-bubble"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`;
+            chatMessages.appendChild(typingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        };
+        
+        const removeTyping = () => { const typing = document.getElementById('typingIndicator'); if (typing) typing.remove(); };
+        
+        const sendMessage = async () => {
+            const message = chatInput.value.trim();
+            if (!message) return;
+            addMessage(message, true);
+            chatInput.value = '';
+            showTyping();
+            const response = await chatManager.processQuery(message);
+            removeTyping();
+            addMessage(response, false);
+        };
+        
+        sendBtn.onclick = sendMessage;
+        chatInput.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
+    }
+
+    // Initialize everything
+    const security = new SecurityManager();
+    const supabaseService = new SupabaseService();
+    const uiManager = new UIManager();
+    const navigation = new NavigationManager();
+    const quizManager = new QuizManager();
+    const practiceManager = new PracticeManager(supabaseService, uiManager);
+    const categoryManager = new CategoryManager(supabaseService, uiManager);
+    const mobileMenu = new MobileMenuManager();
+    
+    window.navigation = navigation;
+    window.mobileMenu = mobileMenu;
+    
+    categoryManager.setupClickHandlers();
+    categoryManager.init();
+    setupAIChat(supabaseService);
+    
+    window.addEventListener('quizPageShown', async () => {
+        const books = await supabaseService.getBooks();
+        const bookSelect = document.getElementById('bookSelect');
+        if (books && books.length > 0) {
+            bookSelect.innerHTML = '<option value="">-- Select a Book --</option>';
+            books.forEach(book => { bookSelect.innerHTML += `<option value="${book.id}">${book.title}</option>`; });
+        }
+    });
+    
+    window.addEventListener('practicePageShown', async () => {
+        practiceManager.resetPage();
+        await practiceManager.loadBooks('practiceBookSelect');
+    });
+    
+    document.getElementById('bookSelect')?.addEventListener('change', async (e) => {
+        const topics = await supabaseService.getTopics(e.target.value);
+        const topicSelect = document.getElementById('topicSelect');
+        if (topics && topics.length > 0) {
+            topicSelect.disabled = false;
+            topicSelect.innerHTML = '<option value="">-- Select a Topic --</option>';
+            topics.forEach(topic => {
+                const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
+                topicSelect.innerHTML += `<option value="${topic.id}">${display}</option>`;
+            });
+        } else { topicSelect.disabled = true; topicSelect.innerHTML = '<option value="">No topics available</option>'; }
+    });
+    
+    document.getElementById('practiceBookSelect')?.addEventListener('change', async (e) => {
+        await practiceManager.loadTopics(e.target.value, 'practiceTopicSelect');
+        document.getElementById('practiceQuestionsContainer').innerHTML = '<div class="text-center py-8 text-gray-500">Select a topic to view questions</div>';
+    });
+    
+    document.getElementById('practiceTopicSelect')?.addEventListener('change', async (e) => {
+        if (e.target.value) { await practiceManager.loadQuestions(e.target.value, 'practiceQuestionsContainer', 'practicePagination'); }
+    });
+    
+    document.getElementById('startQuizBtn')?.addEventListener('click', async () => {
+        const bookId = document.getElementById('bookSelect').value;
+        const topicId = document.getElementById('topicSelect').value;
+        const difficulty = document.getElementById('difficultySelect').value;
+        if (!bookId || !topicId) { uiManager.showToast('Please select both a book and a topic', true); return; }
+        uiManager.showToast('Loading questions...');
+        try {
+            const questions = await supabaseService.getQuestions(topicId, difficulty, 15);
+            if (!questions || questions.length === 0) { uiManager.showToast('No questions found. Try different options!', true); return; }
+            quizManager.setQuestions(questions);
+            const currentQ = quizManager.getCurrentQuestion();
+            uiManager.resetQuizUI();
+            uiManager.renderQuestion(currentQ, quizManager.getCurrentIndex(), quizManager.getTotalQuestions(), quizManager.getScore(), quizManager.getProgress());
+            document.querySelectorAll('.option-btn').forEach((btn, idx) => {
+                btn.onclick = () => {
+                    if (!quizManager.canAnswer()) return;
+                    const result = quizManager.checkAnswer(idx);
+                    uiManager.highlightSelectedOption(idx);
+                    const correctLetter = String.fromCharCode(65 + result.correctAnswer);
+                    uiManager.showFeedback(result.isCorrect, result.explanation, correctLetter, result.correctText);
+                    uiManager.enableNextButton();
+                    uiManager.lockOptions();
+                };
+            });
+        } catch(e) { uiManager.showToast('Error loading questions', true); }
+    });
+    
+    document.getElementById('nextBtn')?.addEventListener('click', () => {
+        const hasNext = quizManager.nextQuestion();
+        if (hasNext) {
+            const currentQ = quizManager.getCurrentQuestion();
+            uiManager.renderQuestion(currentQ, quizManager.getCurrentIndex(), quizManager.getTotalQuestions(), quizManager.getScore(), quizManager.getProgress());
+            document.querySelectorAll('.option-btn').forEach((btn, idx) => {
+                btn.onclick = () => {
+                    if (!quizManager.canAnswer()) return;
+                    const result = quizManager.checkAnswer(idx);
+                    uiManager.highlightSelectedOption(idx);
+                    const correctLetter = String.fromCharCode(65 + result.correctAnswer);
+                    uiManager.showFeedback(result.isCorrect, result.explanation, correctLetter, result.correctText);
+                    uiManager.enableNextButton();
+                    uiManager.lockOptions();
+                };
+            });
+        } else { uiManager.showResult(quizManager.getScore(), quizManager.getTotalQuestions()); }
+    });
+    
+    document.getElementById('restartBtn')?.addEventListener('click', async () => {
+        const bookId = document.getElementById('bookSelect').value;
+        const topicId = document.getElementById('topicSelect').value;
+        const difficulty = document.getElementById('difficultySelect').value;
+        if (bookId && topicId) {
+            const questions = await supabaseService.getQuestions(topicId, difficulty, 15);
+            if (questions && questions.length > 0) {
+                quizManager.setQuestions(questions);
+                const currentQ = quizManager.getCurrentQuestion();
+                uiManager.resetQuizUI();
+                uiManager.renderQuestion(currentQ, quizManager.getCurrentIndex(), quizManager.getTotalQuestions(), quizManager.getScore(), quizManager.getProgress());
+                document.querySelectorAll('.option-btn').forEach((btn, idx) => {
+                    btn.onclick = () => {
+                        if (!quizManager.canAnswer()) return;
+                        const result = quizManager.checkAnswer(idx);
+                        uiManager.highlightSelectedOption(idx);
+                        const correctLetter = String.fromCharCode(65 + result.correctAnswer);
+                        uiManager.showFeedback(result.isCorrect, result.explanation, correctLetter, result.correctText);
+                        uiManager.enableNextButton();
+                        uiManager.lockOptions();
+                    };
+                });
+            }
+        }
+    });
+    
+    document.getElementById('contactForm')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const message = document.getElementById('contactMessage')?.value || '';
+        const isBookRequest = message.toLowerCase().includes('book') || message.toLowerCase().includes('request');
+        uiManager.showToast(isBookRequest ? 'Book request submitted! We\'ll add it within 48 hours.' : 'Thank you for your message! We\'ll get back to you soon.');
+        e.target.reset();
+    });
+    
+    navigation.showPage('home');
+</script>
 </body>
 </html>
