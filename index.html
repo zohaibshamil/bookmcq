@@ -179,6 +179,30 @@
         .about-preview {
             background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
         }
+
+        /* Scrolled navbar style - ensures text is always visible */
+        .navbar-scrolled {
+            background: white !important;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .navbar-scrolled .nav-link {
+            color: #4a5568 !important;
+        }
+        .navbar-scrolled .nav-link:hover {
+            color: #667eea !important;
+        }
+        .navbar-scrolled .nav-link::after {
+            background: #667eea !important;
+        }
+        .navbar-scrolled .text-white {
+            color: #2d3748 !important;
+        }
+        .navbar-scrolled .text-white\/60 {
+            color: #718096 !important;
+        }
+        .navbar-scrolled i {
+            color: #667eea !important;
+        }
     </style>
 </head>
 <body class="disable-select">
@@ -194,11 +218,11 @@
                 <span class="text-white/60 text-xs hidden sm:inline">| Master Every Chapter</span>
             </div>
             
-            <!-- Desktop Menu - About page removed -->
+            <!-- Desktop Menu - About page removed with FREE badges -->
             <div class="desktop-menu flex gap-3 md:gap-6">
-                <a href="#" onclick="navigation.showPage('home'); return false;" id="navHome" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap page-link">🏠 Home</a>
-                <a href="#" onclick="navigation.showPage('quiz'); return false;" id="navQuiz" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap page-link">📝 Quiz</a>
-                <a href="#" onclick="navigation.showPage('practice'); return false;" id="navPractice" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap page-link">📚 Practice</a>
+                <a href="#" onclick="navigation.showPage('home'); return false;" id="navHome" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap page-link flex items-center gap-1">🏠 Home</a>
+                <a href="#" onclick="navigation.showPage('quiz'); return false;" id="navQuiz" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap page-link flex items-center gap-1">📝 Quiz <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1">FREE</span></a>
+                <a href="#" onclick="navigation.showPage('practice'); return false;" id="navPractice" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap page-link flex items-center gap-1">📚 Practice <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1">FREE</span></a>
                 <a href="#" onclick="navigation.showPage('contact'); return false;" id="navContact" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap page-link">📧 Contact</a>
                 <a href="#" onclick="navigation.showPage('privacy'); return false;" id="navPrivacy" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap page-link">🔒 Privacy</a>
             </div>
@@ -210,8 +234,8 @@
                 </button>
                 <div id="mobileDropdown" class="hidden absolute top-full right-0 mt-2 bg-white rounded-xl shadow-xl w-48 py-2 z-50">
                     <a href="#" onclick="navigation.showPage('home'); mobileMenu.close(); return false;" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition page-link">🏠 Home</a>
-                    <a href="#" onclick="navigation.showPage('quiz'); mobileMenu.close(); return false;" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition page-link">📝 Quiz</a>
-                    <a href="#" onclick="navigation.showPage('practice'); mobileMenu.close(); return false;" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition page-link">📚 Practice</a>
+                    <a href="#" onclick="navigation.showPage('quiz'); mobileMenu.close(); return false;" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition page-link flex justify-between items-center">📝 Quiz <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span></a>
+                    <a href="#" onclick="navigation.showPage('practice'); mobileMenu.close(); return false;" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition page-link flex justify-between items-center">📚 Practice <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span></a>
                     <a href="#" onclick="navigation.showPage('contact'); mobileMenu.close(); return false;" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition page-link">📧 Contact</a>
                     <a href="#" onclick="navigation.showPage('privacy'); mobileMenu.close(); return false;" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition page-link">🔒 Privacy</a>
                 </div>
@@ -804,6 +828,10 @@
             if (!topicId) return;
             this.#currentTopicId = topicId; this.#currentPage = page;
             try {
+                // FORCE REFRESH - Clear cache for this topic and page
+                const refreshCacheKey = `practice_${topicId}_${page}`;
+                this.#questionsCache.delete(refreshCacheKey);
+                
                 const result = await this.#supabaseService.getPaginatedQuestions(topicId, page, 10);
                 this.#totalPages = Math.ceil(result.total / 10);
                 this.#renderPagination(paginationId);
@@ -920,6 +948,19 @@
         chatInput.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
     }
 
+    // Navbar scroll effect handler
+    function initNavbarScroll() {
+        const navbar = document.querySelector('nav.bg-white\\/10');
+        if (!navbar) return;
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                navbar.classList.add('navbar-scrolled');
+            } else {
+                navbar.classList.remove('navbar-scrolled');
+            }
+        });
+    }
+
     // Initialize everything
     const security = new SecurityManager();
     const supabaseService = new SupabaseService();
@@ -936,6 +977,7 @@
     categoryManager.setupClickHandlers();
     categoryManager.init();
     setupAIChat(supabaseService);
+    initNavbarScroll();
     
     window.addEventListener('quizPageShown', async () => {
         const books = await supabaseService.getBooks();
