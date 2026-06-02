@@ -416,7 +416,6 @@
                 document.getElementById('adminFeatures').classList.remove('hidden');
                 document.getElementById('nonAdminView').classList.add('hidden');
                 
-                // Load all data in parallel with caching
                 await Promise.all([
                     loadBooksCached(),
                     loadTopicsCached(),
@@ -467,7 +466,6 @@
         await _supabase.auth.signOut();
         _currentUser = null;
         _isAdmin = false;
-        // Clear caches on logout
         booksCache = null;
         topicsCache = {};
         categoriesCache = null;
@@ -486,6 +484,23 @@
         document.getElementById('signupForm').classList.add('hidden');
         document.getElementById('loginForm').classList.remove('hidden');
     }
+
+    // ============ OPEN BULK UPLOAD (SINGLE FUNCTION) ============
+    window.openBulkUploadWithSession = async function() {
+        showToast('Opening bulk upload...');
+        try {
+            const { data: { session } } = await _supabase.auth.getSession();
+            if (!session) {
+                showToast('Please login first', true);
+                return;
+            }
+            // Simply open the page - Supabase will use existing session cookie
+            window.open('bulk-upload.html', '_blank');
+            showToast('Opening bulk upload...');
+        } catch(e) {
+            showToast('Error: ' + e.message, true);
+        }
+    };
 
     // ============ CACHED CATEGORIES ============
     async function loadCategoriesCached() {
@@ -561,7 +576,7 @@
         } else {
             showToast('Category updated!');
             document.getElementById('editCategoryModal').classList.add('hidden');
-            categoriesCache = null; // Invalidate cache
+            categoriesCache = null;
             await loadCategoriesCached();
             await loadBooksCached();
         }
@@ -570,7 +585,7 @@
     window.deleteCategory = async function(id) {
         if (confirm('Delete this category?')) {
             await _supabase.from('categories').delete().eq('id', id);
-            categoriesCache = null; // Invalidate cache
+            categoriesCache = null;
             await loadCategoriesCached();
             await loadBooksCached();
             showToast('Category deleted');
@@ -592,7 +607,7 @@
             showToast('Category added!');
             document.getElementById('addCategoryForm').classList.add('hidden');
             document.getElementById('categoryName').value = '';
-            categoriesCache = null; // Invalidate cache
+            categoriesCache = null;
             await loadCategoriesCached();
             await loadBooksCached();
         }
@@ -670,13 +685,12 @@
         
         if (categoryFilter) {
             categoryFilter.addEventListener('change', () => {
-                booksCache = null; // Invalidate cache on filter change
+                booksCache = null;
                 loadBooksCached();
             });
         }
         if (searchInput) {
             searchInput.addEventListener('input', () => {
-                // Just re-render from cache with new search term
                 if (booksCache) renderBooksList(booksCache);
                 else loadBooksCached();
             });
@@ -686,8 +700,8 @@
     window.deleteBook = async function(id) {
         if (confirm('Delete this book? This will also delete all topics and questions in this book.')) {
             await _supabase.from('books').delete().eq('id', id);
-            booksCache = null; // Invalidate cache
-            topicsCache = {}; // Invalidate topics cache
+            booksCache = null;
+            topicsCache = {};
             await Promise.all([loadBooksCached(), loadTopicsCached(), loadFilterBooksCached(), loadBookSelectsCached(), loadTopicFilterBooksCached()]);
             showToast('Book deleted');
         }
@@ -712,7 +726,7 @@
             document.getElementById('bookCategory').value = '';
             document.getElementById('bookTitle').value = '';
             document.getElementById('bookAuthor').value = '';
-            booksCache = null; // Invalidate cache
+            booksCache = null;
             await Promise.all([loadBooksCached(), loadFilterBooksCached(), loadBookSelectsCached(), loadTopicFilterBooksCached()]);
         }
     }
@@ -742,7 +756,7 @@
         } else {
             showToast('Book updated!');
             document.getElementById('editBookModal').classList.add('hidden');
-            booksCache = null; // Invalidate cache
+            booksCache = null;
             await Promise.all([loadBooksCached(), loadFilterBooksCached(), loadBookSelectsCached(), loadTopicFilterBooksCached()]);
         }
     }
@@ -814,7 +828,7 @@
     window.deleteTopic = async function(id) {
         if (confirm('Delete this topic? This will also delete all questions in this topic.')) {
             await _supabase.from('topics').delete().eq('id', id);
-            topicsCache = {}; // Invalidate topics cache
+            topicsCache = {};
             await Promise.all([loadTopicsCached(), loadQuestions(), loadFilterBooksCached()]);
             showToast('Topic deleted');
         }
@@ -844,7 +858,7 @@
             document.getElementById('addTopicForm').classList.add('hidden');
             document.getElementById('topicName').value = '';
             document.getElementById('chapterNumber').value = '';
-            topicsCache = {}; // Invalidate cache
+            topicsCache = {};
             await Promise.all([loadTopicsCached(), loadFilterBooksCached()]);
         }
     }
@@ -876,7 +890,7 @@
         } else {
             showToast('Topic updated!');
             document.getElementById('editTopicModal').classList.add('hidden');
-            topicsCache = {}; // Invalidate cache
+            topicsCache = {};
             await Promise.all([loadTopicsCached(), loadFilterBooksCached()]);
         }
     }
@@ -935,7 +949,6 @@
             return;
         }
         
-        // Check cache first
         if (topicsCache[bookId]) {
             renderTopicsForQuestion(topicsCache[bookId]);
             return;
@@ -993,7 +1006,6 @@
             return;
         }
         
-        // Check cache
         if (topicsCache[bookId]) {
             renderFilterTopics(topicsCache[bookId]);
             return;
@@ -1277,9 +1289,8 @@
     }
 
     function showTab(tabName) {
-        // If bulk upload tab is clicked, open in new tab and stay on current tab
         if (tabName === 'bulkupload') {
-            window.open('bulk-upload.html', '_blank');
+            window.openBulkUploadWithSession();
             return;
         }
         
@@ -1341,32 +1352,7 @@
             }
         }
     }
-// ============ OPEN BULK UPLOAD WITH SESSION TOKEN ============
-async function openBulkUploadWithSession() {
-    showToast('Opening bulk upload...');
-    
-    try {
-        // Get current session
-        const { data: { session } } = await _supabase.auth.getSession();
-        
-        if (!session) {
-            showToast('Please login first', true);
-            return;
-        }
-        
-        // Get access token
-        const accessToken = session.access_token;
-        const refreshToken = session.refresh_token;
-        
-        // Open bulk upload page with tokens in URL hash (more secure than query params)
-        const bulkUrl = `bulk-upload.html#access_token=${accessToken}&refresh_token=${refreshToken}`;
-        window.open(bulkUrl, '_blank');
-        
-        showToast('Opening bulk upload...');
-    } catch(e) {
-        showToast('Error: ' + e.message, true);
-    }
-}
+
     function setupEventListeners() {
         document.getElementById('loginBtn').addEventListener('click', handleLogin);
         document.getElementById('signupBtn').addEventListener('click', handleSignup);
@@ -1381,7 +1367,6 @@ async function openBulkUploadWithSession() {
         document.getElementById('tabBulkUploadBtn').addEventListener('click', () => showTab('bulkupload'));
         document.getElementById('tabAdminsBtn').addEventListener('click', () => showTab('admins'));
         
-        // Book events
         document.getElementById('showAddBookBtn').addEventListener('click', () => {
             document.getElementById('addBookForm').classList.remove('hidden');
         });
@@ -1390,7 +1375,6 @@ async function openBulkUploadWithSession() {
         });
         document.getElementById('saveBookBtn').addEventListener('click', addBook);
         
-        // Category events
         document.getElementById('showAddCategoryBtn').addEventListener('click', () => {
             document.getElementById('addCategoryForm').classList.remove('hidden');
         });
@@ -1400,7 +1384,6 @@ async function openBulkUploadWithSession() {
         });
         document.getElementById('saveCategoryBtn').addEventListener('click', addCategory);
         
-        // Topic events
         document.getElementById('showAddTopicBtn').addEventListener('click', async () => {
             await loadBookSelectForTopics();
             document.getElementById('addTopicForm').classList.remove('hidden');
@@ -1411,7 +1394,6 @@ async function openBulkUploadWithSession() {
         document.getElementById('saveTopicBtn').addEventListener('click', addTopic);
         document.getElementById('topicFilterBookId').addEventListener('change', applyTopicFilter);
         
-        // Question events
         document.getElementById('showAddQuestionBtn').addEventListener('click', async () => {
             await loadBookSelectsCached();
             document.getElementById('addQuestionForm').classList.remove('hidden');
@@ -1422,7 +1404,6 @@ async function openBulkUploadWithSession() {
         document.getElementById('saveQuestionBtn').addEventListener('click', addQuestion);
         document.getElementById('questionBookId').addEventListener('change', loadTopicsForQuestion);
         
-        // Filter events
         const filterBook = document.getElementById('filterBookId');
         if (filterBook) {
             filterBook.addEventListener('change', async () => {
@@ -1437,14 +1418,12 @@ async function openBulkUploadWithSession() {
         const filterDiff = document.getElementById('filterDifficulty');
         if (filterDiff) filterDiff.addEventListener('change', applyFilters);
         
-        // Pagination events
         const prevBtn = document.getElementById('prevPageBtn');
         if (prevBtn) prevBtn.addEventListener('click', goToPrevPage);
         
         const nextBtn = document.getElementById('nextPageBtn');
         if (nextBtn) nextBtn.addEventListener('click', goToNextPage);
         
-        // Modal events
         document.getElementById('updateBookBtn').addEventListener('click', updateBook);
         document.getElementById('closeBookModal').addEventListener('click', () => {
             document.getElementById('editBookModal').classList.add('hidden');
@@ -1468,39 +1447,6 @@ async function openBulkUploadWithSession() {
 
     setupEventListeners();
     checkSession();
-    // ============ OPEN BULK UPLOAD WITH SESSION USING LOCALSTORAGE ============
-async function openBulkUploadWithSession() {
-    showToast('Opening bulk upload...');
-    
-    try {
-        // Get current session
-        const { data: { session } } = await _supabase.auth.getSession();
-        
-        if (!session) {
-            showToast('Please login first', true);
-            return;
-        }
-        
-        // Store session in localStorage for the bulk upload page to read
-        localStorage.setItem('bulk_upload_session', JSON.stringify({
-            access_token: session.access_token,
-            refresh_token: session.refresh_token,
-            expires_at: session.expires_at
-        }));
-        
-        // Open bulk upload page
-        window.open('bulk-upload.html', '_blank');
-        
-        // Clear after 30 seconds (so it doesn't stay forever)
-        setTimeout(() => {
-            localStorage.removeItem('bulk_upload_session');
-        }, 30000);
-        
-        showToast('Opening bulk upload...');
-    } catch(e) {
-        showToast('Error: ' + e.message, true);
-    }
-}
 </script>
 </body>
 </html>
