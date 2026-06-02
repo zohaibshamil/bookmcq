@@ -99,9 +99,18 @@
                 <div id="booksList"></div>
             </div>
 
-            <!-- Topics Tab -->
+            <!-- Topics Tab with Book Filter -->
             <div id="topicsTab" class="hidden">
                 <h2 class="text-xl font-bold mb-4">Topics</h2>
+                
+                <!-- Book Filter Dropdown for Topics -->
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold mb-2">Filter by Book:</label>
+                    <select id="topicFilterBookId" class="w-full md:w-1/2 p-2 border rounded-lg">
+                        <option value="">All Books</option>
+                    </select>
+                </div>
+                
                 <button id="showAddTopicBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg mb-4">+ Add Topic</button>
                 <div id="addTopicForm" class="hidden bg-gray-50 p-4 rounded-lg mb-4">
                     <select id="topicBookId" class="w-full p-2 border rounded mb-2"></select>
@@ -349,7 +358,9 @@
     const PAGE_SIZE = 15;
     let totalQuestions = 0;
     let currentFilters = { bookId: '', topicId: '', difficulty: '' };
-    let allQuestions = []; // Store all questions for sequential numbering
+    
+    // Topic filter variable
+    let currentTopicBookFilter = '';
 
     function showToast(message) {
         const toast = document.getElementById('toast');
@@ -423,7 +434,8 @@
                     loadAdmins(),
                     loadBookSelects(),
                     loadBulkBookSelects(),
-                    loadFilterBooks()
+                    loadFilterBooks(),
+                    loadTopicFilterBooks()
                 ]);
             } else {
                 document.getElementById('adminBadge').classList.add('hidden');
@@ -508,7 +520,7 @@
     window.deleteBook = async function(id) {
         if (confirm('Delete this book? This will also delete all topics and questions in this book.')) {
             await _supabase.from('books').delete().eq('id', id);
-            await Promise.all([loadBooks(), loadTopics(), loadFilterBooks(), loadBookSelects(), loadBulkBookSelects()]);
+            await Promise.all([loadBooks(), loadTopics(), loadFilterBooks(), loadBookSelects(), loadBulkBookSelects(), loadTopicFilterBooks()]);
             showToast('Book deleted');
         }
     };
@@ -530,7 +542,7 @@
             document.getElementById('addBookForm').classList.add('hidden');
             document.getElementById('bookTitle').value = '';
             document.getElementById('bookAuthor').value = '';
-            await Promise.all([loadBooks(), loadFilterBooks(), loadBookSelects(), loadBulkBookSelects()]);
+            await Promise.all([loadBooks(), loadFilterBooks(), loadBookSelects(), loadBulkBookSelects(), loadTopicFilterBooks()]);
         }
     }
 
@@ -558,13 +570,31 @@
         } else {
             showToast('Book updated!');
             document.getElementById('editBookModal').classList.add('hidden');
-            await Promise.all([loadBooks(), loadFilterBooks(), loadBookSelects(), loadBulkBookSelects()]);
+            await Promise.all([loadBooks(), loadFilterBooks(), loadBookSelects(), loadBulkBookSelects(), loadTopicFilterBooks()]);
         }
     }
 
-    // ============ TOPICS ============
+    // ============ TOPICS with Book Filter ============
+    async function loadTopicFilterBooks() {
+        const { data } = await _supabase.from('books').select('id, title');
+        const select = document.getElementById('topicFilterBookId');
+        select.innerHTML = '<option value="">All Books</option>';
+        if (data) {
+            data.forEach(book => {
+                select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+            });
+        }
+    }
+    
     async function loadTopics() {
-        const { data, error } = await _supabase.from('topics').select('*, books(title)').order('chapter_number', { ascending: true, nullsFirst: false }).order('id', { ascending: true });
+        let query = _supabase.from('topics').select('*, books(title)');
+        
+        // Apply book filter if selected
+        if (currentTopicBookFilter && currentTopicBookFilter !== '') {
+            query = query.eq('book_id', parseInt(currentTopicBookFilter));
+        }
+        
+        const { data, error } = await query.order('book_id', { ascending: true }).order('chapter_number', { ascending: true, nullsFirst: false }).order('id', { ascending: true });
         const container = document.getElementById('topicsList');
         
         if (error || !data || data.length === 0) {
@@ -590,6 +620,11 @@
                 </div>
             </div>
         `}).join('');
+    }
+    
+    async function applyTopicFilter() {
+        currentTopicBookFilter = document.getElementById('topicFilterBookId').value;
+        await loadTopics();
     }
 
     window.deleteTopic = async function(id) {
@@ -703,7 +738,6 @@
             return;
         }
         
-        // Calculate sequential numbering based on page and index
         const startNumber = (currentPage - 1) * PAGE_SIZE + 1;
         
         container.innerHTML = data.map((q, index) => {
@@ -731,7 +765,6 @@
         `}).join('');
     }
     
-    // Fixed: Filter topics based on selected book
     async function loadFilterTopics() {
         const bookId = document.getElementById('filterBookId').value;
         const topicSelect = document.getElementById('filterTopicId');
@@ -1070,7 +1103,7 @@
         const previewRows = rows.slice(0, 5);
         previewBody.innerHTML = previewRows.map(row => `
             <tr>
-                ${headers.map(h => `<td class="p-2 border">${escapeHtml(String(row[h] || ''))}</td>`).join('')}
+                ${headers.map(h => `<td class="p-2 border">${escapeHtml(String(row[h] || ''))}<table>`).join('')}
             </tr>
         `).join('');
         
@@ -1216,7 +1249,8 @@
                     loadAdmins(),
                     loadBookSelects(),
                     loadBulkBookSelects(),
-                    loadFilterBooks()
+                    loadFilterBooks(),
+                    loadTopicFilterBooks()
                 ]);
             } else {
                 document.getElementById('adminBadge').classList.add('hidden');
@@ -1257,6 +1291,9 @@
             document.getElementById('addTopicForm').classList.add('hidden');
         });
         document.getElementById('saveTopicBtn').addEventListener('click', addTopic);
+        
+        // Topic filter event
+        document.getElementById('topicFilterBookId').addEventListener('change', applyTopicFilter);
         
         // Question events
         document.getElementById('showAddQuestionBtn').addEventListener('click', async () => {
