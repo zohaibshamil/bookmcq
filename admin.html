@@ -223,24 +223,21 @@
             </div>
 
             <!-- Bulk Upload Tab - Opens Separate Page -->
-            <div id="bulkUploadTab" class="hidden">
-                <div class="text-center py-12">
-                    <i class="fas fa-upload text-6xl text-purple-500 mb-4"></i>
-                    <h2 class="text-2xl font-bold mb-3">Bulk Upload Questions</h2>
-                    <p class="text-gray-600 mb-6">Upload hundreds of questions at once using a CSV file</p>
-                    <div class="flex gap-4 justify-center">
-                        <a href="bulk-upload.html" target="_blank" class="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 inline-flex items-center gap-2">
-                            <i class="fas fa-external-link-alt"></i>
-                            Open Bulk Upload Page
-                        </a>
-                        <button onclick="window.open('bulk-upload.html', '_blank')" class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 inline-flex items-center gap-2">
-                            <i class="fas fa-window-restore"></i>
-                            Open in New Tab
-                        </button>
-                    </div>
-                    <p class="text-sm text-gray-500 mt-4">Click either button to open the bulk upload page in a new tab</p>
-                </div>
-            </div>
+<!-- Bulk Upload Tab - Opens Separate Page with Session -->
+<div id="bulkUploadTab" class="hidden">
+    <div class="text-center py-12">
+        <i class="fas fa-upload text-6xl text-purple-500 mb-4"></i>
+        <h2 class="text-2xl font-bold mb-3">Bulk Upload Questions</h2>
+        <p class="text-gray-600 mb-6">Upload hundreds of questions at once using a CSV file</p>
+        <div class="flex gap-4 justify-center">
+            <button onclick="openBulkUploadWithSession()" class="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 inline-flex items-center gap-2">
+                <i class="fas fa-external-link-alt"></i>
+                Open Bulk Upload Page
+            </button>
+        </div>
+        <p class="text-sm text-gray-500 mt-4">Click to open bulk upload with your current session</p>
+    </div>
+</div>
 
             <!-- Admins Tab -->
             <div id="adminsTab" class="hidden">
@@ -1346,7 +1343,32 @@
             }
         }
     }
-
+// ============ OPEN BULK UPLOAD WITH SESSION TOKEN ============
+async function openBulkUploadWithSession() {
+    showToast('Opening bulk upload...');
+    
+    try {
+        // Get current session
+        const { data: { session } } = await _supabase.auth.getSession();
+        
+        if (!session) {
+            showToast('Please login first', true);
+            return;
+        }
+        
+        // Get access token
+        const accessToken = session.access_token;
+        const refreshToken = session.refresh_token;
+        
+        // Open bulk upload page with tokens in URL hash (more secure than query params)
+        const bulkUrl = `bulk-upload.html#access_token=${accessToken}&refresh_token=${refreshToken}`;
+        window.open(bulkUrl, '_blank');
+        
+        showToast('Opening bulk upload...');
+    } catch(e) {
+        showToast('Error: ' + e.message, true);
+    }
+}
     function setupEventListeners() {
         document.getElementById('loginBtn').addEventListener('click', handleLogin);
         document.getElementById('signupBtn').addEventListener('click', handleSignup);
