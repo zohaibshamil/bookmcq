@@ -15,6 +15,10 @@
         .log .success { color: #4ade80; }
         .log .error { color: #f87171; }
         .log .info { color: #60a5fa; }
+        .preview-table { overflow-x: auto; }
+        .preview-table table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .preview-table th, .preview-table td { border: 1px solid #e2e8f0; padding: 8px; text-align: left; }
+        .preview-table th { background: #f1f5f9; font-weight: 600; }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -80,6 +84,19 @@
 </div>
 
 <script>
+    // ============ SECRET KEY PROTECTION ============
+    // This page can ONLY be opened with a valid key from admin panel
+    const urlParams = new URLSearchParams(window.location.search);
+    const accessKey = urlParams.get('key');
+    
+    // Secret key - only matches the one sent from admin panel
+    const SECRET_KEY = 'BookMCQ_Admin_Secure_Key_2024';
+    
+    // If no valid key, redirect to login page
+    if (accessKey !== SECRET_KEY) {
+        window.location.href = 'admin.html';
+    }
+    
     // Log function
     function addLog(msg, type = 'info') {
         const logDiv = document.getElementById('log');
@@ -92,6 +109,7 @@
     }
     
     addLog('Script started', 'info');
+    addLog('✅ Key verified', 'success');
     
     // Check if libraries loaded
     function checkLibraries() {
@@ -204,14 +222,14 @@
                     const previewDiv = document.getElementById('previewDiv');
                     const uploadBtn = document.getElementById('uploadBtn');
                     
-                    let html = '<h3 class="font-bold text-gray-700 mb-2">Preview (first 3 rows):</h3>';
-                    html += '<div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse;" class="border">';
+                    let html = '<h3 class="font-bold text-gray-700 mb-2">📋 Preview (first 3 rows):</h3>';
+                    html += '<div class="preview-table"><table>';
                     const headers = Object.keys(rows[0]);
-                    html += '<tr style="background:#1e1e2e;">' + headers.map(h => `<th style="padding:8px; border:1px solid #333; text-align:left; color:white;">${h}</th>`).join('') + '<tr>';
+                    html += '<thead><tr style="background:#0f0f1a;">' + headers.map(h => `<th style="padding:8px; border:1px solid #ccc; text-align:left;">${h}</th>`).join('') + '</thead><tbody>';
                     for (let i = 0; i < Math.min(3, rows.length); i++) {
-                        html += '<tr>' + headers.map(h => `<td style="padding:8px; border:1px solid #333;">${escapeHtml(String(rows[i][h] || '').substring(0, 50))}</td>`).join('') + '</tr>';
+                        html += '<tr>' + headers.map(h => `<td style="padding:8px; border:1px solid #ccc;">${escapeHtml(String(rows[i][h] || '').substring(0, 50))}</td>`).join('') + '</tr>';
                     }
-                    html += '</table></div>';
+                    html += '</tbody></table></div>';
                     html += `<p class="text-green-600 text-sm mt-2"><i class="fas fa-check-circle"></i> ✅ ${rows.length} questions ready to upload</p>`;
                     
                     previewDiv.innerHTML = html;
@@ -231,11 +249,13 @@
             
             if (!bookId || !topicId) {
                 addLog('❌ Please select both a book and a topic', 'error');
+                alert('Please select both a book and a topic');
                 return;
             }
             
             if (!currentQuestions.length) {
                 addLog('❌ No questions to upload', 'error');
+                alert('No questions to upload. Please select a file first.');
                 return;
             }
             
