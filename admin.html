@@ -6,11 +6,15 @@
     <title>BookMCQ - Admin Panel</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); min-height: 100vh; }
         .admin-card { background: rgba(255,255,255,0.95); border-radius: 1rem; }
         .toast { position: fixed; bottom: 20px; left: 20px; right: 20px; z-index: 1000; text-align: center; }
+        .upload-zone { border: 2px dashed #cbd5e1; transition: all 0.3s; }
+        .upload-zone:hover { border-color: #8b5cf6; background-color: #f3e8ff; }
+        .progress-bar { transition: width 0.3s ease; }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -35,7 +39,7 @@
         
         <div id="loginForm">
             <input type="email" id="loginEmail" placeholder="Email Address" class="w-full p-3 border rounded-xl mb-3">
-            <input type="password" id="loginPassword" placeholder="Password" class="w-full p-3 border rounded-xl mb-4">
+            <input type="password" id="loginPassword" placeholder="Password" class="w-full p-3 border rounded-xl mb-4" onkeypress="handleLoginKeyPress(event)">
             <button id="loginBtn" class="w-full bg-purple-600 text-white font-bold py-3 rounded-xl hover:bg-purple-700">
                 <i class="fas fa-sign-in-alt mr-2"></i> Login
             </button>
@@ -46,7 +50,7 @@
         
         <div id="signupForm" class="hidden">
             <input type="email" id="signupEmail" placeholder="Email Address" class="w-full p-3 border rounded-xl mb-3">
-            <input type="password" id="signupPassword" placeholder="Password (min 6 characters)" class="w-full p-3 border rounded-xl mb-4">
+            <input type="password" id="signupPassword" placeholder="Password (min 6 characters)" class="w-full p-3 border rounded-xl mb-4" onkeypress="handleSignupKeyPress(event)">
             <button id="signupBtn" class="w-full bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-700">
                 <i class="fas fa-user-plus mr-2"></i> Create Account
             </button>
@@ -69,12 +73,13 @@
             </button>
         </div>
         
-        <!-- Admin-Only Features (Hidden for non-admins) -->
+        <!-- Admin Features -->
         <div id="adminFeatures" class="hidden">
             <div class="flex flex-wrap gap-2 mb-6">
                 <button id="tabBooksBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-purple-600 text-white">📚 Books</button>
                 <button id="tabTopicsBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">🏷️ Topics</button>
                 <button id="tabQuestionsBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">❓ Questions</button>
+                <button id="tabBulkUploadBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">📤 Bulk Upload</button>
                 <button id="tabAdminsBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">👑 Admins</button>
             </div>
 
@@ -138,22 +143,105 @@
                 <div id="questionsList">Loading...</div>
             </div>
 
-            <!-- Admins Tab (Admin Only - Emails Hidden from Non-Admins) -->
-            <div id="adminsTab" class="hidden">
-                <h2 class="text-xl font-bold mb-4">Admin Users</h2>
-                <div id="adminsList">Loading...</div>
-                <div id="nonAdminMessage" class="hidden bg-yellow-50 p-4 rounded-lg mt-4">
-                    <p class="text-yellow-800">You don't have admin privileges. Contact the site administrator.</p>
+            <!-- Bulk Upload Tab -->
+            <div id="bulkUploadTab" class="hidden">
+                <h2 class="text-xl font-bold mb-4">📤 Bulk Upload Questions</h2>
+                
+                <div class="bg-blue-50 p-4 rounded-lg mb-6">
+                    <h3 class="font-bold mb-3">Step 1: Select Target</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold mb-2">Select Book</label>
+                            <select id="bulkBookId" class="w-full p-2 border rounded-lg">
+                                <option value="">Select Book</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-2">Select Topic</label>
+                            <select id="bulkTopicId" class="w-full p-2 border rounded-lg">
+                                <option value="">Select Topic</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
+
+                <div class="bg-green-50 p-4 rounded-lg mb-6">
+                    <h3 class="font-bold mb-3">Step 2: Download CSV Template</h3>
+                    <p class="text-sm text-gray-600 mb-3">Download the template, fill with your questions, then upload back.</p>
+                    <button id="downloadTemplateBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg">
+                        <i class="fas fa-download mr-2"></i> Download CSV Template
+                    </button>
+                </div>
+
+                <div class="bg-purple-50 p-4 rounded-lg mb-6">
+                    <h3 class="font-bold mb-3">Step 3: Upload Your CSV/Excel File</h3>
+                    <div id="uploadZone" class="upload-zone bg-white p-8 rounded-lg text-center cursor-pointer">
+                        <i class="fas fa-cloud-upload-alt text-4xl text-purple-400 mb-3"></i>
+                        <p class="text-gray-600">Drag & drop your CSV or Excel file here, or click to select</p>
+                        <p class="text-gray-400 text-sm mt-2">Supports .csv, .xlsx, .xls</p>
+                        <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" class="hidden">
+                    </div>
+                    
+                    <div id="previewSection" class="hidden mt-6">
+                        <h4 class="font-bold mb-3">Preview (First 5 rows)</h4>
+                        <div class="overflow-x-auto">
+                            <table id="previewTable" class="min-w-full bg-white border rounded-lg text-sm">
+                                <thead class="bg-gray-100">
+                                    <tr id="previewHeader"><tr>
+                                </thead>
+                                <tbody id="previewBody"></tbody>
+                            </table>
+                        </div>
+                        <div class="flex gap-3 mt-4">
+                            <button id="confirmUploadBtn" class="bg-blue-600 text-white px-6 py-2 rounded-lg">
+                                <i class="fas fa-check mr-2"></i> Upload (0 questions)
+                            </button>
+                            <button id="cancelUploadBtn" class="bg-gray-400 text-white px-6 py-2 rounded-lg">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="uploadProgress" class="hidden mt-6">
+                        <div class="flex justify-between text-sm mb-1">
+                            <span>Uploading...</span>
+                            <span id="progressPercent">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div id="progressFill" class="progress-bar bg-green-600 h-2 rounded-full" style="width: 0%"></div>
+                        </div>
+                        <p id="progressStatus" class="text-sm text-gray-600 mt-2">Preparing...</p>
+                    </div>
+                </div>
+
+                <div class="bg-yellow-50 p-4 rounded-lg">
+                    <h3 class="font-bold mb-2">📋 CSV Format Instructions</h3>
+                    <p class="text-sm text-gray-700 mb-2">Your CSV file must have these columns (in this order):</p>
+                    <ul class="text-sm text-gray-600 list-disc list-inside space-y-1">
+                        <li><code class="bg-gray-100 px-1 rounded">question_text</code> - The question</li>
+                        <li><code class="bg-gray-100 px-1 rounded">option_a</code> - Option A text</li>
+                        <li><code class="bg-gray-100 px-1 rounded">option_b</code> - Option B text</li>
+                        <li><code class="bg-gray-100 px-1 rounded">option_c</code> - Option C text</li>
+                        <li><code class="bg-gray-100 px-1 rounded">option_d</code> - Option D text</li>
+                        <li><code class="bg-gray-100 px-1 rounded">correct_answer</code> - 0, 1, 2, or 3 (0=A, 1=B, 2=C, 3=D)</li>
+                        <li><code class="bg-gray-100 px-1 rounded">difficulty</code> - easy, medium, or hard</li>
+                        <li><code class="bg-gray-100 px-1 rounded">explanation</code> - Explanation (optional)</li>
+                    </ul>
+                    <p class="text-sm text-gray-600 mt-3">⚠️ The book and topic are selected from the dropdown above - you don't need to include them in the CSV.</p>
+                </div>
+            </div>
+
+            <!-- Admins Tab -->
+            <div id="adminsTab" class="hidden">
+                <h2 class="text-xl font-bold mb-4">👑 Admin Users</h2>
+                <div id="adminsList">Loading...</div>
             </div>
         </div>
         
-        <!-- Non-Admin Message (Shown to logged-in users who aren't admins) -->
         <div id="nonAdminView" class="hidden text-center py-8">
             <i class="fas fa-lock text-5xl text-gray-400 mb-3"></i>
             <h2 class="text-xl font-bold text-gray-600">Access Restricted</h2>
             <p class="text-gray-500 mt-2">You don't have admin privileges.</p>
-            <p class="text-gray-400 text-sm mt-4">Contact the site administrator to request access.</p>
         </div>
     </div>
 </div>
@@ -171,6 +259,7 @@
     
     let _currentUser = null;
     let _isAdmin = false;
+    let _pendingData = [];
 
     function showToast(message) {
         const toast = document.getElementById('toast');
@@ -189,6 +278,21 @@
         });
     }
 
+    // ============ KEYBOARD HANDLERS ============
+    function handleLoginKeyPress(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            handleLogin();
+        }
+    }
+
+    function handleSignupKeyPress(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            handleSignup();
+        }
+    }
+
     // ============ CHECK IF USER IS ADMIN ============
     async function checkIsAdmin(userId) {
         if (!userId) return false;
@@ -196,7 +300,6 @@
             .from('admin_roles')
             .select('user_id')
             .eq('user_id', userId);
-        
         return data && data.length > 0;
     }
 
@@ -232,6 +335,7 @@
                 loadQuestions();
                 loadAdmins();
                 loadBookSelects();
+                loadBulkBookSelects();
             } else {
                 document.getElementById('adminBadge').classList.add('hidden');
                 document.getElementById('adminFeatures').classList.add('hidden');
@@ -293,15 +397,17 @@
         document.getElementById('booksTab').classList.add('hidden');
         document.getElementById('topicsTab').classList.add('hidden');
         document.getElementById('questionsTab').classList.add('hidden');
+        document.getElementById('bulkUploadTab').classList.add('hidden');
         document.getElementById('adminsTab').classList.add('hidden');
         
         document.getElementById(`${tabName}Tab`).classList.remove('hidden');
         
-        const buttons = ['Books', 'Topics', 'Questions', 'Admins'];
+        const buttons = ['Books', 'Topics', 'Questions', 'BulkUpload', 'Admins'];
         buttons.forEach(btn => {
-            const btnElement = document.getElementById(`tab${btn}Btn`);
+            const btnId = `tab${btn}Btn`;
+            const btnElement = document.getElementById(btnId);
             if (btnElement) {
-                if (btn.toLowerCase() === tabName) {
+                if (btn.toLowerCase() === tabName.toLowerCase()) {
                     btnElement.classList.remove('bg-gray-200');
                     btnElement.classList.add('bg-purple-600', 'text-white');
                 } else {
@@ -358,6 +464,7 @@
             document.getElementById('bookAuthor').value = '';
             loadBooks();
             loadBookSelects();
+            loadBulkBookSelects();
         }
     }
 
@@ -404,6 +511,7 @@
             document.getElementById('addTopicForm').classList.add('hidden');
             document.getElementById('topicName').value = '';
             loadTopics();
+            loadBulkTopicSelects();
         }
     }
 
@@ -521,7 +629,196 @@
         loadQuestions();
     }
 
-    // ============ ADMINS CRUD (Email Hidden) ============
+    // ============ BULK UPLOAD ============
+    async function loadBulkBookSelects() {
+        const { data } = await _supabase.from('books').select('id, title');
+        const select = document.getElementById('bulkBookId');
+        select.innerHTML = '<option value="">Select Book</option>';
+        if (data) {
+            data.forEach(book => {
+                select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+            });
+        }
+    }
+
+    async function loadBulkTopicSelects() {
+        const bookId = document.getElementById('bulkBookId').value;
+        if (!bookId) {
+            document.getElementById('bulkTopicId').innerHTML = '<option value="">Select Topic</option>';
+            return;
+        }
+        
+        const { data } = await _supabase.from('topics').select('id, name').eq('book_id', bookId);
+        const select = document.getElementById('bulkTopicId');
+        select.innerHTML = '<option value="">Select Topic</option>';
+        if (data) {
+            data.forEach(topic => {
+                select.innerHTML += `<option value="${topic.id}">${escapeHtml(topic.name)}</option>`;
+            });
+        }
+    }
+
+    function downloadTemplate() {
+        const headers = ['question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'difficulty', 'explanation'];
+        const exampleRow = [
+            'What does typeof null return?',
+            'null',
+            'undefined',
+            'object',
+            'number',
+            '2',
+            'easy',
+            'This is a historical bug in JavaScript'
+        ];
+        
+        const csvContent = [headers.join(','), exampleRow.join(',')].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'bookmcq_template.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('Template downloaded!');
+    }
+
+    function setupFileUpload() {
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        
+        uploadZone.addEventListener('click', () => fileInput.click());
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('border-purple-500', 'bg-purple-50');
+        });
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('border-purple-500', 'bg-purple-50');
+        });
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('border-purple-500', 'bg-purple-50');
+            const file = e.dataTransfer.files[0];
+            if (file) processFile(file);
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files[0]) processFile(e.target.files[0]);
+        });
+    }
+
+    function processFile(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(firstSheet);
+            
+            if (rows.length === 0) {
+                showToast('No data found in file');
+                return;
+            }
+            
+            _pendingData = rows;
+            displayPreview(rows);
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function displayPreview(rows) {
+        const previewSection = document.getElementById('previewSection');
+        const previewHeader = document.getElementById('previewHeader');
+        const previewBody = document.getElementById('previewBody');
+        const confirmBtn = document.getElementById('confirmUploadBtn');
+        
+        const headers = Object.keys(rows[0]);
+        previewHeader.innerHTML = headers.map(h => `<th class="p-2 border text-left">${h}</th>`).join('');
+        
+        const previewRows = rows.slice(0, 5);
+        previewBody.innerHTML = previewRows.map(row => `
+            <tr>
+                ${headers.map(h => `<td class="p-2 border">${escapeHtml(String(row[h] || ''))}</td>`).join('')}
+            </tr>
+        `).join('');
+        
+        confirmBtn.innerHTML = `<i class="fas fa-check mr-2"></i> Upload (${rows.length} questions)`;
+        previewSection.classList.remove('hidden');
+    }
+
+    async function confirmUpload() {
+        const bookId = document.getElementById('bulkBookId').value;
+        const topicId = document.getElementById('bulkTopicId').value;
+        
+        if (!bookId || !topicId) {
+            showToast('Please select both a book and a topic');
+            return;
+        }
+        
+        if (!_pendingData || _pendingData.length === 0) {
+            showToast('No data to upload');
+            return;
+        }
+        
+        const progressDiv = document.getElementById('uploadProgress');
+        const progressFill = document.getElementById('progressFill');
+        const progressPercent = document.getElementById('progressPercent');
+        const progressStatus = document.getElementById('progressStatus');
+        
+        progressDiv.classList.remove('hidden');
+        
+        let successCount = 0;
+        let errorCount = 0;
+        
+        for (let i = 0; i < _pendingData.length; i++) {
+            const row = _pendingData[i];
+            const percent = Math.round(((i + 1) / _pendingData.length) * 100);
+            progressFill.style.width = `${percent}%`;
+            progressPercent.textContent = `${percent}%`;
+            progressStatus.textContent = `Processing question ${i + 1} of ${_pendingData.length}...`;
+            
+            try {
+                const { data: qData, error: qError } = await _supabase.from('questions').insert([{
+                    topic_id: parseInt(topicId),
+                    question_text: row.question_text,
+                    difficulty: row.difficulty || 'medium',
+                    correct_answer: parseInt(row.correct_answer),
+                    explanation: row.explanation || ''
+                }]).select();
+                
+                if (qError) throw qError;
+                
+                const options = [
+                    row.option_a, row.option_b, row.option_c, row.option_d
+                ];
+                
+                for (let j = 0; j < options.length; j++) {
+                    await _supabase.from('options').insert([{
+                        question_id: qData[0].id,
+                        option_text: options[j],
+                        option_index: j
+                    }]);
+                }
+                
+                successCount++;
+            } catch (err) {
+                errorCount++;
+                console.error('Error uploading row:', row, err);
+            }
+        }
+        
+        progressStatus.textContent = `Complete! ${successCount} uploaded, ${errorCount} failed.`;
+        
+        setTimeout(() => {
+            progressDiv.classList.add('hidden');
+            document.getElementById('previewSection').classList.add('hidden');
+            document.getElementById('fileInput').value = '';
+            _pendingData = [];
+            loadQuestions();
+            showToast(`Upload complete: ${successCount} questions added, ${errorCount} failed`);
+        }, 2000);
+    }
+
+    // ============ ADMINS ============
     async function loadAdmins() {
         const { data, error } = await _supabase.from('admin_roles').select('user_email');
         const container = document.getElementById('adminsList');
@@ -531,8 +828,6 @@
             return;
         }
         
-        // Only show that admins exist, not their emails (for non-admins)
-        // But since this function is only called for admins, we can show the list
         container.innerHTML = data.map(admin => `
             <div class="bg-gray-50 p-3 rounded-lg mb-2">
                 <i class="fas fa-user-shield text-purple-600 mr-2"></i>
@@ -562,6 +857,7 @@
                 loadQuestions();
                 loadAdmins();
                 loadBookSelects();
+                loadBulkBookSelects();
             } else {
                 document.getElementById('adminBadge').classList.add('hidden');
                 document.getElementById('adminFeatures').classList.add('hidden');
@@ -581,6 +877,7 @@
         document.getElementById('tabBooksBtn').addEventListener('click', () => showTab('books'));
         document.getElementById('tabTopicsBtn').addEventListener('click', () => showTab('topics'));
         document.getElementById('tabQuestionsBtn').addEventListener('click', () => showTab('questions'));
+        document.getElementById('tabBulkUploadBtn').addEventListener('click', () => showTab('bulkupload'));
         document.getElementById('tabAdminsBtn').addEventListener('click', () => showTab('admins'));
         
         document.getElementById('showAddBookBtn').addEventListener('click', () => {
@@ -609,6 +906,17 @@
         });
         document.getElementById('saveQuestionBtn').addEventListener('click', addQuestion);
         document.getElementById('questionBookId').addEventListener('change', loadTopicsForQuestion);
+        
+        document.getElementById('bulkBookId').addEventListener('change', loadBulkTopicSelects);
+        document.getElementById('downloadTemplateBtn').addEventListener('click', downloadTemplate);
+        document.getElementById('confirmUploadBtn').addEventListener('click', confirmUpload);
+        document.getElementById('cancelUploadBtn').addEventListener('click', () => {
+            document.getElementById('previewSection').classList.add('hidden');
+            document.getElementById('fileInput').value = '';
+            _pendingData = [];
+        });
+        
+        setupFileUpload();
     }
 
     setupEventListeners();
