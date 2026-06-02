@@ -21,6 +21,10 @@
         .modal-content { background: white; border-radius: 1rem; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; }
         .category-badge { background: #e0e7ff; color: #4338ca; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-left: 8px; cursor: pointer; }
         .category-badge:hover { background: #c7d2fe; }
+        .log { background: #1e1e2e; padding: 10px; margin-top: 15px; border-radius: 8px; height: 150px; overflow-y: auto; font-size: 11px; font-family: monospace; color: #ccc; }
+        .log .success { color: #4ade80; }
+        .log .error { color: #f87171; }
+        .log .info { color: #60a5fa; }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -222,7 +226,7 @@
                 </div>
             </div>
 
-            <!-- Bulk Upload Tab - SIMPLE WORKING VERSION -->
+            <!-- Bulk Upload Tab - INTEGRATED PERFECT VERSION -->
             <div id="bulkUploadTab" class="hidden">
                 <h2 class="text-xl font-bold mb-4">📤 Bulk Upload Questions</h2>
                 
@@ -261,7 +265,7 @@
                         <i class="fas fa-cloud-upload-alt text-4xl text-purple-400 mb-3"></i>
                         <p class="text-gray-600">Click or drag & drop your CSV or Excel file here</p>
                         <p class="text-gray-400 text-sm mt-2">Supports .csv, .xlsx, .xls</p>
-                        <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" class="hidden">
+                        <input type="file" id="bulkFileInput" accept=".csv,.xlsx,.xls" class="hidden">
                         <button id="selectFileBtn" class="mt-3 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
                             <i class="fas fa-folder-open mr-2"></i> Select File
                         </button>
@@ -272,7 +276,7 @@
                         <div class="overflow-x-auto">
                             <table id="previewTable" class="min-w-full bg-white border rounded-lg text-sm">
                                 <thead class="bg-gray-100">
-                                    <tr id="previewHeader"><tr>
+                                    <tr id="previewHeader"></tr>
                                 </thead>
                                 <tbody id="previewBody"></tbody>
                             </table>
@@ -296,6 +300,11 @@
                             <div id="progressFill" class="progress-bar bg-green-600 h-2 rounded-full" style="width: 0%"></div>
                         </div>
                         <p id="progressStatus" class="text-sm text-gray-600 mt-2">Preparing...</p>
+                    </div>
+                    
+                    <!-- Activity Log -->
+                    <div id="bulkLog" class="log mt-4">
+                        <div class="info">📋 Ready to upload questions...</div>
                     </div>
                 </div>
 
@@ -440,6 +449,19 @@
             if (m === '>') return '&gt;';
             return m;
         });
+    }
+
+    // Bulk upload log function
+    function addBulkLog(msg, type = 'info') {
+        const logDiv = document.getElementById('bulkLog');
+        if (logDiv) {
+            const entry = document.createElement('div');
+            entry.className = type;
+            entry.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        console.log(msg);
     }
 
     function handleLoginKeyPress(event) {
@@ -1214,7 +1236,7 @@
         await loadQuestions();
     }
 
-    // ============ BULK UPLOAD - WORKING VERSION ============
+    // ============ BULK UPLOAD - INTEGRATED PERFECT VERSION ============
     async function loadBulkBooks() {
         const { data, error } = await _supabase.from('books').select('id, title').order('title');
         const select = document.getElementById('bulkBookId');
@@ -1228,6 +1250,7 @@
                 select.innerHTML = '<option value="">No books found</option>';
             }
         }
+        addBulkLog('Books loaded successfully', 'success');
     }
 
     async function loadBulkTopics() {
@@ -1238,6 +1261,8 @@
             if (topicSelect) topicSelect.innerHTML = '<option value="">-- Select Book First --</option>';
             return;
         }
+        
+        addBulkLog(`Loading topics for book ID: ${bookId}`, 'info');
         
         const { data, error } = await _supabase.from('topics')
             .select('id, name, chapter_number')
@@ -1251,8 +1276,10 @@
                     const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
                     topicSelect.innerHTML += `<option value="${topic.id}">${escapeHtml(display)}</option>`;
                 });
+                addBulkLog(`Found ${data.length} topics`, 'success');
             } else {
                 topicSelect.innerHTML = '<option value="">No topics found</option>';
+                addBulkLog('No topics found for this book', 'error');
             }
         }
     }
@@ -1278,11 +1305,12 @@
         a.download = 'bookmcq_template.csv';
         a.click();
         URL.revokeObjectURL(url);
+        addBulkLog('Template downloaded successfully', 'success');
         showToast('Template downloaded!');
     }
 
     function processBulkFile(file) {
-        showToast(`Processing ${file.name}...`);
+        addBulkLog(`Processing file: ${file.name}`, 'info');
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
@@ -1292,11 +1320,13 @@
                 const rows = XLSX.utils.sheet_to_json(sheet);
                 
                 if (rows.length === 0) {
+                    addBulkLog('No data found in file', 'error');
                     showToast('No data found in file', true);
                     return;
                 }
                 
                 pendingQuestions = rows;
+                addBulkLog(`Loaded ${rows.length} questions from file`, 'success');
                 
                 const previewSection = document.getElementById('previewSection');
                 const previewHeader = document.getElementById('previewHeader');
@@ -1320,6 +1350,7 @@
                 if (previewSection) previewSection.classList.remove('hidden');
                 showToast(`Loaded ${rows.length} questions. Ready to upload!`);
             } catch(err) {
+                addBulkLog(`Error parsing file: ${err.message}`, 'error');
                 showToast('Error parsing file: ' + err.message, true);
             }
         };
@@ -1331,11 +1362,13 @@
         const topicId = document.getElementById('bulkTopicId').value;
         
         if (!bookId || !topicId) {
+            addBulkLog('Please select both a book and a topic', 'error');
             showToast('Please select both a book and a topic', true);
             return;
         }
         
         if (!pendingQuestions || pendingQuestions.length === 0) {
+            addBulkLog('No questions to upload. Please select a file first.', 'error');
             showToast('No questions to upload. Please select a file first.', true);
             return;
         }
@@ -1350,6 +1383,8 @@
         let success = 0;
         let failed = 0;
         
+        addBulkLog(`Starting upload of ${pendingQuestions.length} questions to topic ID ${topicId}`, 'info');
+        
         for (let i = 0; i < pendingQuestions.length; i++) {
             const q = pendingQuestions[i];
             const percent = Math.round(((i + 1) / pendingQuestions.length) * 100);
@@ -1358,6 +1393,11 @@
             if (progressStatus) progressStatus.textContent = `Processing question ${i + 1} of ${pendingQuestions.length}...`;
             
             try {
+                // Validate required fields
+                if (!q.question_text || !q.option_a || !q.option_b || !q.option_c || !q.option_d) {
+                    throw new Error('Missing required fields');
+                }
+                
                 const { data: qData, error: qError } = await _supabase.from('questions').insert({
                     topic_id: parseInt(topicId),
                     question_text: q.question_text,
@@ -1377,29 +1417,36 @@
                     });
                 }
                 success++;
+                if ((i + 1) % 10 === 0 || i === pendingQuestions.length - 1) {
+                    addBulkLog(`Uploaded ${success}/${pendingQuestions.length} questions`, 'success');
+                }
             } catch(err) {
                 failed++;
-                console.error('Upload error:', err);
+                addBulkLog(`Failed question ${i+1}: ${err.message}`, 'error');
             }
         }
         
         if (progressStatus) progressStatus.textContent = `Complete! ${success} uploaded, ${failed} failed.`;
+        addBulkLog(`📊 Upload complete: ${success} successful, ${failed} failed`, success > 0 ? 'success' : 'error');
         showToast(`Upload complete: ${success} questions added, ${failed} failed`);
         
         setTimeout(() => {
             if (progressDiv) progressDiv.classList.add('hidden');
             const previewSection = document.getElementById('previewSection');
             if (previewSection) previewSection.classList.add('hidden');
-            document.getElementById('fileInput').value = '';
+            document.getElementById('bulkFileInput').value = '';
             pendingQuestions = [];
             loadQuestions();
+            // Reset progress
+            if (progressFill) progressFill.style.width = '0%';
+            if (progressPercent) progressPercent.textContent = '0%';
         }, 3000);
     }
 
     function setupBulkUploadEvents() {
         const bulkBookId = document.getElementById('bulkBookId');
         const downloadBtn = document.getElementById('downloadTemplateBtn');
-        const fileInput = document.getElementById('fileInput');
+        const fileInput = document.getElementById('bulkFileInput');
         const confirmBtn = document.getElementById('confirmUploadBtn');
         const cancelBtn = document.getElementById('cancelUploadBtn');
         const selectFileBtn = document.getElementById('selectFileBtn');
@@ -1419,6 +1466,7 @@
                 if (previewSection) previewSection.classList.add('hidden');
                 if (fileInput) fileInput.value = '';
                 pendingQuestions = [];
+                addBulkLog('Upload cancelled', 'info');
             });
         }
         if (selectFileBtn) {
@@ -1478,6 +1526,11 @@
         
         if (tabName === 'questions') loadQuestions();
         if (tabName === 'categories') loadCategories();
+        if (tabName === 'bulkupload') {
+            // Refresh books and topics when tab is shown
+            loadBulkBooks();
+            addBulkLog('Bulk upload tab ready', 'info');
+        }
     }
 
     async function checkSession() {
