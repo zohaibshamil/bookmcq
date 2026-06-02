@@ -485,25 +485,28 @@
         document.getElementById('loginForm').classList.remove('hidden');
     }
 
-    // ============ OPEN BULK UPLOAD (SINGLE FUNCTION) ============
-    window.openBulkUploadWithSession = async function() {
-        showToast('Opening bulk upload...');
-        try {
-            const { data: { session } } = await _supabase.auth.getSession();
-            if (!session) {
-                showToast('Please login first', true);
-                return;
-            }
-            // Secret key - must match the one in bulk-upload.html
-            const SECRET_KEY = 'BookMCQ_Admin_Secure_Key_2024';
-            // Open bulk upload page with the secret key
-            const bulkUrl = `bulk-upload.html?key=${SECRET_KEY}`;
-            window.open(bulkUrl, '_blank');
-            showToast('Opening bulk upload...');
-        } catch(e) {
-            showToast('Error: ' + e.message, true);
+// ============ OPEN BULK UPLOAD SECURELY ============
+window.openBulkUploadWithSession = async function() {
+    showToast('Opening bulk upload...');
+    try {
+        const { data: { session } } = await _supabase.auth.getSession();
+        if (!session) {
+            showToast('Please login first', true);
+            return;
         }
-    };
+        
+        // Store the secret key in sessionStorage (will be cleared after use)
+        const SECRET_KEY = 'BookMCQ_Admin_Secure_Key_2024';
+        sessionStorage.setItem('bookmcq_bulk_access', SECRET_KEY);
+        
+        // Open the bulk upload page (no key in URL!)
+        window.open('bulk-upload.html', '_blank');
+        
+        showToast('Opening bulk upload...');
+    } catch(e) {
+        showToast('Error: ' + e.message, true);
+    }
+};
 
     // ============ CACHED CATEGORIES ============
     async function loadCategoriesCached() {
