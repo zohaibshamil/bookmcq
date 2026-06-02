@@ -11,10 +11,6 @@
     <style>
         body { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); min-height: 100vh; }
         .upload-card { background: rgba(255,255,255,0.95); border-radius: 1rem; }
-        .log { background: #1e1e2e; padding: 10px; margin-top: 20px; border-radius: 8px; height: 200px; overflow-y: auto; font-size: 11px; font-family: monospace; color: #ccc; }
-        .log .success { color: #4ade80; }
-        .log .error { color: #f87171; }
-        .log .info { color: #60a5fa; }
         .preview-table { overflow-x: auto; }
         .preview-table table { width: 100%; border-collapse: collapse; font-size: 12px; }
         .preview-table th, .preview-table td { border: 1px solid #e2e8f0; padding: 8px; text-align: left; }
@@ -43,16 +39,6 @@
             <a href="admin.html" class="text-purple-600 hover:text-purple-800 inline-flex items-center gap-2">
                 <i class="fas fa-arrow-left"></i> Back to Admin Panel
             </a>
-        </div>
-
-        <!-- Activity Log -->
-        <div class="mb-6">
-            <h3 class="font-bold text-gray-700 mb-2 flex items-center gap-2">
-                <i class="fas fa-terminal text-purple-600"></i> Activity Log
-            </h3>
-            <div class="log" id="log">
-                <div class="info">[Initializing] Loading...</div>
-            </div>
         </div>
 
         <!-- Step 1: Select Book -->
@@ -103,47 +89,12 @@
         
         <!-- Preview Section -->
         <div id="previewDiv" style="margin-top: 15px; display: none;"></div>
-
-        <!-- Instructions -->
-        <div class="bg-yellow-50 p-4 rounded-lg mt-6">
-            <h3 class="font-bold text-gray-800 mb-2 flex items-center gap-2">
-                <i class="fas fa-info-circle text-yellow-600"></i> CSV Format Instructions
-            </h3>
-            <p class="text-sm text-gray-700 mb-2">Your CSV file must have these columns (in this order):</p>
-            <div class="overflow-x-auto">
-                <table class="min-w-full bg-white rounded-lg text-sm">
-                    <thead class="bg-gray-100">
-                        <tr>
-                            <th class="p-2 border">Column Name</th>
-                            <th class="p-2 border">Description</th>
-                            <th class="p-2 border">Example</th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-gray-600">
-                        <tr><td class="p-2 border"><code>question_text</code></td><td class="p-2 border">The question</td><td class="p-2 border">What does typeof null return?</td></tr>
-                        <tr><td class="p-2 border"><code>option_a</code></td><td class="p-2 border">Option A text</td><td class="p-2 border">null</td></tr>
-                        <tr><td class="p-2 border"><code>option_b</code></td><td class="p-2 border">Option B text</td><td class="p-2 border">undefined</td></tr>
-                        <tr><td class="p-2 border"><code>option_c</code></td><td class="p-2 border">Option C text</td><td class="p-2 border">object</td></tr>
-                        <tr><td class="p-2 border"><code>option_d</code></td><td class="p-2 border">Option D text</td><td class="p-2 border">number</td></tr>
-                        <tr><td class="p-2 border"><code>correct_answer</code></td><td class="p-2 border">0=A, 1=B, 2=C, 3=D</td><td class="p-2 border">2</td></tr>
-                        <tr><td class="p-2 border"><code>difficulty</code></td><td class="p-2 border">easy, medium, or hard</td><td class="p-2 border">easy</td></tr>
-                        <tr><td class="p-2 border"><code>explanation</code></td><td class="p-2 border">Explanation (optional)</td><td class="p-2 border">Historical bug in JS</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
     </div>
 </div>
 
 <script>
     // Log function
     function addLog(msg, type = 'info') {
-        const logDiv = document.getElementById('log');
-        const entry = document.createElement('div');
-        entry.className = type;
-        entry.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}`;
-        logDiv.appendChild(entry);
-        logDiv.scrollTop = logDiv.scrollHeight;
         console.log(msg);
     }
     
@@ -261,13 +212,13 @@
                     const uploadBtn = document.getElementById('uploadBtn');
                     
                     let html = '<h3 class="font-bold text-gray-700 mb-2">📋 Preview (first 3 rows):</h3>';
-                    html += '<div class="preview-table"><table>';
+                    html += '<div class="preview-table"><tr>';
                     const headers = Object.keys(rows[0]);
-                    html += '<thead><tr style="background:#0f0f1a;">' + headers.map(h => `<th style="padding:8px; border:1px solid #333; text-align:left;">${h}</th>`).join('') + '</tr></thead><tbody>';
+                    html += '<thead><tr style="background:#0f0f1a;">' + headers.map(h => `<th style="padding:8px; border:1px solid #333; text-align:left;">${h}</th>`).join('') + '</thead><tbody>';
                     for (let i = 0; i < Math.min(3, rows.length); i++) {
                         html += '<tr>' + headers.map(h => `<td style="padding:8px; border:1px solid #333;">${escapeHtml(String(rows[i][h] || '').substring(0, 50))}</td>`).join('') + '</tr>';
                     }
-                    html += '</tbody></table></div>';
+                    html += '</tbody></tr></div>';
                     html += `<p class="text-green-600 text-sm mt-2"><i class="fas fa-check-circle"></i> ✅ ${rows.length} questions ready to upload</p>`;
                     
                     previewDiv.innerHTML = html;
