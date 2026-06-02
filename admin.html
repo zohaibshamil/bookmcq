@@ -12,8 +12,9 @@
         body { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); min-height: 100vh; }
         .admin-card { background: rgba(255,255,255,0.95); border-radius: 1rem; }
         .toast { position: fixed; bottom: 20px; left: 20px; right: 20px; z-index: 1000; text-align: center; }
-        .upload-zone { border: 2px dashed #cbd5e1; transition: all 0.3s; }
+        .upload-zone { border: 2px dashed #cbd5e1; transition: all 0.3s; cursor: pointer; }
         .upload-zone:hover { border-color: #8b5cf6; background-color: #f3e8ff; }
+        .upload-zone.drag-over { border-color: #8b5cf6; background-color: #f3e8ff; }
         .progress-bar { transition: width 0.3s ease; }
         .skeleton { animation: pulse 1.5s ease-in-out infinite; background: #e2e8f0; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
@@ -222,7 +223,7 @@
                 </div>
             </div>
 
-            <!-- Bulk Upload Tab - FIXED -->
+            <!-- Bulk Upload Tab - COMPLETELY REWRITTEN -->
             <div id="bulkUploadTab" class="hidden">
                 <h2 class="text-xl font-bold mb-4">📤 Bulk Upload Questions</h2>
                 
@@ -257,11 +258,14 @@
                 <!-- Step 3: Upload File -->
                 <div class="bg-purple-50 p-4 rounded-lg mb-6">
                     <h3 class="font-bold mb-3">Step 3: Upload Your CSV/Excel File</h3>
-                    <div id="uploadZone" class="upload-zone bg-white p-8 rounded-lg text-center cursor-pointer">
+                    <div id="uploadZone" class="upload-zone bg-white p-8 rounded-lg text-center">
                         <i class="fas fa-cloud-upload-alt text-4xl text-purple-400 mb-3"></i>
-                        <p class="text-gray-600">Drag & drop your CSV or Excel file here, or click to select</p>
+                        <p class="text-gray-600">Click or drag & drop your CSV or Excel file here</p>
                         <p class="text-gray-400 text-sm mt-2">Supports .csv, .xlsx, .xls</p>
                         <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" class="hidden">
+                        <button id="selectFileBtn" class="mt-3 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
+                            <i class="fas fa-folder-open mr-2"></i> Select File
+                        </button>
                     </div>
                     
                     <div id="previewSection" class="hidden mt-6">
@@ -560,7 +564,6 @@
             return;
         }
         
-        // Update categories list in Categories tab
         const categoriesList = document.getElementById('categoriesList');
         if (categoriesList) {
             if (!data || data.length === 0) {
@@ -585,7 +588,6 @@
             }
         }
         
-        // Update category dropdowns in Books tab
         const dropdowns = ['bookCategory', 'editBookCategory', 'categoryFilter'];
         dropdowns.forEach(id => {
             const select = document.getElementById(id);
@@ -1222,16 +1224,18 @@
         await loadQuestions();
     }
 
-    // ============ BULK UPLOAD ============
+    // ============ BULK UPLOAD - COMPLETELY REWRITTEN ============
     async function loadBulkBookSelects() {
         const { data, error } = await _supabase.from('books').select('id, title').order('title', { ascending: true });
         const select = document.getElementById('bulkBookId');
         if (select) {
-            select.innerHTML = '<option value="">Select Book</option>';
+            select.innerHTML = '<option value="">-- Select a Book --</option>';
             if (data && data.length > 0) {
                 data.forEach(book => {
                     select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
                 });
+            } else {
+                select.innerHTML = '<option value="">No books found. Add a book first.</option>';
             }
         }
     }
@@ -1241,7 +1245,7 @@
         const topicSelect = document.getElementById('bulkTopicId');
         
         if (!bookId || bookId === '') {
-            if (topicSelect) topicSelect.innerHTML = '<option value="">First select a book</option>';
+            if (topicSelect) topicSelect.innerHTML = '<option value="">-- Select a book first --</option>';
             return;
         }
         
@@ -1251,7 +1255,7 @@
             .order('chapter_number', { ascending: true });
         
         if (topicSelect) {
-            topicSelect.innerHTML = '<option value="">Select Topic</option>';
+            topicSelect.innerHTML = '<option value="">-- Select a Topic --</option>';
             if (data && data.length > 0) {
                 data.forEach(topic => {
                     const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
@@ -1287,41 +1291,59 @@
         showToast('Template downloaded!');
     }
 
+    // Setup file upload with simple reliable approach
     function setupFileUpload() {
-        const uploadZone = document.getElementById('uploadZone');
+        const selectFileBtn = document.getElementById('selectFileBtn');
         const fileInput = document.getElementById('fileInput');
+        const uploadZone = document.getElementById('uploadZone');
         
-        if (uploadZone) {
-            // Remove existing listeners to prevent duplicates
-            const newUploadZone = uploadZone.cloneNode(true);
-            uploadZone.parentNode.replaceChild(newUploadZone, uploadZone);
-            
-            newUploadZone.addEventListener('click', (e) => {
+        // Click on select file button triggers file input
+        if (selectFileBtn) {
+            selectFileBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                document.getElementById('fileInput').click();
-            });
-            
-            newUploadZone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                newUploadZone.classList.add('border-purple-500', 'bg-purple-50');
-            });
-            
-            newUploadZone.addEventListener('dragleave', () => {
-                newUploadZone.classList.remove('border-purple-500', 'bg-purple-50');
-            });
-            
-            newUploadZone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                newUploadZone.classList.remove('border-purple-500', 'bg-purple-50');
-                const file = e.dataTransfer.files[0];
-                if (file) processFile(file);
+                fileInput.click();
             });
         }
         
-        const newFileInput = document.getElementById('fileInput');
-        if (newFileInput) {
-            newFileInput.addEventListener('change', (e) => {
-                if (e.target.files[0]) processFile(e.target.files[0]);
+        // Click on upload zone also triggers file input
+        if (uploadZone) {
+            uploadZone.addEventListener('click', (e) => {
+                if (e.target !== selectFileBtn) {
+                    fileInput.click();
+                }
+            });
+        }
+        
+        // File input change event
+        if (fileInput) {
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    processFile(e.target.files[0]);
+                }
+            });
+        }
+        
+        // Drag and drop events
+        if (uploadZone) {
+            uploadZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadZone.classList.add('drag-over');
+            });
+            
+            uploadZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                uploadZone.classList.remove('drag-over');
+            });
+            
+            uploadZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadZone.classList.remove('drag-over');
+                const file = e.dataTransfer.files[0];
+                if (file && (file.name.endsWith('.csv') || file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))) {
+                    processFile(file);
+                } else {
+                    showToast('Please upload a CSV or Excel file');
+                }
             });
         }
     }
@@ -1329,18 +1351,26 @@
     function processFile(file) {
         const reader = new FileReader();
         reader.onload = function(e) {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-            const rows = XLSX.utils.sheet_to_json(firstSheet);
-            
-            if (rows.length === 0) {
-                showToast('No data found in file');
-                return;
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(firstSheet);
+                
+                if (rows.length === 0) {
+                    showToast('No data found in file');
+                    return;
+                }
+                
+                _pendingData = rows;
+                displayPreview(rows);
+                showToast(`Loaded ${rows.length} questions from file`);
+            } catch (err) {
+                showToast('Error reading file: ' + err.message);
             }
-            
-            _pendingData = rows;
-            displayPreview(rows);
+        };
+        reader.onerror = function() {
+            showToast('Error reading file');
         };
         reader.readAsArrayBuffer(file);
     }
@@ -1354,12 +1384,12 @@
         if (!previewSection || !previewHeader || !previewBody) return;
         
         const headers = Object.keys(rows[0]);
-        previewHeader.innerHTML = headers.map(h => `<th class="p-2 border text-left">${h}</th>`).join('');
+        previewHeader.innerHTML = headers.map(h => `<th class="p-2 border text-left text-xs">${h}</th>`).join('');
         
         const previewRows = rows.slice(0, 5);
         previewBody.innerHTML = previewRows.map(row => `
             <tr>
-                ${headers.map(h => `<td class="p-2 border">${escapeHtml(String(row[h] || ''))}</td>`).join('')}
+                ${headers.map(h => `<td class="p-2 border text-xs">${escapeHtml(String(row[h] || ''))}</td>`).join('')}
             </tr>
         `).join('');
         
@@ -1379,7 +1409,7 @@
         }
         
         if (!_pendingData || _pendingData.length === 0) {
-            showToast('No data to upload');
+            showToast('No data to upload. Please select a file first.');
             return;
         }
         
@@ -1512,6 +1542,7 @@
                     loadCategories()
                 ]);
                 setupBookFilters();
+                setupFileUpload();
             } else {
                 document.getElementById('adminBadge').classList.add('hidden');
                 document.getElementById('adminFeatures').classList.add('hidden');
@@ -1620,6 +1651,7 @@
                 const fileInput = document.getElementById('fileInput');
                 if (fileInput) fileInput.value = '';
                 _pendingData = [];
+                showToast('Upload cancelled');
             });
         }
         
@@ -1643,8 +1675,6 @@
         document.getElementById('closeQuestionModal').addEventListener('click', () => {
             document.getElementById('editQuestionModal').classList.add('hidden');
         });
-        
-        setupFileUpload();
     }
 
     setupEventListeners();
