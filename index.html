@@ -42,118 +42,114 @@
         .nav-link.active::after { width: 100%; }
         .skeleton { background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-        @media (max-width: 768px) { .mobile-menu { position: fixed; top: 0; left: -100%; width: 80%; height: 100%; background: white; z-index: 1000; transition: left 0.3s ease; padding: 20px; } .mobile-menu.open { left: 0; } .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; display: none; } .overlay.show { display: block; } }
+        .mobile-menu-btn { display: none; }
+        @media (max-width: 768px) { .mobile-menu-btn { display: block; } .desktop-menu { display: none; } .mobile-menu-open { display: flex; } }
         .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; }
         .disable-select { user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; }
+        .practice-card { transition: all 0.3s ease; }
+        .practice-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
+        .view-mcq-btn { transition: all 0.2s ease; }
+        .view-mcq-btn:hover { transform: scale(1.02); }
     </style>
 </head>
 <body class="disable-select">
 
-<!-- Mobile Menu Overlay -->
-<div id="mobileOverlay" class="overlay" onclick="closeMobileMenu()"></div>
-
-<!-- Mobile Menu -->
-<div id="mobileMenu" class="mobile-menu">
-    <div class="flex justify-between items-center mb-8">
-        <i class="fas fa-graduation-cap text-2xl text-purple-600"></i>
-        <button onclick="closeMobileMenu()" class="text-gray-600"><i class="fas fa-times text-2xl"></i></button>
-    </div>
-    <div class="flex flex-col gap-4">
-        <a href="#" onclick="showPage('home'); closeMobileMenu();" class="nav-link py-2 text-gray-700 font-semibold">🏠 Home</a>
-        <a href="#" onclick="showPage('quiz'); closeMobileMenu();" class="nav-link py-2 text-gray-700 font-semibold">📝 Take Quiz</a>
-        <a href="#" onclick="showPage('about'); closeMobileMenu();" class="nav-link py-2 text-gray-700 font-semibold">📖 About Us</a>
-        <a href="#" onclick="showPage('contact'); closeMobileMenu();" class="nav-link py-2 text-gray-700 font-semibold">📧 Contact</a>
-        <a href="#" onclick="showPage('privacy'); closeMobileMenu();" class="nav-link py-2 text-gray-700 font-semibold">🔒 Privacy Policy</a>
-    </div>
-</div>
-
 <div class="max-w-6xl mx-auto px-4">
     
-    <!-- Modern Navigation Bar -->
-    <nav class="bg-white/10 backdrop-blur-lg rounded-full px-6 py-3 mb-8 sticky top-4 z-50 shadow-lg">
+    <!-- Modern Navigation Bar - Only Menu Bar (No Sidebar) -->
+    <nav class="bg-white/10 backdrop-blur-lg rounded-full px-4 md:px-6 py-3 mb-8 sticky top-4 z-50 shadow-lg">
         <div class="flex justify-between items-center">
             <div class="flex items-center gap-2">
-                <i class="fas fa-graduation-cap text-white text-2xl"></i>
-                <span class="text-white font-bold text-xl">BookMCQ</span>
-                <span class="text-white/60 text-sm hidden md:inline">| Master Every Chapter</span>
+                <i class="fas fa-graduation-cap text-white text-xl md:text-2xl"></i>
+                <span class="text-white font-bold text-lg md:text-xl">BookMCQ</span>
+                <span class="text-white/60 text-xs hidden sm:inline">| Master Every Chapter</span>
             </div>
             
             <!-- Desktop Menu -->
-            <div class="hidden md:flex gap-6">
-                <a href="#" onclick="showPage('home')" id="navHome" class="nav-link text-white/80 hover:text-white transition">🏠 Home</a>
-                <a href="#" onclick="showPage('quiz')" id="navQuiz" class="nav-link text-white/80 hover:text-white transition">📝 Take Quiz</a>
-                <a href="#" onclick="showPage('about')" id="navAbout" class="nav-link text-white/80 hover:text-white transition">📖 About Us</a>
-                <a href="#" onclick="showPage('contact')" id="navContact" class="nav-link text-white/80 hover:text-white transition">📧 Contact</a>
-                <a href="#" onclick="showPage('privacy')" id="navPrivacy" class="nav-link text-white/80 hover:text-white transition">🔒 Privacy</a>
+            <div class="desktop-menu flex gap-3 md:gap-6">
+                <a href="#" onclick="showPage('home')" id="navHome" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap">🏠 Home</a>
+                <a href="#" onclick="showPage('quiz')" id="navQuiz" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap">📝 Quiz</a>
+                <a href="#" onclick="showPage('practice')" id="navPractice" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap">📚 Practice</a>
+                <a href="#" onclick="showPage('about')" id="navAbout" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap">📖 About</a>
+                <a href="#" onclick="showPage('contact')" id="navContact" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap">📧 Contact</a>
+                <a href="#" onclick="showPage('privacy')" id="navPrivacy" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap">🔒 Privacy</a>
             </div>
             
-            <!-- Mobile Menu Button -->
-            <button onclick="openMobileMenu()" class="md:hidden text-white text-2xl">
-                <i class="fas fa-bars"></i>
-            </button>
+            <!-- Mobile Menu Button - Opens Dropdown (No Sidebar) -->
+            <div class="mobile-menu-btn relative">
+                <button onclick="toggleMobileMenu()" class="text-white text-2xl">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div id="mobileDropdown" class="hidden absolute top-full right-0 mt-2 bg-white rounded-xl shadow-xl w-48 py-2 z-50">
+                    <a href="#" onclick="showPage('home'); closeMobileMenu();" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition">🏠 Home</a>
+                    <a href="#" onclick="showPage('quiz'); closeMobileMenu();" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition">📝 Quiz</a>
+                    <a href="#" onclick="showPage('practice'); closeMobileMenu();" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition">📚 Practice</a>
+                    <a href="#" onclick="showPage('about'); closeMobileMenu();" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition">📖 About</a>
+                    <a href="#" onclick="showPage('contact'); closeMobileMenu();" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition">📧 Contact</a>
+                    <a href="#" onclick="showPage('privacy'); closeMobileMenu();" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition">🔒 Privacy</a>
+                </div>
+            </div>
         </div>
     </nav>
 
     <!-- Home Page -->
-    <div id="homePage" class="quiz-card rounded-2xl p-8 shadow-xl text-center">
+    <div id="homePage" class="quiz-card rounded-2xl p-6 md:p-8 shadow-xl text-center">
         <div class="flex flex-col items-center">
             <div class="bg-gradient-to-r from-purple-100 to-indigo-100 rounded-full p-4 mb-6">
                 <i class="fas fa-graduation-cap text-5xl text-purple-600"></i>
             </div>
-            <h2 class="text-4xl font-bold text-gray-800 mb-4">Welcome to BookMCQ</h2>
-            <p class="text-gray-600 text-lg max-w-2xl mx-auto mb-8">
+            <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">Welcome to BookMCQ</h2>
+            <p class="text-gray-600 text-base md:text-lg max-w-2xl mx-auto mb-8">
                 Your ultimate platform for chapter-wise practice tests from hundreds of books. 
                 Master any subject with our difficulty-based MCQ system.
             </p>
             
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mt-6">
-                <div class="bg-purple-50 rounded-xl p-6 text-center">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 w-full mt-6">
+                <div class="bg-purple-50 rounded-xl p-4 md:p-6 text-center">
                     <i class="fas fa-book text-3xl text-purple-600 mb-3"></i>
-                    <h3 class="font-bold text-lg mb-2">500+ Books</h3>
-                    <p class="text-gray-600 text-sm">From Computer Science to Mathematics</p>
+                    <h3 class="font-bold text-base md:text-lg mb-2">500+ Books</h3>
+                    <p class="text-gray-600 text-xs md:text-sm">From Computer Science to Mathematics</p>
                 </div>
-                <div class="bg-purple-50 rounded-xl p-6 text-center">
+                <div class="bg-purple-50 rounded-xl p-4 md:p-6 text-center">
                     <i class="fas fa-question-circle text-3xl text-purple-600 mb-3"></i>
-                    <h3 class="font-bold text-lg mb-2">10,000+ MCQs</h3>
-                    <p class="text-gray-600 text-sm">Topic-wise and difficulty-based</p>
+                    <h3 class="font-bold text-base md:text-lg mb-2">10,000+ MCQs</h3>
+                    <p class="text-gray-600 text-xs md:text-sm">Topic-wise and difficulty-based</p>
                 </div>
-                <div class="bg-purple-50 rounded-xl p-6 text-center">
+                <div class="bg-purple-50 rounded-xl p-4 md:p-6 text-center">
                     <i class="fas fa-chart-line text-3xl text-purple-600 mb-3"></i>
-                    <h3 class="font-bold text-lg mb-2">Track Progress</h3>
-                    <p class="text-gray-600 text-sm">Monitor your improvement</p>
+                    <h3 class="font-bold text-base md:text-lg mb-2">Track Progress</h3>
+                    <p class="text-gray-600 text-xs md:text-sm">Monitor your improvement</p>
                 </div>
             </div>
             
-            <button onclick="showPage('quiz')" class="mt-8 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-3 rounded-full font-bold hover:opacity-90 transition shadow-lg">
+            <button onclick="showPage('quiz')" class="mt-8 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 md:px-8 py-2 md:py-3 rounded-full font-bold hover:opacity-90 transition shadow-lg text-sm md:text-base">
                 Start Practicing Now <i class="fas fa-arrow-right ml-2"></i>
             </button>
         </div>
     </div>
 
-    <!-- Quiz Page -->
+    <!-- Quiz Page (Timed Quiz Mode) -->
     <div id="quizPage" class="hidden">
-        
-        <!-- Filter Section -->
         <div class="quiz-card rounded-2xl p-6 mb-8 shadow-xl">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <h2 class="text-xl md:text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                 <i class="fas fa-filter text-purple-600"></i> Filter Questions
             </h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">📚 Select Book</label>
-                    <select id="bookSelect" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <select id="bookSelect" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
                         <option value="">Loading books...</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">🏷️ Topic</label>
-                    <select id="topicSelect" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" disabled>
+                    <select id="topicSelect" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm" disabled>
                         <option value="">Select a book first</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">⚡ Difficulty Level</label>
-                    <select id="difficultySelect" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <select id="difficultySelect" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
                         <option value="easy">🌱 Easy</option>
                         <option value="medium">⚡ Medium</option>
                         <option value="hard">🔥 Hard</option>
@@ -165,22 +161,21 @@
             </button>
         </div>
 
-        <!-- Quiz Area -->
         <div id="quizArea" class="hidden quiz-card rounded-2xl p-6 md:p-8 shadow-xl">
             <div class="flex justify-between items-center mb-6 flex-wrap gap-3">
                 <div class="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-full">
                     <i class="fas fa-question-circle text-purple-600"></i>
-                    <span id="questionCounter" class="font-bold">Question 1 / 0</span>
+                    <span id="questionCounter" class="font-bold text-sm">Question 1 / 0</span>
                 </div>
                 <div class="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-full">
                     <i class="fas fa-star text-yellow-500"></i>
-                    <span id="scoreDisplay" class="font-bold">Score: 0</span>
+                    <span id="scoreDisplay" class="font-bold text-sm">Score: 0</span>
                 </div>
             </div>
             <div class="w-full bg-gray-200 rounded-full h-2 mb-6">
                 <div id="progressFill" class="progress-bar bg-gradient-to-r from-purple-600 to-indigo-600 h-2 rounded-full" style="width: 0%"></div>
             </div>
-            <h3 id="questionText" class="text-xl md:text-2xl font-bold text-gray-800 mb-6">Loading question...</h3>
+            <h3 id="questionText" class="text-lg md:text-2xl font-bold text-gray-800 mb-6">Loading question...</h3>
             <div id="optionsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6"></div>
             <div id="feedbackMessage" class="mb-6 hidden p-4 rounded-xl text-white font-semibold"></div>
             <button id="nextBtn" class="w-full bg-gray-800 text-white font-bold py-3 rounded-xl hover:bg-gray-900 transition disabled:opacity-50 disabled:cursor-not-allowed">
@@ -188,10 +183,9 @@
             </button>
         </div>
 
-        <!-- Results Area -->
-        <div id="resultsArea" class="hidden quiz-card rounded-2xl p-8 text-center shadow-xl">
+        <div id="resultsArea" class="hidden quiz-card rounded-2xl p-6 md:p-8 text-center shadow-xl">
             <i class="fas fa-trophy text-6xl text-yellow-500 mb-4"></i>
-            <h2 class="text-3xl font-bold mb-2">Quiz Completed!</h2>
+            <h2 class="text-2xl md:text-3xl font-bold mb-2">Quiz Completed!</h2>
             <p class="text-gray-600 mb-4">Your Performance</p>
             <div class="text-5xl font-bold text-purple-600 mb-4"><span id="finalScore">0</span> / <span id="totalQuestions">0</span></div>
             <div class="w-full bg-gray-200 rounded-full h-4 mb-6">
@@ -203,8 +197,46 @@
         </div>
     </div>
 
+    <!-- Practice Page - View All MCQs Topic/Chapter/Book Wise -->
+    <div id="practicePage" class="hidden">
+        <div class="quiz-card rounded-2xl p-6 md:p-8 shadow-xl mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <i class="fas fa-database text-purple-600"></i> Practice MCQs
+            </h2>
+            <p class="text-gray-600 mb-6">Browse and practice questions organized by book, chapter, and topic</p>
+            
+            <!-- Book Filter for Practice -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">📚 Select Book</label>
+                    <select id="practiceBookSelect" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        <option value="">Loading books...</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">🏷️ Select Topic / Chapter</label>
+                    <select id="practiceTopicSelect" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" disabled>
+                        <option value="">Select a book first</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Questions List -->
+            <div id="practiceQuestionsContainer" class="space-y-4 mt-6">
+                <div class="text-center py-8 text-gray-500">Select a book and topic to view questions</div>
+            </div>
+            
+            <!-- Pagination for Practice -->
+            <div id="practicePagination" class="flex justify-between items-center mt-6 hidden">
+                <button id="practicePrevBtn" class="bg-gray-500 text-white px-4 py-2 rounded-lg disabled:opacity-50">Previous</button>
+                <span id="practicePageInfo" class="text-sm">Page 1</span>
+                <button id="practiceNextBtn" class="bg-gray-500 text-white px-4 py-2 rounded-lg disabled:opacity-50">Next</button>
+            </div>
+        </div>
+    </div>
+
     <!-- About Us Page -->
-    <div id="aboutPage" class="hidden quiz-card rounded-2xl p-8 shadow-xl">
+    <div id="aboutPage" class="hidden quiz-card rounded-2xl p-6 md:p-8 shadow-xl">
         <div class="text-center mb-8">
             <i class="fas fa-book-open text-5xl text-purple-600 mb-4"></i>
             <h2 class="text-3xl font-bold mb-4">About BookMCQ</h2>
@@ -234,7 +266,7 @@
     </div>
 
     <!-- Contact Page -->
-    <div id="contactPage" class="hidden quiz-card rounded-2xl p-8 shadow-xl">
+    <div id="contactPage" class="hidden quiz-card rounded-2xl p-6 md:p-8 shadow-xl">
         <div class="text-center mb-8">
             <i class="fas fa-envelope text-5xl text-purple-600 mb-4"></i>
             <h2 class="text-3xl font-bold mb-4">Contact Us</h2>
@@ -258,9 +290,9 @@
             <div>
                 <h3 class="text-xl font-bold mb-4">Send a Message</h3>
                 <form id="contactForm">
-                    <input type="text" placeholder="Your Name" class="w-full p-3 border rounded-xl mb-3" required>
-                    <input type="email" placeholder="Your Email" class="w-full p-3 border rounded-xl mb-3" required>
-                    <textarea rows="4" placeholder="Your Message" class="w-full p-3 border rounded-xl mb-3" required></textarea>
+                    <input type="text" placeholder="Your Name" class="w-full p-3 border rounded-xl mb-3 text-sm" required>
+                    <input type="email" placeholder="Your Email" class="w-full p-3 border rounded-xl mb-3 text-sm" required>
+                    <textarea rows="4" placeholder="Your Message" class="w-full p-3 border rounded-xl mb-3 text-sm" required></textarea>
                     <button type="submit" class="bg-purple-600 text-white px-6 py-2 rounded-xl hover:bg-purple-700 transition">Send Message</button>
                 </form>
             </div>
@@ -268,7 +300,7 @@
     </div>
 
     <!-- Privacy Policy Page -->
-    <div id="privacyPage" class="hidden quiz-card rounded-2xl p-8 shadow-xl">
+    <div id="privacyPage" class="hidden quiz-card rounded-2xl p-6 md:p-8 shadow-xl">
         <div class="text-center mb-8">
             <i class="fas fa-shield-alt text-5xl text-purple-600 mb-4"></i>
             <h2 class="text-3xl font-bold mb-4">Privacy Policy</h2>
@@ -286,26 +318,24 @@
     </div>
 
     <!-- Footer -->
-    <footer class="mt-12 text-center text-white/60 text-sm py-6">
+    <footer class="mt-12 text-center text-white/60 text-xs md:text-sm py-6">
         <p>&copy; 2024 BookMCQ. All rights reserved. | Master Every Chapter</p>
     </footer>
 </div>
 
 <!-- Toast Notification -->
-<div id="toast" class="toast hidden bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg"></div>
+<div id="toast" class="toast hidden bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg text-sm"></div>
 
 <script>
     // ============================================
     // ADVANCED SECURITY FEATURES
     // ============================================
     
-    // Disable right click
     document.addEventListener('contextmenu', function(e) {
         e.preventDefault();
         return false;
     });
     
-    // Disable keyboard shortcuts (PrintScreen, etc.)
     document.addEventListener('keydown', function(e) {
         if (e.key === 'PrintScreen' || e.key === 'F12' || 
             (e.ctrlKey && e.shiftKey && e.key === 'I') ||
@@ -316,25 +346,35 @@
         }
     });
     
-    // Disable drag and drop
     document.addEventListener('dragstart', function(e) {
         e.preventDefault();
         return false;
     });
     
-    // Disable text selection (already handled by CSS)
     document.addEventListener('selectstart', function(e) {
         e.preventDefault();
         return false;
     });
     
-    // Show toast function
     function showToast(message, isError = false) {
         const toast = document.getElementById('toast');
         toast.textContent = message;
         toast.classList.remove('hidden');
         toast.style.background = isError ? '#ef4444' : '#1f2937';
         setTimeout(() => toast.classList.add('hidden'), 3000);
+    }
+    
+    // ============================================
+    // MOBILE MENU FUNCTIONS (Dropdown, No Sidebar)
+    // ============================================
+    function toggleMobileMenu() {
+        const dropdown = document.getElementById('mobileDropdown');
+        dropdown.classList.toggle('hidden');
+    }
+    
+    function closeMobileMenu() {
+        const dropdown = document.getElementById('mobileDropdown');
+        dropdown.classList.add('hidden');
     }
     
     // ============================================
@@ -383,7 +423,7 @@
             }
         }
         
-        async loadQuestions(topicId, difficulty, limit = 10) {
+        async loadQuestions(topicId, difficulty, limit = 15) {
             if (!topicId) return [];
             try {
                 let query = this.#supabase.from('questions')
@@ -402,7 +442,6 @@
                 const { data, error } = await query;
                 if (error) throw error;
                 
-                // Format questions for display
                 return (data || []).map(q => ({
                     id: q.id,
                     text: q.question_text,
@@ -413,6 +452,43 @@
             } catch(e) {
                 console.error('Error loading questions:', e);
                 return [];
+            }
+        }
+        
+        async loadAllQuestions(topicId, page = 1, pageSize = 20) {
+            if (!topicId) return { questions: [], total: 0 };
+            try {
+                const from = (page - 1) * pageSize;
+                const to = from + pageSize - 1;
+                
+                const { data, error, count } = await this.#supabase.from('questions')
+                    .select(`
+                        id,
+                        question_text,
+                        difficulty,
+                        correct_answer,
+                        explanation,
+                        options (option_text, option_index)
+                    `, { count: 'exact' })
+                    .eq('topic_id', parseInt(topicId))
+                    .range(from, to)
+                    .order('id', { ascending: true });
+                
+                if (error) throw error;
+                
+                const formattedQuestions = (data || []).map(q => ({
+                    id: q.id,
+                    text: q.question_text,
+                    options: (q.options || []).sort((a,b) => a.option_index - b.option_index).map(o => o.option_text),
+                    correct: q.correct_answer,
+                    explanation: q.explanation || 'No explanation available',
+                    difficulty: q.difficulty
+                }));
+                
+                return { questions: formattedQuestions, total: count || 0 };
+            } catch(e) {
+                console.error('Error loading all questions:', e);
+                return { questions: [], total: 0 };
             }
         }
         
@@ -460,14 +536,14 @@
     function showPage(pageName) {
         document.getElementById('homePage').classList.add('hidden');
         document.getElementById('quizPage').classList.add('hidden');
+        document.getElementById('practicePage').classList.add('hidden');
         document.getElementById('aboutPage').classList.add('hidden');
         document.getElementById('contactPage').classList.add('hidden');
         document.getElementById('privacyPage').classList.add('hidden');
         
         document.getElementById(`${pageName}Page`).classList.remove('hidden');
         
-        // Update active nav links
-        const navLinks = ['Home', 'Quiz', 'About', 'Contact', 'Privacy'];
+        const navLinks = ['Home', 'Quiz', 'Practice', 'About', 'Contact', 'Privacy'];
         navLinks.forEach(link => {
             const navElement = document.getElementById(`nav${link}`);
             if (navElement) {
@@ -479,30 +555,21 @@
             }
         });
         
-        // Reload books when showing quiz page
         if (pageName === 'quiz' && quizManager) {
             loadBooksToSelect();
         }
+        if (pageName === 'practice' && quizManager) {
+            loadPracticeBooks();
+        }
         
-        // Scroll to top
+        closeMobileMenu();
         window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-    
-    function openMobileMenu() {
-        document.getElementById('mobileMenu').classList.add('open');
-        document.getElementById('mobileOverlay').classList.add('show');
-    }
-    
-    function closeMobileMenu() {
-        document.getElementById('mobileMenu').classList.remove('open');
-        document.getElementById('mobileOverlay').classList.remove('show');
     }
     
     // ============================================
     // UI UPDATE FUNCTIONS
     // ============================================
     let quizManager = null;
-    let currentQuizQuestions = [];
     
     async function loadBooksToSelect() {
         const bookSelect = document.getElementById('bookSelect');
@@ -547,6 +614,124 @@
         });
     }
     
+    // Practice Page Functions
+    async function loadPracticeBooks() {
+        const bookSelect = document.getElementById('practiceBookSelect');
+        bookSelect.innerHTML = '<option value="">Loading books...</option>';
+        const books = await quizManager.loadBooks();
+        
+        if (books.length === 0) {
+            bookSelect.innerHTML = '<option value="">No books available</option>';
+            return;
+        }
+        
+        bookSelect.innerHTML = '<option value="">-- Select a Book --</option>';
+        books.forEach(book => {
+            bookSelect.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+        });
+    }
+    
+    async function loadPracticeTopics() {
+        const bookId = document.getElementById('practiceBookSelect').value;
+        const topicSelect = document.getElementById('practiceTopicSelect');
+        
+        if (!bookId) {
+            topicSelect.innerHTML = '<option value="">Select a book first</option>';
+            topicSelect.disabled = true;
+            document.getElementById('practiceQuestionsContainer').innerHTML = '<div class="text-center py-8 text-gray-500">Select a book and topic to view questions</div>';
+            return;
+        }
+        
+        topicSelect.innerHTML = '<option value="">Loading topics...</option>';
+        topicSelect.disabled = false;
+        
+        const topics = await quizManager.loadTopics(bookId);
+        
+        if (topics.length === 0) {
+            topicSelect.innerHTML = '<option value="">No topics available</option>';
+            return;
+        }
+        
+        topicSelect.innerHTML = '<option value="">-- Select a Topic --</option>';
+        topics.forEach(topic => {
+            const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
+            topicSelect.innerHTML += `<option value="${topic.id}">${escapeHtml(display)}</option>`;
+        });
+    }
+    
+    let practiceCurrentPage = 1;
+    let practiceTotalPages = 0;
+    let practiceCurrentTopicId = null;
+    
+    async function loadPracticeQuestions() {
+        const topicId = document.getElementById('practiceTopicSelect').value;
+        
+        if (!topicId) {
+            document.getElementById('practiceQuestionsContainer').innerHTML = '<div class="text-center py-8 text-gray-500">Select a topic to view questions</div>';
+            document.getElementById('practicePagination').classList.add('hidden');
+            return;
+        }
+        
+        practiceCurrentTopicId = topicId;
+        document.getElementById('practiceQuestionsContainer').innerHTML = '<div class="skeleton h-32 w-full mb-4"></div><div class="skeleton h-32 w-full mb-4"></div>';
+        
+        const { questions, total } = await quizManager.loadAllQuestions(topicId, practiceCurrentPage, 10);
+        
+        practiceTotalPages = Math.ceil(total / 10);
+        updatePracticePagination();
+        
+        if (questions.length === 0) {
+            document.getElementById('practiceQuestionsContainer').innerHTML = '<div class="text-center py-8 text-gray-500">No questions found for this topic</div>';
+            return;
+        }
+        
+        document.getElementById('practiceQuestionsContainer').innerHTML = questions.map((q, idx) => {
+            const globalNumber = (practiceCurrentPage - 1) * 10 + idx + 1;
+            const difficultyColor = q.difficulty === 'easy' ? 'text-green-600 bg-green-50' : q.difficulty === 'medium' ? 'text-yellow-600 bg-yellow-50' : 'text-red-600 bg-red-50';
+            return `
+                <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 practice-card">
+                    <div class="flex justify-between items-start mb-3 flex-wrap gap-2">
+                        <span class="font-bold text-purple-600 text-sm">Q${globalNumber}</span>
+                        <span class="px-2 py-1 rounded-full text-xs font-medium ${difficultyColor}">${q.difficulty.toUpperCase()}</span>
+                    </div>
+                    <p class="font-medium text-gray-800 mb-4">${escapeHtml(q.text)}</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
+                        ${q.options.map((opt, optIdx) => `
+                            <div class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg ${optIdx === q.correct ? 'border-l-4 border-green-500' : ''}">
+                                <span class="font-semibold text-gray-600 w-6">${String.fromCharCode(65+optIdx)}.</span>
+                                <span class="text-gray-700 text-sm">${escapeHtml(opt)}</span>
+                                ${optIdx === q.correct ? '<i class="fas fa-check-circle text-green-500 ml-auto"></i>' : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                    ${q.explanation ? `<div class="mt-3 p-3 bg-blue-50 rounded-lg text-sm text-gray-600"><i class="fas fa-info-circle text-blue-500 mr-2"></i>${escapeHtml(q.explanation)}</div>` : ''}
+                </div>
+            `;
+        }).join('');
+        
+        document.getElementById('practicePagination').classList.remove('hidden');
+    }
+    
+    function updatePracticePagination() {
+        document.getElementById('practicePageInfo').textContent = `Page ${practiceCurrentPage} of ${practiceTotalPages || 1}`;
+        document.getElementById('practicePrevBtn').disabled = practiceCurrentPage === 1;
+        document.getElementById('practiceNextBtn').disabled = practiceCurrentPage >= practiceTotalPages;
+    }
+    
+    function practicePrevPage() {
+        if (practiceCurrentPage > 1) {
+            practiceCurrentPage--;
+            loadPracticeQuestions();
+        }
+    }
+    
+    function practiceNextPage() {
+        if (practiceCurrentPage < practiceTotalPages) {
+            practiceCurrentPage++;
+            loadPracticeQuestions();
+        }
+    }
+    
     function escapeHtml(str) {
         if (!str) return '';
         return str.replace(/[&<>]/g, function(m) {
@@ -580,7 +765,7 @@
         q.options.forEach((opt, idx) => {
             const btn = document.createElement('button');
             btn.textContent = `${String.fromCharCode(65+idx)}. ${opt}`;
-            btn.className = `option-btn w-full text-left p-3 rounded-xl bg-white text-gray-800 font-medium transition`;
+            btn.className = `option-btn w-full text-left p-3 rounded-xl bg-white text-gray-800 font-medium transition text-sm md:text-base`;
             btn.addEventListener('click', () => handleAnswer(idx));
             container.appendChild(btn);
         });
@@ -672,29 +857,32 @@
     // INITIALIZATION
     // ============================================
     window.showPage = showPage;
-    window.openMobileMenu = openMobileMenu;
+    window.toggleMobileMenu = toggleMobileMenu;
     window.closeMobileMenu = closeMobileMenu;
+    window.practicePrevPage = practicePrevPage;
+    window.practiceNextPage = practiceNextPage;
     
-    // Initialize Quiz Manager
     quizManager = new QuizManager();
     
-    // Setup event listeners
     document.getElementById('startQuizBtn').addEventListener('click', startQuiz);
     document.getElementById('restartBtn').addEventListener('click', startQuiz);
     document.getElementById('nextBtn').addEventListener('click', nextQuestion);
     document.getElementById('bookSelect').addEventListener('change', loadTopicsForBook);
+    document.getElementById('practiceBookSelect').addEventListener('change', loadPracticeTopics);
+    document.getElementById('practiceTopicSelect').addEventListener('change', () => {
+        practiceCurrentPage = 1;
+        loadPracticeQuestions();
+    });
+    document.getElementById('practicePrevBtn').addEventListener('click', practicePrevPage);
+    document.getElementById('practiceNextBtn').addEventListener('click', practiceNextPage);
     
-    // Contact form handler
     document.getElementById('contactForm')?.addEventListener('submit', function(e) {
         e.preventDefault();
         showToast('Thank you for your message! We\'ll get back to you soon.');
         this.reset();
     });
     
-    // Load initial books
     loadBooksToSelect();
-    
-    // Set default page
     showPage('home');
 </script>
 </body>
