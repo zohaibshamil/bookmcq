@@ -99,18 +99,15 @@
                 <div id="booksList"></div>
             </div>
 
-            <!-- Topics Tab with Book Filter -->
+            <!-- Topics Tab -->
             <div id="topicsTab" class="hidden">
                 <h2 class="text-xl font-bold mb-4">Topics</h2>
-                
-                <!-- Book Filter Dropdown for Topics -->
                 <div class="mb-4">
                     <label class="block text-sm font-semibold mb-2">Filter by Book:</label>
                     <select id="topicFilterBookId" class="w-full md:w-1/2 p-2 border rounded-lg">
                         <option value="">All Books</option>
                     </select>
                 </div>
-                
                 <button id="showAddTopicBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg mb-4">+ Add Topic</button>
                 <div id="addTopicForm" class="hidden bg-gray-50 p-4 rounded-lg mb-4">
                     <select id="topicBookId" class="w-full p-2 border rounded mb-2"></select>
@@ -122,7 +119,7 @@
                 <div id="topicsList"></div>
             </div>
 
-            <!-- Questions Tab -->
+            <!-- Questions Tab with Fixed Filter -->
             <div id="questionsTab" class="hidden">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-xl font-bold">Questions</h2>
@@ -358,8 +355,6 @@
     const PAGE_SIZE = 15;
     let totalQuestions = 0;
     let currentFilters = { bookId: '', topicId: '', difficulty: '' };
-    
-    // Topic filter variable
     let currentTopicBookFilter = '';
 
     function showToast(message) {
@@ -546,7 +541,6 @@
         }
     }
 
-    // Edit Book Functions
     window.openEditBookModal = function(id, title, author) {
         document.getElementById('editBookId').value = id;
         document.getElementById('editBookTitle').value = title;
@@ -574,7 +568,7 @@
         }
     }
 
-    // ============ TOPICS with Book Filter ============
+    // ============ TOPICS ============
     async function loadTopicFilterBooks() {
         const { data } = await _supabase.from('books').select('id, title');
         const select = document.getElementById('topicFilterBookId');
@@ -589,7 +583,6 @@
     async function loadTopics() {
         let query = _supabase.from('topics').select('*, books(title)');
         
-        // Apply book filter if selected
         if (currentTopicBookFilter && currentTopicBookFilter !== '') {
             query = query.eq('book_id', parseInt(currentTopicBookFilter));
         }
@@ -663,7 +656,6 @@
         }
     }
 
-    // Edit Topic Functions
     window.openEditTopicModal = function(id, name, chapterNumber) {
         document.getElementById('editTopicId').value = id;
         document.getElementById('editTopicName').value = name;
@@ -706,16 +698,40 @@
         }
     }
 
-    // ============ QUESTIONS with Sequential Numbering ============
+    // ============ QUESTIONS with Proper Book Filter ============
     async function loadQuestions() {
         const container = document.getElementById('questionsList');
         container.innerHTML = '<div class="skeleton h-24 rounded-lg mb-2"></div><div class="skeleton h-24 rounded-lg"></div>';
         
-        let query = _supabase.from('questions').select('*, topics(name, chapter_number, book_id)', { count: 'exact' });
+        // Start building the query with joins to get book and topic info
+        let query = _supabase
+            .from('questions')
+            .select(`
+                *,
+                topics!inner (
+                    id,
+                    name,
+                    chapter_number,
+                    book_id,
+                    books!inner (
+                        id,
+                        title
+                    )
+                )
+            `, { count: 'exact' });
         
+        // Apply book filter - this is the key fix!
+        if (currentFilters.bookId && currentFilters.bookId !== '') {
+            // Filter by book_id through the topics relation
+            query = query.eq('topics.book_id', parseInt(currentFilters.bookId));
+        }
+        
+        // Apply topic filter
         if (currentFilters.topicId && currentFilters.topicId !== '') {
             query = query.eq('topic_id', parseInt(currentFilters.topicId));
         }
+        
+        // Apply difficulty filter
         if (currentFilters.difficulty && currentFilters.difficulty !== '') {
             query = query.eq('difficulty', currentFilters.difficulty);
         }
@@ -726,6 +742,7 @@
         const { data, error, count } = await query.range(from, to).order('id', { ascending: true });
         
         if (error) {
+            console.error('Error loading questions:', error);
             container.innerHTML = '<p class="text-gray-500">Error loading questions</p>';
             return;
         }
@@ -734,7 +751,7 @@
         updatePaginationButtons();
         
         if (!data || data.length === 0) {
-            container.innerHTML = '<p class="text-gray-500">No questions yet. Add your first question!</p>';
+            container.innerHTML = '<p class="text-gray-500">No questions found for the selected filters.</p>';
             return;
         }
         
@@ -742,15 +759,17 @@
         
         container.innerHTML = data.map((q, index) => {
             const sequentialNumber = startNumber + index;
-            const topicDisplay = q.topics?.chapter_number ? 
-                `Ch ${q.topics.chapter_number}: ${escapeHtml(q.topics.name)}` : 
-                escapeHtml(q.topics?.name || 'Unknown');
+            const topicData = q.topics;
+            const bookTitle = topicData?.books?.title || 'Unknown';
+            const topicDisplay = topicData?.chapter_number ? 
+                `Ch ${topicData.chapter_number}: ${escapeHtml(topicData.name)}` : 
+                escapeHtml(topicData?.name || 'Unknown');
             return `
             <div class="bg-gray-50 p-3 rounded-lg mb-2">
                 <div class="flex justify-between items-start">
                     <div class="flex-1">
                         <p class="font-bold text-sm">Q${sequentialNumber}. ${escapeHtml(q.question_text)}</p>
-                        <p class="text-xs text-gray-600 mt-1">Topic: ${topicDisplay} | Difficulty: ${q.difficulty}</p>
+                        <p class="text-xs text-gray-600 mt-1">Book: ${escapeHtml(bookTitle)} | Topic: ${topicDisplay} | Difficulty: ${q.difficulty}</p>
                     </div>
                     <div class="flex gap-2 ml-2">
                         <button onclick="openEditQuestionModal(${q.id})" class="text-blue-600 hover:text-blue-800 text-sm">
@@ -765,6 +784,7 @@
         `}).join('');
     }
     
+    // Load topics for the filter dropdown based on selected book
     async function loadFilterTopics() {
         const bookId = document.getElementById('filterBookId').value;
         const topicSelect = document.getElementById('filterTopicId');
@@ -777,7 +797,7 @@
         
         const { data } = await _supabase.from('topics')
             .select('id, name, chapter_number')
-            .eq('book_id', bookId)
+            .eq('book_id', parseInt(bookId))
             .order('chapter_number', { ascending: true });
         
         topicSelect.innerHTML = '<option value="">All Topics</option>';
@@ -788,10 +808,12 @@
             });
         }
         
+        // Reset topic filter when book changes
         currentFilters.topicId = '';
         topicSelect.value = '';
     }
     
+    // Apply all filters and reload questions
     async function applyFilters() {
         currentFilters.bookId = document.getElementById('filterBookId').value;
         currentFilters.topicId = document.getElementById('filterTopicId').value;
@@ -861,7 +883,7 @@
             return;
         }
         
-        const { data } = await _supabase.from('topics').select('id, name, chapter_number').eq('book_id', bookId).order('chapter_number', { ascending: true });
+        const { data } = await _supabase.from('topics').select('id, name, chapter_number').eq('book_id', parseInt(bookId)).order('chapter_number', { ascending: true });
         const select = document.getElementById('questionTopicId');
         select.innerHTML = '<option value="">Select Topic</option>';
         if (data && data.length > 0) {
@@ -922,7 +944,6 @@
         await loadQuestions();
     }
     
-    // Edit Question Functions
     window.openEditQuestionModal = async function(id) {
         const { data, error } = await _supabase.from('questions').select('*, options(*)').eq('id', id).single();
         if (error) {
@@ -1005,7 +1026,7 @@
             return;
         }
         
-        const { data } = await _supabase.from('topics').select('id, name, chapter_number').eq('book_id', bookId).order('chapter_number', { ascending: true });
+        const { data } = await _supabase.from('topics').select('id, name, chapter_number').eq('book_id', parseInt(bookId)).order('chapter_number', { ascending: true });
         const select = document.getElementById('bulkTopicId');
         select.innerHTML = '<option value="">Select Topic</option>';
         if (data && data.length > 0) {
@@ -1103,7 +1124,7 @@
         const previewRows = rows.slice(0, 5);
         previewBody.innerHTML = previewRows.map(row => `
             <tr>
-                ${headers.map(h => `<td class="p-2 border">${escapeHtml(String(row[h] || ''))}<table>`).join('')}
+                ${headers.map(h => `<td class="p-2 border">${escapeHtml(String(row[h] || ''))}</td>`).join('')}
             </tr>
         `).join('');
         
@@ -1291,8 +1312,6 @@
             document.getElementById('addTopicForm').classList.add('hidden');
         });
         document.getElementById('saveTopicBtn').addEventListener('click', addTopic);
-        
-        // Topic filter event
         document.getElementById('topicFilterBookId').addEventListener('change', applyTopicFilter);
         
         // Question events
@@ -1306,7 +1325,7 @@
         document.getElementById('saveQuestionBtn').addEventListener('click', addQuestion);
         document.getElementById('questionBookId').addEventListener('change', loadTopicsForQuestion);
         
-        // Filter events
+        // Filter events - CRITICAL FIX: Book filter now properly filters questions
         const filterBook = document.getElementById('filterBookId');
         if (filterBook) {
             filterBook.addEventListener('change', async () => {
