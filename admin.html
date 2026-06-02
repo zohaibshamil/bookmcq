@@ -12,11 +12,13 @@
         body { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); min-height: 100vh; }
         .admin-card { background: rgba(255,255,255,0.95); border-radius: 1rem; }
         .toast { position: fixed; bottom: 20px; left: 20px; right: 20px; z-index: 1000; text-align: center; }
-        .upload-zone { border: 2px dashed #cbd5e1; transition: all 0.3s; }
+        .upload-zone { border: 2px dashed #cbd5e1; transition: all 0.3s; cursor: pointer; }
         .upload-zone:hover { border-color: #8b5cf6; background-color: #f3e8ff; }
         .progress-bar { transition: width 0.3s ease; }
         .skeleton { animation: pulse 1.5s ease-in-out infinite; background: #e2e8f0; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .question-number { background: #667eea; color: white; border-radius: 9999px; padding: 2px 8px; font-size: 12px; display: inline-block; margin-right: 8px; }
+        .topic-number { background: #10b981; color: white; border-radius: 9999px; padding: 2px 8px; font-size: 12px; display: inline-block; margin-right: 8px; }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -41,7 +43,7 @@
         
         <div id="loginForm">
             <input type="email" id="loginEmail" placeholder="Email Address" class="w-full p-3 border rounded-xl mb-3">
-            <input type="password" id="loginPassword" placeholder="Password" class="w-full p-3 border rounded-xl mb-4" onkeypress="handleLoginKeyPress(event)">
+            <input type="password" id="loginPassword" placeholder="Password" class="w-full p-3 border rounded-xl mb-4" onkeypress="if(event.key==='Enter') handleLogin()">
             <button id="loginBtn" class="w-full bg-purple-600 text-white font-bold py-3 rounded-xl hover:bg-purple-700">
                 <i class="fas fa-sign-in-alt mr-2"></i> Login
             </button>
@@ -52,7 +54,7 @@
         
         <div id="signupForm" class="hidden">
             <input type="email" id="signupEmail" placeholder="Email Address" class="w-full p-3 border rounded-xl mb-3">
-            <input type="password" id="signupPassword" placeholder="Password (min 6 characters)" class="w-full p-3 border rounded-xl mb-4" onkeypress="handleSignupKeyPress(event)">
+            <input type="password" id="signupPassword" placeholder="Password (min 6 characters)" class="w-full p-3 border rounded-xl mb-4" onkeypress="if(event.key==='Enter') handleSignup()">
             <button id="signupBtn" class="w-full bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-700">
                 <i class="fas fa-user-plus mr-2"></i> Create Account
             </button>
@@ -86,38 +88,47 @@
 
             <!-- Books Tab -->
             <div id="booksTab">
-                <h2 class="text-xl font-bold mb-4">Books</h2>
-                <button id="showAddBookBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg mb-4">+ Add Book</button>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">📚 Books</h2>
+                    <button id="showAddBookBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg">+ Add Book</button>
+                </div>
                 <div id="addBookForm" class="hidden bg-gray-50 p-4 rounded-lg mb-4">
                     <input type="text" id="bookTitle" placeholder="Book Title" class="w-full p-2 border rounded mb-2">
                     <input type="text" id="bookAuthor" placeholder="Author" class="w-full p-2 border rounded mb-2">
-                    <button id="saveBookBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
-                    <button id="cancelBookBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
+                    <div class="flex gap-2">
+                        <button id="saveBookBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
+                        <button id="cancelBookBtn" class="bg-gray-400 text-white px-4 py-2 rounded">Cancel</button>
+                    </div>
                 </div>
-                <div id="booksList"><div class="skeleton h-12 rounded-lg mb-2"></div><div class="skeleton h-12 rounded-lg"></div></div>
+                <div id="booksList"></div>
             </div>
 
             <!-- Topics Tab -->
             <div id="topicsTab" class="hidden">
-                <h2 class="text-xl font-bold mb-4">Topics</h2>
-                <button id="showAddTopicBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg mb-4">+ Add Topic</button>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">🏷️ Topics</h2>
+                    <button id="showAddTopicBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg">+ Add Topic</button>
+                </div>
                 <div id="addTopicForm" class="hidden bg-gray-50 p-4 rounded-lg mb-4">
                     <select id="topicBookId" class="w-full p-2 border rounded mb-2"></select>
                     <input type="text" id="topicName" placeholder="Topic Name" class="w-full p-2 border rounded mb-2">
-                    <button id="saveTopicBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
-                    <button id="cancelTopicBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
+                    <input type="number" id="topicNumber" placeholder="Chapter / Sequence Number" class="w-full p-2 border rounded mb-2">
+                    <div class="flex gap-2">
+                        <button id="saveTopicBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
+                        <button id="cancelTopicBtn" class="bg-gray-400 text-white px-4 py-2 rounded">Cancel</button>
+                    </div>
                 </div>
-                <div id="topicsList"><div class="skeleton h-12 rounded-lg mb-2"></div><div class="skeleton h-12 rounded-lg"></div></div>
+                <div id="topicsList"></div>
             </div>
 
-            <!-- Questions Tab (Optimized with Pagination) -->
+            <!-- Questions Tab -->
             <div id="questionsTab" class="hidden">
                 <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold">Questions</h2>
+                    <h2 class="text-xl font-bold">❓ Questions</h2>
                     <button id="showAddQuestionBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg">+ Add Question</button>
                 </div>
                 
-                <!-- Filters for Questions -->
+                <!-- Filters -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                     <select id="filterBookId" class="p-2 border rounded-lg">
                         <option value="">All Books</option>
@@ -157,17 +168,19 @@
                         <option value="3">Option D is correct</option>
                     </select>
                     <textarea id="explanation" rows="2" placeholder="Explanation (optional)" class="w-full p-2 border rounded mb-2"></textarea>
-                    <button id="saveQuestionBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Save Question</button>
-                    <button id="cancelQuestionBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
+                    <div class="flex gap-2">
+                        <button id="saveQuestionBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
+                        <button id="cancelQuestionBtn" class="bg-gray-400 text-white px-4 py-2 rounded">Cancel</button>
+                    </div>
                 </div>
                 
-                <div id="questionsList"><div class="skeleton h-24 rounded-lg mb-2"></div><div class="skeleton h-24 rounded-lg"></div></div>
+                <div id="questionsList"></div>
                 
                 <!-- Pagination -->
                 <div class="flex justify-between items-center mt-4">
-                    <button id="prevPageBtn" class="bg-gray-500 text-white px-4 py-2 rounded-lg disabled:opacity-50" disabled>Previous</button>
+                    <button id="prevPageBtn" class="bg-gray-500 text-white px-4 py-2 rounded-lg disabled:opacity-50" disabled>◀ Previous</button>
                     <span id="pageInfo" class="text-sm">Page 1</span>
-                    <button id="nextPageBtn" class="bg-gray-500 text-white px-4 py-2 rounded-lg">Next</button>
+                    <button id="nextPageBtn" class="bg-gray-500 text-white px-4 py-2 rounded-lg">Next ▶</button>
                 </div>
             </div>
 
@@ -203,7 +216,7 @@
 
                 <div class="bg-purple-50 p-4 rounded-lg mb-6">
                     <h3 class="font-bold mb-3">Step 3: Upload Your CSV/Excel File</h3>
-                    <div id="uploadZone" class="upload-zone bg-white p-8 rounded-lg text-center cursor-pointer">
+                    <div id="uploadZone" class="upload-zone bg-white p-8 rounded-lg text-center">
                         <i class="fas fa-cloud-upload-alt text-4xl text-purple-400 mb-3"></i>
                         <p class="text-gray-600">Drag & drop your CSV or Excel file here, or click to select</p>
                         <p class="text-gray-400 text-sm mt-2">Supports .csv, .xlsx, .xls</p>
@@ -215,7 +228,7 @@
                         <div class="overflow-x-auto">
                             <table id="previewTable" class="min-w-full bg-white border rounded-lg text-sm">
                                 <thead class="bg-gray-100">
-                                    <tr id="previewHeader"></table>
+                                    <tr id="previewHeader"></tr>
                                 </thead>
                                 <tbody id="previewBody"></tbody>
                             </table>
@@ -246,14 +259,14 @@
                     <h3 class="font-bold mb-2">📋 CSV Format Instructions</h3>
                     <p class="text-sm text-gray-700 mb-2">Your CSV file must have these columns (in this order):</p>
                     <ul class="text-sm text-gray-600 list-disc list-inside space-y-1">
-                        <li><code class="bg-gray-100 px-1 rounded">question_text</code> - The question</li>
-                        <li><code class="bg-gray-100 px-1 rounded">option_a</code> - Option A text</li>
-                        <li><code class="bg-gray-100 px-1 rounded">option_b</code> - Option B text</li>
-                        <li><code class="bg-gray-100 px-1 rounded">option_c</code> - Option C text</li>
-                        <li><code class="bg-gray-100 px-1 rounded">option_d</code> - Option D text</li>
-                        <li><code class="bg-gray-100 px-1 rounded">correct_answer</code> - 0, 1, 2, or 3 (0=A, 1=B, 2=C, 3=D)</li>
-                        <li><code class="bg-gray-100 px-1 rounded">difficulty</code> - easy, medium, or hard</li>
-                        <li><code class="bg-gray-100 px-1 rounded">explanation</code> - Explanation (optional)</li>
+                        <li><code>question_text</code> - The question</li>
+                        <li><code>option_a</code> - Option A text</li>
+                        <li><code>option_b</code> - Option B text</li>
+                        <li><code>option_c</code> - Option C text</li>
+                        <li><code>option_d</code> - Option D text</li>
+                        <li><code>correct_answer</code> - 0, 1, 2, or 3 (0=A, 1=B, 2=C, 3=D)</li>
+                        <li><code>difficulty</code> - easy, medium, or hard</li>
+                        <li><code>explanation</code> - Explanation (optional)</li>
                     </ul>
                 </div>
             </div>
@@ -261,7 +274,7 @@
             <!-- Admins Tab -->
             <div id="adminsTab" class="hidden">
                 <h2 class="text-xl font-bold mb-4">👑 Admin Users</h2>
-                <div id="adminsList">Loading...</div>
+                <div id="adminsList"></div>
             </div>
         </div>
         
@@ -277,7 +290,7 @@
 
 <script>
     // ============================================
-    // OPTIMIZED ADMIN PANEL WITH PAGINATION
+    // SUPABASE CONFIGURATION
     // ============================================
     const SUPABASE_URL = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
@@ -288,7 +301,7 @@
     let _isAdmin = false;
     let _pendingData = [];
     
-    // Pagination variables
+    // Pagination
     let currentPage = 1;
     const PAGE_SIZE = 15;
     let totalQuestions = 0;
@@ -309,26 +322,6 @@
             if (m === '>') return '&gt;';
             return m;
         });
-    }
-
-    function handleLoginKeyPress(event) {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            handleLogin();
-        }
-    }
-
-    function handleSignupKeyPress(event) {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            handleSignup();
-        }
-    }
-
-    async function checkIsAdmin(userId) {
-        if (!userId) return false;
-        const { data } = await _supabase.from('admin_roles').select('user_id').eq('user_id', userId);
-        return data && data.length > 0;
     }
 
     // ============ AUTHENTICATION ============
@@ -359,7 +352,6 @@
                 document.getElementById('adminFeatures').classList.remove('hidden');
                 document.getElementById('nonAdminView').classList.add('hidden');
                 
-                // Load all data in parallel (faster)
                 await Promise.all([
                     loadBooks(),
                     loadTopics(),
@@ -424,12 +416,141 @@
         document.getElementById('loginForm').classList.remove('hidden');
     }
 
-    // ============ OPTIMIZED QUESTIONS WITH PAGINATION ============
+    async function checkIsAdmin(userId) {
+        if (!userId) return false;
+        const { data } = await _supabase.from('admin_roles').select('user_id').eq('user_id', userId);
+        return data && data.length > 0;
+    }
+
+    // ============ BOOKS ============
+    async function loadBooks() {
+        const { data, error } = await _supabase.from('books').select('*').order('id', { ascending: false });
+        const container = document.getElementById('booksList');
+        
+        if (error || !data || data.length === 0) {
+            container.innerHTML = '<p class="text-gray-500 text-center py-4">No books yet. Add your first book!</p>';
+            return;
+        }
+        
+        container.innerHTML = data.map((book, index) => `
+            <div class="bg-gray-50 p-3 rounded-lg mb-2 flex justify-between items-center">
+                <div>
+                    <span class="question-number">${index + 1}</span>
+                    <strong>${escapeHtml(book.title)}</strong> 
+                    ${book.author ? `<span class="text-gray-600 ml-2">by ${escapeHtml(book.author)}</span>` : ''}
+                </div>
+                <button onclick="deleteBook(${book.id})" class="text-red-600 hover:text-red-800">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `).join('');
+    }
+
+    window.deleteBook = async function(id) {
+        if (confirm('Delete this book? This will also delete all topics and questions in this book.')) {
+            await _supabase.from('books').delete().eq('id', id);
+            await Promise.all([loadBooks(), loadTopics(), loadFilterBooks(), loadBookSelects(), loadBulkBookSelects()]);
+            showToast('Book deleted');
+        }
+    };
+
+    async function addBook() {
+        const title = document.getElementById('bookTitle').value;
+        const author = document.getElementById('bookAuthor').value;
+        
+        if (!title) {
+            showToast('Please enter a book title');
+            return;
+        }
+        
+        const { error } = await _supabase.from('books').insert([{ title, author }]);
+        if (error) {
+            showToast('Error: ' + error.message);
+        } else {
+            showToast('Book added successfully!');
+            document.getElementById('addBookForm').classList.add('hidden');
+            document.getElementById('bookTitle').value = '';
+            document.getElementById('bookAuthor').value = '';
+            await Promise.all([loadBooks(), loadFilterBooks(), loadBookSelects(), loadBulkBookSelects()]);
+        }
+    }
+
+    // ============ TOPICS ============
+    async function loadTopics() {
+        const { data, error } = await _supabase.from('topics').select('*, books(title)').order('chapter_number', { ascending: true, nullsFirst: false }).order('id', { ascending: true });
+        const container = document.getElementById('topicsList');
+        
+        if (error || !data || data.length === 0) {
+            container.innerHTML = '<p class="text-gray-500 text-center py-4">No topics yet. Add your first topic!</p>';
+            return;
+        }
+        
+        container.innerHTML = data.map((topic, index) => `
+            <div class="bg-gray-50 p-3 rounded-lg mb-2 flex justify-between items-center">
+                <div>
+                    <span class="topic-number">${topic.chapter_number || index + 1}</span>
+                    <strong>${escapeHtml(topic.name)}</strong>
+                    <span class="text-gray-500 text-sm ml-2">(${escapeHtml(topic.books?.title || 'Unknown')})</span>
+                </div>
+                <button onclick="deleteTopic(${topic.id})" class="text-red-600 hover:text-red-800">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `).join('');
+    }
+
+    window.deleteTopic = async function(id) {
+        if (confirm('Delete this topic? All questions in this topic will also be deleted.')) {
+            await _supabase.from('topics').delete().eq('id', id);
+            await Promise.all([loadTopics(), loadQuestions(), loadFilterBooks()]);
+            showToast('Topic deleted');
+        }
+    };
+
+    async function addTopic() {
+        const bookId = document.getElementById('topicBookId').value;
+        const name = document.getElementById('topicName').value;
+        const chapterNumber = document.getElementById('topicNumber').value;
+        
+        if (!bookId || !name) {
+            showToast('Please select a book and enter a topic name');
+            return;
+        }
+        
+        const { error } = await _supabase.from('topics').insert([{ 
+            book_id: parseInt(bookId), 
+            name,
+            chapter_number: chapterNumber ? parseInt(chapterNumber) : null
+        }]);
+        
+        if (error) {
+            showToast('Error: ' + error.message);
+        } else {
+            showToast('Topic added successfully!');
+            document.getElementById('addTopicForm').classList.add('hidden');
+            document.getElementById('topicName').value = '';
+            document.getElementById('topicNumber').value = '';
+            await Promise.all([loadTopics(), loadFilterBooks()]);
+        }
+    }
+
+    async function loadBookSelectForTopics() {
+        const { data } = await _supabase.from('books').select('id, title');
+        const select = document.getElementById('topicBookId');
+        select.innerHTML = '<option value="">Select Book</option>';
+        if (data) {
+            data.forEach(book => {
+                select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+            });
+        }
+    }
+
+    // ============ QUESTIONS ============
     async function loadQuestions() {
         const container = document.getElementById('questionsList');
         container.innerHTML = '<div class="skeleton h-24 rounded-lg mb-2"></div><div class="skeleton h-24 rounded-lg"></div>';
         
-        let query = _supabase.from('questions').select('*, topics(name)', { count: 'exact' });
+        let query = _supabase.from('questions').select('*, topics(name, chapter_number, books(title))', { count: 'exact' });
         
         if (currentFilters.topicId) {
             query = query.eq('topic_id', parseInt(currentFilters.topicId));
@@ -444,7 +565,7 @@
         const { data, error, count } = await query.range(from, to).order('id', { ascending: false });
         
         if (error) {
-            container.innerHTML = '<p class="text-gray-500">Error loading questions</p>';
+            container.innerHTML = '<p class="text-gray-500 text-center py-4">Error loading questions</p>';
             return;
         }
         
@@ -452,22 +573,36 @@
         updatePaginationButtons();
         
         if (!data || data.length === 0) {
-            container.innerHTML = '<p class="text-gray-500">No questions yet. Add your first question!</p>';
+            container.innerHTML = '<p class="text-gray-500 text-center py-4">No questions yet. Add your first question!</p>';
             return;
         }
         
-        container.innerHTML = data.map(q => `
-            <div class="bg-gray-50 p-3 rounded-lg mb-2">
-                <p class="font-bold text-sm">${escapeHtml(q.question_text)}</p>
-                <p class="text-xs text-gray-600 mt-1">Topic: ${escapeHtml(q.topics?.name || 'Unknown')} | Difficulty: ${q.difficulty}</p>
-                <button onclick="deleteQuestion(${q.id})" class="text-red-600 text-xs mt-1"><i class="fas fa-trash"></i> Delete</button>
-            </div>
-        `).join('');
+        container.innerHTML = data.map((q, index) => {
+            const questionNumber = ((currentPage - 1) * PAGE_SIZE) + index + 1;
+            return `
+                <div class="bg-gray-50 p-3 rounded-lg mb-2">
+                    <div class="flex items-start gap-2">
+                        <span class="question-number">${questionNumber}</span>
+                        <div class="flex-1">
+                            <p class="font-bold text-sm">${escapeHtml(q.question_text)}</p>
+                            <p class="text-xs text-gray-600 mt-1">
+                                Topic: ${escapeHtml(q.topics?.name || 'Unknown')} | 
+                                Book: ${escapeHtml(q.topics?.books?.title || 'Unknown')} | 
+                                Difficulty: ${q.difficulty}
+                            </p>
+                        </div>
+                        <button onclick="deleteQuestion(${q.id})" class="text-red-600 hover:text-red-800 text-sm">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
     }
     
     function updatePaginationButtons() {
         const totalPages = Math.ceil(totalQuestions / PAGE_SIZE);
-        document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages || 1}`;
+        document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages || 1} (${totalQuestions} total questions)`;
         document.getElementById('prevPageBtn').disabled = currentPage === 1;
         document.getElementById('nextPageBtn').disabled = currentPage >= totalPages;
     }
@@ -493,7 +628,6 @@
         currentFilters.difficulty = document.getElementById('filterDifficulty').value;
         currentPage = 1;
         
-        // If book selected, load its topics
         if (currentFilters.bookId) {
             const { data } = await _supabase.from('topics').select('id, name').eq('book_id', currentFilters.bookId);
             const topicSelect = document.getElementById('filterTopicId');
@@ -520,111 +654,6 @@
         }
     }
 
-    // ============ BOOKS ============
-    async function loadBooks() {
-        const { data, error } = await _supabase.from('books').select('*').order('id', { ascending: false });
-        const container = document.getElementById('booksList');
-        
-        if (error || !data || data.length === 0) {
-            container.innerHTML = '<p class="text-gray-500">No books yet. Add your first book!</p>';
-            return;
-        }
-        
-        container.innerHTML = data.map(book => `
-            <div class="bg-gray-50 p-3 rounded-lg mb-2 flex justify-between items-center">
-                <div><strong>${escapeHtml(book.title)}</strong> ${book.author ? `by ${escapeHtml(book.author)}` : ''}</div>
-                <button onclick="deleteBook(${book.id})" class="text-red-600"><i class="fas fa-trash"></i></button>
-            </div>
-        `).join('');
-    }
-
-    window.deleteBook = async function(id) {
-        if (confirm('Delete this book?')) {
-            await _supabase.from('books').delete().eq('id', id);
-            await Promise.all([loadBooks(), loadTopics(), loadFilterBooks(), loadBookSelects(), loadBulkBookSelects()]);
-            showToast('Book deleted');
-        }
-    };
-
-    async function addBook() {
-        const title = document.getElementById('bookTitle').value;
-        const author = document.getElementById('bookAuthor').value;
-        
-        if (!title) {
-            showToast('Please enter a book title');
-            return;
-        }
-        
-        const { error } = await _supabase.from('books').insert([{ title, author }]);
-        if (error) {
-            showToast('Error: ' + error.message);
-        } else {
-            showToast('Book added!');
-            document.getElementById('addBookForm').classList.add('hidden');
-            document.getElementById('bookTitle').value = '';
-            document.getElementById('bookAuthor').value = '';
-            await Promise.all([loadBooks(), loadFilterBooks(), loadBookSelects(), loadBulkBookSelects()]);
-        }
-    }
-
-    // ============ TOPICS ============
-    async function loadTopics() {
-        const { data, error } = await _supabase.from('topics').select('*, books(title)').order('id', { ascending: false });
-        const container = document.getElementById('topicsList');
-        
-        if (error || !data || data.length === 0) {
-            container.innerHTML = '<p class="text-gray-500">No topics yet. Add your first topic!</p>';
-            return;
-        }
-        
-        container.innerHTML = data.map(topic => `
-            <div class="bg-gray-50 p-3 rounded-lg mb-2 flex justify-between items-center">
-                <div><strong>${escapeHtml(topic.name)}</strong> (${escapeHtml(topic.books?.title || 'Unknown')})</div>
-                <button onclick="deleteTopic(${topic.id})" class="text-red-600"><i class="fas fa-trash"></i></button>
-            </div>
-        `).join('');
-    }
-
-    window.deleteTopic = async function(id) {
-        if (confirm('Delete this topic?')) {
-            await _supabase.from('topics').delete().eq('id', id);
-            await Promise.all([loadTopics(), loadQuestions(), loadFilterBooks()]);
-            showToast('Topic deleted');
-        }
-    };
-
-    async function addTopic() {
-        const bookId = document.getElementById('topicBookId').value;
-        const name = document.getElementById('topicName').value;
-        
-        if (!bookId || !name) {
-            showToast('Please select a book and enter a topic name');
-            return;
-        }
-        
-        const { error } = await _supabase.from('topics').insert([{ book_id: parseInt(bookId), name }]);
-        if (error) {
-            showToast('Error: ' + error.message);
-        } else {
-            showToast('Topic added!');
-            document.getElementById('addTopicForm').classList.add('hidden');
-            document.getElementById('topicName').value = '';
-            await Promise.all([loadTopics(), loadFilterBooks()]);
-        }
-    }
-
-    async function loadBookSelectForTopics() {
-        const { data } = await _supabase.from('books').select('id, title');
-        const select = document.getElementById('topicBookId');
-        select.innerHTML = '<option value="">Select Book</option>';
-        if (data) {
-            data.forEach(book => {
-                select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
-            });
-        }
-    }
-
-    // ============ SINGLE QUESTION ============
     window.deleteQuestion = async function(id) {
         if (confirm('Delete this question?')) {
             await _supabase.from('options').delete().eq('question_id', id);
@@ -647,14 +676,17 @@
 
     async function loadTopicsForQuestion() {
         const bookId = document.getElementById('questionBookId').value;
-        if (!bookId) return;
+        if (!bookId) {
+            document.getElementById('questionTopicId').innerHTML = '<option value="">Select Topic</option>';
+            return;
+        }
         
-        const { data } = await _supabase.from('topics').select('id, name').eq('book_id', bookId);
+        const { data } = await _supabase.from('topics').select('id, name, chapter_number').eq('book_id', bookId).order('chapter_number', { ascending: true });
         const select = document.getElementById('questionTopicId');
         select.innerHTML = '<option value="">Select Topic</option>';
         if (data) {
             data.forEach(topic => {
-                select.innerHTML += `<option value="${topic.id}">${escapeHtml(topic.name)}</option>`;
+                select.innerHTML += `<option value="${topic.id}">${topic.chapter_number ? `Ch${topic.chapter_number}: ` : ''}${escapeHtml(topic.name)}</option>`;
             });
         }
     }
@@ -698,7 +730,7 @@
             }]);
         }
         
-        showToast('Question added!');
+        showToast('Question added successfully!');
         document.getElementById('addQuestionForm').classList.add('hidden');
         document.getElementById('questionText').value = '';
         document.getElementById('option0').value = '';
@@ -728,12 +760,12 @@
             return;
         }
         
-        const { data } = await _supabase.from('topics').select('id, name').eq('book_id', bookId);
+        const { data } = await _supabase.from('topics').select('id, name, chapter_number').eq('book_id', bookId).order('chapter_number', { ascending: true });
         const select = document.getElementById('bulkTopicId');
         select.innerHTML = '<option value="">Select Topic</option>';
         if (data) {
             data.forEach(topic => {
-                select.innerHTML += `<option value="${topic.id}">${escapeHtml(topic.name)}</option>`;
+                select.innerHTML += `<option value="${topic.id}">${topic.chapter_number ? `Ch${topic.chapter_number}: ` : ''}${escapeHtml(topic.name)}</option>`;
             });
         }
     }
@@ -757,7 +789,9 @@
         const a = document.createElement('a');
         a.href = url;
         a.download = 'bookmcq_template.csv';
+        document.body.appendChild(a);
         a.click();
+        document.body.removeChild(a);
         URL.revokeObjectURL(url);
         showToast('Template downloaded!');
     }
@@ -766,24 +800,33 @@
         const uploadZone = document.getElementById('uploadZone');
         const fileInput = document.getElementById('fileInput');
         
-        uploadZone.addEventListener('click', () => fileInput.click());
-        uploadZone.addEventListener('dragover', (e) => {
+        if (!uploadZone || !fileInput) return;
+        
+        // Remove existing listeners to avoid duplicates
+        const newUploadZone = uploadZone.cloneNode(true);
+        uploadZone.parentNode.replaceChild(newUploadZone, uploadZone);
+        
+        newUploadZone.addEventListener('click', () => fileInput.click());
+        newUploadZone.addEventListener('dragover', (e) => {
             e.preventDefault();
-            uploadZone.classList.add('border-purple-500', 'bg-purple-50');
+            newUploadZone.classList.add('border-purple-500', 'bg-purple-50');
         });
-        uploadZone.addEventListener('dragleave', () => {
-            uploadZone.classList.remove('border-purple-500', 'bg-purple-50');
+        newUploadZone.addEventListener('dragleave', () => {
+            newUploadZone.classList.remove('border-purple-500', 'bg-purple-50');
         });
-        uploadZone.addEventListener('drop', (e) => {
+        newUploadZone.addEventListener('drop', (e) => {
             e.preventDefault();
-            uploadZone.classList.remove('border-purple-500', 'bg-purple-50');
+            newUploadZone.classList.remove('border-purple-500', 'bg-purple-50');
             const file = e.dataTransfer.files[0];
             if (file) processFile(file);
         });
         
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files[0]) processFile(e.target.files[0]);
-        });
+        fileInput.removeEventListener('change', handleFileChange);
+        fileInput.addEventListener('change', handleFileChange);
+    }
+    
+    function handleFileChange(e) {
+        if (e.target.files[0]) processFile(e.target.files[0]);
     }
 
     function processFile(file) {
@@ -812,12 +855,12 @@
         const confirmBtn = document.getElementById('confirmUploadBtn');
         
         const headers = Object.keys(rows[0]);
-        previewHeader.innerHTML = headers.map(h => `<th class="p-2 border text-left">${h}</th>`).join('');
+        previewHeader.innerHTML = headers.map(h => `<th class="p-2 border text-left text-xs">${h}</th>`).join('');
         
         const previewRows = rows.slice(0, 5);
         previewBody.innerHTML = previewRows.map(row => `
             <tr>
-                ${headers.map(h => `<td class="p-2 border">${escapeHtml(String(row[h] || ''))}</td>`).join('')}
+                ${headers.map(h => `<td class="p-2 border text-xs">${escapeHtml(String(row[h] || ''))}</td>`).join('')}
             </tr>
         `).join('');
         
@@ -878,6 +921,7 @@
                 successCount++;
             } catch (err) {
                 errorCount++;
+                console.error('Error uploading row:', row, err);
             }
         }
         
@@ -899,19 +943,20 @@
         const container = document.getElementById('adminsList');
         
         if (error || !data || data.length === 0) {
-            container.innerHTML = '<p class="text-gray-500">No admins configured.</p>';
+            container.innerHTML = '<p class="text-gray-500 text-center py-4">No admins configured.</p>';
             return;
         }
         
         container.innerHTML = data.map(admin => `
-            <div class="bg-gray-50 p-3 rounded-lg mb-2">
-                <i class="fas fa-user-shield text-purple-600 mr-2"></i>
-                Administrator
-                ${admin.user_email === _currentUser?.email ? ' <span class="text-green-600 text-sm">(You)</span>' : ''}
+            <div class="bg-gray-50 p-3 rounded-lg mb-2 flex items-center gap-2">
+                <i class="fas fa-user-shield text-purple-600"></i>
+                <span>${escapeHtml(admin.user_email)}</span>
+                ${admin.user_email === _currentUser?.email ? '<span class="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full">You</span>' : ''}
             </div>
         `).join('');
     }
 
+    // ============ TAB MANAGEMENT ============
     function showTab(tabName) {
         document.getElementById('booksTab').classList.add('hidden');
         document.getElementById('topicsTab').classList.add('hidden');
@@ -937,6 +982,7 @@
         if (tabName === 'questions') loadQuestions();
     }
 
+    // ============ CHECK SESSION ============
     async function checkSession() {
         const { data: { session } } = await _supabase.auth.getSession();
         if (session) {
@@ -968,6 +1014,7 @@
         }
     }
 
+    // ============ EVENT LISTENERS ============
     function setupEventListeners() {
         document.getElementById('loginBtn').addEventListener('click', handleLogin);
         document.getElementById('signupBtn').addEventListener('click', handleSignup);
@@ -982,7 +1029,7 @@
         document.getElementById('tabAdminsBtn').addEventListener('click', () => showTab('admins'));
         
         document.getElementById('showAddBookBtn').addEventListener('click', () => {
-            document.getElementById('addBookForm').classList.remove('hidden');
+            document.getElementById('addBookForm').classList.toggle('hidden');
         });
         document.getElementById('cancelBookBtn').addEventListener('click', () => {
             document.getElementById('addBookForm').classList.add('hidden');
@@ -991,7 +1038,7 @@
         
         document.getElementById('showAddTopicBtn').addEventListener('click', async () => {
             await loadBookSelectForTopics();
-            document.getElementById('addTopicForm').classList.remove('hidden');
+            document.getElementById('addTopicForm').classList.toggle('hidden');
         });
         document.getElementById('cancelTopicBtn').addEventListener('click', () => {
             document.getElementById('addTopicForm').classList.add('hidden');
@@ -1000,7 +1047,7 @@
         
         document.getElementById('showAddQuestionBtn').addEventListener('click', async () => {
             await loadBookSelects();
-            document.getElementById('addQuestionForm').classList.remove('hidden');
+            document.getElementById('addQuestionForm').classList.toggle('hidden');
         });
         document.getElementById('cancelQuestionBtn').addEventListener('click', () => {
             document.getElementById('addQuestionForm').classList.add('hidden');
