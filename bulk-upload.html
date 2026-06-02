@@ -11,14 +11,10 @@
     <style>
         body { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); min-height: 100vh; }
         .upload-card { background: rgba(255,255,255,0.95); border-radius: 1rem; }
-        .toast { position: fixed; bottom: 20px; left: 20px; right: 20px; z-index: 1000; text-align: center; }
         .log { background: #1e1e2e; padding: 10px; margin-top: 20px; border-radius: 8px; height: 200px; overflow-y: auto; font-size: 11px; font-family: monospace; color: #ccc; }
         .log .success { color: #4ade80; }
         .log .error { color: #f87171; }
         .log .info { color: #60a5fa; }
-        .upload-zone { border: 2px dashed #cbd5e1; transition: all 0.3s; cursor: pointer; }
-        .upload-zone:hover { border-color: #8b5cf6; background-color: #f3e8ff; }
-        .progress-bar { transition: width 0.3s ease; }
         .preview-table { overflow-x: auto; }
         .preview-table table { width: 100%; border-collapse: collapse; font-size: 12px; }
         .preview-table th, .preview-table td { border: 1px solid #e2e8f0; padding: 8px; text-align: left; }
@@ -39,7 +35,7 @@
         <p class="text-white/70 mt-2">Upload hundreds of MCQs at once using CSV or Excel files</p>
     </div>
 
-    <!-- Main Upload Card -->
+    <!-- Main Card -->
     <div class="upload-card p-6 md:p-8 shadow-xl">
         
         <!-- Back Link -->
@@ -97,45 +93,19 @@
         <div class="bg-purple-50 p-4 rounded-lg mb-6">
             <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
                 <span class="bg-purple-600 text-white rounded-full w-6 h-6 inline-flex items-center justify-center text-sm">4</span>
-                Upload Your CSV/Excel File
+                Upload CSV/Excel File
             </h3>
-            
-            <div id="uploadZone" class="upload-zone bg-white p-8 rounded-lg text-center">
-                <i class="fas fa-cloud-upload-alt text-4xl text-purple-400 mb-3"></i>
-                <p class="text-gray-600">Click or drag & drop your CSV or Excel file here</p>
-                <p class="text-gray-400 text-sm mt-2">Supports .csv, .xlsx, .xls</p>
-                <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" class="hidden">
-                <button id="selectFileBtn" class="mt-3 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 inline-flex items-center gap-2">
-                    <i class="fas fa-folder-open"></i> Select File
-                </button>
-            </div>
-            
-            <!-- Preview Section -->
-            <div id="previewDiv" class="hidden mt-6">
-                <h4 class="font-bold text-gray-700 mb-2">📋 Preview (First 5 rows)</h4>
-                <div class="preview-table">
-                    <div id="previewContent"></div>
-                </div>
-                <button id="uploadBtn" class="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 inline-flex items-center gap-2">
-                    <i class="fas fa-upload"></i> Upload to Database
-                </button>
-            </div>
-            
-            <!-- Progress Bar -->
-            <div id="progressDiv" class="hidden mt-6">
-                <div class="flex justify-between text-sm mb-1">
-                    <span>Uploading...</span>
-                    <span id="progressPercent">0%</span>
-                </div>
-                <div class="w-full bg-gray-200 rounded-full h-2">
-                    <div id="progressFill" class="progress-bar bg-green-600 h-2 rounded-full" style="width: 0%"></div>
-                </div>
-                <p id="progressStatus" class="text-sm text-gray-600 mt-2">Preparing...</p>
-            </div>
+            <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" class="w-full p-3 border rounded-xl bg-white">
+            <button id="uploadBtn" style="display: none; margin-top: 10px;" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 inline-flex items-center gap-2">
+                <i class="fas fa-upload"></i> Upload to Database
+            </button>
         </div>
+        
+        <!-- Preview Section -->
+        <div id="previewDiv" style="margin-top: 15px; display: none;"></div>
 
         <!-- Instructions -->
-        <div class="bg-yellow-50 p-4 rounded-lg">
+        <div class="bg-yellow-50 p-4 rounded-lg mt-6">
             <h3 class="font-bold text-gray-800 mb-2 flex items-center gap-2">
                 <i class="fas fa-info-circle text-yellow-600"></i> CSV Format Instructions
             </h3>
@@ -150,23 +120,20 @@
                         </tr>
                     </thead>
                     <tbody class="text-gray-600">
-                        <tr><td class="p-2 border"><code class="bg-gray-100 px-1 rounded">question_text</code></td><td class="p-2 border">The question</td><td class="p-2 border">What does typeof null return?</td></tr>
-                        <tr><td class="p-2 border"><code class="bg-gray-100 px-1 rounded">option_a</code></td><td class="p-2 border">Option A text</td><td class="p-2 border">null</td></tr>
-                        <tr><td class="p-2 border"><code class="bg-gray-100 px-1 rounded">option_b</code></td><td class="p-2 border">Option B text</td><td class="p-2 border">undefined</td></tr>
-                        <tr><td class="p-2 border"><code class="bg-gray-100 px-1 rounded">option_c</code></td><td class="p-2 border">Option C text</td><td class="p-2 border">object</td></tr>
-                        <tr><td class="p-2 border"><code class="bg-gray-100 px-1 rounded">option_d</code></td><td class="p-2 border">Option D text</td><td class="p-2 border">number</td></tr>
-                        <tr><td class="p-2 border"><code class="bg-gray-100 px-1 rounded">correct_answer</code></td><td class="p-2 border">0, 1, 2, or 3 (0=A, 1=B, 2=C, 3=D)</td><td class="p-2 border">2</td></tr>
-                        <tr><td class="p-2 border"><code class="bg-gray-100 px-1 rounded">difficulty</code></td><td class="p-2 border">easy, medium, or hard</td><td class="p-2 border">easy</td></tr>
-                        <tr><td class="p-2 border"><code class="bg-gray-100 px-1 rounded">explanation</code></td><td class="p-2 border">Explanation (optional)</td><td class="p-2 border">Historical bug in JS</td></tr>
+                        <tr><td class="p-2 border"><code>question_text</code></td><td class="p-2 border">The question</td><td class="p-2 border">What does typeof null return?</td></tr>
+                        <tr><td class="p-2 border"><code>option_a</code></td><td class="p-2 border">Option A text</td><td class="p-2 border">null</td></tr>
+                        <tr><td class="p-2 border"><code>option_b</code></td><td class="p-2 border">Option B text</td><td class="p-2 border">undefined</td></tr>
+                        <tr><td class="p-2 border"><code>option_c</code></td><td class="p-2 border">Option C text</td><td class="p-2 border">object</td></tr>
+                        <tr><td class="p-2 border"><code>option_d</code></td><td class="p-2 border">Option D text</td><td class="p-2 border">number</td></tr>
+                        <tr><td class="p-2 border"><code>correct_answer</code></td><td class="p-2 border">0=A, 1=B, 2=C, 3=D</td><td class="p-2 border">2</td></tr>
+                        <tr><td class="p-2 border"><code>difficulty</code></td><td class="p-2 border">easy, medium, or hard</td><td class="p-2 border">easy</td></tr>
+                        <tr><td class="p-2 border"><code>explanation</code></td><td class="p-2 border">Explanation (optional)</td><td class="p-2 border">Historical bug in JS</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
 </div>
-
-<!-- Toast Notification -->
-<div id="toast" class="toast hidden bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg"></div>
 
 <script>
     // Log function
@@ -180,292 +147,217 @@
         console.log(msg);
     }
     
-    // Toast function
-    function showToast(message) {
-        const toast = document.getElementById('toast');
-        toast.textContent = message;
-        toast.classList.remove('hidden');
-        setTimeout(() => toast.classList.add('hidden'), 3000);
-    }
-    
     addLog('Script started', 'info');
     
-    // Supabase config
-    const SUPABASE_URL = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
+    // Check if libraries loaded
+    function checkLibraries() {
+        if (typeof window.supabase !== 'undefined') {
+            addLog('✅ Supabase detected', 'success');
+            return true;
+        }
+        addLog('⏳ Waiting for Supabase...', 'info');
+        return false;
+    }
     
-    let supabase = null;
-    let currentQuestions = [];
-    
-    // Initialize Supabase
+    // Main initialization
     function init() {
-        if (typeof window.supabase === 'undefined') {
-            addLog('Waiting for Supabase library...', 'info');
+        if (!checkLibraries()) {
             setTimeout(init, 100);
             return;
         }
         
+        // Supabase config
+        const SUPABASE_URL = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
+        
         addLog('Creating Supabase client...', 'info');
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         addLog('✅ Supabase client ready', 'success');
-        loadBooks();
-    }
-    
-    // Load books
-    async function loadBooks() {
-        addLog('Fetching books from database...', 'info');
-        try {
-            const { data, error } = await supabase.from('books').select('id, title').order('title');
-            if (error) throw error;
-            
-            addLog(`✅ Found ${data.length} books`, 'success');
-            const select = document.getElementById('bookSelect');
-            select.innerHTML = '<option value="">-- Select a Book --</option>';
-            data.forEach(book => {
-                select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
-            });
-        } catch(e) {
-            addLog(`❌ Error: ${e.message}`, 'error');
-            showToast('Error loading books: ' + e.message);
-        }
-    }
-    
-    // Load topics
-    async function loadTopics() {
-        const bookId = document.getElementById('bookSelect').value;
-        if (!bookId) {
-            document.getElementById('topicSelect').innerHTML = '<option>Select book first</option>';
-            return;
-        }
         
-        addLog(`Loading topics for book ${bookId}...`, 'info');
-        try {
-            const { data, error } = await supabase.from('topics')
-                .select('id, name, chapter_number')
-                .eq('book_id', parseInt(bookId))
-                .order('chapter_number');
-            
-            if (error) throw error;
-            
-            addLog(`✅ Found ${data.length} topics`, 'success');
-            const select = document.getElementById('topicSelect');
-            select.innerHTML = '<option value="">-- Select a Topic --</option>';
-            data.forEach(topic => {
-                const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
-                select.innerHTML += `<option value="${topic.id}">${display}</option>`;
-            });
-        } catch(e) {
-            addLog(`❌ Error: ${e.message}`, 'error');
-        }
-    }
-    
-    // Download template
-    function downloadTemplate() {
-        addLog('Generating CSV template...', 'info');
-        const headers = ['question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'difficulty', 'explanation'];
-        const example = ['What does typeof null return?', 'null', 'undefined', 'object', 'number', '2', 'easy', 'Historical bug'];
-        const csv = [headers.join(','), example.join(',')].join('\n');
+        let currentQuestions = [];
         
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'bookmcq_template.csv';
-        a.click();
-        URL.revokeObjectURL(url);
-        addLog('✅ Template downloaded', 'success');
-        showToast('Template downloaded!');
-    }
-    
-    // Process uploaded file
-    function processFile(file) {
-        addLog(`Processing: ${file.name}`, 'info');
-        const reader = new FileReader();
-        reader.onload = function(e) {
+        // Load books
+        async function loadBooks() {
+            addLog('Fetching books from database...', 'info');
             try {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                const rows = XLSX.utils.sheet_to_json(sheet);
+                const { data, error } = await supabase.from('books').select('id, title').order('title');
+                if (error) throw error;
                 
-                addLog(`✅ Loaded ${rows.length} questions`, 'success');
-                if (rows.length === 0) {
-                    showToast('No data found in file');
-                    return;
-                }
-                
-                currentQuestions = rows;
-                
-                // Show preview
-                const previewDiv = document.getElementById('previewDiv');
-                const previewContent = document.getElementById('previewContent');
-                const uploadBtn = document.getElementById('uploadBtn');
-                
-                if (rows.length > 0) {
-                    const headers = Object.keys(rows[0]);
-                    let html = '<div class="overflow-x-auto"><table class="min-w-full bg-white border rounded-lg">';
-                    html += '<thead class="bg-gray-100"><tr>';
-                    headers.forEach(h => {
-                        html += `<th class="p-2 border text-left text-xs">${h}</th>`;
-                    });
-                    html += '</tr></thead><tbody>';
-                    
-                    for (let i = 0; i < Math.min(5, rows.length); i++) {
-                        html += '<tr>';
-                        headers.forEach(h => {
-                            let value = String(rows[i][h] || '');
-                            if (value.length > 50) value = value.substring(0, 50) + '...';
-                            html += `<td class="p-2 border text-xs">${escapeHtml(value)}</td>`;
-                        });
-                        html += '</tr>';
-                    }
-                    html += '</tbody></table></div>';
-                    html += `<p class="text-sm text-green-600 mt-2"><i class="fas fa-check-circle"></i> ${rows.length} questions ready to upload</p>`;
-                    
-                    previewContent.innerHTML = html;
-                }
-                
-                previewDiv.classList.remove('hidden');
-                uploadBtn.style.display = 'inline-flex';
-                showToast(`Loaded ${rows.length} questions. Ready to upload!`);
+                addLog(`✅ Found ${data.length} books`, 'success');
+                const select = document.getElementById('bookSelect');
+                select.innerHTML = '<option value="">-- Select a Book --</option>';
+                data.forEach(book => {
+                    select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+                });
             } catch(e) {
-                addLog(`❌ Parse error: ${e.message}`, 'error');
-                showToast('Error parsing file: ' + e.message);
+                addLog(`❌ Error: ${e.message}`, 'error');
             }
-        };
-        reader.readAsArrayBuffer(file);
-    }
-    
-    // Upload to database
-    async function uploadToDatabase() {
-        const bookId = document.getElementById('bookSelect').value;
-        const topicId = document.getElementById('topicSelect').value;
-        
-        if (!bookId || !topicId) {
-            addLog('❌ Please select both a book and a topic', 'error');
-            showToast('Please select both a book and a topic');
-            return;
         }
         
-        if (!currentQuestions.length) {
-            addLog('❌ No questions to upload', 'error');
-            showToast('No questions to upload. Please select a file first.');
-            return;
-        }
-        
-        const progressDiv = document.getElementById('progressDiv');
-        const progressFill = document.getElementById('progressFill');
-        const progressPercent = document.getElementById('progressPercent');
-        const progressStatus = document.getElementById('progressStatus');
-        
-        progressDiv.classList.remove('hidden');
-        
-        addLog(`📤 Uploading ${currentQuestions.length} questions...`, 'info');
-        let success = 0, failed = 0;
-        
-        for (let i = 0; i < currentQuestions.length; i++) {
-            const q = currentQuestions[i];
-            const percent = Math.round(((i + 1) / currentQuestions.length) * 100);
-            progressFill.style.width = `${percent}%`;
-            progressPercent.textContent = `${percent}%`;
-            progressStatus.textContent = `Processing question ${i + 1} of ${currentQuestions.length}...`;
+        // Load topics
+        async function loadTopics() {
+            const bookId = document.getElementById('bookSelect').value;
+            if (!bookId) {
+                document.getElementById('topicSelect').innerHTML = '<option>Select book first</option>';
+                return;
+            }
             
+            addLog(`Loading topics for book ${bookId}...`, 'info');
             try {
-                // Validate required fields
-                if (!q.question_text) throw new Error('Missing question_text');
-                if (!q.option_a || !q.option_b || !q.option_c || !q.option_d) throw new Error('Missing options');
-                if (q.correct_answer === undefined) throw new Error('Missing correct_answer');
-                
-                const { data, error } = await supabase.from('questions').insert({
-                    topic_id: parseInt(topicId),
-                    question_text: q.question_text,
-                    difficulty: q.difficulty || 'medium',
-                    correct_answer: parseInt(q.correct_answer),
-                    explanation: q.explanation || ''
-                }).select();
+                const { data, error } = await supabase.from('topics')
+                    .select('id, name, chapter_number')
+                    .eq('book_id', parseInt(bookId))
+                    .order('chapter_number');
                 
                 if (error) throw error;
                 
-                const options = [q.option_a, q.option_b, q.option_c, q.option_d];
-                for (let j = 0; j < options.length; j++) {
-                    await supabase.from('options').insert({
-                        question_id: data[0].id,
-                        option_text: options[j],
-                        option_index: j
-                    });
-                }
-                success++;
-                if ((i + 1) % 10 === 0 || i === currentQuestions.length - 1) {
-                    addLog(`📊 Progress: ${success}/${currentQuestions.length} uploaded`, 'success');
-                }
+                addLog(`✅ Found ${data.length} topics`, 'success');
+                const select = document.getElementById('topicSelect');
+                select.innerHTML = '<option value="">-- Select a Topic --</option>';
+                data.forEach(topic => {
+                    const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
+                    select.innerHTML += `<option value="${topic.id}">${display}</option>`;
+                });
             } catch(e) {
-                failed++;
-                addLog(`❌ Question ${i+1} failed: ${e.message}`, 'error');
+                addLog(`❌ Error: ${e.message}`, 'error');
             }
         }
         
-        progressStatus.textContent = `Complete! ${success} uploaded, ${failed} failed.`;
-        addLog(`📊 Upload complete: ${success} successful, ${failed} failed`, success > 0 ? 'success' : 'error');
-        showToast(`Upload complete: ${success} questions added, ${failed} failed`);
+        // Download template
+        function downloadTemplate() {
+            addLog('Generating CSV template...', 'info');
+            const headers = ['question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'difficulty', 'explanation'];
+            const example = ['What does typeof null return?', 'null', 'undefined', 'object', 'number', '2', 'easy', 'Historical bug'];
+            const csv = [headers.join(','), example.join(',')].join('\n');
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'bookmcq_template.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+            addLog('✅ Template downloaded', 'success');
+        }
         
-        setTimeout(() => {
-            progressDiv.classList.add('hidden');
-            document.getElementById('previewDiv').classList.add('hidden');
-            document.getElementById('fileInput').value = '';
-            currentQuestions = [];
-            // Reset progress
-            progressFill.style.width = '0%';
-            progressPercent.textContent = '0%';
-        }, 3000);
+        // Process uploaded file
+        function processFile(file) {
+            addLog(`Processing: ${file.name}`, 'info');
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(sheet);
+                    
+                    addLog(`✅ Loaded ${rows.length} questions`, 'success');
+                    if (rows.length === 0) return;
+                    
+                    currentQuestions = rows;
+                    
+                    // Show preview
+                    const previewDiv = document.getElementById('previewDiv');
+                    const uploadBtn = document.getElementById('uploadBtn');
+                    
+                    let html = '<h3 class="font-bold text-gray-700 mb-2">📋 Preview (first 3 rows):</h3>';
+                    html += '<div class="preview-table"><table>';
+                    const headers = Object.keys(rows[0]);
+                    html += '<thead><tr style="background:#0f0f1a;">' + headers.map(h => `<th style="padding:8px; border:1px solid #333; text-align:left;">${h}</th>`).join('') + '</tr></thead><tbody>';
+                    for (let i = 0; i < Math.min(3, rows.length); i++) {
+                        html += '<tr>' + headers.map(h => `<td style="padding:8px; border:1px solid #333;">${escapeHtml(String(rows[i][h] || '').substring(0, 50))}</td>`).join('') + '</tr>';
+                    }
+                    html += '</tbody></table></div>';
+                    html += `<p class="text-green-600 text-sm mt-2"><i class="fas fa-check-circle"></i> ✅ ${rows.length} questions ready to upload</p>`;
+                    
+                    previewDiv.innerHTML = html;
+                    previewDiv.style.display = 'block';
+                    uploadBtn.style.display = 'inline-flex';
+                } catch(e) {
+                    addLog(`❌ Parse error: ${e.message}`, 'error');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+        
+        // Upload to database
+        async function uploadToDatabase() {
+            const bookId = document.getElementById('bookSelect').value;
+            const topicId = document.getElementById('topicSelect').value;
+            
+            if (!bookId || !topicId) {
+                addLog('❌ Please select both a book and a topic', 'error');
+                return;
+            }
+            
+            if (!currentQuestions.length) {
+                addLog('❌ No questions to upload', 'error');
+                return;
+            }
+            
+            addLog(`📤 Uploading ${currentQuestions.length} questions...`, 'info');
+            let success = 0, failed = 0;
+            
+            for (let i = 0; i < currentQuestions.length; i++) {
+                const q = currentQuestions[i];
+                try {
+                    const { data, error } = await supabase.from('questions').insert({
+                        topic_id: parseInt(topicId),
+                        question_text: q.question_text,
+                        difficulty: q.difficulty || 'medium',
+                        correct_answer: parseInt(q.correct_answer),
+                        explanation: q.explanation || ''
+                    }).select();
+                    
+                    if (error) throw error;
+                    
+                    const options = [q.option_a, q.option_b, q.option_c, q.option_d];
+                    for (let j = 0; j < options.length; j++) {
+                        await supabase.from('options').insert({
+                            question_id: data[0].id,
+                            option_text: options[j],
+                            option_index: j
+                        });
+                    }
+                    success++;
+                    addLog(`✅ ${i+1}/${currentQuestions.length} uploaded`, 'success');
+                } catch(e) {
+                    failed++;
+                    addLog(`❌ ${i+1}/${currentQuestions.length} failed: ${e.message}`, 'error');
+                }
+            }
+            
+            addLog(`📊 Complete: ${success} uploaded, ${failed} failed`, success > 0 ? 'success' : 'error');
+            alert(`Upload complete!\n${success} questions added\n${failed} failed`);
+            
+            if (success > 0) {
+                document.getElementById('previewDiv').style.display = 'none';
+                document.getElementById('uploadBtn').style.display = 'none';
+                document.getElementById('fileInput').value = '';
+                currentQuestions = [];
+            }
+        }
+        
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
+        }
+        
+        // Set up event listeners
+        document.getElementById('bookSelect').addEventListener('change', loadTopics);
+        document.getElementById('downloadBtn').addEventListener('click', downloadTemplate);
+        document.getElementById('fileInput').addEventListener('change', e => {
+            if (e.target.files && e.target.files[0]) processFile(e.target.files[0]);
+        });
+        document.getElementById('uploadBtn').addEventListener('click', uploadToDatabase);
+        
+        // Start loading books
+        loadBooks();
     }
     
-    function escapeHtml(str) {
-        if (!str) return '';
-        return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
-    }
-    
-    // Set up event listeners
-    document.getElementById('bookSelect').addEventListener('change', loadTopics);
-    document.getElementById('downloadBtn').addEventListener('click', downloadTemplate);
-    document.getElementById('fileInput').addEventListener('change', e => {
-        if (e.target.files && e.target.files[0]) processFile(e.target.files[0]);
-    });
-    document.getElementById('uploadBtn').addEventListener('click', uploadToDatabase);
-    
-    // Upload zone click handlers
-    const selectFileBtn = document.getElementById('selectFileBtn');
-    const uploadZone = document.getElementById('uploadZone');
-    const fileInput = document.getElementById('fileInput');
-    
-    if (selectFileBtn) {
-        selectFileBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            fileInput.click();
-        });
-    }
-    if (uploadZone) {
-        uploadZone.addEventListener('click', (e) => {
-            if (e.target !== selectFileBtn) fileInput.click();
-        });
-    }
-    // Drag and drop
-    if (uploadZone) {
-        uploadZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadZone.classList.add('border-purple-500', 'bg-purple-50');
-        });
-        uploadZone.addEventListener('dragleave', () => {
-            uploadZone.classList.remove('border-purple-500', 'bg-purple-50');
-        });
-        uploadZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadZone.classList.remove('border-purple-500', 'bg-purple-50');
-            if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
-        });
-    }
-    
-    // Start
-    init();
+    // Start initialization
+    addLog('Checking for Supabase library...', 'info');
+    setTimeout(init, 100);
 </script>
 </body>
 </html>
