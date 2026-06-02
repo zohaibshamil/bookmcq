@@ -19,7 +19,8 @@
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
         .modal-content { background: white; border-radius: 1rem; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; }
-        .category-badge { background: #e0e7ff; color: #4338ca; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-left: 8px; }
+        .category-badge { background: #e0e7ff; color: #4338ca; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-left: 8px; cursor: pointer; }
+        .category-badge:hover { background: #c7d2fe; }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -83,15 +84,15 @@
                 <button id="tabBooksBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-purple-600 text-white">📚 Books</button>
                 <button id="tabTopicsBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">🏷️ Topics</button>
                 <button id="tabQuestionsBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">❓ Questions</button>
+                <button id="tabCategoriesBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">🏷️ Categories</button>
                 <button id="tabBulkUploadBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">📤 Bulk Upload</button>
                 <button id="tabAdminsBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">👑 Admins</button>
             </div>
 
-            <!-- Books Tab with Categories and Search -->
+            <!-- Books Tab with Categories -->
             <div id="booksTab">
                 <h2 class="text-xl font-bold mb-4">Books</h2>
                 
-                <!-- Category Filter and Search -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-semibold mb-2">Filter by Category:</label>
@@ -141,6 +142,25 @@
                     <button id="cancelTopicBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
                 </div>
                 <div id="topicsList"></div>
+            </div>
+
+            <!-- Categories Tab - Manage Categories -->
+            <div id="categoriesTab" class="hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">📁 Manage Categories</h2>
+                    <button id="showAddCategoryBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg">+ Add Category</button>
+                </div>
+                
+                <div id="addCategoryForm" class="hidden bg-gray-50 p-4 rounded-lg mb-4">
+                    <input type="text" id="categoryName" placeholder="Category Name (e.g., Computer Science, Mathematics)" class="w-full p-2 border rounded mb-2">
+                    <div class="flex gap-2">
+                        <button id="saveCategoryBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Save Category</button>
+                        <button id="cancelCategoryBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
+                    </div>
+                </div>
+                
+                <div id="categoriesList"></div>
+                <p class="text-sm text-gray-500 mt-4"><i class="fas fa-info-circle"></i> Categories are used to organize books. You can add, edit, or delete categories as needed.</p>
             </div>
 
             <!-- Questions Tab -->
@@ -334,6 +354,18 @@
     </div>
 </div>
 
+<div id="editCategoryModal" class="hidden modal">
+    <div class="modal-content p-6">
+        <h3 class="text-xl font-bold mb-4">Edit Category</h3>
+        <input type="text" id="editCategoryId" class="hidden">
+        <input type="text" id="editCategoryName" placeholder="Category Name" class="w-full p-2 border rounded mb-4">
+        <div class="flex gap-2">
+            <button id="updateCategoryBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Update</button>
+            <button id="closeCategoryModal" class="bg-gray-400 text-white px-4 py-2 rounded">Cancel</button>
+        </div>
+    </div>
+</div>
+
 <div id="editQuestionModal" class="hidden modal">
     <div class="modal-content p-6" style="max-width: 600px;">
         <h3 class="text-xl font-bold mb-4">Edit Question</h3>
@@ -383,9 +415,6 @@
     let totalQuestions = 0;
     let currentFilters = { bookId: '', topicId: '', difficulty: '' };
     let currentTopicBookFilter = '';
-    
-    // Categories array
-    const categories = ['Computer Science', 'Mathematics', 'Physics', 'Chemistry', 'Biology', 'English Literature', 'History', 'Economics', 'Business', 'Fine Arts', 'Psychology', 'Sociology', 'Law', 'Medicine', 'Engineering', 'Other'];
 
     function showToast(message) {
         const toast = document.getElementById('toast');
@@ -461,7 +490,7 @@
                     loadBulkBookSelects(),
                     loadFilterBooks(),
                     loadTopicFilterBooks(),
-                    loadCategoryDropdowns()
+                    loadCategories()
                 ]);
             } else {
                 document.getElementById('adminBadge').classList.add('hidden');
@@ -518,25 +547,128 @@
         document.getElementById('loginForm').classList.remove('hidden');
     }
 
-    // ============ CATEGORY DROPDOWNS ============
-    function loadCategoryDropdowns() {
+    // ============ CATEGORY MANAGEMENT ============
+    async function loadCategories() {
+        const { data, error } = await _supabase.from('categories').select('*').order('name', { ascending: true });
+        
+        if (error) {
+            console.error('Error loading categories:', error);
+            return;
+        }
+        
+        // Update categories list in Categories tab
+        const categoriesList = document.getElementById('categoriesList');
+        if (categoriesList) {
+            if (!data || data.length === 0) {
+                categoriesList.innerHTML = '<p class="text-gray-500">No categories yet. Add your first category!</p>';
+            } else {
+                categoriesList.innerHTML = data.map(cat => `
+                    <div class="bg-gray-50 p-3 rounded-lg mb-2 flex justify-between items-center">
+                        <div>
+                            <i class="fas fa-tag text-purple-600 mr-2"></i>
+                            <strong>${escapeHtml(cat.name)}</strong>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="openEditCategoryModal(${cat.id}, '${escapeHtml(cat.name)}')" class="text-blue-600 hover:text-blue-800">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteCategory(${cat.id})" class="text-red-600 hover:text-red-800">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+        
+        // Update category dropdowns in Books tab
         const dropdowns = ['bookCategory', 'editBookCategory', 'categoryFilter'];
         dropdowns.forEach(id => {
             const select = document.getElementById(id);
             if (select) {
                 select.innerHTML = '<option value="">All Categories</option>';
-                categories.forEach(cat => {
-                    select.innerHTML += `<option value="${cat}">${cat}</option>`;
-                });
+                if (data) {
+                    data.forEach(cat => {
+                        select.innerHTML += `<option value="${escapeHtml(cat.name)}">${escapeHtml(cat.name)}</option>`;
+                    });
+                }
             }
         });
     }
+    
+    window.openEditCategoryModal = function(id, name) {
+        document.getElementById('editCategoryId').value = id;
+        document.getElementById('editCategoryName').value = name;
+        document.getElementById('editCategoryModal').classList.remove('hidden');
+    };
+    
+    async function updateCategory() {
+        const id = document.getElementById('editCategoryId').value;
+        const name = document.getElementById('editCategoryName').value;
+        
+        if (!name) {
+            showToast('Please enter a category name');
+            return;
+        }
+        
+        const { error } = await _supabase.from('categories').update({ name }).eq('id', id);
+        if (error) {
+            showToast('Error: ' + error.message);
+        } else {
+            showToast('Category updated!');
+            document.getElementById('editCategoryModal').classList.add('hidden');
+            await loadCategories();
+            await loadBooks();
+        }
+    }
+    
+    window.deleteCategory = async function(id) {
+        // Check if any books use this category
+        const categoryName = document.getElementById(`cat_name_${id}`)?.innerText || '';
+        const { count, error } = await _supabase.from('books').select('*', { count: 'exact', head: true }).eq('category', categoryName);
+        
+        if (error) {
+            showToast('Error checking category usage');
+            return;
+        }
+        
+        if (count > 0) {
+            showToast(`Cannot delete: ${count} book(s) are using this category. Reassign them first.`);
+            return;
+        }
+        
+        if (confirm('Delete this category?')) {
+            await _supabase.from('categories').delete().eq('id', id);
+            await loadCategories();
+            await loadBooks();
+            showToast('Category deleted');
+        }
+    };
+    
+    async function addCategory() {
+        const name = document.getElementById('categoryName').value;
+        
+        if (!name) {
+            showToast('Please enter a category name');
+            return;
+        }
+        
+        const { error } = await _supabase.from('categories').insert([{ name }]);
+        if (error) {
+            showToast('Error: ' + error.message);
+        } else {
+            showToast('Category added!');
+            document.getElementById('addCategoryForm').classList.add('hidden');
+            document.getElementById('categoryName').value = '';
+            await loadCategories();
+            await loadBooks();
+        }
+    }
 
-    // ============ BOOKS with Categories and Search ============
+    // ============ BOOKS ============
     async function loadBooks() {
         let query = _supabase.from('books').select('*');
         
-        // Apply category filter
         const categoryFilter = document.getElementById('categoryFilter')?.value;
         if (categoryFilter && categoryFilter !== '') {
             query = query.eq('category', categoryFilter);
@@ -549,7 +681,6 @@
             return;
         }
         
-        // Apply search filter on client side
         const searchTerm = document.getElementById('bookSearchInput')?.value.toLowerCase() || '';
         let filteredData = data || [];
         
@@ -585,7 +716,6 @@
         `).join('');
     }
     
-    // Add event listeners for category filter and search
     function setupBookFilters() {
         const categoryFilter = document.getElementById('categoryFilter');
         const searchInput = document.getElementById('bookSearchInput');
@@ -1310,11 +1440,12 @@
         document.getElementById('booksTab').classList.add('hidden');
         document.getElementById('topicsTab').classList.add('hidden');
         document.getElementById('questionsTab').classList.add('hidden');
+        document.getElementById('categoriesTab').classList.add('hidden');
         document.getElementById('bulkUploadTab').classList.add('hidden');
         document.getElementById('adminsTab').classList.add('hidden');
         document.getElementById(`${tabName}Tab`).classList.remove('hidden');
         
-        const buttons = ['Books', 'Topics', 'Questions', 'BulkUpload', 'Admins'];
+        const buttons = ['Books', 'Topics', 'Questions', 'Categories', 'BulkUpload', 'Admins'];
         buttons.forEach(btn => {
             const btnElement = document.getElementById(`tab${btn}Btn`);
             if (btnElement) {
@@ -1329,6 +1460,7 @@
         });
         
         if (tabName === 'questions') loadQuestions();
+        if (tabName === 'categories') loadCategories();
     }
 
     async function checkSession() {
@@ -1354,7 +1486,7 @@
                     loadBulkBookSelects(),
                     loadFilterBooks(),
                     loadTopicFilterBooks(),
-                    loadCategoryDropdowns()
+                    loadCategories()
                 ]);
                 setupBookFilters();
             } else {
@@ -1375,6 +1507,7 @@
         document.getElementById('tabBooksBtn').addEventListener('click', () => showTab('books'));
         document.getElementById('tabTopicsBtn').addEventListener('click', () => showTab('topics'));
         document.getElementById('tabQuestionsBtn').addEventListener('click', () => showTab('questions'));
+        document.getElementById('tabCategoriesBtn').addEventListener('click', () => showTab('categories'));
         document.getElementById('tabBulkUploadBtn').addEventListener('click', () => showTab('bulkupload'));
         document.getElementById('tabAdminsBtn').addEventListener('click', () => showTab('admins'));
         
@@ -1386,6 +1519,16 @@
             document.getElementById('addBookForm').classList.add('hidden');
         });
         document.getElementById('saveBookBtn').addEventListener('click', addBook);
+        
+        // Category events
+        document.getElementById('showAddCategoryBtn').addEventListener('click', () => {
+            document.getElementById('addCategoryForm').classList.remove('hidden');
+        });
+        document.getElementById('cancelCategoryBtn').addEventListener('click', () => {
+            document.getElementById('addCategoryForm').classList.add('hidden');
+            document.getElementById('categoryName').value = '';
+        });
+        document.getElementById('saveCategoryBtn').addEventListener('click', addCategory);
         
         // Topic events
         document.getElementById('showAddTopicBtn').addEventListener('click', async () => {
@@ -1459,6 +1602,11 @@
         document.getElementById('updateTopicBtn').addEventListener('click', updateTopic);
         document.getElementById('closeTopicModal').addEventListener('click', () => {
             document.getElementById('editTopicModal').classList.add('hidden');
+        });
+        
+        document.getElementById('updateCategoryBtn').addEventListener('click', updateCategory);
+        document.getElementById('closeCategoryModal').addEventListener('click', () => {
+            document.getElementById('editCategoryModal').classList.add('hidden');
         });
         
         document.getElementById('updateQuestionBtn').addEventListener('click', updateQuestion);
