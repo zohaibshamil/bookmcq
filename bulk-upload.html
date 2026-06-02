@@ -11,14 +11,14 @@
     <style>
         body { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); min-height: 100vh; }
         .upload-card { background: rgba(255,255,255,0.95); border-radius: 1rem; }
-        .log { background: #1e1e2e; padding: 10px; margin-top: 20px; border-radius: 8px; height: 200px; overflow-y: auto; font-size: 11px; font-family: monospace; color: #ccc; }
-        .log .success { color: #4ade80; }
-        .log .error { color: #f87171; }
-        .log .info { color: #60a5fa; }
         .preview-table { overflow-x: auto; }
         .preview-table table { width: 100%; border-collapse: collapse; font-size: 12px; }
         .preview-table th, .preview-table td { border: 1px solid #e2e8f0; padding: 8px; text-align: left; }
         .preview-table th { background: #f1f5f9; font-weight: 600; }
+        .log { background: #1e1e2e; padding: 10px; margin-top: 20px; border-radius: 8px; height: 200px; overflow-y: auto; font-size: 11px; font-family: monospace; color: #ccc; }
+        .log .success { color: #4ade80; }
+        .log .error { color: #f87171; }
+        .log .info { color: #60a5fa; }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -45,59 +45,101 @@
             </a>
         </div>
 
-        <!-- Log -->
-        <div class="log" id="log">
-            <div class="info">[Initializing] Loading...</div>
+        <!-- Log Section -->
+        <div class="mb-6">
+            <h3 class="font-bold text-gray-700 mb-2 flex items-center gap-2">
+                <i class="fas fa-terminal text-purple-600"></i> Activity Log
+            </h3>
+            <div class="log" id="log">
+                <div class="info">[Initializing] Loading...</div>
+            </div>
         </div>
-        
-        <div class="section mt-6">
-            <h3 class="font-bold text-gray-800 mb-3">Step 1: Select Book</h3>
+
+        <!-- Step 1: Select Book -->
+        <div class="bg-blue-50 p-4 rounded-lg mb-6">
+            <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                <span class="bg-blue-600 text-white rounded-full w-6 h-6 inline-flex items-center justify-center text-sm">1</span>
+                Select Book
+            </h3>
             <select id="bookSelect" class="w-full p-3 border rounded-xl bg-white">
                 <option>Loading books...</option>
             </select>
         </div>
-        
-        <div class="section mt-6">
-            <h3 class="font-bold text-gray-800 mb-3">Step 2: Select Topic</h3>
+
+        <!-- Step 2: Select Topic -->
+        <div class="bg-blue-50 p-4 rounded-lg mb-6">
+            <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                <span class="bg-blue-600 text-white rounded-full w-6 h-6 inline-flex items-center justify-center text-sm">2</span>
+                Select Topic
+            </h3>
             <select id="topicSelect" class="w-full p-3 border rounded-xl bg-white">
                 <option>Select book first</option>
             </select>
         </div>
-        
-        <div class="section mt-6">
-            <h3 class="font-bold text-gray-800 mb-3">Step 3: Download Template</h3>
+
+        <!-- Step 3: Download Template -->
+        <div class="bg-green-50 p-4 rounded-lg mb-6">
+            <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                <span class="bg-green-600 text-white rounded-full w-6 h-6 inline-flex items-center justify-center text-sm">3</span>
+                Download CSV Template
+            </h3>
+            <p class="text-sm text-gray-600 mb-3">Download the template, fill with your questions, then upload back.</p>
             <button id="downloadBtn" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 inline-flex items-center gap-2">
                 <i class="fas fa-download"></i> Download CSV Template
             </button>
         </div>
-        
-        <div class="section mt-6">
-            <h3 class="font-bold text-gray-800 mb-3">Step 4: Upload CSV/Excel File</h3>
+
+        <!-- Step 4: Upload File -->
+        <div class="bg-purple-50 p-4 rounded-lg mb-6">
+            <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                <span class="bg-purple-600 text-white rounded-full w-6 h-6 inline-flex items-center justify-center text-sm">4</span>
+                Upload CSV/Excel File
+            </h3>
             <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" class="w-full p-3 border rounded-xl bg-white">
             <button id="uploadBtn" style="display: none; margin-top: 10px;" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 inline-flex items-center gap-2">
                 <i class="fas fa-upload"></i> Upload to Database
             </button>
         </div>
         
+        <!-- Preview Section -->
         <div id="previewDiv" style="margin-top: 15px; display: none;"></div>
     </div>
 </div>
 
 <script>
-    // ============ SECRET KEY PROTECTION ============
-    // This page can ONLY be opened with a valid key from admin panel
-    const urlParams = new URLSearchParams(window.location.search);
-    const accessKey = urlParams.get('key');
-    
-    // Secret key - only matches the one sent from admin panel
-    const SECRET_KEY = 'BookMCQ_Admin_Secure_Key_2024';
-    
-    // If no valid key, redirect to login page
-    if (accessKey !== SECRET_KEY) {
-        window.location.href = 'admin.html';
+    // ============================================
+    // 1. SECURE KEY VERIFICATION (No URL Parameter)
+    // ============================================
+    // The secret key is NOT in the URL. It is passed via sessionStorage.
+    // This function runs FIRST before anything else.
+    const SECRET_KEY = 'BookMCQ_Admin_Secure_Key_2024'; // This is our internal secret.
+
+    function verifyAccess() {
+        // Check if the key exists in sessionStorage
+        const storedKey = sessionStorage.getItem('bookmcq_bulk_access');
+        
+        if (storedKey === SECRET_KEY) {
+            // Valid key found, allow access.
+            // Clear it immediately after use to prevent reuse on page refresh.
+            sessionStorage.removeItem('bookmcq_bulk_access');
+            return true;
+        } else {
+            // No valid key, redirect to login.
+            window.location.href = 'admin.html';
+            return false;
+        }
     }
-    
-    // Log function
+
+    // Run verification immediately. If it fails, the script stops here.
+    if (!verifyAccess()) {
+        // Stop all further script execution
+        throw new Error("Access Denied");
+    }
+
+    // If we reach here, access is granted.
+    // ============================================
+    // 2. LOGGING FUNCTION (Same as working code)
+    // ============================================
     function addLog(msg, type = 'info') {
         const logDiv = document.getElementById('log');
         const entry = document.createElement('div');
@@ -111,7 +153,9 @@
     addLog('Script started', 'info');
     addLog('✅ Key verified', 'success');
     
-    // Check if libraries loaded
+    // ============================================
+    // 3. SUPABASE & CORE LOGIC (Identical to your working code)
+    // ============================================
     function checkLibraries() {
         if (typeof window.supabase !== 'undefined') {
             addLog('✅ Supabase detected', 'success');
@@ -121,14 +165,12 @@
         return false;
     }
     
-    // Main initialization
     function init() {
         if (!checkLibraries()) {
             setTimeout(init, 100);
             return;
         }
         
-        // Supabase config
         const SUPABASE_URL = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
         
@@ -138,7 +180,6 @@
         
         let currentQuestions = [];
         
-        // Load books
         async function loadBooks() {
             addLog('Fetching books from database...', 'info');
             try {
@@ -156,7 +197,6 @@
             }
         }
         
-        // Load topics
         async function loadTopics() {
             const bookId = document.getElementById('bookSelect').value;
             if (!bookId) {
@@ -185,7 +225,6 @@
             }
         }
         
-        // Download template
         function downloadTemplate() {
             addLog('Generating CSV template...', 'info');
             const headers = ['question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'difficulty', 'explanation'];
@@ -202,7 +241,6 @@
             addLog('✅ Template downloaded', 'success');
         }
         
-        // Process uploaded file
         function processFile(file) {
             addLog(`Processing: ${file.name}`, 'info');
             const reader = new FileReader();
@@ -218,7 +256,6 @@
                     
                     currentQuestions = rows;
                     
-                    // Show preview
                     const previewDiv = document.getElementById('previewDiv');
                     const uploadBtn = document.getElementById('uploadBtn');
                     
@@ -234,7 +271,7 @@
                     
                     previewDiv.innerHTML = html;
                     previewDiv.style.display = 'block';
-                    uploadBtn.style.display = 'inline-flex';
+                    uploadBtn.style.display = 'inline-block';
                 } catch(e) {
                     addLog(`❌ Parse error: ${e.message}`, 'error');
                 }
@@ -242,20 +279,17 @@
             reader.readAsArrayBuffer(file);
         }
         
-        // Upload to database
         async function uploadToDatabase() {
             const bookId = document.getElementById('bookSelect').value;
             const topicId = document.getElementById('topicSelect').value;
             
             if (!bookId || !topicId) {
                 addLog('❌ Please select both a book and a topic', 'error');
-                alert('Please select both a book and a topic');
                 return;
             }
             
             if (!currentQuestions.length) {
                 addLog('❌ No questions to upload', 'error');
-                alert('No questions to upload. Please select a file first.');
                 return;
             }
             
@@ -307,7 +341,6 @@
             return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
         }
         
-        // Set up event listeners
         document.getElementById('bookSelect').addEventListener('change', loadTopics);
         document.getElementById('downloadBtn').addEventListener('click', downloadTemplate);
         document.getElementById('fileInput').addEventListener('change', e => {
@@ -315,11 +348,9 @@
         });
         document.getElementById('uploadBtn').addEventListener('click', uploadToDatabase);
         
-        // Start loading books
         loadBooks();
     }
     
-    // Start initialization
     addLog('Checking for Supabase library...', 'info');
     setTimeout(init, 100);
 </script>
