@@ -11,6 +11,7 @@
         .spinner { border: 3px solid rgba(255,255,255,0.3); border-top: 3px solid white; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 15px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .hidden { display: none; }
+        .error-message { color: #f87171; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -20,77 +21,97 @@
 </div>
 
 <script>
-    // ============ INSTANT AUTHENTICATION WITH TOKEN ============
+    // ============ INSTANT AUTHENTICATION USING LOCALSTORAGE ============
     const SUPABASE_URL = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
     
     let supabase = null;
-    let authPassed = false;
     
-    async function verifyAuthWithToken() {
+    async function verifyAndStart() {
         try {
-            // Check for tokens in URL hash (passed from admin panel)
-            const hashParams = new URLSearchParams(window.location.hash.substring(1));
-            const accessToken = hashParams.get('access_token');
-            const refreshToken = hashParams.get('refresh_token');
-            
             supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
             
-            let session = null;
+            // First, check if there's a session in localStorage (passed from admin panel)
+            const storedSession = localStorage.getItem('bulk_upload_session');
+            let sessionValid = false;
             
-            // If tokens are provided in URL, use them
-            if (accessToken && refreshToken) {
-                // Set session with the provided tokens
-                const { data, error } = await supabase.auth.setSession({
-                    access_token: accessToken,
-                    refresh_token: refreshToken
-                });
-                
-                if (!error && data) {
-                    session = data.session;
+            if (storedSession) {
+                try {
+                    const sessionData = JSON.parse(storedSession);
+                    if (sessionData.access_token && sessionData.expires_at > Date.now() / 1000) {
+                        // Set the session using the token
+                        const { data, error } = await supabase.auth.setSession({
+                            access_token: sessionData.access_token,
+                            refresh_token: sessionData.refresh_token
+                        });
+                        if (!error && data.session) {
+                            sessionValid = true;
+                        }
+                    }
+                } catch(e) {
+                    console.log('Error parsing stored session', e);
                 }
             }
             
-            // If no tokens in URL or setting session failed, check existing session
-            if (!session) {
-                const { data } = await supabase.auth.getSession();
-                session = data.session;
+            // If no valid session from localStorage, check existing session
+            if (!sessionValid) {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session) {
+                    sessionValid = true;
+                }
             }
             
-            if (!session) {
-                window.location.href = 'admin.html';
-                return false;
+            if (!sessionValid) {
+                document.getElementById('authChecking').innerHTML = `
+                    <div class="spinner"></div>
+                    <p>Session expired. Redirecting to login...</p>
+                `;
+                setTimeout(() => {
+                    window.location.href = 'admin.html';
+                }, 1500);
+                return;
             }
             
             // Verify admin status
-            const { data: adminData } = await supabase
+            const { data: adminData, error: adminError } = await supabase
                 .from('admin_roles')
                 .select('user_id')
-                .eq('user_id', session.user.id);
+                .limit(1);
             
-            if (!adminData || adminData.length === 0) {
-                await supabase.auth.signOut();
-                window.location.href = 'admin.html';
-                return false;
+            if (adminError || !adminData || adminData.length === 0) {
+                document.getElementById('authChecking').innerHTML = `
+                    <div class="spinner"></div>
+                    <p>Not authorized. Redirecting...</p>
+                `;
+                setTimeout(() => {
+                    window.location.href = 'admin.html';
+                }, 1500);
+                return;
             }
             
-            return true;
+            // Clear the stored session after use
+            localStorage.removeItem('bulk_upload_session');
+            
+            // Authentication successful - load the full page
+            loadFullPage();
+            
         } catch(e) {
-            window.location.href = 'admin.html';
-            return false;
+            document.getElementById('authChecking').innerHTML = `
+                <div class="spinner"></div>
+                <p>Error: ${e.message}. Redirecting...</p>
+            `;
+            setTimeout(() => {
+                window.location.href = 'admin.html';
+            }, 2000);
         }
     }
     
-    // Load libraries after auth
-    async function loadLibrariesAndStart() {
-        authPassed = await verifyAuthWithToken();
-        if (!authPassed) return;
-        
+    function loadFullPage() {
         // Remove auth checking screen
         document.getElementById('authChecking').style.display = 'none';
         document.body.innerHTML = '';
         
-        // Now load all resources
+        // Load all resources
         const tailwindLink = document.createElement('link');
         tailwindLink.rel = 'stylesheet';
         tailwindLink.href = 'https://cdn.tailwindcss.com';
@@ -104,13 +125,12 @@
         const sheetScript = document.createElement('script');
         sheetScript.src = 'https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js';
         sheetScript.onload = () => {
-            loadFullPage();
+            initializeUploadPage();
         };
         document.head.appendChild(sheetScript);
     }
     
-    function loadFullPage() {
-        // Create full page content (same as before)
+    function initializeUploadPage() {
         document.body.innerHTML = `
 <div class="max-w-4xl mx-auto p-4 md:p-8">
     
@@ -203,7 +223,7 @@
     
     addLog('Script started', 'info');
     
-    // Supabase client (reuse existing)
+    // Supabase client
     const supabase = window.supabase.createClient('${SUPABASE_URL}', '${SUPABASE_KEY}');
     
     // ============ CACHE SYSTEM ============
@@ -247,7 +267,7 @@
         const container = document.getElementById('bookSelectContainer');
         
         if (errorMsg) {
-            container.innerHTML = '<div class="text-red-600 p-3 border rounded-xl bg-red-50">Error: ${errorMsg}</div>';
+            container.innerHTML = '<div class="text-red-600 p-3 border rounded-xl bg-red-50">Error: ' + errorMsg + '</div>';
             return;
         }
         
@@ -377,7 +397,7 @@
                 const uploadBtn = document.getElementById('uploadBtn');
                 
                 let html = '<h3 class="font-bold text-gray-700 mb-2">📋 Preview (first 3 rows):</h3>';
-                html += '<div class="preview-table"><table>';
+                html += '<div class="preview-table"></table>';
                 const headers = Object.keys(rows[0]);
                 html += '<thead><tr style="background:#0f0f1a;">' + headers.map(h => `<th style="padding:8px; border:1px solid #ccc; text-align:left;">${h}</th>`).join('') + '</thead><tbody>';
                 for (let i = 0; i < Math.min(3, rows.length); i++) {
@@ -473,6 +493,14 @@
     });
     document.getElementById('uploadBtn').addEventListener('click', uploadToDatabase);
     
+    // Add skeleton style
+    const style = document.createElement('style');
+    style.textContent = \`
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        .skeleton { background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; height: 48px; width: 100%; }
+    \`;
+    document.head.appendChild(style);
+    
     // Start loading books
     loadBooks().then(() => {
         if (booksCache && booksCache.length > 0) {
@@ -481,17 +509,10 @@
     });
 </script>
 `;
-        // Add style for skeleton
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-            .skeleton { background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; height: 48px; width: 100%; }
-        `;
-        document.head.appendChild(style);
     }
     
-    // Start the process
-    loadLibrariesAndStart();
+    // Start the verification
+    verifyAndStart();
 </script>
 </body>
 </html>
