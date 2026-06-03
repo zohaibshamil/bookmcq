@@ -61,21 +61,21 @@
                 <span class="text-white font-bold text-lg md:text-xl">BookMCQ</span>
                 <span class="text-white/60 text-xs hidden sm:inline">| Master Every Chapter</span>
             </div>
-<div class="desktop-menu flex gap-3 md:gap-6">
-    <a href="/" class="nav-link text-white/80 hover:text-white transition">🏠 Home</a>
-    <a href="/quiz" class="nav-link active text-white transition flex items-center gap-1">📝 Quiz <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1">FREE</span></a>
-    <a href="/practice" class="nav-link text-white/80 hover:text-white transition flex items-center gap-1">📚 Practice <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1">FREE</span></a>
-    <a href="/contact" class="nav-link text-white/80 hover:text-white transition">📧 Contact</a>
-    <a href="/privacy" class="nav-link text-white/80 hover:text-white transition">🔒 Privacy</a>
-</div>
+            <div class="desktop-menu flex gap-3 md:gap-6">
+                <a href="/" class="nav-link text-white/80 hover:text-white transition">🏠 Home</a>
+                <a href="/quiz" class="nav-link active text-white transition flex items-center gap-1">📝 Quiz <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1">FREE</span></a>
+                <a href="/practice" class="nav-link text-white/80 hover:text-white transition flex items-center gap-1">📚 Practice <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1">FREE</span></a>
+                <a href="/contact" class="nav-link text-white/80 hover:text-white transition">📧 Contact</a>
+                <a href="/privacy" class="nav-link text-white/80 hover:text-white transition">🔒 Privacy</a>
+            </div>
             <div class="mobile-menu-btn relative">
                 <button onclick="toggleMobileMenu()" class="text-white text-2xl"><i class="fas fa-bars"></i></button>
                 <div id="mobileDropdown" class="hidden absolute top-full right-0 mt-2 bg-white rounded-xl shadow-xl w-48 py-2 z-50">
-                    <a href="index.html" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition">🏠 Home</a>
-                    <a href="quiz.html" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center">📝 Quiz <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span></a>
-                    <a href="practice.html" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center">📚 Practice <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span></a>
-                    <a href="contact.html" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition">📧 Contact</a>
-                    <a href="privacy.html" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition">🔒 Privacy</a>
+                    <a href="/" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition">🏠 Home</a>
+                    <a href="/quiz" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center">📝 Quiz <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span></a>
+                    <a href="/practice" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center">📚 Practice <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span></a>
+                    <a href="/contact" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition">📧 Contact</a>
+                    <a href="/privacy" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition">🔒 Privacy</a>
                 </div>
             </div>
         </div>
@@ -199,60 +199,149 @@
     }
 
     async function loadBooks() {
-        const { data, error } = await supabase.from('books').select('id, title').order('title');
         const bookSelect = document.getElementById('bookSelect');
-        if (error || !data || data.length === 0) {
-            bookSelect.innerHTML = '<option value="">No books available</option>';
-            return;
+        bookSelect.innerHTML = '<option value="">Loading books...</option>';
+        
+        try {
+            // First, check if books table exists and has data
+            const { data, error, count } = await supabase
+                .from('books')
+                .select('id, title', { count: 'exact' })
+                .order('title');
+            
+            if (error) {
+                console.error('Error fetching books:', error);
+                bookSelect.innerHTML = '<option value="">Error loading books</option>';
+                showToast('Error loading books. Please refresh the page.', true);
+                return;
+            }
+            
+            if (!data || data.length === 0) {
+                console.log('No books found in database');
+                bookSelect.innerHTML = '<option value="">No books available</option>';
+                showToast('No books found. Please add books through admin panel.', true);
+                return;
+            }
+            
+            console.log(`Found ${data.length} books:`, data);
+            
+            bookSelect.innerHTML = '<option value="">-- Select a Book --</option>';
+            data.forEach(book => {
+                const option = document.createElement('option');
+                option.value = book.id;
+                option.textContent = book.title;
+                bookSelect.appendChild(option);
+            });
+            
+        } catch (err) {
+            console.error('Unexpected error loading books:', err);
+            bookSelect.innerHTML = '<option value="">Error loading books</option>';
+            showToast('Failed to load books. Please check your connection.', true);
         }
-        bookSelect.innerHTML = '<option value="">-- Select a Book --</option>';
-        data.forEach(book => { bookSelect.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`; });
     }
 
     async function loadTopics() {
         const bookId = document.getElementById('bookSelect').value;
         const topicSelect = document.getElementById('topicSelect');
+        
         if (!bookId) {
             topicSelect.innerHTML = '<option value="">Select a book first</option>';
             topicSelect.disabled = true;
             return;
         }
-        const { data, error } = await supabase.from('topics').select('id, name, chapter_number').eq('book_id', bookId).order('chapter_number');
-        if (error || !data || data.length === 0) {
-            topicSelect.innerHTML = '<option value="">No topics available</option>';
-            topicSelect.disabled = true;
-            return;
-        }
+        
+        topicSelect.innerHTML = '<option value="">Loading topics...</option>';
         topicSelect.disabled = false;
-        topicSelect.innerHTML = '<option value="">-- Select a Topic --</option>';
-        data.forEach(topic => {
-            const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
-            topicSelect.innerHTML += `<option value="${topic.id}">${escapeHtml(display)}</option>`;
-        });
+        
+        try {
+            const { data, error } = await supabase
+                .from('topics')
+                .select('id, name, chapter_number')
+                .eq('book_id', parseInt(bookId))
+                .order('chapter_number', { ascending: true, nullsFirst: false });
+            
+            if (error) {
+                console.error('Error fetching topics:', error);
+                topicSelect.innerHTML = '<option value="">Error loading topics</option>';
+                topicSelect.disabled = true;
+                return;
+            }
+            
+            if (!data || data.length === 0) {
+                topicSelect.innerHTML = '<option value="">No topics available</option>';
+                topicSelect.disabled = true;
+                showToast('No topics found for this book. Please add topics through admin panel.', true);
+                return;
+            }
+            
+            console.log(`Found ${data.length} topics for book ${bookId}:`, data);
+            
+            topicSelect.innerHTML = '<option value="">-- Select a Topic --</option>';
+            data.forEach(topic => {
+                const option = document.createElement('option');
+                option.value = topic.id;
+                const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
+                option.textContent = display;
+                topicSelect.appendChild(option);
+            });
+            
+            topicSelect.disabled = false;
+            
+        } catch (err) {
+            console.error('Unexpected error loading topics:', err);
+            topicSelect.innerHTML = '<option value="">Error loading topics</option>';
+            topicSelect.disabled = true;
+        }
     }
 
     async function loadQuestions(topicId, difficulty, limit = 15) {
-        const { data, error } = await supabase
-            .from('questions')
-            .select(`id, question_text, difficulty, correct_answer, explanation, options (option_text, option_index)`)
-            .eq('topic_id', topicId)
-            .eq('difficulty', difficulty)
-            .limit(limit);
-        
-        if (error) throw error;
-        
-        return (data || []).map(q => ({
-            id: q.id,
-            text: q.question_text,
-            options: (q.options || []).sort((a,b) => a.option_index - b.option_index).map(o => o.option_text),
-            correct: q.correct_answer,
-            explanation: q.explanation || 'No explanation available',
-            difficulty: q.difficulty
-        }));
+        try {
+            console.log(`Loading questions for topic ${topicId} with difficulty ${difficulty}`);
+            
+            const { data, error } = await supabase
+                .from('questions')
+                .select(`
+                    id, 
+                    question_text, 
+                    difficulty, 
+                    correct_answer, 
+                    explanation,
+                    options (option_text, option_index)
+                `)
+                .eq('topic_id', parseInt(topicId))
+                .eq('difficulty', difficulty)
+                .limit(limit);
+            
+            if (error) {
+                console.error('Error fetching questions:', error);
+                throw error;
+            }
+            
+            if (!data || data.length === 0) {
+                console.log('No questions found for these criteria');
+                return [];
+            }
+            
+            console.log(`Found ${data.length} questions`);
+            
+            return data.map(q => ({
+                id: q.id,
+                text: q.question_text,
+                options: (q.options || []).sort((a, b) => a.option_index - b.option_index).map(o => o.option_text),
+                correct: q.correct_answer,
+                explanation: q.explanation || 'No explanation available',
+                difficulty: q.difficulty
+            }));
+            
+        } catch (err) {
+            console.error('Error in loadQuestions:', err);
+            throw err;
+        }
     }
 
     function renderQuestion() {
         if (!quizQuestions.length || quizIndex >= quizQuestions.length) return;
+        
         const q = quizQuestions[quizIndex];
         document.getElementById('questionText').textContent = q.text;
         document.getElementById('questionCounter').textContent = `Question ${quizIndex + 1} / ${quizQuestions.length}`;
@@ -261,6 +350,7 @@
         
         const container = document.getElementById('optionsContainer');
         container.innerHTML = '';
+        
         q.options.forEach((opt, idx) => {
             const btn = document.createElement('button');
             btn.textContent = `${String.fromCharCode(65+idx)}. ${opt}`;
@@ -276,6 +366,7 @@
 
     function handleAnswer(selectedIdx) {
         if (quizLocked) return;
+        
         const q = quizQuestions[quizIndex];
         const isCorrect = (selectedIdx === q.correct);
         
@@ -292,8 +383,9 @@
             document.getElementById('scoreDisplay').textContent = `Score: ${quizScore}`;
         } else {
             const correctLetter = String.fromCharCode(65+q.correct);
+            const correctText = q.options[q.correct];
             feedbackDiv.className = "wrong-feedback p-4 rounded-xl text-white font-semibold mb-6";
-            feedbackDiv.innerHTML = `<i class="fas fa-times-circle mr-2"></i> ❌ Wrong! Correct answer: ${correctLetter}. ${escapeHtml(q.explanation)}`;
+            feedbackDiv.innerHTML = `<i class="fas fa-times-circle mr-2"></i> ❌ Wrong! Correct answer: ${correctLetter}. ${correctText}<br><span class="text-sm mt-1 block">${escapeHtml(q.explanation)}</span>`;
         }
         
         feedbackDiv.classList.remove('hidden');
@@ -303,6 +395,7 @@
 
     function nextQuestion() {
         if (!quizLocked) return;
+        
         quizIndex++;
         if (quizIndex < quizQuestions.length) {
             renderQuestion();
@@ -311,7 +404,9 @@
             document.getElementById('resultsArea').classList.remove('hidden');
             document.getElementById('finalScore').textContent = quizScore;
             document.getElementById('totalQuestions').textContent = quizQuestions.length;
-            document.getElementById('resultProgress').style.width = `${(quizScore / quizQuestions.length) * 100}%`;
+            const percentage = (quizScore / quizQuestions.length) * 100;
+            document.getElementById('resultProgress').style.width = `${percentage}%`;
+            showToast(`Quiz completed! You scored ${quizScore}/${quizQuestions.length}`);
         }
     }
 
@@ -320,30 +415,46 @@
         const topicId = document.getElementById('topicSelect').value;
         const difficulty = document.getElementById('difficultySelect').value;
         
-        if (!bookId || !topicId) {
-            showToast('Please select both a book and a topic', true);
+        if (!bookId) {
+            showToast('Please select a book first', true);
+            return;
+        }
+        
+        if (!topicId) {
+            showToast('Please select a topic first', true);
             return;
         }
         
         showToast('Loading questions...');
+        
         try {
             const questions = await loadQuestions(topicId, difficulty, 15);
+            
             if (!questions || questions.length === 0) {
-                showToast('No questions found. Try different options!', true);
+                showToast('No questions found for these filters. Try different options!', true);
                 return;
             }
+            
             quizQuestions = questions;
             quizIndex = 0;
             quizScore = 0;
             quizLocked = false;
+            
             document.getElementById('quizArea').classList.remove('hidden');
             document.getElementById('resultsArea').classList.add('hidden');
             renderQuestion();
-        } catch(e) { showToast('Error loading questions', true); }
+            
+            showToast(`Loaded ${questions.length} questions! Good luck!`);
+            
+        } catch(e) {
+            console.error('Start quiz error:', e);
+            showToast('Error loading questions. Please try again.', true);
+        }
     }
 
     function toggleMobileMenu() {
-        document.getElementById('mobileDropdown').classList.toggle('hidden');
+        const dropdown = document.getElementById('mobileDropdown');
+        dropdown.classList.toggle('hidden');
     }
 
     function initNavbarScroll() {
@@ -355,14 +466,20 @@
         });
     }
 
+    // Initialize event listeners
     document.getElementById('startQuizBtn').addEventListener('click', startQuiz);
     document.getElementById('restartBtn').addEventListener('click', startQuiz);
     document.getElementById('nextBtn').addEventListener('click', nextQuestion);
     document.getElementById('bookSelect').addEventListener('change', loadTopics);
+    
+    // Make functions global for onclick handlers
     window.toggleMobileMenu = toggleMobileMenu;
     
+    // Load books when page loads
     loadBooks();
     initNavbarScroll();
+    
+    console.log('Quiz page initialized');
 </script>
 </body>
 </html>
