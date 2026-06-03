@@ -75,11 +75,11 @@
             <div class="mobile-menu-btn relative">
                 <button onclick="toggleMobileMenu()" class="text-white text-2xl"><i class="fas fa-bars"></i></button>
                 <div id="mobileDropdown" class="hidden absolute top-full right-0 mt-2 bg-white rounded-xl shadow-xl w-48 py-2 z-50">
-                    <a href="index.html" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition">🏠 Home</a>
-                    <a href="quiz.html" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center">📝 Quiz <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span></a>
-                    <a href="practice.html" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center">📚 Practice <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span></a>
-                    <a href="contact.html" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition">📧 Contact</a>
-                    <a href="privacy.html" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition">🔒 Privacy</a>
+                    <a href="/" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition">🏠 Home</a>
+                    <a href="/quiz" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center">📝 Quiz <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span></a>
+                    <a href="/practice" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center">📚 Practice <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span></a>
+                    <a href="/contact" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition">📧 Contact</a>
+                    <a href="/privacy" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition">🔒 Privacy</a>
                 </div>
             </div>
         </div>
@@ -124,7 +124,7 @@
                     <p class="text-amber-700 text-sm">Want MCQs from a specific book that's not available yet?</p>
                 </div>
             </div>
-            <a href="contact.html" class="bg-amber-600 text-white px-5 py-2 rounded-full font-medium hover:bg-amber-700 transition flex items-center gap-2">
+            <a href="/contact" class="bg-amber-600 text-white px-5 py-2 rounded-full font-medium hover:bg-amber-700 transition flex items-center gap-2">
                 <i class="fas fa-envelope"></i> Request a Book
             </a>
         </div>
@@ -157,10 +157,79 @@
         }
     });
 
-    // Supabase
-    const SUPABASE_URL = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // Cache Manager (from combined code)
+    class CacheManager {
+        #cachePrefix = 'bookmcq_';
+        #ttl = 3600000;
+        set(key, data, ttl = this.#ttl) {
+            try {
+                localStorage.setItem(this.#cachePrefix + key, JSON.stringify({ data, timestamp: Date.now(), ttl }));
+                return true;
+            } catch(e) { return false; }
+        }
+        get(key) {
+            try {
+                const item = localStorage.getItem(this.#cachePrefix + key);
+                if (!item) return null;
+                const parsed = JSON.parse(item);
+                if (Date.now() - parsed.timestamp > parsed.ttl) { this.remove(key); return null; }
+                return parsed.data;
+            } catch(e) { return null; }
+        }
+        remove(key) { localStorage.removeItem(this.#cachePrefix + key); }
+    }
+
+    // Supabase Service (from combined code)
+    class SupabaseService {
+        #supabase;
+        #cache;
+        #url = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
+        #key = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
+        constructor() {
+            this.#cache = new CacheManager();
+            this.#supabase = window.supabase.createClient(this.#url, this.#key);
+        }
+        async getBooks() {
+            const cached = this.#cache.get('books');
+            if (cached) return cached;
+            const { data, error } = await this.#supabase.from('books').select('id, title, author, category').order('title');
+            if (error) throw error;
+            this.#cache.set('books', data);
+            return data;
+        }
+        async getTopics(bookId) {
+            const cached = this.#cache.get(`topics_${bookId}`);
+            if (cached) return cached;
+            const { data, error } = await this.#supabase.from('topics').select('id, name, chapter_number').eq('book_id', bookId).order('chapter_number');
+            if (error) throw error;
+            this.#cache.set(`topics_${bookId}`, data);
+            return data;
+        }
+        async getPaginatedQuestions(topicId, page = 1, pageSize = 10) {
+            const from = (page - 1) * pageSize;
+            const to = from + pageSize - 1;
+            const cacheKey = `questions_page_${topicId}_${page}`;
+            const cached = this.#cache.get(cacheKey);
+            if (cached) return cached;
+            const { data, error, count } = await this.#supabase.from('questions')
+                .select(`id, question_text, difficulty, correct_answer, explanation, options (option_text, option_index)`, { count: 'exact' })
+                .eq('topic_id', topicId)
+                .range(from, to)
+                .order('id');
+            if (error) throw error;
+            const formatted = (data || []).map(q => ({
+                id: q.id, text: q.question_text,
+                options: (q.options || []).sort((a,b) => a.option_index - b.option_index).map(o => o.option_text),
+                correct: q.correct_answer, explanation: q.explanation || 'No explanation available', difficulty: q.difficulty
+            }));
+            const result = { questions: formatted, total: count || 0 };
+            this.#cache.set(cacheKey, result);
+            return result;
+        }
+    }
+
+    // Initialize Supabase Service
+    const supabaseService = new SupabaseService();
 
     let currentPage = 1;
     let totalPages = 0;
@@ -185,13 +254,14 @@
         if (!select) return;
         select.innerHTML = '<option value="">Loading books...</option>';
         try {
-            const { data, error } = await supabase.from('books').select('id, title').order('title');
-            if (error || !data || data.length === 0) {
+            const books = await supabaseService.getBooks();
+            if (!books || books.length === 0) {
                 select.innerHTML = '<option value="">No books available</option>';
+                showToast('No books found. Please add books through admin panel.', true);
                 return;
             }
             select.innerHTML = '<option value="">-- Select a Book --</option>';
-            data.forEach(book => { select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`; });
+            books.forEach(book => { select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`; });
         } catch(e) { select.innerHTML = '<option value="">Error loading books</option>'; showToast('Error loading books', true); }
     }
 
@@ -206,17 +276,20 @@
         select.innerHTML = '<option value="">Loading topics...</option>';
         select.disabled = false;
         try {
-            const { data, error } = await supabase.from('topics').select('id, name, chapter_number').eq('book_id', bookId).order('chapter_number');
-            if (error || !data || data.length === 0) {
+            const topics = await supabaseService.getTopics(bookId);
+            if (!topics || topics.length === 0) {
                 select.innerHTML = '<option value="">No topics available</option>';
+                select.disabled = true;
+                showToast('No topics found for this book. Please add topics through admin panel.', true);
                 return;
             }
             select.innerHTML = '<option value="">-- Select a Topic --</option>';
-            data.forEach(topic => {
+            topics.forEach(topic => {
                 const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
                 select.innerHTML += `<option value="${topic.id}">${escapeHtml(display)}</option>`;
             });
-        } catch(e) { select.innerHTML = '<option value="">Error loading topics</option>'; }
+            select.disabled = false;
+        } catch(e) { select.innerHTML = '<option value="">Error loading topics</option>'; select.disabled = true; }
     }
 
     async function loadQuestions(topicId, page = 1) {
@@ -227,24 +300,7 @@
         container.innerHTML = '<div class="skeleton h-32 w-full mb-4"></div><div class="skeleton h-32 w-full mb-4"></div>';
         
         try {
-            const from = (page - 1) * 10;
-            const to = from + 9;
-            const cacheKey = `${topicId}_${page}`;
-            let result;
-            
-            if (questionsCache.has(cacheKey)) {
-                result = questionsCache.get(cacheKey);
-            } else {
-                const { data, error, count } = await supabase
-                    .from('questions')
-                    .select(`id, question_text, difficulty, correct_answer, explanation, options (option_text, option_index)`, { count: 'exact' })
-                    .eq('topic_id', topicId)
-                    .range(from, to)
-                    .order('id');
-                if (error) throw error;
-                result = { questions: data || [], total: count || 0 };
-                questionsCache.set(cacheKey, result);
-            }
+            const result = await supabaseService.getPaginatedQuestions(topicId, page, 10);
             
             totalPages = Math.ceil(result.total / 10);
             renderPagination();
@@ -254,16 +310,7 @@
                 return;
             }
             
-            const formatted = result.questions.map(q => ({
-                id: q.id,
-                text: q.question_text,
-                options: (q.options || []).sort((a,b) => a.option_index - b.option_index).map(o => o.option_text),
-                correct: q.correct_answer,
-                explanation: q.explanation || 'No explanation available',
-                difficulty: q.difficulty
-            }));
-            
-            container.innerHTML = formatted.map((q, idx) => {
+            container.innerHTML = result.questions.map((q, idx) => {
                 const globalNumber = (page - 1) * 10 + idx + 1;
                 const difficultyColor = q.difficulty === 'easy' ? 'text-green-600 bg-green-50' : 
                                       q.difficulty === 'medium' ? 'text-yellow-600 bg-yellow-50' : 
