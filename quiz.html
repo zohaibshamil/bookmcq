@@ -175,10 +175,73 @@
         }
     });
 
-    // Supabase
-    const SUPABASE_URL = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // Cache Manager (from combined code)
+    class CacheManager {
+        #cachePrefix = 'bookmcq_';
+        #ttl = 3600000;
+        set(key, data, ttl = this.#ttl) {
+            try {
+                localStorage.setItem(this.#cachePrefix + key, JSON.stringify({ data, timestamp: Date.now(), ttl }));
+                return true;
+            } catch(e) { return false; }
+        }
+        get(key) {
+            try {
+                const item = localStorage.getItem(this.#cachePrefix + key);
+                if (!item) return null;
+                const parsed = JSON.parse(item);
+                if (Date.now() - parsed.timestamp > parsed.ttl) { this.remove(key); return null; }
+                return parsed.data;
+            } catch(e) { return null; }
+        }
+        remove(key) { localStorage.removeItem(this.#cachePrefix + key); }
+    }
+
+    // Supabase Service (from combined code)
+    class SupabaseService {
+        #supabase;
+        #cache;
+        #url = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
+        #key = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
+        constructor() {
+            this.#cache = new CacheManager();
+            this.#supabase = window.supabase.createClient(this.#url, this.#key);
+        }
+        async getBooks() {
+            const cached = this.#cache.get('books');
+            if (cached) return cached;
+            const { data, error } = await this.#supabase.from('books').select('id, title, author, category').order('title');
+            if (error) throw error;
+            this.#cache.set('books', data);
+            return data;
+        }
+        async getTopics(bookId) {
+            const cached = this.#cache.get(`topics_${bookId}`);
+            if (cached) return cached;
+            const { data, error } = await this.#supabase.from('topics').select('id, name, chapter_number').eq('book_id', bookId).order('chapter_number');
+            if (error) throw error;
+            this.#cache.set(`topics_${bookId}`, data);
+            return data;
+        }
+        async getQuestions(topicId, difficulty, limit = 15) {
+            const cacheKey = `questions_${topicId}_${difficulty}`;
+            const cached = this.#cache.get(cacheKey);
+            if (cached) return cached;
+            let query = this.#supabase.from('questions').select(`id, question_text, difficulty, correct_answer, explanation, options (option_text, option_index)`).eq('topic_id', topicId).eq('difficulty', difficulty).limit(limit);
+            const { data, error } = await query;
+            if (error) throw error;
+            const formatted = (data || []).map(q => ({
+                id: q.id, text: q.question_text,
+                options: (q.options || []).sort((a,b) => a.option_index - b.option_index).map(o => o.option_text),
+                correct: q.correct_answer, explanation: q.explanation || 'No explanation available', difficulty: q.difficulty
+            }));
+            this.#cache.set(cacheKey, formatted);
+            return formatted;
+        }
+    }
+
+    // Initialize Supabase Service
+    const supabaseService = new SupabaseService();
 
     let quizQuestions = [];
     let quizIndex = 0;
@@ -203,30 +266,16 @@
         bookSelect.innerHTML = '<option value="">Loading books...</option>';
         
         try {
-            // First, check if books table exists and has data
-            const { data, error, count } = await supabase
-                .from('books')
-                .select('id, title', { count: 'exact' })
-                .order('title');
+            const books = await supabaseService.getBooks();
             
-            if (error) {
-                console.error('Error fetching books:', error);
-                bookSelect.innerHTML = '<option value="">Error loading books</option>';
-                showToast('Error loading books. Please refresh the page.', true);
-                return;
-            }
-            
-            if (!data || data.length === 0) {
-                console.log('No books found in database');
+            if (!books || books.length === 0) {
                 bookSelect.innerHTML = '<option value="">No books available</option>';
                 showToast('No books found. Please add books through admin panel.', true);
                 return;
             }
             
-            console.log(`Found ${data.length} books:`, data);
-            
             bookSelect.innerHTML = '<option value="">-- Select a Book --</option>';
-            data.forEach(book => {
+            books.forEach(book => {
                 const option = document.createElement('option');
                 option.value = book.id;
                 option.textContent = book.title;
@@ -234,7 +283,7 @@
             });
             
         } catch (err) {
-            console.error('Unexpected error loading books:', err);
+            console.error('Error loading books:', err);
             bookSelect.innerHTML = '<option value="">Error loading books</option>';
             showToast('Failed to load books. Please check your connection.', true);
         }
@@ -254,30 +303,17 @@
         topicSelect.disabled = false;
         
         try {
-            const { data, error } = await supabase
-                .from('topics')
-                .select('id, name, chapter_number')
-                .eq('book_id', parseInt(bookId))
-                .order('chapter_number', { ascending: true, nullsFirst: false });
+            const topics = await supabaseService.getTopics(bookId);
             
-            if (error) {
-                console.error('Error fetching topics:', error);
-                topicSelect.innerHTML = '<option value="">Error loading topics</option>';
-                topicSelect.disabled = true;
-                return;
-            }
-            
-            if (!data || data.length === 0) {
+            if (!topics || topics.length === 0) {
                 topicSelect.innerHTML = '<option value="">No topics available</option>';
                 topicSelect.disabled = true;
                 showToast('No topics found for this book. Please add topics through admin panel.', true);
                 return;
             }
             
-            console.log(`Found ${data.length} topics for book ${bookId}:`, data);
-            
             topicSelect.innerHTML = '<option value="">-- Select a Topic --</option>';
-            data.forEach(topic => {
+            topics.forEach(topic => {
                 const option = document.createElement('option');
                 option.value = topic.id;
                 const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
@@ -288,7 +324,7 @@
             topicSelect.disabled = false;
             
         } catch (err) {
-            console.error('Unexpected error loading topics:', err);
+            console.error('Error loading topics:', err);
             topicSelect.innerHTML = '<option value="">Error loading topics</option>';
             topicSelect.disabled = true;
         }
@@ -296,43 +332,8 @@
 
     async function loadQuestions(topicId, difficulty, limit = 15) {
         try {
-            console.log(`Loading questions for topic ${topicId} with difficulty ${difficulty}`);
-            
-            const { data, error } = await supabase
-                .from('questions')
-                .select(`
-                    id, 
-                    question_text, 
-                    difficulty, 
-                    correct_answer, 
-                    explanation,
-                    options (option_text, option_index)
-                `)
-                .eq('topic_id', parseInt(topicId))
-                .eq('difficulty', difficulty)
-                .limit(limit);
-            
-            if (error) {
-                console.error('Error fetching questions:', error);
-                throw error;
-            }
-            
-            if (!data || data.length === 0) {
-                console.log('No questions found for these criteria');
-                return [];
-            }
-            
-            console.log(`Found ${data.length} questions`);
-            
-            return data.map(q => ({
-                id: q.id,
-                text: q.question_text,
-                options: (q.options || []).sort((a, b) => a.option_index - b.option_index).map(o => o.option_text),
-                correct: q.correct_answer,
-                explanation: q.explanation || 'No explanation available',
-                difficulty: q.difficulty
-            }));
-            
+            const questions = await supabaseService.getQuestions(topicId, difficulty, limit);
+            return questions;
         } catch (err) {
             console.error('Error in loadQuestions:', err);
             throw err;
