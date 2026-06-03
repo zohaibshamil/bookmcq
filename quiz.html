@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>BookMCQ - Quiz Mode</title>
+    <meta name="description" content="Take timed quizzes with topic-wise and difficulty-based MCQs.">
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-5WGZ1P0EV1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-5WGZ1P0EV1');
+    </script>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .quiz-card { backdrop-filter: blur(10px); background: rgba(255,255,255,0.95); transition: transform 0.3s ease, box-shadow 0.3s ease; border-radius: 1.5rem; overflow: hidden; }
+        .quiz-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+        .option-btn { transition: all 0.2s ease; border: 2px solid #e2e8f0; cursor: pointer; }
+        .option-btn:hover:not(:disabled) { background-color: #667eea; border-color: #667eea; color: white; transform: scale(1.02); }
+        .selected-option { background-color: #667eea !important; border-color: #667eea !important; color: white !important; }
+        .correct-feedback { background-color: #10b981; animation: fadeInUp 0.4s ease; }
+        .wrong-feedback { background-color: #ef4444; animation: fadeInUp 0.4s ease; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .progress-bar { transition: width 0.5s ease; }
+        .nav-link { position: relative; transition: all 0.3s ease; }
+        .nav-link::after { content: ''; position: absolute; bottom: -5px; left: 0; width: 0; height: 2px; background: white; transition: width 0.3s ease; }
+        .nav-link:hover::after, .nav-link.active::after { width: 100%; }
+        .disable-select { user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; background-color: #1f2937; color: white; padding: 12px 24px; border-radius: 8px; font-size: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .mobile-menu-btn { display: none; }
+        @media (max-width: 768px) { .mobile-menu-btn { display: block; } .desktop-menu { display: none; } }
+        .navbar-scrolled { background: white !important; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .navbar-scrolled .nav-link { color: #4a5568 !important; }
+        .navbar-scrolled .nav-link:hover { color: #667eea !important; }
+        .navbar-scrolled .nav-link::after { background: #667eea !important; }
+        .navbar-scrolled .text-white { color: #2d3748 !important; }
+        .navbar-scrolled .text-white\/60 { color: #718096 !important; }
+        .navbar-scrolled i { color: #667eea !important; }
+    </style>
+</head>
+<body class="disable-select">
+
+<div class="max-w-6xl mx-auto px-4">
+    
+    <!-- Navigation Bar -->
+    <nav class="bg-white/10 backdrop-blur-lg rounded-full px-4 md:px-6 py-3 mb-8 sticky top-4 z-50 shadow-lg">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-graduation-cap text-white text-xl md:text-2xl"></i>
+                <span class="text-white font-bold text-lg md:text-xl">BookMCQ</span>
+                <span class="text-white/60 text-xs hidden sm:inline">| Master Every Chapter</span>
+            </div>
+            <div class="desktop-menu flex gap-3 md:gap-6">
+                <a href="index.html" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap">🏠 Home</a>
+                <a href="quiz.html" class="nav-link active text-white transition text-sm md:text-base whitespace-nowrap flex items-center gap-1">📝 Quiz <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1">FREE</span></a>
+                <a href="practice.html" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap flex items-center gap-1">📚 Practice <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1">FREE</span></a>
+                <a href="contact.html" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap">📧 Contact</a>
+                <a href="privacy.html" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap">🔒 Privacy</a>
+            </div>
+            <div class="mobile-menu-btn relative">
+                <button onclick="toggleMobileMenu()" class="text-white text-2xl"><i class="fas fa-bars"></i></button>
+                <div id="mobileDropdown" class="hidden absolute top-full right-0 mt-2 bg-white rounded-xl shadow-xl w-48 py-2 z-50">
+                    <a href="index.html" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition">🏠 Home</a>
+                    <a href="quiz.html" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center">📝 Quiz <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span></a>
+                    <a href="practice.html" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center">📚 Practice <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span></a>
+                    <a href="contact.html" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition">📧 Contact</a>
+                    <a href="privacy.html" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition">🔒 Privacy</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Quiz Page Content -->
+    <div class="quiz-card rounded-2xl p-6 mb-8 shadow-xl">
+        <h2 class="text-xl md:text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <i class="fas fa-filter text-purple-600"></i> Filter Questions
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">📚 Select Book</label>
+                <select id="bookSelect" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                    <option value="">Loading books...</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">🏷️ Topic</label>
+                <select id="topicSelect" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm" disabled>
+                    <option value="">Select a book first</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">⚡ Difficulty Level</label>
+                <select id="difficultySelect" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                    <option value="easy">🌱 Easy</option>
+                    <option value="medium">⚡ Medium</option>
+                    <option value="hard">🔥 Hard</option>
+                </select>
+            </div>
+        </div>
+        <button id="startQuizBtn" class="mt-6 w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold py-3 rounded-xl hover:opacity-90 transition shadow-lg">
+            <i class="fas fa-play mr-2"></i> Start Quiz
+        </button>
+    </div>
+
+    <div id="quizArea" class="hidden quiz-card rounded-2xl p-6 md:p-8 shadow-xl">
+        <div class="flex justify-between items-center mb-6 flex-wrap gap-3">
+            <div class="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-full">
+                <i class="fas fa-question-circle text-purple-600"></i>
+                <span id="questionCounter" class="font-bold text-sm">Question 1 / 0</span>
+            </div>
+            <div class="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-full">
+                <i class="fas fa-star text-yellow-500"></i>
+                <span id="scoreDisplay" class="font-bold text-sm">Score: 0</span>
+            </div>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2 mb-6">
+            <div id="progressFill" class="progress-bar bg-gradient-to-r from-purple-600 to-indigo-600 h-2 rounded-full" style="width: 0%"></div>
+        </div>
+        <h3 id="questionText" class="text-lg md:text-2xl font-bold text-gray-800 mb-6">Loading question...</h3>
+        <div id="optionsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6"></div>
+        <div id="feedbackMessage" class="mb-6 hidden p-4 rounded-xl text-white font-semibold"></div>
+        <button id="nextBtn" class="w-full bg-gray-800 text-white font-bold py-3 rounded-xl hover:bg-gray-900 transition disabled:opacity-50 disabled:cursor-not-allowed">
+            Next Question <i class="fas fa-arrow-right ml-2"></i>
+        </button>
+    </div>
+
+    <div id="resultsArea" class="hidden quiz-card rounded-2xl p-6 md:p-8 text-center shadow-xl">
+        <i class="fas fa-trophy text-6xl text-yellow-500 mb-4"></i>
+        <h2 class="text-2xl md:text-3xl font-bold mb-2">Quiz Completed!</h2>
+        <p class="text-gray-600 mb-4">Your Performance</p>
+        <div class="text-5xl font-bold text-purple-600 mb-4"><span id="finalScore">0</span> / <span id="totalQuestions">0</span></div>
+        <div class="w-full bg-gray-200 rounded-full h-4 mb-6">
+            <div id="resultProgress" class="bg-gradient-to-r from-purple-600 to-indigo-600 h-4 rounded-full" style="width: 0%"></div>
+        </div>
+        <button id="restartBtn" class="bg-purple-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-purple-700 transition">
+            <i class="fas fa-redo-alt mr-2"></i> Try Another Quiz
+        </button>
+    </div>
+
+    <footer class="mt-12 text-center text-white/60 text-xs md:text-sm py-6">
+        <p>&copy; 2025 BookMCQ. All rights reserved. | Master Every Chapter</p>
+    </footer>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script>
+    // Security
+    document.addEventListener('contextmenu', (e) => { e.preventDefault(); return false; });
+    document.addEventListener('keydown', (e) => {
+        const forbidden = ['PrintScreen', 'F12', 'F5', 'F11',
+            (e.ctrlKey && e.shiftKey && e.key === 'I'),
+            (e.ctrlKey && e.shiftKey && e.key === 'C'),
+            (e.ctrlKey && e.key === 'u'),
+            (e.ctrlKey && e.key === 's')];
+        if (forbidden.includes(e.key) || forbidden.some(cond => cond === true)) {
+            e.preventDefault(); return false;
+        }
+    });
+    document.addEventListener('dragstart', (e) => { e.preventDefault(); return false; });
+    document.addEventListener('selectstart', (e) => {
+        if (!e.target.closest('input') && !e.target.closest('textarea')) {
+            e.preventDefault(); return false;
+        }
+    });
+
+    // Supabase
+    const SUPABASE_URL = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let quizQuestions = [];
+    let quizIndex = 0;
+    let quizScore = 0;
+    let quizLocked = false;
+
+    function showToast(message, isError = false) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.style.background = isError ? '#ef4444' : '#1f2937';
+        toast.classList.remove('hidden');
+        setTimeout(() => toast.classList.add('hidden'), 3000);
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;');
+    }
+
+    async function loadBooks() {
+        const { data, error } = await supabase.from('books').select('id, title').order('title');
+        const bookSelect = document.getElementById('bookSelect');
+        if (error || !data || data.length === 0) {
+            bookSelect.innerHTML = '<option value="">No books available</option>';
+            return;
+        }
+        bookSelect.innerHTML = '<option value="">-- Select a Book --</option>';
+        data.forEach(book => { bookSelect.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`; });
+    }
+
+    async function loadTopics() {
+        const bookId = document.getElementById('bookSelect').value;
+        const topicSelect = document.getElementById('topicSelect');
+        if (!bookId) {
+            topicSelect.innerHTML = '<option value="">Select a book first</option>';
+            topicSelect.disabled = true;
+            return;
+        }
+        const { data, error } = await supabase.from('topics').select('id, name, chapter_number').eq('book_id', bookId).order('chapter_number');
+        if (error || !data || data.length === 0) {
+            topicSelect.innerHTML = '<option value="">No topics available</option>';
+            topicSelect.disabled = true;
+            return;
+        }
+        topicSelect.disabled = false;
+        topicSelect.innerHTML = '<option value="">-- Select a Topic --</option>';
+        data.forEach(topic => {
+            const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
+            topicSelect.innerHTML += `<option value="${topic.id}">${escapeHtml(display)}</option>`;
+        });
+    }
+
+    async function loadQuestions(topicId, difficulty, limit = 15) {
+        const { data, error } = await supabase
+            .from('questions')
+            .select(`id, question_text, difficulty, correct_answer, explanation, options (option_text, option_index)`)
+            .eq('topic_id', topicId)
+            .eq('difficulty', difficulty)
+            .limit(limit);
+        
+        if (error) throw error;
+        
+        return (data || []).map(q => ({
+            id: q.id,
+            text: q.question_text,
+            options: (q.options || []).sort((a,b) => a.option_index - b.option_index).map(o => o.option_text),
+            correct: q.correct_answer,
+            explanation: q.explanation || 'No explanation available',
+            difficulty: q.difficulty
+        }));
+    }
+
+    function renderQuestion() {
+        if (!quizQuestions.length || quizIndex >= quizQuestions.length) return;
+        const q = quizQuestions[quizIndex];
+        document.getElementById('questionText').textContent = q.text;
+        document.getElementById('questionCounter').textContent = `Question ${quizIndex + 1} / ${quizQuestions.length}`;
+        document.getElementById('scoreDisplay').textContent = `Score: ${quizScore}`;
+        document.getElementById('progressFill').style.width = `${((quizIndex + 1) / quizQuestions.length) * 100}%`;
+        
+        const container = document.getElementById('optionsContainer');
+        container.innerHTML = '';
+        q.options.forEach((opt, idx) => {
+            const btn = document.createElement('button');
+            btn.textContent = `${String.fromCharCode(65+idx)}. ${opt}`;
+            btn.className = `option-btn w-full text-left p-3 rounded-xl bg-white text-gray-800 font-medium transition text-sm md:text-base`;
+            btn.addEventListener('click', () => handleAnswer(idx));
+            container.appendChild(btn);
+        });
+        
+        document.getElementById('feedbackMessage').classList.add('hidden');
+        document.getElementById('nextBtn').disabled = true;
+        quizLocked = false;
+    }
+
+    function handleAnswer(selectedIdx) {
+        if (quizLocked) return;
+        const q = quizQuestions[quizIndex];
+        const isCorrect = (selectedIdx === q.correct);
+        
+        document.querySelectorAll('.option-btn').forEach((btn, idx) => {
+            btn.classList.remove('selected-option');
+            if (idx === selectedIdx) btn.classList.add('selected-option');
+        });
+        
+        const feedbackDiv = document.getElementById('feedbackMessage');
+        if (isCorrect) {
+            quizScore++;
+            feedbackDiv.className = "correct-feedback p-4 rounded-xl text-white font-semibold mb-6";
+            feedbackDiv.innerHTML = `<i class="fas fa-check-circle mr-2"></i> ✅ Correct! ${escapeHtml(q.explanation)}`;
+            document.getElementById('scoreDisplay').textContent = `Score: ${quizScore}`;
+        } else {
+            const correctLetter = String.fromCharCode(65+q.correct);
+            feedbackDiv.className = "wrong-feedback p-4 rounded-xl text-white font-semibold mb-6";
+            feedbackDiv.innerHTML = `<i class="fas fa-times-circle mr-2"></i> ❌ Wrong! Correct answer: ${correctLetter}. ${escapeHtml(q.explanation)}`;
+        }
+        
+        feedbackDiv.classList.remove('hidden');
+        quizLocked = true;
+        document.getElementById('nextBtn').disabled = false;
+    }
+
+    function nextQuestion() {
+        if (!quizLocked) return;
+        quizIndex++;
+        if (quizIndex < quizQuestions.length) {
+            renderQuestion();
+        } else {
+            document.getElementById('quizArea').classList.add('hidden');
+            document.getElementById('resultsArea').classList.remove('hidden');
+            document.getElementById('finalScore').textContent = quizScore;
+            document.getElementById('totalQuestions').textContent = quizQuestions.length;
+            document.getElementById('resultProgress').style.width = `${(quizScore / quizQuestions.length) * 100}%`;
+        }
+    }
+
+    async function startQuiz() {
+        const bookId = document.getElementById('bookSelect').value;
+        const topicId = document.getElementById('topicSelect').value;
+        const difficulty = document.getElementById('difficultySelect').value;
+        
+        if (!bookId || !topicId) {
+            showToast('Please select both a book and a topic', true);
+            return;
+        }
+        
+        showToast('Loading questions...');
+        try {
+            const questions = await loadQuestions(topicId, difficulty, 15);
+            if (!questions || questions.length === 0) {
+                showToast('No questions found. Try different options!', true);
+                return;
+            }
+            quizQuestions = questions;
+            quizIndex = 0;
+            quizScore = 0;
+            quizLocked = false;
+            document.getElementById('quizArea').classList.remove('hidden');
+            document.getElementById('resultsArea').classList.add('hidden');
+            renderQuestion();
+        } catch(e) { showToast('Error loading questions', true); }
+    }
+
+    function toggleMobileMenu() {
+        document.getElementById('mobileDropdown').classList.toggle('hidden');
+    }
+
+    function initNavbarScroll() {
+        const navbar = document.querySelector('nav.bg-white\\/10');
+        if (!navbar) return;
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) navbar.classList.add('navbar-scrolled');
+            else navbar.classList.remove('navbar-scrolled');
+        });
+    }
+
+    document.getElementById('startQuizBtn').addEventListener('click', startQuiz);
+    document.getElementById('restartBtn').addEventListener('click', startQuiz);
+    document.getElementById('nextBtn').addEventListener('click', nextQuestion);
+    document.getElementById('bookSelect').addEventListener('change', loadTopics);
+    window.toggleMobileMenu = toggleMobileMenu;
+    
+    loadBooks();
+    initNavbarScroll();
+</script>
+</body>
+</html>
