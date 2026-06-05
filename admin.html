@@ -81,6 +81,41 @@
             display: inline-block;
             margin: 0 2px;
         }
+        
+        /* Bulk Delete Card Styles */
+        .bulk-delete-card {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            border: 1px solid #fecaca;
+            border-radius: 1rem;
+            margin-top: 20px;
+            padding: 16px;
+        }
+        .bulk-delete-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            color: #991b1b;
+        }
+        .danger-btn {
+            background: #dc2626;
+            transition: all 0.2s;
+        }
+        .danger-btn:hover {
+            background: #b91c1c;
+            transform: scale(1.02);
+        }
+        .warning-text {
+            color: #991b1b;
+            font-size: 12px;
+        }
+        .delete-preview {
+            background: #fff5f5;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 13px;
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -349,6 +384,61 @@
                     <span id="pageInfo" class="text-sm">Page 1</span>
                     <button id="nextPageBtn" class="bg-gray-500 text-white px-4 py-2 rounded-lg">Next</button>
                 </div>
+                
+                <!-- ============================================ -->
+                <!-- BULK DELETE SECTION - ADDED BELOW PAGINATION -->
+                <!-- ============================================ -->
+                <div class="bulk-delete-card mt-6">
+                    <div class="bulk-delete-header">
+                        <i class="fas fa-trash-alt text-2xl"></i>
+                        <h3 class="text-xl font-bold">🗑️ Bulk Delete Questions</h3>
+                    </div>
+                    <p class="text-sm text-gray-700 mb-4">Delete multiple questions at once by selecting filters below. <span class="warning-text">⚠️ This action is permanent and cannot be undone!</span></p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">📚 Select Book</label>
+                            <select id="bulkDeleteBookId" class="w-full p-2 border rounded-lg bg-white">
+                                <option value="">All Books</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">🏷️ Select Topic</label>
+                            <select id="bulkDeleteTopicId" class="w-full p-2 border rounded-lg bg-white" disabled>
+                                <option value="">Select a book first</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">⚡ Difficulty Level</label>
+                            <select id="bulkDeleteDifficulty" class="w-full p-2 border rounded-lg bg-white">
+                                <option value="">All Difficulties</option>
+                                <option value="easy">Easy</option>
+                                <option value="medium">Medium</option>
+                                <option value="hard">Hard</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Preview Count Section -->
+                    <div id="bulkDeletePreview" class="delete-preview hidden">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <i class="fas fa-database text-red-500 mr-2"></i>
+                                <span id="bulkDeleteCount" class="font-bold text-red-700">0</span>
+                                <span> questions will be deleted</span>
+                            </div>
+                            <button id="refreshPreviewBtn" class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded-lg text-sm transition">
+                                <i class="fas fa-sync-alt mr-1"></i> Refresh Count
+                            </button>
+                        </div>
+                        <div id="bulkDeleteDetails" class="text-xs text-gray-600 mt-2"></div>
+                    </div>
+                    
+                    <!-- Delete Button -->
+                    <button id="bulkDeleteBtn" class="danger-btn w-full text-white font-bold py-3 rounded-xl mt-4 flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        <i class="fas fa-trash-alt"></i> Delete Selected Questions
+                    </button>
+                </div>
             </div>
 
             <!-- Bulk Upload Tab -->
@@ -473,6 +563,12 @@
     let currentFilters = { bookId: '', topicId: '', difficulty: '' };
     let currentTopicBookFilter = '';
     
+    // Bulk Delete variables
+    let bulkDeleteBookId = '';
+    let bulkDeleteTopicId = '';
+    let bulkDeleteDifficulty = '';
+    let bulkDeleteCount = 0;
+    
     // ============ SESSION TIMEOUT ============
     let sessionTimeout;
     const SESSION_DURATION = 10 * 60 * 1000;
@@ -558,13 +654,11 @@
             preview.classList.remove('hidden');
             const previewDiv = preview.querySelector('.math-rendered');
             if (previewDiv) {
-                // Wrap content in LaTeX delimiters if not present
                 let processedText = text;
                 if (!processedText.includes('\\(') && !processedText.includes('\\[')) {
                     processedText = `\\( ${processedText} \\)`;
                 }
                 previewDiv.innerHTML = processedText;
-                // Trigger MathJax rendering
                 if (window.MathJax) {
                     MathJax.typesetPromise([previewDiv]).catch(console.error);
                 }
@@ -588,7 +682,6 @@
             const textarea = document.getElementById(field.textarea);
             if (textarea) {
                 textarea.addEventListener('input', () => previewMath(field.textarea, field.preview));
-                // Initial check
                 previewMath(field.textarea, field.preview);
             }
         });
@@ -679,7 +772,8 @@
                     loadBookSelectsCached(),
                     loadFilterBooksCached(),
                     loadTopicFilterBooksCached(),
-                    loadCategoriesCached()
+                    loadCategoriesCached(),
+                    loadBulkDeleteBooks()
                 ]);
                 setupBookFilters();
                 setupMathPreviews();
@@ -974,7 +1068,7 @@
             await _supabase.from('books').delete().eq('id', id);
             booksCache = null;
             topicsCache = {};
-            await Promise.all([loadBooksCached(), loadTopicsCached(), loadFilterBooksCached(), loadBookSelectsCached(), loadTopicFilterBooksCached()]);
+            await Promise.all([loadBooksCached(), loadTopicsCached(), loadFilterBooksCached(), loadBookSelectsCached(), loadTopicFilterBooksCached(), loadBulkDeleteBooks()]);
             showToast('Book deleted');
         }
     };
@@ -1005,7 +1099,7 @@
             document.getElementById('bookTitle').value = '';
             document.getElementById('bookAuthor').value = '';
             booksCache = null;
-            await Promise.all([loadBooksCached(), loadFilterBooksCached(), loadBookSelectsCached(), loadTopicFilterBooksCached()]);
+            await Promise.all([loadBooksCached(), loadFilterBooksCached(), loadBookSelectsCached(), loadTopicFilterBooksCached(), loadBulkDeleteBooks()]);
         }
     }
 
@@ -1041,7 +1135,7 @@
             showToast('Book updated!');
             document.getElementById('editBookModal').classList.add('hidden');
             booksCache = null;
-            await Promise.all([loadBooksCached(), loadFilterBooksCached(), loadBookSelectsCached(), loadTopicFilterBooksCached()]);
+            await Promise.all([loadBooksCached(), loadFilterBooksCached(), loadBookSelectsCached(), loadTopicFilterBooksCached(), loadBulkDeleteBooks()]);
         }
     }
 
@@ -1441,7 +1535,6 @@
             </div>
         `}).join('');
         
-        // Render math in questions list
         if (window.MathJax) {
             MathJax.typesetPromise();
         }
@@ -1613,6 +1706,211 @@
         await loadQuestions();
     }
 
+    // ============ BULK DELETE FUNCTIONS ============
+    async function loadBulkDeleteBooks() {
+        const { data, error } = await _supabase.from('books').select('id, title').order('title');
+        if (error) return;
+        
+        const select = document.getElementById('bulkDeleteBookId');
+        select.innerHTML = '<option value="">All Books</option>';
+        data.forEach(book => {
+            select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+        });
+    }
+    
+    async function loadBulkDeleteTopics() {
+        const bookId = document.getElementById('bulkDeleteBookId').value;
+        const topicSelect = document.getElementById('bulkDeleteTopicId');
+        
+        if (!bookId) {
+            topicSelect.innerHTML = '<option value="">Select a book first</option>';
+            topicSelect.disabled = true;
+            return;
+        }
+        
+        topicSelect.innerHTML = '<option value="">Loading topics...</option>';
+        topicSelect.disabled = false;
+        
+        const { data, error } = await _supabase.from('topics')
+            .select('id, name, chapter_number')
+            .eq('book_id', parseInt(bookId))
+            .order('chapter_number');
+        
+        if (error) {
+            topicSelect.innerHTML = '<option value="">Error loading topics</option>';
+            return;
+        }
+        
+        topicSelect.innerHTML = '<option value="">All Topics</option>';
+        data.forEach(topic => {
+            const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
+            topicSelect.innerHTML += `<option value="${topic.id}">${escapeHtml(display)}</option>`;
+        });
+    }
+    
+    async function refreshBulkDeletePreview() {
+        const bookId = document.getElementById('bulkDeleteBookId').value;
+        const topicId = document.getElementById('bulkDeleteTopicId').value;
+        const difficulty = document.getElementById('bulkDeleteDifficulty').value;
+        
+        // Build query to count questions
+        let query = _supabase.from('questions').select('id, topics!inner(book_id)', { count: 'exact' });
+        
+        if (bookId) {
+            query = query.eq('topics.book_id', parseInt(bookId));
+        }
+        if (topicId) {
+            query = query.eq('topic_id', parseInt(topicId));
+        }
+        if (difficulty) {
+            query = query.eq('difficulty', difficulty);
+        }
+        
+        const { count, error } = await query;
+        
+        if (error) {
+            console.error('Error counting questions:', error);
+            showToast('Error counting questions', true);
+            return;
+        }
+        
+        bulkDeleteCount = count || 0;
+        
+        const previewDiv = document.getElementById('bulkDeletePreview');
+        const countSpan = document.getElementById('bulkDeleteCount');
+        const detailsDiv = document.getElementById('bulkDeleteDetails');
+        const deleteBtn = document.getElementById('bulkDeleteBtn');
+        
+        if (bulkDeleteCount > 0) {
+            previewDiv.classList.remove('hidden');
+            countSpan.textContent = bulkDeleteCount;
+            
+            let detailsText = '';
+            if (bookId && topicId && difficulty) {
+                const bookName = document.getElementById('bulkDeleteBookId').options[document.getElementById('bulkDeleteBookId').selectedIndex]?.text || 'Selected Book';
+                const topicName = document.getElementById('bulkDeleteTopicId').options[document.getElementById('bulkDeleteTopicId').selectedIndex]?.text || 'Selected Topic';
+                detailsText = `Book: ${bookName} | Topic: ${topicName} | Difficulty: ${difficulty}`;
+            } else if (bookId && topicId) {
+                const bookName = document.getElementById('bulkDeleteBookId').options[document.getElementById('bulkDeleteBookId').selectedIndex]?.text || 'Selected Book';
+                const topicName = document.getElementById('bulkDeleteTopicId').options[document.getElementById('bulkDeleteTopicId').selectedIndex]?.text || 'Selected Topic';
+                detailsText = `Book: ${bookName} | Topic: ${topicName} | All Difficulties`;
+            } else if (bookId && difficulty) {
+                const bookName = document.getElementById('bulkDeleteBookId').options[document.getElementById('bulkDeleteBookId').selectedIndex]?.text || 'Selected Book';
+                detailsText = `Book: ${bookName} | All Topics | Difficulty: ${difficulty}`;
+            } else if (topicId && difficulty) {
+                const topicName = document.getElementById('bulkDeleteTopicId').options[document.getElementById('bulkDeleteTopicId').selectedIndex]?.text || 'Selected Topic';
+                detailsText = `All Books | Topic: ${topicName} | Difficulty: ${difficulty}`;
+            } else if (bookId) {
+                const bookName = document.getElementById('bulkDeleteBookId').options[document.getElementById('bulkDeleteBookId').selectedIndex]?.text || 'Selected Book';
+                detailsText = `Book: ${bookName} | All Topics | All Difficulties`;
+            } else if (topicId) {
+                const topicName = document.getElementById('bulkDeleteTopicId').options[document.getElementById('bulkDeleteTopicId').selectedIndex]?.text || 'Selected Topic';
+                detailsText = `All Books | Topic: ${topicName} | All Difficulties`;
+            } else if (difficulty) {
+                detailsText = `All Books | All Topics | Difficulty: ${difficulty}`;
+            }
+            
+            detailsDiv.innerHTML = detailsText;
+            deleteBtn.disabled = false;
+        } else {
+            previewDiv.classList.remove('hidden');
+            countSpan.textContent = '0';
+            detailsDiv.innerHTML = 'No questions match the selected filters';
+            deleteBtn.disabled = true;
+        }
+    }
+    
+    async function executeBulkDelete() {
+        const bookId = document.getElementById('bulkDeleteBookId').value;
+        const topicId = document.getElementById('bulkDeleteTopicId').value;
+        const difficulty = document.getElementById('bulkDeleteDifficulty').value;
+        
+        if (bulkDeleteCount === 0) {
+            showToast('No questions to delete', true);
+            return;
+        }
+        
+        const confirmMessage = `⚠️ DANGER: This will permanently delete ${bulkDeleteCount} questions!\n\nThis action CANNOT be undone.\n\nType "DELETE" to confirm.`;
+        const confirmation = prompt(confirmMessage);
+        
+        if (confirmation !== 'DELETE') {
+            showToast('Bulk delete cancelled', false);
+            return;
+        }
+        
+        showToast(`Deleting ${bulkDeleteCount} questions... This may take a moment.`);
+        
+        // First, get all question IDs to delete
+        let query = _supabase.from('questions').select('id');
+        
+        if (bookId) {
+            const topicsForBook = await _supabase.from('topics').select('id').eq('book_id', parseInt(bookId));
+            const topicIds = topicsForBook.data?.map(t => t.id) || [];
+            if (topicIds.length > 0) {
+                query = query.in('topic_id', topicIds);
+            }
+        }
+        if (topicId) {
+            query = query.eq('topic_id', parseInt(topicId));
+        }
+        if (difficulty) {
+            query = query.eq('difficulty', difficulty);
+        }
+        
+        const { data: questionsToDelete, error: fetchError } = await query;
+        
+        if (fetchError) {
+            showToast('Error fetching questions to delete: ' + fetchError.message, true);
+            return;
+        }
+        
+        if (!questionsToDelete || questionsToDelete.length === 0) {
+            showToast('No questions found to delete', true);
+            return;
+        }
+        
+        const questionIds = questionsToDelete.map(q => q.id);
+        
+        // Delete options first (due to foreign key constraints)
+        const { error: optionsError } = await _supabase
+            .from('options')
+            .delete()
+            .in('question_id', questionIds);
+        
+        if (optionsError) {
+            showToast('Error deleting options: ' + optionsError.message, true);
+            return;
+        }
+        
+        // Delete questions
+        const { error: questionsError } = await _supabase
+            .from('questions')
+            .delete()
+            .in('id', questionIds);
+        
+        if (questionsError) {
+            showToast('Error deleting questions: ' + questionsError.message, true);
+            return;
+        }
+        
+        showToast(`✅ Successfully deleted ${questionIds.length} questions!`);
+        
+        // Refresh everything
+        await Promise.all([
+            loadQuestions(),
+            refreshBulkDeletePreview(),
+            loadTopicsCached()
+        ]);
+        
+        // Reset bulk delete form
+        document.getElementById('bulkDeleteBookId').value = '';
+        document.getElementById('bulkDeleteTopicId').innerHTML = '<option value="">Select a book first</option>';
+        document.getElementById('bulkDeleteTopicId').disabled = true;
+        document.getElementById('bulkDeleteDifficulty').value = '';
+        document.getElementById('bulkDeletePreview').classList.add('hidden');
+        document.getElementById('bulkDeleteBtn').disabled = true;
+    }
+
     // ============ ADMINS ============
     async function loadAdmins() {
         const { data, error } = await _supabase.from('admin_roles').select('user_email');
@@ -1660,7 +1958,10 @@
             }
         });
         
-        if (tabName === 'questions') loadQuestions();
+        if (tabName === 'questions') {
+            loadQuestions();
+            loadBulkDeleteBooks();
+        }
         if (tabName === 'categories') loadCategoriesCached();
     }
 
@@ -1686,7 +1987,8 @@
                     loadBookSelectsCached(),
                     loadFilterBooksCached(),
                     loadTopicFilterBooksCached(),
-                    loadCategoriesCached()
+                    loadCategoriesCached(),
+                    loadBulkDeleteBooks()
                 ]);
                 setupBookFilters();
                 setupMathPreviews();
@@ -1789,6 +2091,35 @@
         document.getElementById('closeQuestionModal').addEventListener('click', () => {
             document.getElementById('editQuestionModal').classList.add('hidden');
         });
+        
+        // Bulk Delete Event Listeners
+        const bulkDeleteBook = document.getElementById('bulkDeleteBookId');
+        if (bulkDeleteBook) {
+            bulkDeleteBook.addEventListener('change', async () => {
+                await loadBulkDeleteTopics();
+                await refreshBulkDeletePreview();
+            });
+        }
+        
+        const bulkDeleteTopic = document.getElementById('bulkDeleteTopicId');
+        if (bulkDeleteTopic) {
+            bulkDeleteTopic.addEventListener('change', refreshBulkDeletePreview);
+        }
+        
+        const bulkDeleteDifficulty = document.getElementById('bulkDeleteDifficulty');
+        if (bulkDeleteDifficulty) {
+            bulkDeleteDifficulty.addEventListener('change', refreshBulkDeletePreview);
+        }
+        
+        const refreshPreviewBtn = document.getElementById('refreshPreviewBtn');
+        if (refreshPreviewBtn) {
+            refreshPreviewBtn.addEventListener('click', refreshBulkDeletePreview);
+        }
+        
+        const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+        if (bulkDeleteBtn) {
+            bulkDeleteBtn.addEventListener('click', executeBulkDelete);
+        }
         
         // Make math functions globally available
         window.toggleMathHelp = toggleMathHelp;
