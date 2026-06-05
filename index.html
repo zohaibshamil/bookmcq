@@ -286,43 +286,97 @@
             margin-top: 4px;
         }
 
-        /* Exam Cards - Concise and clean */
+        /* Comfortable Exam Cards - Soft gradients, easy on eyes */
         .exam-section {
             scroll-margin-top: 100px;
         }
         .exam-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 12px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
         }
         .exam-card {
+            border-radius: 1rem;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            color: #1f2937;
             background: white;
-            border-radius: 12px;
-            padding: 12px;
-            transition: all 0.2s ease;
-            border-left: 3px solid;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border: 1px solid #f3e8ff;
+        }
+        /* Soft gradient borders instead of dark backgrounds */
+        .exam-card:nth-child(1) { border-top: 4px solid #3b82f6; background: linear-gradient(135deg, #fff 0%, #eff6ff 100%); }
+        .exam-card:nth-child(2) { border-top: 4px solid #10b981; background: linear-gradient(135deg, #fff 0%, #ecfdf5 100%); }
+        .exam-card:nth-child(3) { border-top: 4px solid #ef4444; background: linear-gradient(135deg, #fff 0%, #fef2f2 100%); }
+        .exam-card:nth-child(4) { border-top: 4px solid #8b5cf6; background: linear-gradient(135deg, #fff 0%, #f5f3ff 100%); }
+        .exam-card:nth-child(5) { border-top: 4px solid #f59e0b; background: linear-gradient(135deg, #fff 0%, #fffbeb 100%); }
+        .exam-card:nth-child(6) { border-top: 4px solid #ea580c; background: linear-gradient(135deg, #fff 0%, #fff7ed 100%); }
+        .exam-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at top right, rgba(255,255,255,0.8) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            pointer-events: none;
+        }
+        .exam-card:hover::before {
+            opacity: 1;
         }
         .exam-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transform: translateY(-4px);
+            box-shadow: 0 15px 30px -12px rgba(0,0,0,0.15);
+            border-color: transparent;
         }
-        .exam-title {
-            font-weight: 700;
-            font-size: 14px;
-            margin-bottom: 6px;
+        .exam-icon {
+            width: 48px;
+            height: 48px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            justify-content: center;
+            border-radius: 14px;
+            margin-bottom: 16px;
+            font-size: 1.6rem;
+        }
+        .exam-card:nth-child(1) .exam-icon { background: #dbeafe; }
+        .exam-card:nth-child(2) .exam-icon { background: #d1fae5; }
+        .exam-card:nth-child(3) .exam-icon { background: #fee2e2; }
+        .exam-card:nth-child(4) .exam-icon { background: #ede9fe; }
+        .exam-card:nth-child(5) .exam-icon { background: #fef3c7; }
+        .exam-card:nth-child(6) .exam-icon { background: #ffedd5; }
+        .exam-title {
+            font-weight: 700;
+            font-size: 1.25rem;
+            margin-bottom: 8px;
+            color: #1f2937;
+            letter-spacing: -0.3px;
         }
         .exam-subjects {
-            font-size: 11px;
+            font-size: 0.8rem;
+            line-height: 1.5;
+            margin-bottom: 12px;
             color: #4b5563;
-            line-height: 1.4;
         }
         .exam-books {
-            font-size: 10px;
+            font-size: 0.7rem;
             color: #8b5cf6;
+            border-top: 1px solid #f3e8ff;
+            padding-top: 10px;
             margin-top: 6px;
+        }
+        @media (max-width: 640px) {
+            .exam-grid {
+                grid-template-columns: 1fr;
+                gap: 14px;
+            }
+            .exam-card {
+                padding: 1.25rem;
+            }
         }
     </style>
 </head>
@@ -407,88 +461,73 @@
             </div>
             
             <!-- ============================================ -->
-            <!-- EXAM PREPARATION SECTION - MOVED ABOVE CARDS -->
+            <!-- COMFORTABLE EXAM PREPARATION SECTION -->
             <!-- ============================================ -->
-            <div class="w-full mt-4 mb-8">
-                <h3 class="text-xl md:text-2xl font-bold text-gray-800 mb-4 text-center">📚 Everything for Your Exam Preparation</h3>
+            <div class="w-full mt-4 mb-10">
+                <div class="text-center mb-6">
+                    <h3 class="text-2xl md:text-3xl font-bold text-gray-800 mb-2">Everything for Your Exam Preparation</h3>
+                    <div class="w-20 h-1 bg-gradient-to-r from-purple-600 to-indigo-600 mx-auto rounded-full"></div>
+                </div>
                 
-                <!-- Exam Grid - Concise, no target labels -->
+                <!-- Exam Grid - 2 cards per row, soft and comfortable -->
                 <div class="exam-grid">
-                    <!-- SAT -->
-                    <div class="exam-card border-l-blue-500">
-                        <div class="exam-title">
-                            <span>🎓</span> SAT
-                        </div>
-                        <div class="exam-subjects">
-                            Math (Algebra, Data, Geometry) · Reading & Writing
-                        </div>
+                    <!-- SAT Card -->
+                    <div class="exam-card">
+                        <div class="exam-icon">🎓</div>
+                        <h4 class="exam-title">SAT</h4>
+                        <p class="exam-subjects">Math (Algebra, Data, Geometry) · Reading & Writing</p>
                         <div class="exam-books">
-                            Kaplan, Princeton Review, College Board
+                            <i class="fas fa-book-open text-purple-500 text-xs mr-1"></i> Kaplan, Princeton Review, College Board
                         </div>
                     </div>
                     
-                    <!-- ACT -->
-                    <div class="exam-card border-l-green-500">
-                        <div class="exam-title">
-                            <span>✍️</span> ACT
-                        </div>
-                        <div class="exam-subjects">
-                            English · Math · Reading · Science (Optional)
-                        </div>
+                    <!-- ACT Card -->
+                    <div class="exam-card">
+                        <div class="exam-icon">✍️</div>
+                        <h4 class="exam-title">ACT</h4>
+                        <p class="exam-subjects">English · Math · Reading · Science (Optional)</p>
                         <div class="exam-books">
-                            Barron's, Princeton Review, Magoosh
+                            <i class="fas fa-book-open text-purple-500 text-xs mr-1"></i> Barron's, Princeton Review, Magoosh
                         </div>
                     </div>
                     
-                    <!-- GRE -->
-                    <div class="exam-card border-l-red-500">
-                        <div class="exam-title">
-                            <span>📊</span> GRE
-                        </div>
-                        <div class="exam-subjects">
-                            Quant (Math) · Verbal · Analytical Writing
-                        </div>
+                    <!-- GRE Card -->
+                    <div class="exam-card">
+                        <div class="exam-icon">📊</div>
+                        <h4 class="exam-title">GRE</h4>
+                        <p class="exam-subjects">Quant (Math) · Verbal · Analytical Writing</p>
                         <div class="exam-books">
-                            Manhattan Review, Kaplan, ETS
+                            <i class="fas fa-book-open text-purple-500 text-xs mr-1"></i> Manhattan Review, Kaplan, ETS
                         </div>
                     </div>
                     
-                    <!-- GMAT -->
-                    <div class="exam-card border-l-indigo-500">
-                        <div class="exam-title">
-                            <span>💼</span> GMAT
-                        </div>
-                        <div class="exam-subjects">
-                            Quant · Verbal · Data Insights
-                        </div>
+                    <!-- GMAT Card -->
+                    <div class="exam-card">
+                        <div class="exam-icon">💼</div>
+                        <h4 class="exam-title">GMAT</h4>
+                        <p class="exam-subjects">Quant · Verbal · Data Insights</p>
                         <div class="exam-books">
-                            GMAC, Manhattan Prep, PowerScore
+                            <i class="fas fa-book-open text-purple-500 text-xs mr-1"></i> GMAC, Manhattan Prep, PowerScore
                         </div>
                     </div>
                     
-                    <!-- AP & IB -->
-                    <div class="exam-card border-l-amber-500">
-                        <div class="exam-title">
-                            <span>🔬</span> AP & IB
-                        </div>
-                        <div class="exam-subjects">
-                            Calculus, Biology, Chemistry, Physics, English, Statistics
-                        </div>
+                    <!-- AP & IB Card -->
+                    <div class="exam-card">
+                        <div class="exam-icon">🔬</div>
+                        <h4 class="exam-title">AP & IB</h4>
+                        <p class="exam-subjects">Calculus, Biology, Chemistry, Physics, English, Statistics</p>
                         <div class="exam-books">
-                            Princeton Review, Cambridge, Norton
+                            <i class="fas fa-book-open text-purple-500 text-xs mr-1"></i> Princeton Review, Cambridge, Norton
                         </div>
                     </div>
                     
-                    <!-- JEE & NEET -->
-                    <div class="exam-card border-l-orange-500">
-                        <div class="exam-title">
-                            <span>⚡</span> JEE & NEET
-                        </div>
-                        <div class="exam-subjects">
-                            Physics · Chemistry · Mathematics (JEE) · Biology (NEET)
-                        </div>
+                    <!-- JEE & NEET Card -->
+                    <div class="exam-card">
+                        <div class="exam-icon">⚡</div>
+                        <h4 class="exam-title">JEE & NEET</h4>
+                        <p class="exam-subjects">Physics · Chemistry · Math (JEE) · Biology (NEET)</p>
                         <div class="exam-books">
-                            NCERT, H.C. Verma, Irodov, DC Pandey
+                            <i class="fas fa-book-open text-purple-500 text-xs mr-1"></i> NCERT, H.C. Verma, Irodov, DC Pandey
                         </div>
                     </div>
                 </div>
