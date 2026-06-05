@@ -211,8 +211,15 @@
         const type = document.getElementById('contactType').value;
         const message = document.getElementById('contactMessage').value;
         
+        console.log('=== Form Submission Started ===');
+        console.log('Name:', name);
+        console.log('Email:', email);
+        console.log('Type:', type);
+        console.log('Message length:', message.length);
+        
         // Validate
         if (!name || !email || !message) {
+            console.log('Validation failed: missing fields');
             showToast('Please fill all required fields', true);
             return;
         }
@@ -220,6 +227,7 @@
         // Email validation
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
+            console.log('Validation failed: invalid email');
             showToast('Please enter a valid email address', true);
             return;
         }
@@ -229,6 +237,8 @@
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
         
         try {
+            console.log('Attempting to insert into Supabase...');
+            
             // Insert into Supabase
             const { data, error } = await supabase
                 .from('contact_messages')
@@ -241,12 +251,18 @@
                         status: 'unread',
                         created_at: new Date().toISOString()
                     }
-                ]);
+                ])
+                .select();
             
             if (error) {
-                console.error('Supabase error:', error);
+                console.error('Supabase error details:', error);
+                console.error('Error code:', error.code);
+                console.error('Error message:', error.message);
                 throw error;
             }
+            
+            console.log('Insert successful! Data received:', data);
+            console.log('=== Form Submission Success ===');
             
             // Success message based on type
             const isBookRequest = type === 'Book Request' || message.toLowerCase().includes('book');
@@ -256,14 +272,41 @@
             this.reset();
             
         } catch (error) {
-            console.error('Error submitting form:', error);
-            showToast('❌ Failed to send message. Please try again later.', true);
+            console.error('=== Form Submission Failed ===');
+            console.error('Error object:', error);
+            console.error('Error message:', error.message);
+            
+            let errorMsg = 'Failed to send message. ';
+            if (error.message) {
+                errorMsg += error.message;
+            } else {
+                errorMsg += 'Please try again later.';
+            }
+            showToast('❌ ' + errorMsg, true);
         } finally {
             // Reset button
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalBtnText;
+            console.log('=== Form Submission Ended ===');
         }
     });
+
+    // Test Supabase connection on page load
+    async function testConnection() {
+        console.log('Testing Supabase connection...');
+        try {
+            const { data, error } = await supabase.from('contact_messages').select('count', { count: 'exact', head: true });
+            if (error) {
+                console.error('Connection test failed:', error);
+            } else {
+                console.log('Supabase connection successful!');
+            }
+        } catch(e) {
+            console.error('Connection test error:', e);
+        }
+    }
+    
+    testConnection();
 
     // Make functions global
     window.toggleMobileMenu = toggleMobileMenu;
