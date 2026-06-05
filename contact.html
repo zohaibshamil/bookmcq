@@ -144,8 +144,7 @@
     // ============================================
     const SUPABASE_URL = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
+    
     function showToast(message, isError = false) {
         const toast = document.getElementById('toast');
         toast.textContent = message;
@@ -190,7 +189,7 @@
         });
     }
 
-    // Contact Form Handler
+    // Contact Form Handler - Using direct fetch for reliability
     document.getElementById('contactForm')?.addEventListener('submit', async function(e) {
         e.preventDefault();
         
@@ -216,21 +215,32 @@
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
         
+        const insertData = {
+            name: name,
+            email: email,
+            message_type: type,
+            message: message,
+            status: 'unread',
+            created_at: new Date().toISOString()
+        };
+        
         try {
-            // Try a simple insert without select first
-            const { error } = await supabase
-                .from('contact_messages')
-                .insert({
-                    name: name,
-                    email: email,
-                    message_type: type,
-                    message: message,
-                    status: 'unread'
-                });
+            // Direct fetch to Supabase REST API
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/contact_messages`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'Prefer': 'return=minimal'
+                },
+                body: JSON.stringify(insertData)
+            });
             
-            if (error) {
-                console.error('Supabase error:', error);
-                throw error;
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Fetch error:', errorText);
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
             }
             
             const isBookRequest = type === 'Book Request';
@@ -238,8 +248,8 @@
             this.reset();
             
         } catch (error) {
-            console.error('Error:', error);
-            showToast('❌ Failed to send message. Error: ' + (error.message || 'Please try again.'), true);
+            console.error('Error details:', error);
+            showToast('❌ Failed to send message. Please try again later.', true);
         } finally {
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalBtnText;
