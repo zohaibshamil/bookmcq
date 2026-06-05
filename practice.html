@@ -13,6 +13,10 @@
       gtag('js', new Date());
       gtag('config', 'G-5WGZ1P0EV1');
     </script>
+    
+    <!-- MathJax for rendering mathematical equations -->
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async></script>
+    
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome Icons -->
@@ -51,6 +55,27 @@
         .practice-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
         .missing-book-card { background: linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%); border: 2px solid #f59e0b; transition: all 0.3s ease; }
         .missing-book-card:hover { transform: scale(1.02); }
+        
+        /* Math rendering styles */
+        .math-rendered {
+            display: inline;
+            line-height: 1.6;
+        }
+        .math-rendered mjx-container {
+            display: inline-block;
+            margin: 0 2px;
+        }
+        .question-text {
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+        .option-text {
+            display: inline;
+        }
+        .explanation-text {
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
     </style>
 </head>
 <body class="disable-select">
@@ -157,6 +182,27 @@
         }
     });
 
+    // Function to render math content
+    async function renderMathInElement(element) {
+        if (window.MathJax && element) {
+            try {
+                await MathJax.typesetPromise([element]);
+            } catch(e) {
+                console.log('MathJax error:', e);
+            }
+        }
+    }
+    
+    // Function to process text with math delimiters
+    function processMathContent(text) {
+        if (!text) return '';
+        // Check if text contains LaTeX delimiters
+        if (text.includes('\\(') || text.includes('\\[') || text.includes('$$')) {
+            return text;
+        }
+        return text;
+    }
+
     // Cache Manager (from combined code)
     class CacheManager {
         #cachePrefix = 'bookmcq_';
@@ -218,9 +264,12 @@
                 .order('id');
             if (error) throw error;
             const formatted = (data || []).map(q => ({
-                id: q.id, text: q.question_text,
+                id: q.id, 
+                text: q.question_text,
                 options: (q.options || []).sort((a,b) => a.option_index - b.option_index).map(o => o.option_text),
-                correct: q.correct_answer, explanation: q.explanation || 'No explanation available', difficulty: q.difficulty
+                correct: q.correct_answer, 
+                explanation: q.explanation || 'No explanation available', 
+                difficulty: q.difficulty
             }));
             const result = { questions: formatted, total: count || 0 };
             this.#cache.set(cacheKey, result);
@@ -315,27 +364,39 @@
                 const difficultyColor = q.difficulty === 'easy' ? 'text-green-600 bg-green-50' : 
                                       q.difficulty === 'medium' ? 'text-yellow-600 bg-yellow-50' : 
                                       'text-red-600 bg-red-50';
+                
+                const processedQuestion = processMathContent(q.text);
+                const processedOptions = q.options.map(opt => processMathContent(opt));
+                const processedExplanation = processMathContent(q.explanation);
+                
                 return `
                     <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 practice-card">
                         <div class="flex justify-between items-start mb-3 flex-wrap gap-2">
                             <span class="font-bold text-purple-600 text-sm">Q${globalNumber}</span>
                             <span class="px-2 py-1 rounded-full text-xs font-medium ${difficultyColor}">${q.difficulty.toUpperCase()}</span>
                         </div>
-                        <p class="font-medium text-gray-800 mb-4">${escapeHtml(q.text)}</p>
+                        <p class="font-medium text-gray-800 mb-4 question-text">${processedQuestion}</p>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
-                            ${q.options.map((opt, optIdx) => `
+                            ${processedOptions.map((opt, optIdx) => `
                                 <div class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg ${optIdx === q.correct ? 'border-l-4 border-green-500' : ''}">
                                     <span class="font-semibold text-gray-600 w-6">${String.fromCharCode(65+optIdx)}.</span>
-                                    <span class="text-gray-700 text-sm">${escapeHtml(opt)}</span>
+                                    <span class="text-gray-700 text-sm option-text">${opt}</span>
                                     ${optIdx === q.correct ? '<i class="fas fa-check-circle text-green-500 ml-auto"></i>' : ''}
                                 </div>
                             `).join('')}
                         </div>
-                        ${q.explanation ? `<div class="mt-3 p-3 bg-blue-50 rounded-lg text-sm text-gray-600"><i class="fas fa-info-circle text-blue-500 mr-2"></i>${escapeHtml(q.explanation)}</div>` : ''}
+                        ${q.explanation ? `<div class="mt-3 p-3 bg-blue-50 rounded-lg text-sm text-gray-600 explanation-text"><i class="fas fa-info-circle text-blue-500 mr-2"></i><span class="math-content">${processedExplanation}</span></div>` : ''}
                     </div>
                 `;
             }).join('');
-        } catch(e) { container.innerHTML = '<div class="text-center py-8 text-red-500">Error loading questions</div>'; showToast('Error loading questions', true); }
+            
+            // Render math in all question containers
+            await renderMathInElement(container);
+            
+        } catch(e) { 
+            container.innerHTML = '<div class="text-center py-8 text-red-500">Error loading questions</div>'; 
+            showToast('Error loading questions', true); 
+        }
     }
 
     function renderPagination() {
