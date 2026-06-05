@@ -7,11 +7,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     
     <!-- MathJax for rendering mathematical equations -->
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async></script>
     
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); min-height: 100vh; }
         .upload-card { background: rgba(255,255,255,0.95); border-radius: 1rem; }
@@ -25,58 +25,33 @@
         .step-circle { transition: all 0.2s ease; }
         .step-card:hover .step-circle { transform: scale(1.1); }
         
-        /* Math rendering styles */
+        /* Math preview styles */
         .math-preview {
             background: #f8f9fa;
-            border-left: 3px solid #8b5cf6;
-            padding: 8px 12px;
-            margin: 8px 0;
+            border-left: 4px solid #8b5cf6;
+            padding: 10px;
+            margin-top: 10px;
             border-radius: 8px;
+            font-size: 14px;
         }
         .math-preview-label {
-            font-size: 11px;
+            font-size: 12px;
             color: #6b7280;
-            margin-bottom: 4px;
+            margin-bottom: 5px;
             font-weight: 600;
         }
-        .preview-math {
-            line-height: 1.5;
+        .math-rendered {
+            line-height: 1.6;
         }
-        .preview-math mjx-container {
+        .math-rendered mjx-container {
             display: inline-block;
             margin: 0 2px;
-        }
-        .question-preview {
-            background: #f0fdf4;
-            border: 1px solid #bbf7d0;
-        }
-        .math-help {
-            background: #fef3c7;
-            border: 1px solid #fde68a;
-            border-radius: 12px;
-            padding: 12px;
-            margin-bottom: 16px;
-        }
-        .math-symbol {
-            display: inline-block;
-            background: #f3f4f6;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-family: monospace;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .math-symbol:hover {
-            background: #8b5cf6;
-            color: white;
-            transform: scale(1.05);
         }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
-<div class="max-w-5xl mx-auto">
+<div class="max-w-4xl mx-auto">
     
     <!-- Header -->
     <div class="text-center mb-8">
@@ -85,7 +60,8 @@
             <span class="text-white font-semibold">BookMCQ Bulk Upload</span>
         </div>
         <h1 class="text-3xl md:text-4xl font-bold text-white">📤 Bulk Upload Questions</h1>
-        <p class="text-white/70 mt-2">Upload hundreds of MCQs at once using CSV or Excel files with math support</p>
+        <p class="text-white/70 mt-2">Upload hundreds of MCQs at once using CSV or Excel files</p>
+        <p class="text-white/50 text-sm mt-1">Supports LaTeX math: \( \sqrt{x} \) or $$ \frac{a}{b} $$</p>
     </div>
 
     <!-- Main Card -->
@@ -96,36 +72,6 @@
             <a href="admin.html" class="text-purple-600 hover:text-purple-800 inline-flex items-center gap-2 transition">
                 <i class="fas fa-arrow-left"></i> Back to Admin Panel
             </a>
-        </div>
-
-        <!-- Math Help Section -->
-        <div class="math-help rounded-xl mb-6">
-            <div class="flex justify-between items-center mb-3">
-                <span class="font-semibold text-amber-800">📐 Math Notation Help (LaTeX)</span>
-                <span class="text-xs text-amber-600 cursor-pointer" onclick="toggleMathHelp()">Show/Hide Examples</span>
-            </div>
-            <div id="mathHelpContent" class="hidden text-sm text-gray-700">
-                <p class="mb-2">Use LaTeX notation between <code class="bg-amber-100 px-1 rounded">\( ... \)</code> for inline math or <code class="bg-amber-100 px-1 rounded">$$ ... $$</code> for display math.</p>
-                <div class="flex flex-wrap gap-2 mb-3">
-                    <span class="math-symbol" onclick="copyToClipboard('\\( \\sqrt{x} \\)')">√x</span>
-                    <span class="math-symbol" onclick="copyToClipboard('\\( \\frac{a}{b} \\)')">a/b</span>
-                    <span class="math-symbol" onclick="copyToClipboard('\\( \\lim_{x \\to 0} \\)')">lim</span>
-                    <span class="math-symbol" onclick="copyToClipboard('\\( \\int_{a}^{b} \\)')">∫</span>
-                    <span class="math-symbol" onclick="copyToClipboard('\\( \\sum_{i=1}^{n} \\)')">∑</span>
-                    <span class="math-symbol" onclick="copyToClipboard('\\( \\alpha \\)')">α</span>
-                    <span class="math-symbol" onclick="copyToClipboard('\\( \\beta \\)')">β</span>
-                    <span class="math-symbol" onclick="copyToClipboard('\\( \\pi \\)')">π</span>
-                    <span class="math-symbol" onclick="copyToClipboard('\\( \\infty \\)')">∞</span>
-                    <span class="math-symbol" onclick="copyToClipboard('\\( \\leq \\)')">≤</span>
-                    <span class="math-symbol" onclick="copyToClipboard('\\( \\geq \\)')">≥</span>
-                    <span class="math-symbol" onclick="copyToClipboard('\\( \\neq \\)')">≠</span>
-                    <span class="math-symbol" onclick="copyToClipboard('\\( \\times \\)')">×</span>
-                    <span class="math-symbol" onclick="copyToClipboard('\\( \\div \\)')">÷</span>
-                    <span class="math-symbol" onclick="copyToClipboard('x^2')">x²</span>
-                    <span class="math-symbol" onclick="copyToClipboard('x_n')">xₙ</span>
-                </div>
-                <p class="text-xs text-gray-500"><i class="fas fa-info-circle"></i> Click any symbol to copy to clipboard, then paste in your CSV file.</p>
-            </div>
         </div>
 
         <!-- Step 1: Select Book - Modern Card -->
@@ -162,7 +108,8 @@
                 <div class="flex-1"></div>
                 <i class="fas fa-download text-yellow-500 text-2xl"></i>
             </div>
-            <p class="text-sm text-gray-600 mb-3">Download the template with math examples, fill with your questions, then upload back.</p>
+            <p class="text-sm text-gray-600 mb-3">Download the template, fill with your questions, then upload back.</p>
+            <p class="text-xs text-purple-600 mb-3">💡 Use LaTeX for math: \( \sqrt{x} \), \( \frac{a}{b} \), \( \lim_{x \to 0} \), etc.</p>
             <button id="downloadBtn" class="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded-xl inline-flex items-center gap-2 transition transform hover:scale-105 shadow-md">
                 <i class="fas fa-download"></i> Download CSV Template
             </button>
@@ -193,14 +140,20 @@
             </button>
         </div>
         
-        <!-- Preview Section with Math Support -->
-        <div id="previewDiv" style="display: none;"></div>
+        <!-- Preview Section -->
+        <div id="previewDiv" style="margin-top: 15px; display: none;"></div>
+        
+        <!-- Math Preview Section -->
+        <div id="mathPreviewDiv" class="math-preview hidden mt-4">
+            <div class="math-preview-label">📐 Math Preview (First question):</div>
+            <div id="mathPreviewContent" class="math-rendered"></div>
+        </div>
     </div>
 </div>
 
 <script>
     // ============================================
-    // 1. SECURE KEY VERIFICATION
+    // 1. SECURE KEY VERIFICATION (No URL Parameter)
     // ============================================
     const SECRET_KEY = 'BookMCQ_Admin_Secure_Key_2024';
 
@@ -221,40 +174,33 @@
     }
 
     // ============================================
-    // 2. MATH FUNCTIONS
+    // 2. LOGGING FUNCTION (Kept for console, removed from UI)
     // ============================================
-    function toggleMathHelp() {
-        const helpContent = document.getElementById('mathHelpContent');
-        if (helpContent) {
-            helpContent.classList.toggle('hidden');
+    function addLog(msg, type = 'info') {
+        console.log(`[${new Date().toLocaleTimeString()}] ${msg}`);
+    }
+    
+    addLog('Script started', 'info');
+    addLog('✅ Key verified', 'success');
+    
+    // ============================================
+    // 3. SAFE STRING HELPER (Prevents "includes is not a function" error)
+    // ============================================
+    function safeString(value) {
+        if (value === null || value === undefined) return '';
+        return String(value);
+    }
+    
+    function safeProcessMathContent(text) {
+        const str = safeString(text);
+        // Check if text contains LaTeX delimiters
+        if (str.includes('\\(') || str.includes('\\[') || str.includes('$$')) {
+            return str;
         }
+        return str;
     }
     
-    function copyToClipboard(text) {
-        navigator.clipboard.writeText(text).then(() => {
-            showToast('Copied: ' + text);
-        }).catch(() => {
-            alert('Copy: ' + text);
-        });
-    }
-    
-    function showToast(message, isError = false) {
-        // Create temporary toast
-        const toast = document.createElement('div');
-        toast.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50 text-sm';
-        toast.textContent = message;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 2000);
-    }
-    
-    function processMathContent(text) {
-        if (!text) return '';
-        if (text.includes('\\(') || text.includes('\\[') || text.includes('$$')) {
-            return text;
-        }
-        return text;
-    }
-    
+    // Function to render math in element
     async function renderMathInElement(element) {
         if (window.MathJax && element) {
             try {
@@ -264,16 +210,6 @@
             }
         }
     }
-    
-    // ============================================
-    // 3. LOGGING FUNCTION
-    // ============================================
-    function addLog(msg, type = 'info') {
-        console.log(`[${new Date().toLocaleTimeString()}] ${msg}`);
-    }
-    
-    addLog('Script started', 'info');
-    addLog('✅ Key verified', 'success');
     
     // ============================================
     // 4. SUPABASE & CORE LOGIC
@@ -348,43 +284,25 @@
         }
         
         function downloadTemplate() {
-            addLog('Generating CSV template with math examples...', 'info');
-            // Headers with math examples
+            addLog('Generating CSV template...', 'info');
             const headers = ['question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'difficulty', 'explanation'];
-            const examples = [
-                'What is \\( \\sqrt{16} \\)?', '2', '4', '8', '16', '1', 'easy', 'Square root of 16 is 4',
-                '\\( \\lim_{x \\to 0} \\frac{\\sin x}{x} = ? \\)', '0', '1', 'undefined', '∞', '1', 'medium', 'Standard limit equals 1',
-                'What is \\( \\frac{d}{dx} (x^2) \\)?', 'x', '2x', 'x^2', '2', '1', 'medium', 'Derivative of x² is 2x',
-                '\\( \\int_0^1 x^2 dx = ? \\)', '1/2', '1/3', '1/4', '2/3', '1', 'hard', '∫₀¹ x² dx = [x³/3]₀¹ = 1/3'
-            ];
+            const example = ['What does \( \text{typeof null} \) return?', 'null', 'undefined', 'object', 'number', '2', 'easy', '\( \text{typeof null} \) returns "object" due to a historical bug in JavaScript'];
+            const csv = [headers.join(','), example.map(cell => `"${safeString(cell).replace(/"/g, '""')}"`).join(',')].join('\n');
             
-            let csvContent = headers.join(',') + '\n';
-            for (let i = 0; i < examples.length; i += 8) {
-                const row = examples.slice(i, i + 8);
-                const escapedRow = row.map(cell => {
-                    if (cell.includes(',') || cell.includes('"') || cell.includes('\n')) {
-                        return `"${cell.replace(/"/g, '""')}"`;
-                    }
-                    return cell;
-                });
-                csvContent += escapedRow.join(',') + '\n';
-            }
-            
-            const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'bookmcq_template_with_math.csv';
+            a.download = 'bookmcq_template.csv';
             a.click();
             URL.revokeObjectURL(url);
-            addLog('✅ Template downloaded with math examples', 'success');
-            showToast('Template downloaded with math examples!');
+            addLog('✅ Template downloaded', 'success');
         }
         
-        async function processFile(file) {
+        function processFile(file) {
             addLog(`Processing: ${file.name}`, 'info');
             const reader = new FileReader();
-            reader.onload = async function(e) {
+            reader.onload = function(e) {
                 try {
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
@@ -394,72 +312,52 @@
                     addLog(`✅ Loaded ${rows.length} questions`, 'success');
                     if (rows.length === 0) return;
                     
-                    currentQuestions = rows;
+                    // Safe process each row
+                    currentQuestions = rows.map(row => {
+                        const processed = {};
+                        Object.keys(row).forEach(key => {
+                            processed[key] = safeString(row[key]);
+                        });
+                        return processed;
+                    });
                     
                     const previewDiv = document.getElementById('previewDiv');
                     const uploadBtn = document.getElementById('uploadBtn');
+                    const mathPreviewDiv = document.getElementById('mathPreviewDiv');
+                    const mathPreviewContent = document.getElementById('mathPreviewContent');
                     
-                    let html = '<div class="mt-4 p-4 bg-purple-50 rounded-xl border border-purple-200">';
-                    html += '<h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2"><i class="fas fa-eye text-purple-600"></i> Preview (first 5 rows with math rendering)</h3>';
-                    
-                    for (let i = 0; i < Math.min(5, rows.length); i++) {
-                        const q = rows[i];
-                        const processedQuestion = processMathContent(q.question_text || '');
-                        const processedOptions = [
-                            processMathContent(q.option_a || ''),
-                            processMathContent(q.option_b || ''),
-                            processMathContent(q.option_c || ''),
-                            processMathContent(q.option_d || '')
-                        ];
-                        const processedExplanation = processMathContent(q.explanation || '');
-                        
-                        html += `
-                            <div class="question-preview bg-white rounded-lg p-4 mb-3 border border-green-200">
-                                <div class="flex items-center gap-2 mb-2">
-                                    <span class="bg-purple-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">${i+1}</span>
-                                    <span class="text-xs text-gray-500">Difficulty: ${q.difficulty || 'medium'}</span>
-                                    <span class="text-xs text-green-600 ml-auto">Correct: Option ${String.fromCharCode(65 + parseInt(q.correct_answer || 0))}</span>
-                                </div>
-                                <div class="mb-3">
-                                    <span class="text-xs font-semibold text-gray-500">Question:</span>
-                                    <div class="math-preview bg-gray-50 rounded-lg p-2">
-                                        <div class="preview-math">${processedQuestion}</div>
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-2 gap-2 mb-2">
-                                    ${processedOptions.map((opt, idx) => `
-                                        <div class="${idx === parseInt(q.correct_answer) ? 'bg-green-50 border-l-4 border-green-500' : 'bg-gray-50'} p-2 rounded">
-                                            <span class="text-xs font-semibold text-gray-500">${String.fromCharCode(65+idx)}:</span>
-                                            <div class="preview-math text-sm">${opt}</div>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                                ${processedExplanation ? `
-                                    <div class="mt-2">
-                                        <span class="text-xs font-semibold text-gray-500">Explanation:</span>
-                                        <div class="math-preview bg-blue-50 rounded-lg p-2 text-sm">
-                                            <div class="preview-math">${processedExplanation}</div>
-                                        </div>
-                                    </div>
-                                ` : ''}
-                            </div>
-                        `;
+                    let html = '<h3 class="font-bold text-gray-700 mb-2">📋 Preview (first 3 rows):</h3>';
+                    html += '<div class="preview-table"></table>';
+                    const headers = Object.keys(currentQuestions[0]);
+                    html += '<thead><tr style="background:#f0fdf4;">' + headers.map(h => `<th style="padding:8px; border:1px solid #d1d5db; text-align:left; background:#dcfce7;">${escapeHtml(h)}</th>`).join('') + '</thead><tbody>';
+                    for (let i = 0; i < Math.min(3, currentQuestions.length); i++) {
+                        html += '<tr>' + headers.map(h => `<td style="padding:8px; border:1px solid #d1d5db;">${escapeHtml(safeString(currentQuestions[i][h]).substring(0, 50))}</td>`).join('') + '</tr>';
                     }
-                    
-                    html += `<p class="text-green-600 text-sm mt-3 flex items-center gap-2"><i class="fas fa-check-circle"></i> ✅ ${rows.length} questions ready to upload</p>`;
-                    html += `<p class="text-amber-600 text-xs mt-2"><i class="fas fa-lightbulb"></i> 💡 Math equations will render properly using LaTeX notation (e.g., \\( \\sqrt{x} \\))</p>`;
-                    html += '</div>';
+                    html += '</tbody></table></div>';
+                    html += `<p class="text-green-600 text-sm mt-2"><i class="fas fa-check-circle"></i> ✅ ${currentQuestions.length} questions ready to upload</p>`;
                     
                     previewDiv.innerHTML = html;
                     previewDiv.style.display = 'block';
                     uploadBtn.style.display = 'inline-flex';
                     
-                    // Render math in preview
-                    await renderMathInElement(previewDiv);
+                    // Show math preview for first question
+                    if (currentQuestions.length > 0) {
+                        const firstQuestion = currentQuestions[0];
+                        const questionText = safeString(firstQuestion.question_text);
+                        const processedQuestion = safeProcessMathContent(questionText);
+                        mathPreviewContent.innerHTML = `
+                            <div class="mb-2"><strong>Question:</strong> <span class="math-content">${escapeHtml(processedQuestion)}</span></div>
+                            <div class="text-sm text-gray-500 mt-2">Other fields also support LaTeX math syntax</div>
+                        `;
+                        mathPreviewDiv.classList.remove('hidden');
+                        renderMathInElement(mathPreviewContent);
+                    } else {
+                        mathPreviewDiv.classList.add('hidden');
+                    }
                     
                 } catch(e) {
                     addLog(`❌ Parse error: ${e.message}`, 'error');
-                    showToast('Error parsing file: ' + e.message, true);
+                    alert('Error parsing file: ' + e.message);
                 }
             };
             reader.readAsArrayBuffer(file);
@@ -471,13 +369,13 @@
             
             if (!bookId || !topicId) {
                 addLog('❌ Please select both a book and a topic', 'error');
-                showToast('Please select both a book and a topic', true);
+                alert('Please select both a book and a topic');
                 return;
             }
             
             if (!currentQuestions.length) {
                 addLog('❌ No questions to upload', 'error');
-                showToast('No questions to upload. Please select a file first.', true);
+                alert('No questions to upload. Please select a file first.');
                 return;
             }
             
@@ -489,19 +387,19 @@
                 try {
                     const { data, error } = await supabase.from('questions').insert({
                         topic_id: parseInt(topicId),
-                        question_text: q.question_text || '',
-                        difficulty: q.difficulty || 'medium',
-                        correct_answer: parseInt(q.correct_answer) || 0,
-                        explanation: q.explanation || ''
+                        question_text: safeString(q.question_text),
+                        difficulty: safeString(q.difficulty) || 'medium',
+                        correct_answer: parseInt(safeString(q.correct_answer)) || 0,
+                        explanation: safeString(q.explanation) || ''
                     }).select();
                     
                     if (error) throw error;
                     
                     const options = [
-                        q.option_a || '',
-                        q.option_b || '',
-                        q.option_c || '',
-                        q.option_d || ''
+                        safeString(q.option_a),
+                        safeString(q.option_b),
+                        safeString(q.option_c),
+                        safeString(q.option_d)
                     ];
                     for (let j = 0; j < options.length; j++) {
                         await supabase.from('options').insert({
@@ -519,11 +417,12 @@
             }
             
             addLog(`📊 Complete: ${success} uploaded, ${failed} failed`, success > 0 ? 'success' : 'error');
-            showToast(`Upload complete! ${success} questions added, ${failed} failed`);
+            alert(`Upload complete!\n${success} questions added\n${failed} failed`);
             
             if (success > 0) {
                 document.getElementById('previewDiv').style.display = 'none';
                 document.getElementById('uploadBtn').style.display = 'none';
+                document.getElementById('mathPreviewDiv').classList.add('hidden');
                 document.getElementById('fileInput').value = '';
                 currentQuestions = [];
             }
@@ -531,7 +430,7 @@
         
         function escapeHtml(str) {
             if (!str) return '';
-            return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
+            return String(str).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
         }
         
         // Setup file upload zone
@@ -574,10 +473,6 @@
         
         setupUploadZone();
         loadBooks();
-        
-        // Make functions global for onclick handlers
-        window.toggleMathHelp = toggleMathHelp;
-        window.copyToClipboard = copyToClipboard;
     }
     
     addLog('Checking for Supabase library...', 'info');
