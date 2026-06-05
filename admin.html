@@ -8,6 +8,10 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <!-- MathJax for rendering mathematical equations -->
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async></script>
+    
     <style>
         body { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); min-height: 100vh; }
         .admin-card { background: rgba(255,255,255,0.95); border-radius: 1rem; }
@@ -18,9 +22,65 @@
         .skeleton { animation: pulse 1.5s ease-in-out infinite; background: #e2e8f0; border-radius: 8px; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-        .modal-content { background: white; border-radius: 1rem; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; }
+        .modal-content { background: white; border-radius: 1rem; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; }
         .category-badge { background: #e0e7ff; color: #4338ca; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-left: 8px; cursor: pointer; }
         .category-badge:hover { background: #c7d2fe; }
+        
+        /* Math preview styles */
+        .math-preview {
+            background: #f8f9fa;
+            border-left: 4px solid #8b5cf6;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .math-preview-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        .math-input-wrapper {
+            position: relative;
+        }
+        .math-help {
+            font-size: 11px;
+            color: #8b5cf6;
+            margin-top: 4px;
+            cursor: pointer;
+        }
+        .math-help:hover {
+            text-decoration: underline;
+        }
+        .math-symbols {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+            margin-bottom: 8px;
+        }
+        .math-symbol {
+            background: #f3f4f6;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .math-symbol:hover {
+            background: #e0e7ff;
+            transform: scale(1.05);
+        }
+        
+        /* Math rendering in questions list */
+        .math-rendered {
+            line-height: 1.6;
+        }
+        .math-rendered mjx-container {
+            display: inline-block;
+            margin: 0 2px;
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -197,18 +257,87 @@
                         <option value="medium">Medium</option>
                         <option value="hard">Hard</option>
                     </select>
-                    <textarea id="questionText" rows="3" placeholder="Question Text" class="w-full p-2 border rounded mb-2"></textarea>
-                    <input type="text" id="option0" placeholder="Option A" class="w-full p-2 border rounded mb-2">
-                    <input type="text" id="option1" placeholder="Option B" class="w-full p-2 border rounded mb-2">
-                    <input type="text" id="option2" placeholder="Option C" class="w-full p-2 border rounded mb-2">
-                    <input type="text" id="option3" placeholder="Option D" class="w-full p-2 border rounded mb-2">
+                    
+                    <!-- Math Help Section -->
+                    <div class="bg-purple-50 p-3 rounded-lg mb-2">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-semibold text-purple-700">📐 Math Notation Help</span>
+                            <span class="text-xs text-purple-500 cursor-pointer" onclick="toggleMathHelp()">Show/Hide</span>
+                        </div>
+                        <div id="mathHelpContent" class="hidden text-xs text-gray-600 space-y-1">
+                            <p>Use LaTeX notation between <code class="bg-gray-200 px-1 rounded">\( ... \)</code> or <code class="bg-gray-200 px-1 rounded">$$ ... $$</code></p>
+                            <div class="math-symbols">
+                                <span class="math-symbol" onclick="insertMath('\\sqrt{x}')">√x</span>
+                                <span class="math-symbol" onclick="insertMath('\\frac{a}{b}')">a/b</span>
+                                <span class="math-symbol" onclick="insertMath('\\lim_{x \\to 0}')">lim</span>
+                                <span class="math-symbol" onclick="insertMath('\\int_{a}^{b}')">∫</span>
+                                <span class="math-symbol" onclick="insertMath('\\sum_{i=1}^{n}')">∑</span>
+                                <span class="math-symbol" onclick="insertMath('\\alpha')">α</span>
+                                <span class="math-symbol" onclick="insertMath('\\beta')">β</span>
+                                <span class="math-symbol" onclick="insertMath('\\pi')">π</span>
+                                <span class="math-symbol" onclick="insertMath('\\infty')">∞</span>
+                                <span class="math-symbol" onclick="insertMath('\\leq')">≤</span>
+                                <span class="math-symbol" onclick="insertMath('\\geq')">≥</span>
+                                <span class="math-symbol" onclick="insertMath('\\neq')">≠</span>
+                                <span class="math-symbol" onclick="insertMath('\\times')">×</span>
+                                <span class="math-symbol" onclick="insertMath('\\div')">÷</span>
+                                <span class="math-symbol" onclick="insertMath('x^2')">x²</span>
+                                <span class="math-symbol" onclick="insertMath('x_n')">xₙ</span>
+                            </div>
+                            <p>Examples:</p>
+                            <ul class="list-disc list-inside ml-2">
+                                <li><code>\( \sqrt{x^2 + y^2} \)</code> → √(x² + y²)</li>
+                                <li><code>\( \lim_{x \to 0} \frac{\sin x}{x} = 1 \)</code> → limit formula</li>
+                                <li><code>\( \int_0^\infty e^{-x^2} dx = \frac{\sqrt{\pi}}{2} \)</code> → integral</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="math-input-wrapper">
+                        <textarea id="questionText" rows="3" placeholder="Question Text (Use LaTeX: \( \sqrt{x} \) for math)" class="w-full p-2 border rounded mb-2"></textarea>
+                        <div id="questionPreview" class="math-preview hidden">
+                            <div class="math-preview-label">📐 Preview:</div>
+                            <div class="math-rendered"></div>
+                        </div>
+                    </div>
+                    
+                    <input type="text" id="option0" placeholder="Option A (LaTeX supported)" class="w-full p-2 border rounded mb-2">
+                    <div id="option0Preview" class="math-preview hidden">
+                        <div class="math-preview-label">Preview:</div>
+                        <div class="math-rendered"></div>
+                    </div>
+                    
+                    <input type="text" id="option1" placeholder="Option B (LaTeX supported)" class="w-full p-2 border rounded mb-2">
+                    <div id="option1Preview" class="math-preview hidden">
+                        <div class="math-preview-label">Preview:</div>
+                        <div class="math-rendered"></div>
+                    </div>
+                    
+                    <input type="text" id="option2" placeholder="Option C (LaTeX supported)" class="w-full p-2 border rounded mb-2">
+                    <div id="option2Preview" class="math-preview hidden">
+                        <div class="math-preview-label">Preview:</div>
+                        <div class="math-rendered"></div>
+                    </div>
+                    
+                    <input type="text" id="option3" placeholder="Option D (LaTeX supported)" class="w-full p-2 border rounded mb-2">
+                    <div id="option3Preview" class="math-preview hidden">
+                        <div class="math-preview-label">Preview:</div>
+                        <div class="math-rendered"></div>
+                    </div>
+                    
                     <select id="correctAnswer" class="w-full p-2 border rounded mb-2">
                         <option value="0">Option A is correct</option>
                         <option value="1">Option B is correct</option>
                         <option value="2">Option C is correct</option>
                         <option value="3">Option D is correct</option>
                     </select>
-                    <textarea id="explanation" rows="2" placeholder="Explanation (optional)" class="w-full p-2 border rounded mb-2"></textarea>
+                    
+                    <textarea id="explanation" rows="2" placeholder="Explanation (LaTeX supported)" class="w-full p-2 border rounded mb-2"></textarea>
+                    <div id="explanationPreview" class="math-preview hidden">
+                        <div class="math-preview-label">Preview:</div>
+                        <div class="math-rendered"></div>
+                    </div>
+                    
                     <button id="saveQuestionBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Save Question</button>
                     <button id="cancelQuestionBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
                 </div>
@@ -222,21 +351,22 @@
                 </div>
             </div>
 
-<!-- Bulk Upload Tab - Opens Separate Page with Session -->
-<div id="bulkUploadTab" class="hidden">
-    <div class="text-center py-12">
-        <i class="fas fa-upload text-6xl text-purple-500 mb-4"></i>
-        <h2 class="text-2xl font-bold mb-3">Bulk Upload Questions</h2>
-        <p class="text-gray-600 mb-6">Upload hundreds of questions at once using a CSV file</p>
-        <div class="flex gap-4 justify-center">
-            <button onclick="openBulkUploadWithSession()" class="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 inline-flex items-center gap-2">
-                <i class="fas fa-external-link-alt"></i>
-                Open Bulk Upload Page
-            </button>
-        </div>
-        <p class="text-sm text-gray-500 mt-4">Click to open bulk upload with your current session</p>
-    </div>
-</div>
+            <!-- Bulk Upload Tab -->
+            <div id="bulkUploadTab" class="hidden">
+                <div class="text-center py-12">
+                    <i class="fas fa-upload text-6xl text-purple-500 mb-4"></i>
+                    <h2 class="text-2xl font-bold mb-3">Bulk Upload Questions</h2>
+                    <p class="text-gray-600 mb-6">Upload hundreds of questions at once using a CSV file</p>
+                    <div class="flex gap-4 justify-center">
+                        <button onclick="openBulkUploadWithSession()" class="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 inline-flex items-center gap-2">
+                            <i class="fas fa-external-link-alt"></i>
+                            Open Bulk Upload Page
+                        </button>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-4">Click to open bulk upload with your current session</p>
+                </div>
+            </div>
+            
             <!-- Admins Tab -->
             <div id="adminsTab" class="hidden">
                 <h2 class="text-xl font-bold mb-4">👑 Admin Users</h2>
@@ -252,7 +382,7 @@
     </div>
 </div>
 
-<!-- Edit Modals -->
+<!-- Edit Modals (same as before - keep all existing modals) -->
 <div id="editBookModal" class="hidden modal">
     <div class="modal-content p-6">
         <h3 class="text-xl font-bold mb-4">Edit Book</h3>
@@ -343,9 +473,9 @@
     let currentFilters = { bookId: '', topicId: '', difficulty: '' };
     let currentTopicBookFilter = '';
     
-    // ============ SESSION TIMEOUT (10 minutes = 600000 ms) ============
+    // ============ SESSION TIMEOUT ============
     let sessionTimeout;
-    const SESSION_DURATION = 10 * 60 * 1000; // 10 minutes
+    const SESSION_DURATION = 10 * 60 * 1000;
     
     function resetSessionTimer() {
         if (sessionTimeout) clearTimeout(sessionTimeout);
@@ -363,7 +493,6 @@
         }
     }
     
-    // Add activity listeners
     const activityEvents = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
     activityEvents.forEach(event => {
         document.addEventListener(event, trackUserActivity);
@@ -393,6 +522,75 @@
             if (m === '<') return '&lt;';
             if (m === '>') return '&gt;';
             return m;
+        });
+    }
+
+    // ============ MATH FUNCTIONS ============
+    function toggleMathHelp() {
+        const helpContent = document.getElementById('mathHelpContent');
+        if (helpContent) {
+            helpContent.classList.toggle('hidden');
+        }
+    }
+    
+    function insertMath(symbol) {
+        const activeElement = document.activeElement;
+        if (activeElement && (activeElement.tagName === 'TEXTAREA' || activeElement.tagName === 'INPUT')) {
+            const start = activeElement.selectionStart;
+            const end = activeElement.selectionEnd;
+            const text = activeElement.value;
+            const newText = text.substring(0, start) + `\\( ${symbol} \\)` + text.substring(end);
+            activeElement.value = newText;
+            activeElement.dispatchEvent(new Event('input'));
+            activeElement.focus();
+            activeElement.selectionStart = start + symbol.length + 7;
+            activeElement.selectionEnd = start + symbol.length + 7;
+        }
+    }
+    
+    function previewMath(textareaId, previewId) {
+        const textarea = document.getElementById(textareaId);
+        const preview = document.getElementById(previewId);
+        if (!textarea || !preview) return;
+        
+        const text = textarea.value;
+        if (text && (text.includes('\\(') || text.includes('\\[') || text.includes('\\\\') || text.includes('^') || text.includes('_'))) {
+            preview.classList.remove('hidden');
+            const previewDiv = preview.querySelector('.math-rendered');
+            if (previewDiv) {
+                // Wrap content in LaTeX delimiters if not present
+                let processedText = text;
+                if (!processedText.includes('\\(') && !processedText.includes('\\[')) {
+                    processedText = `\\( ${processedText} \\)`;
+                }
+                previewDiv.innerHTML = processedText;
+                // Trigger MathJax rendering
+                if (window.MathJax) {
+                    MathJax.typesetPromise([previewDiv]).catch(console.error);
+                }
+            }
+        } else {
+            preview.classList.add('hidden');
+        }
+    }
+    
+    function setupMathPreviews() {
+        const mathFields = [
+            { textarea: 'questionText', preview: 'questionPreview' },
+            { textarea: 'option0', preview: 'option0Preview' },
+            { textarea: 'option1', preview: 'option1Preview' },
+            { textarea: 'option2', preview: 'option2Preview' },
+            { textarea: 'option3', preview: 'option3Preview' },
+            { textarea: 'explanation', preview: 'explanationPreview' }
+        ];
+        
+        mathFields.forEach(field => {
+            const textarea = document.getElementById(field.textarea);
+            if (textarea) {
+                textarea.addEventListener('input', () => previewMath(field.textarea, field.preview));
+                // Initial check
+                previewMath(field.textarea, field.preview);
+            }
         });
     }
 
@@ -483,6 +681,8 @@
                     loadTopicFilterBooksCached(),
                     loadCategoriesCached()
                 ]);
+                setupBookFilters();
+                setupMathPreviews();
                 resetSessionTimer();
             } else {
                 document.getElementById('adminBadge').classList.add('hidden');
@@ -544,26 +744,25 @@
         document.getElementById('loginForm').classList.remove('hidden');
     }
 
-// ============ OPEN BULK UPLOAD SECURELY ============
-window.openBulkUploadWithSession = async function() {
-    showToast('Opening bulk upload...');
-    try {
-        const { data: { session } } = await _supabase.auth.getSession();
-        if (!session) {
-            showToast('Please login first', true);
-            return;
-        }
-        
-        const SECRET_KEY = 'BookMCQ_Admin_Secure_Key_2024';
-        sessionStorage.setItem('bookmcq_bulk_access', SECRET_KEY);
-        window.open('bulk-upload.html', '_blank');
+    window.openBulkUploadWithSession = async function() {
         showToast('Opening bulk upload...');
-    } catch(e) {
-        showToast('Error: ' + e.message, true);
-    }
-};
+        try {
+            const { data: { session } } = await _supabase.auth.getSession();
+            if (!session) {
+                showToast('Please login first', true);
+                return;
+            }
+            
+            const SECRET_KEY = 'BookMCQ_Admin_Secure_Key_2024';
+            sessionStorage.setItem('bookmcq_bulk_access', SECRET_KEY);
+            window.open('bulk-upload.html', '_blank');
+            showToast('Opening bulk upload...');
+        } catch(e) {
+            showToast('Error: ' + e.message, true);
+        }
+    };
 
-    // ============ CACHED CATEGORIES with Duplicate Check ============
+    // ============ CACHED CATEGORIES ============
     async function loadCategoriesCached() {
         if (categoriesCache !== null) {
             renderCategories(categoriesCache);
@@ -686,7 +885,7 @@ window.openBulkUploadWithSession = async function() {
         }
     }
 
-    // ============ CACHED BOOKS with Duplicate Check ============
+    // ============ CACHED BOOKS ============
     async function loadBooksCached() {
         const container = document.getElementById('booksList');
         
@@ -846,7 +1045,7 @@ window.openBulkUploadWithSession = async function() {
         }
     }
 
-    // ============ CACHED TOPICS with Duplicate Check ============
+    // ============ CACHED TOPICS ============
     async function loadTopicFilterBooksCached() {
         if (booksCache !== null) {
             renderTopicFilterBooks(booksCache);
@@ -958,6 +1157,7 @@ window.openBulkUploadWithSession = async function() {
         document.getElementById('editTopicId').value = id;
         document.getElementById('editTopicName').value = name;
         document.getElementById('editChapterNumber').value = chapterNumber;
+        loadBookSelectForEditTopic();
         document.getElementById('editTopicModal').classList.remove('hidden');
     };
 
@@ -972,7 +1172,6 @@ window.openBulkUploadWithSession = async function() {
             return;
         }
         
-        // Get current topic to find its book_id
         const { data: currentTopic } = await _supabase.from('topics').select('book_id').eq('id', id).single();
         const targetBookId = bookId || currentTopic?.book_id;
         
@@ -996,16 +1195,6 @@ window.openBulkUploadWithSession = async function() {
             await Promise.all([loadTopicsCached(), loadFilterBooksCached()]);
         }
     }
-    
-    // Add book_id to edit topic modal
-    window.openEditTopicModal = function(id, name, chapterNumber) {
-        document.getElementById('editTopicId').value = id;
-        document.getElementById('editTopicName').value = name;
-        document.getElementById('editChapterNumber').value = chapterNumber;
-        // Load books into edit topic modal
-        loadBookSelectForEditTopic();
-        document.getElementById('editTopicModal').classList.remove('hidden');
-    };
     
     async function loadBookSelectForEditTopic() {
         if (booksCache !== null) {
@@ -1055,7 +1244,7 @@ window.openBulkUploadWithSession = async function() {
         }
     }
 
-    // ============ CACHED QUESTIONS HELPERS with Duplicate Check ============
+    // ============ CACHED QUESTIONS HELPERS ============
     async function loadBookSelectsCached() {
         if (booksCache !== null) {
             renderBookSelects(booksCache);
@@ -1172,7 +1361,7 @@ window.openBulkUploadWithSession = async function() {
         topicSelect.value = '';
     }
 
-    // ============ QUESTIONS with Duplicate Check ============
+    // ============ QUESTIONS ============
     async function loadQuestions() {
         const container = document.getElementById('questionsList');
         container.innerHTML = '<div class="skeleton h-24 rounded-lg mb-2"></div><div class="skeleton h-24 rounded-lg"></div>';
@@ -1237,7 +1426,7 @@ window.openBulkUploadWithSession = async function() {
             <div class="bg-gray-50 p-3 rounded-lg mb-2">
                 <div class="flex justify-between items-start">
                     <div class="flex-1">
-                        <p class="font-bold text-sm">Q${sequentialNumber}. ${escapeHtml(q.question_text)}</p>
+                        <p class="font-bold text-sm math-rendered">Q${sequentialNumber}. <span class="math-content">${escapeHtml(q.question_text)}</span></p>
                         <p class="text-xs text-gray-600 mt-1">Book: ${escapeHtml(bookTitle)} | Topic: ${topicDisplay} | Difficulty: ${q.difficulty}</p>
                     </div>
                     <div class="flex gap-2 ml-2">
@@ -1251,6 +1440,11 @@ window.openBulkUploadWithSession = async function() {
                 </div>
             </div>
         `}).join('');
+        
+        // Render math in questions list
+        if (window.MathJax) {
+            MathJax.typesetPromise();
+        }
     }
     
     async function applyFilters() {
@@ -1283,7 +1477,7 @@ window.openBulkUploadWithSession = async function() {
         }
     }
 
-    // ============ SINGLE QUESTION ADD with Duplicate Check ============
+    // ============ SINGLE QUESTION ADD ============
     window.deleteQuestion = async function(id) {
         if (confirm('Delete this question?')) {
             await _supabase.from('options').delete().eq('question_id', id);
@@ -1389,7 +1583,6 @@ window.openBulkUploadWithSession = async function() {
             return;
         }
         
-        // Get current question to find its topic_id
         const { data: currentQ } = await _supabase.from('questions').select('topic_id').eq('id', id).single();
         const duplicate = await checkDuplicateQuestion(questionText, currentQ.topic_id, id);
         if (duplicate) {
@@ -1496,6 +1689,7 @@ window.openBulkUploadWithSession = async function() {
                     loadCategoriesCached()
                 ]);
                 setupBookFilters();
+                setupMathPreviews();
                 resetSessionTimer();
             } else {
                 document.getElementById('adminBadge').classList.add('hidden');
@@ -1595,6 +1789,10 @@ window.openBulkUploadWithSession = async function() {
         document.getElementById('closeQuestionModal').addEventListener('click', () => {
             document.getElementById('editQuestionModal').classList.add('hidden');
         });
+        
+        // Make math functions globally available
+        window.toggleMathHelp = toggleMathHelp;
+        window.insertMath = insertMath;
     }
 
     // Add missing edit topic book select
