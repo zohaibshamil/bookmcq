@@ -8,50 +8,32 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    
-    <!-- MathJax for rendering mathematical equations -->
-    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async></script>
-    
     <style>
         body { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); min-height: 100vh; }
         .upload-card { background: rgba(255,255,255,0.95); border-radius: 1rem; }
-        .preview-table { overflow-x: auto; }
+        .preview-table { overflow-x: auto; max-height: 300px; overflow-y: auto; }
         .preview-table table { width: 100%; border-collapse: collapse; font-size: 12px; }
         .preview-table th, .preview-table td { border: 1px solid #e2e8f0; padding: 8px; text-align: left; }
-        .preview-table th { background: #f1f5f9; font-weight: 600; }
+        .preview-table th { background: #f1f5f9; font-weight: 600; position: sticky; top: 0; }
         .upload-zone { border: 2px dashed #cbd5e1; transition: all 0.3s; cursor: pointer; background: #faf5ff; }
         .upload-zone:hover { border-color: #8b5cf6; background-color: #f3e8ff; }
         .upload-zone.drag-over { border-color: #8b5cf6; background-color: #f3e8ff; }
         .step-circle { transition: all 0.2s ease; }
         .step-card:hover .step-circle { transform: scale(1.1); }
-        
-        /* Math preview styles */
-        .math-preview {
-            background: #f8f9fa;
-            border-left: 4px solid #8b5cf6;
-            padding: 10px;
-            margin-top: 10px;
-            border-radius: 8px;
-            font-size: 14px;
-        }
-        .math-preview-label {
-            font-size: 12px;
-            color: #6b7280;
-            margin-bottom: 5px;
-            font-weight: 600;
-        }
-        .math-rendered {
-            line-height: 1.6;
-        }
-        .math-rendered mjx-container {
-            display: inline-block;
-            margin: 0 2px;
-        }
+        .progress-bar { transition: width 0.3s ease; }
+        .status-item { transition: all 0.2s ease; }
+        .status-item.completed { background-color: #dcfce7; border-left-color: #22c55e; }
+        .status-item.failed { background-color: #fee2e2; border-left-color: #ef4444; }
+        .status-item.processing { background-color: #fef3c7; border-left-color: #f59e0b; }
+        .math-preview { background: #f8f9fa; border-left: 4px solid #8b5cf6; padding: 10px; margin-top: 10px; border-radius: 8px; font-size: 14px; }
+        .math-preview-label { font-size: 12px; color: #6b7280; margin-bottom: 5px; font-weight: 600; }
+        .math-rendered { line-height: 1.6; }
+        .math-rendered mjx-container { display: inline-block; margin: 0 2px; }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
-<div class="max-w-4xl mx-auto">
+<div class="max-w-5xl mx-auto">
     
     <!-- Header -->
     <div class="text-center mb-8">
@@ -74,58 +56,49 @@
             </a>
         </div>
 
-        <!-- Step 1: Select Book - Modern Card -->
-        <div class="step-card bg-gradient-to-r from-blue-50 to-indigo-50 p-5 rounded-2xl mb-6 border border-blue-100 transition hover:shadow-md">
+        <!-- Step 1: Select Book -->
+        <div class="step-card bg-gradient-to-r from-blue-50 to-indigo-50 p-5 rounded-2xl mb-6 border border-blue-100">
             <div class="flex items-center gap-4 mb-4">
                 <div class="step-circle w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-md">1</div>
                 <h3 class="font-bold text-xl text-gray-800">Select Book</h3>
-                <div class="flex-1"></div>
-                <i class="fas fa-book text-blue-400 text-2xl"></i>
             </div>
-            <select id="bookSelect" class="w-full p-3 border-2 border-blue-200 rounded-xl bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition">
+            <select id="bookSelect" class="w-full p-3 border-2 border-blue-200 rounded-xl bg-white">
                 <option>Loading books...</option>
             </select>
         </div>
 
-        <!-- Step 2: Select Topic - Modern Card -->
-        <div class="step-card bg-gradient-to-r from-green-50 to-emerald-50 p-5 rounded-2xl mb-6 border border-green-100 transition hover:shadow-md">
+        <!-- Step 2: Select Topic -->
+        <div class="step-card bg-gradient-to-r from-green-50 to-emerald-50 p-5 rounded-2xl mb-6 border border-green-100">
             <div class="flex items-center gap-4 mb-4">
                 <div class="step-circle w-10 h-10 bg-green-600 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-md">2</div>
                 <h3 class="font-bold text-xl text-gray-800">Select Topic</h3>
-                <div class="flex-1"></div>
-                <i class="fas fa-tags text-green-400 text-2xl"></i>
             </div>
-            <select id="topicSelect" class="w-full p-3 border-2 border-green-200 rounded-xl bg-white focus:border-green-500 focus:ring-2 focus:ring-green-200 transition">
+            <select id="topicSelect" class="w-full p-3 border-2 border-green-200 rounded-xl bg-white">
                 <option>Select book first</option>
             </select>
         </div>
 
-        <!-- Step 3: Download Template - Modern Card -->
-        <div class="step-card bg-gradient-to-r from-yellow-50 to-amber-50 p-5 rounded-2xl mb-6 border border-yellow-100 transition hover:shadow-md">
+        <!-- Step 3: Download Template -->
+        <div class="step-card bg-gradient-to-r from-yellow-50 to-amber-50 p-5 rounded-2xl mb-6 border border-yellow-100">
             <div class="flex items-center gap-4 mb-4">
                 <div class="step-circle w-10 h-10 bg-yellow-600 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-md">3</div>
                 <h3 class="font-bold text-xl text-gray-800">Download CSV Template</h3>
-                <div class="flex-1"></div>
-                <i class="fas fa-download text-yellow-500 text-2xl"></i>
             </div>
             <p class="text-sm text-gray-600 mb-3">Download the template, fill with your questions, then upload back.</p>
             <p class="text-xs text-purple-600 mb-3">💡 Use LaTeX for math: \( \sqrt{x} \), \( \frac{a}{b} \), \( \lim_{x \to 0} \), etc.</p>
-            <button id="downloadBtn" class="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded-xl inline-flex items-center gap-2 transition transform hover:scale-105 shadow-md">
+            <button id="downloadBtn" class="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded-xl inline-flex items-center gap-2 transition">
                 <i class="fas fa-download"></i> Download CSV Template
             </button>
         </div>
 
-        <!-- Step 4: Upload File - Modern Upload Zone -->
-        <div class="step-card bg-gradient-to-r from-purple-50 to-pink-50 p-5 rounded-2xl mb-6 border border-purple-100 transition hover:shadow-md">
+        <!-- Step 4: Upload File -->
+        <div class="step-card bg-gradient-to-r from-purple-50 to-pink-50 p-5 rounded-2xl mb-6 border border-purple-100">
             <div class="flex items-center gap-4 mb-4">
                 <div class="step-circle w-10 h-10 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-md">4</div>
                 <h3 class="font-bold text-xl text-gray-800">Upload CSV/Excel File</h3>
-                <div class="flex-1"></div>
-                <i class="fas fa-cloud-upload-alt text-purple-400 text-2xl"></i>
             </div>
             
-            <!-- Modern Upload Zone -->
-            <div id="uploadZone" class="upload-zone rounded-xl p-10 text-center transition">
+            <div id="uploadZone" class="upload-zone rounded-xl p-8 text-center transition cursor-pointer">
                 <i class="fas fa-cloud-upload-alt text-5xl text-purple-400 mb-4"></i>
                 <p class="text-gray-600 font-medium">Click or drag & drop your file here</p>
                 <p class="text-gray-400 text-sm mt-1">Supports .csv, .xlsx, .xls</p>
@@ -134,32 +107,40 @@
                     <i class="fas fa-folder-open"></i> Browse Files
                 </button>
             </div>
-            
-            <button id="uploadBtn" style="display: none;" class="mt-4 w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold py-3 rounded-xl inline-flex items-center justify-center gap-2 transition transform hover:scale-[1.02] shadow-lg">
-                <i class="fas fa-upload"></i> Upload to Database
-            </button>
+        </div>
+        
+        <!-- Progress Section -->
+        <div id="progressSection" style="display: none;" class="mt-6 p-5 bg-gray-50 rounded-xl">
+            <div class="flex justify-between items-center mb-3">
+                <h4 class="font-bold text-gray-700"><i class="fas fa-spinner fa-spin mr-2"></i> Uploading Questions...</h4>
+                <span id="progressPercent" class="text-sm font-bold text-purple-600">0%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-3 mb-4">
+                <div id="progressBar" class="progress-bar bg-gradient-to-r from-purple-600 to-indigo-600 h-3 rounded-full" style="width: 0%"></div>
+            </div>
+            <div id="statusList" class="max-h-60 overflow-y-auto space-y-1 text-sm"></div>
         </div>
         
         <!-- Preview Section -->
-        <div id="previewDiv" style="margin-top: 15px; display: none;"></div>
+        <div id="previewDiv" style="display: none;" class="mt-6"></div>
         
-        <!-- Math Preview Section -->
-        <div id="mathPreviewDiv" class="math-preview hidden mt-4">
-            <div class="math-preview-label">📐 Math Preview (First question):</div>
-            <div id="mathPreviewContent" class="math-rendered"></div>
+        <!-- Upload Button -->
+        <div id="uploadBtnContainer" style="display: none;" class="mt-4">
+            <button id="uploadBtn" class="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold py-3 rounded-xl inline-flex items-center justify-center gap-2 transition">
+                <i class="fas fa-upload"></i> Start Upload to Database
+            </button>
         </div>
     </div>
 </div>
 
 <script>
     // ============================================
-    // 1. SECURE KEY VERIFICATION (No URL Parameter)
+    // SECURE KEY VERIFICATION
     // ============================================
     const SECRET_KEY = 'BookMCQ_Admin_Secure_Key_2024';
 
     function verifyAccess() {
         const storedKey = sessionStorage.getItem('bookmcq_bulk_access');
-        
         if (storedKey === SECRET_KEY) {
             sessionStorage.removeItem('bookmcq_bulk_access');
             return true;
@@ -174,309 +155,397 @@
     }
 
     // ============================================
-    // 2. LOGGING FUNCTION (Kept for console, removed from UI)
+    // SUPABASE CONFIGURATION
     // ============================================
-    function addLog(msg, type = 'info') {
-        console.log(`[${new Date().toLocaleTimeString()}] ${msg}`);
-    }
-    
-    addLog('Script started', 'info');
-    addLog('✅ Key verified', 'success');
+    const SUPABASE_URL = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
+    let supabase = null;
+    let currentQuestions = [];
     
     // ============================================
-    // 3. SAFE STRING HELPER (Prevents "includes is not a function" error)
+    // HELPER FUNCTIONS
     // ============================================
     function safeString(value) {
         if (value === null || value === undefined) return '';
         return String(value);
     }
     
-    function safeProcessMathContent(text) {
-        const str = safeString(text);
-        // Check if text contains LaTeX delimiters
-        if (str.includes('\\(') || str.includes('\\[') || str.includes('$$')) {
-            return str;
-        }
-        return str;
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
     }
     
-    // Function to render math in element
-    async function renderMathInElement(element) {
-        if (window.MathJax && element) {
+    function addLog(msg) {
+        console.log(`[${new Date().toLocaleTimeString()}] ${msg}`);
+    }
+    
+    // ============================================
+    // BATCH UPLOAD FUNCTION (20 questions per batch)
+    // ============================================
+    async function uploadBatch(questions, topicId, batchIndex, totalBatches, updateProgress) {
+        const results = { success: [], failed: [] };
+        
+        for (let i = 0; i < questions.length; i++) {
+            const q = questions[i];
             try {
-                await MathJax.typesetPromise([element]);
+                // Insert question
+                const { data: qData, error: qError } = await supabase.from('questions').insert({
+                    topic_id: parseInt(topicId),
+                    question_text: safeString(q.question_text),
+                    difficulty: safeString(q.difficulty).toLowerCase() || 'medium',
+                    correct_answer: parseInt(safeString(q.correct_answer)) || 0,
+                    explanation: safeString(q.explanation) || ''
+                }).select();
+                
+                if (qError) throw qError;
+                
+                // Insert options
+                const options = [
+                    safeString(q.option_a),
+                    safeString(q.option_b),
+                    safeString(q.option_c),
+                    safeString(q.option_d)
+                ];
+                
+                for (let j = 0; j < options.length; j++) {
+                    await supabase.from('options').insert({
+                        question_id: qData[0].id,
+                        option_text: options[j],
+                        option_index: j
+                    });
+                }
+                
+                results.success.push(q);
+                updateProgress(batchIndex, i + 1, questions.length, 'success', q.question_text);
+                
             } catch(e) {
-                console.log('MathJax error:', e);
+                results.failed.push(q);
+                updateProgress(batchIndex, i + 1, questions.length, 'failed', q.question_text, e.message);
+                addLog(`Failed: ${e.message}`);
             }
+            
+            // Small delay to avoid rate limiting
+            await new Promise(r => setTimeout(r, 50));
         }
+        
+        return results;
     }
     
-    // ============================================
-    // 4. SUPABASE & CORE LOGIC
-    // ============================================
-    function checkLibraries() {
-        if (typeof window.supabase !== 'undefined') {
-            addLog('✅ Supabase detected', 'success');
-            return true;
-        }
-        addLog('⏳ Waiting for Supabase...', 'info');
-        return false;
-    }
-    
-    function init() {
-        if (!checkLibraries()) {
-            setTimeout(init, 100);
+    async function uploadToDatabase() {
+        const bookId = document.getElementById('bookSelect').value;
+        const topicId = document.getElementById('topicSelect').value;
+        
+        if (!bookId || !topicId) {
+            alert('Please select both a book and a topic');
             return;
         }
         
-        const SUPABASE_URL = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
-        
-        addLog('Creating Supabase client...', 'info');
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        addLog('✅ Supabase client ready', 'success');
-        
-        let currentQuestions = [];
-        
-        async function loadBooks() {
-            addLog('Fetching books from database...', 'info');
-            try {
-                const { data, error } = await supabase.from('books').select('id, title').order('title');
-                if (error) throw error;
-                
-                addLog(`✅ Found ${data.length} books`, 'success');
-                const select = document.getElementById('bookSelect');
-                select.innerHTML = '<option value="">-- Select a Book --</option>';
-                data.forEach(book => {
-                    select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
-                });
-            } catch(e) {
-                addLog(`❌ Error: ${e.message}`, 'error');
-            }
+        if (!currentQuestions.length) {
+            alert('No questions to upload. Please select a file first.');
+            return;
         }
         
-        async function loadTopics() {
-            const bookId = document.getElementById('bookSelect').value;
-            if (!bookId) {
-                document.getElementById('topicSelect').innerHTML = '<option>Select book first</option>';
-                return;
+        // Hide preview, show progress
+        document.getElementById('previewDiv').style.display = 'none';
+        document.getElementById('uploadBtnContainer').style.display = 'none';
+        const progressSection = document.getElementById('progressSection');
+        progressSection.style.display = 'block';
+        
+        const progressBar = document.getElementById('progressBar');
+        const progressPercent = document.getElementById('progressPercent');
+        const statusList = document.getElementById('statusList');
+        
+        const BATCH_SIZE = 20;
+        const totalQuestions = currentQuestions.length;
+        const totalBatches = Math.ceil(totalQuestions / BATCH_SIZE);
+        
+        let totalSuccess = 0;
+        let totalFailed = 0;
+        
+        // Clear status list
+        statusList.innerHTML = '<div class="text-center text-gray-500 py-2">Starting upload...</div>';
+        
+        for (let batchIdx = 0; batchIdx < totalBatches; batchIdx++) {
+            const start = batchIdx * BATCH_SIZE;
+            const end = Math.min(start + BATCH_SIZE, totalQuestions);
+            const batchQuestions = currentQuestions.slice(start, end);
+            
+            // Update status for batch start
+            const batchStatusDiv = document.createElement('div');
+            batchStatusDiv.className = 'status-item processing p-2 rounded-lg mb-1 border-l-4';
+            batchStatusDiv.id = `batch-${batchIdx}`;
+            batchStatusDiv.innerHTML = `<i class="fas fa-spinner fa-spin text-yellow-500 mr-2"></i> Batch ${batchIdx + 1}/${totalBatches}: Uploading ${batchQuestions.length} questions...`;
+            statusList.appendChild(batchStatusDiv);
+            statusList.scrollTop = statusList.scrollHeight;
+            
+            function updateBatchProgress(batchIdxInner, itemIndex, totalInBatch, status, questionText, errorMsg = '') {
+                const batchDiv = document.getElementById(`batch-${batchIdxInner}`);
+                if (!batchDiv) return;
+                
+                if (status === 'success') {
+                    batchDiv.innerHTML = `<i class="fas fa-check-circle text-green-500 mr-2"></i> Batch ${batchIdxInner + 1}: Uploaded ${itemIndex}/${totalInBatch} questions`;
+                    if (itemIndex === totalInBatch) {
+                        batchDiv.classList.remove('processing');
+                        batchDiv.classList.add('completed');
+                    }
+                } else if (status === 'failed') {
+                    batchDiv.innerHTML = `<i class="fas fa-times-circle text-red-500 mr-2"></i> Batch ${batchIdxInner + 1}: Failed at ${itemIndex}/${totalInBatch} - ${escapeHtml(errorMsg)}`;
+                    batchDiv.classList.remove('processing');
+                    batchDiv.classList.add('failed');
+                }
+                
+                // Scroll to bottom
+                statusList.scrollTop = statusList.scrollHeight;
             }
             
-            addLog(`Loading topics for book ${bookId}...`, 'info');
-            try {
-                const { data, error } = await supabase.from('topics')
-                    .select('id, name, chapter_number')
-                    .eq('book_id', parseInt(bookId))
-                    .order('chapter_number');
-                
-                if (error) throw error;
-                
-                addLog(`✅ Found ${data.length} topics`, 'success');
-                const select = document.getElementById('topicSelect');
-                select.innerHTML = '<option value="">-- Select a Topic --</option>';
-                data.forEach(topic => {
-                    const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
-                    select.innerHTML += `<option value="${topic.id}">${escapeHtml(display)}</option>`;
-                });
-            } catch(e) {
-                addLog(`❌ Error: ${e.message}`, 'error');
+            const result = await uploadBatch(batchQuestions, topicId, batchIdx, totalBatches, updateBatchProgress);
+            totalSuccess += result.success.length;
+            totalFailed += result.failed.length;
+            
+            // Update progress bar
+            const completed = ((batchIdx + 1) / totalBatches) * 100;
+            progressBar.style.width = `${completed}%`;
+            progressPercent.textContent = `${Math.round(completed)}%`;
+            
+            // Update final batch status
+            const batchDiv = document.getElementById(`batch-${batchIdx}`);
+            if (batchDiv) {
+                if (result.failed.length === 0) {
+                    batchDiv.innerHTML = `<i class="fas fa-check-circle text-green-500 mr-2"></i> ✅ Batch ${batchIdx + 1}: Completed (${result.success.length} questions)`;
+                    batchDiv.classList.add('completed');
+                } else {
+                    batchDiv.innerHTML = `<i class="fas fa-exclamation-triangle text-orange-500 mr-2"></i> ⚠️ Batch ${batchIdx + 1}: ${result.success.length} success, ${result.failed.length} failed`;
+                    batchDiv.classList.add('failed');
+                }
+                batchDiv.classList.remove('processing');
             }
         }
         
-        function downloadTemplate() {
-            addLog('Generating CSV template...', 'info');
-            const headers = ['question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'difficulty', 'explanation'];
-            const example = ['What does \( \text{typeof null} \) return?', 'null', 'undefined', 'object', 'number', '2', 'easy', '\( \text{typeof null} \) returns "object" due to a historical bug in JavaScript'];
-            const csv = [headers.join(','), example.map(cell => `"${safeString(cell).replace(/"/g, '""')}"`).join(',')].join('\n');
-            
-            const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'bookmcq_template.csv';
-            a.click();
-            URL.revokeObjectURL(url);
-            addLog('✅ Template downloaded', 'success');
-        }
+        // Final summary
+        statusList.innerHTML += `
+            <div class="mt-3 p-3 rounded-lg text-center font-bold ${totalFailed === 0 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">
+                ${totalFailed === 0 ? '✅ ALL QUESTIONS UPLOADED SUCCESSFULLY!' : `⚠️ Upload Complete: ${totalSuccess} uploaded, ${totalFailed} failed`}
+            </div>
+        `;
         
-        function processFile(file) {
-            addLog(`Processing: ${file.name}`, 'info');
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const rows = XLSX.utils.sheet_to_json(sheet);
-                    
-                    addLog(`✅ Loaded ${rows.length} questions`, 'success');
-                    if (rows.length === 0) return;
-                    
-                    // Safe process each row
-                    currentQuestions = rows.map(row => {
-                        const processed = {};
-                        Object.keys(row).forEach(key => {
-                            processed[key] = safeString(row[key]);
-                        });
-                        return processed;
+        progressBar.style.width = '100%';
+        progressPercent.textContent = '100%';
+        
+        alert(`Upload Complete!\n✅ Success: ${totalSuccess}\n❌ Failed: ${totalFailed}`);
+        
+        // Reset UI after 3 seconds
+        setTimeout(() => {
+            progressSection.style.display = 'none';
+            document.getElementById('previewDiv').style.display = 'none';
+            document.getElementById('uploadBtnContainer').style.display = 'none';
+            document.getElementById('fileInput').value = '';
+            currentQuestions = [];
+            statusList.innerHTML = '';
+            progressBar.style.width = '0%';
+            progressPercent.textContent = '0%';
+        }, 3000);
+    }
+    
+    // ============================================
+    // FILE PROCESSING
+    // ============================================
+    function processFile(file) {
+        addLog(`Processing: ${file.name}`);
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(sheet);
+                
+                if (rows.length === 0) {
+                    alert('No questions found in file');
+                    return;
+                }
+                
+                // Process each row safely
+                currentQuestions = rows.map(row => {
+                    const processed = {};
+                    Object.keys(row).forEach(key => {
+                        processed[key] = safeString(row[key]);
                     });
-                    
-                    const previewDiv = document.getElementById('previewDiv');
-                    const uploadBtn = document.getElementById('uploadBtn');
-                    const mathPreviewDiv = document.getElementById('mathPreviewDiv');
-                    const mathPreviewContent = document.getElementById('mathPreviewContent');
-                    
-                    let html = '<h3 class="font-bold text-gray-700 mb-2">📋 Preview (first 3 rows):</h3>';
-                    html += '<div class="preview-table"></table>';
-                    const headers = Object.keys(currentQuestions[0]);
-                    html += '<thead><tr style="background:#f0fdf4;">' + headers.map(h => `<th style="padding:8px; border:1px solid #d1d5db; text-align:left; background:#dcfce7;">${escapeHtml(h)}</th>`).join('') + '</thead><tbody>';
-                    for (let i = 0; i < Math.min(3, currentQuestions.length); i++) {
-                        html += '<tr>' + headers.map(h => `<td style="padding:8px; border:1px solid #d1d5db;">${escapeHtml(safeString(currentQuestions[i][h]).substring(0, 50))}</td>`).join('') + '</tr>';
-                    }
-                    html += '</tbody></table></div>';
-                    html += `<p class="text-green-600 text-sm mt-2"><i class="fas fa-check-circle"></i> ✅ ${currentQuestions.length} questions ready to upload</p>`;
-                    
+                    return processed;
+                });
+                
+                addLog(`Loaded ${currentQuestions.length} questions`);
+                
+                // Show preview
+                const previewDiv = document.getElementById('previewDiv');
+                const uploadBtnContainer = document.getElementById('uploadBtnContainer');
+                
+                let html = '<h3 class="font-bold text-gray-800 mb-3 text-lg">📋 Preview (first 5 rows)</h3>';
+                html += '<div class="preview-table"><td>';
+                const headers = Object.keys(currentQuestions[0]);
+                html += '<thead><tr>' + headers.map(h => `<th class="sticky top-0 bg-gray-100">${escapeHtml(h)}</th>`).join('') + '</tr></thead><tbody>';
+                for (let i = 0; i < Math.min(5, currentQuestions.length); i++) {
+                    html += '<tr>' + headers.map(h => `<td class="max-w-xs truncate">${escapeHtml(safeString(currentQuestions[i][h]).substring(0, 60))}</td>`).join('') + '</tr>';
+                }
+                html += '</tbody></table></div>';
+                html += `<p class="text-green-600 text-sm mt-3"><i class="fas fa-check-circle"></i> ✅ ${currentQuestions.length} questions ready to upload</p>`;
+                
+                previewDiv.innerHTML = html;
+                previewDiv.style.display = 'block';
+                uploadBtnContainer.style.display = 'block';
+                
+                // Check data quality
+                const missingFields = [];
+                const requiredFields = ['question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer'];
+                requiredFields.forEach(field => {
+                    const missing = currentQuestions.filter(q => !safeString(q[field])).length;
+                    if (missing > 0) missingFields.push(`${field} (${missing} missing)`);
+                });
+                
+                if (missingFields.length > 0) {
+                    html += `<p class="text-orange-600 text-sm mt-2"><i class="fas fa-exclamation-triangle"></i> ⚠️ Warning: Missing fields - ${missingFields.join(', ')}</p>`;
                     previewDiv.innerHTML = html;
-                    previewDiv.style.display = 'block';
-                    uploadBtn.style.display = 'inline-flex';
-                    
-                    // Show math preview for first question
-                    if (currentQuestions.length > 0) {
-                        const firstQuestion = currentQuestions[0];
-                        const questionText = safeString(firstQuestion.question_text);
-                        const processedQuestion = safeProcessMathContent(questionText);
-                        mathPreviewContent.innerHTML = `
-                            <div class="mb-2"><strong>Question:</strong> <span class="math-content">${escapeHtml(processedQuestion)}</span></div>
-                            <div class="text-sm text-gray-500 mt-2">Other fields also support LaTeX math syntax</div>
-                        `;
-                        mathPreviewDiv.classList.remove('hidden');
-                        renderMathInElement(mathPreviewContent);
-                    } else {
-                        mathPreviewDiv.classList.add('hidden');
-                    }
-                    
-                } catch(e) {
-                    addLog(`❌ Parse error: ${e.message}`, 'error');
-                    alert('Error parsing file: ' + e.message);
                 }
-            };
-            reader.readAsArrayBuffer(file);
+                
+            } catch(e) {
+                addLog(`Parse error: ${e.message}`);
+                alert('Error parsing file: ' + e.message);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+    
+    // ============================================
+    // LOAD BOOKS & TOPICS
+    // ============================================
+    async function loadBooks() {
+        addLog('Fetching books...');
+        try {
+            const { data, error } = await supabase.from('books').select('id, title').order('title');
+            if (error) throw error;
+            
+            const select = document.getElementById('bookSelect');
+            select.innerHTML = '<option value="">-- Select a Book --</option>';
+            data.forEach(book => {
+                select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+            });
+            addLog(`Loaded ${data.length} books`);
+        } catch(e) {
+            addLog(`Error: ${e.message}`);
+            document.getElementById('bookSelect').innerHTML = '<option>Error loading books</option>';
+        }
+    }
+    
+    async function loadTopics() {
+        const bookId = document.getElementById('bookSelect').value;
+        if (!bookId) {
+            document.getElementById('topicSelect').innerHTML = '<option>Select book first</option>';
+            return;
         }
         
-        async function uploadToDatabase() {
-            const bookId = document.getElementById('bookSelect').value;
-            const topicId = document.getElementById('topicSelect').value;
+        addLog(`Loading topics for book ${bookId}...`);
+        try {
+            const { data, error } = await supabase.from('topics')
+                .select('id, name, chapter_number')
+                .eq('book_id', parseInt(bookId))
+                .order('chapter_number');
             
-            if (!bookId || !topicId) {
-                addLog('❌ Please select both a book and a topic', 'error');
-                alert('Please select both a book and a topic');
-                return;
-            }
+            if (error) throw error;
             
-            if (!currentQuestions.length) {
-                addLog('❌ No questions to upload', 'error');
-                alert('No questions to upload. Please select a file first.');
-                return;
-            }
-            
-            addLog(`📤 Uploading ${currentQuestions.length} questions...`, 'info');
-            let success = 0, failed = 0;
-            
-            for (let i = 0; i < currentQuestions.length; i++) {
-                const q = currentQuestions[i];
-                try {
-                    const { data, error } = await supabase.from('questions').insert({
-                        topic_id: parseInt(topicId),
-                        question_text: safeString(q.question_text),
-                        difficulty: safeString(q.difficulty) || 'medium',
-                        correct_answer: parseInt(safeString(q.correct_answer)) || 0,
-                        explanation: safeString(q.explanation) || ''
-                    }).select();
-                    
-                    if (error) throw error;
-                    
-                    const options = [
-                        safeString(q.option_a),
-                        safeString(q.option_b),
-                        safeString(q.option_c),
-                        safeString(q.option_d)
-                    ];
-                    for (let j = 0; j < options.length; j++) {
-                        await supabase.from('options').insert({
-                            question_id: data[0].id,
-                            option_text: options[j],
-                            option_index: j
-                        });
-                    }
-                    success++;
-                    addLog(`✅ ${i+1}/${currentQuestions.length} uploaded`, 'success');
-                } catch(e) {
-                    failed++;
-                    addLog(`❌ ${i+1}/${currentQuestions.length} failed: ${e.message}`, 'error');
-                }
-            }
-            
-            addLog(`📊 Complete: ${success} uploaded, ${failed} failed`, success > 0 ? 'success' : 'error');
-            alert(`Upload complete!\n${success} questions added\n${failed} failed`);
-            
-            if (success > 0) {
-                document.getElementById('previewDiv').style.display = 'none';
-                document.getElementById('uploadBtn').style.display = 'none';
-                document.getElementById('mathPreviewDiv').classList.add('hidden');
-                document.getElementById('fileInput').value = '';
-                currentQuestions = [];
-            }
+            const select = document.getElementById('topicSelect');
+            select.innerHTML = '<option value="">-- Select a Topic --</option>';
+            data.forEach(topic => {
+                const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
+                select.innerHTML += `<option value="${topic.id}">${escapeHtml(display)}</option>`;
+            });
+            addLog(`Loaded ${data.length} topics`);
+        } catch(e) {
+            addLog(`Error: ${e.message}`);
+            document.getElementById('topicSelect').innerHTML = '<option>Error loading topics</option>';
+        }
+    }
+    
+    function downloadTemplate() {
+        addLog('Generating template...');
+        const headers = ['question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'difficulty', 'explanation'];
+        const example = [
+            'What does \\( \\text{typeof null} \\) return?',
+            'null',
+            'undefined',
+            'object',
+            'number',
+            '2',
+            'easy',
+            '\\( \\text{typeof null} \\) returns "object" due to a historical bug'
+        ];
+        const csvContent = [headers, example].map(row => row.map(cell => `"${safeString(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+        
+        const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'bookmcq_template.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+        addLog('Template downloaded');
+    }
+    
+    // ============================================
+    // SETUP EVENT LISTENERS
+    // ============================================
+    function setupUploadZone() {
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const selectFileBtn = document.getElementById('selectFileBtn');
+        
+        if (uploadZone) {
+            uploadZone.addEventListener('click', () => fileInput.click());
+            uploadZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadZone.classList.add('drag-over');
+            });
+            uploadZone.addEventListener('dragleave', () => {
+                uploadZone.classList.remove('drag-over');
+            });
+            uploadZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadZone.classList.remove('drag-over');
+                if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
+            });
+        }
+        if (selectFileBtn) {
+            selectFileBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                fileInput.click();
+            });
+        }
+        if (fileInput) {
+            fileInput.addEventListener('change', e => {
+                if (e.target.files && e.target.files[0]) processFile(e.target.files[0]);
+            });
+        }
+    }
+    
+    // ============================================
+    // INITIALIZATION
+    // ============================================
+    async function init() {
+        // Wait for Supabase
+        while (typeof window.supabase === 'undefined') {
+            await new Promise(r => setTimeout(r, 100));
         }
         
-        function escapeHtml(str) {
-            if (!str) return '';
-            return String(str).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
-        }
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        addLog('Supabase client ready');
         
-        // Setup file upload zone
-        function setupUploadZone() {
-            const uploadZone = document.getElementById('uploadZone');
-            const fileInput = document.getElementById('fileInput');
-            const selectFileBtn = document.getElementById('selectFileBtn');
-            
-            if (uploadZone) {
-                uploadZone.addEventListener('click', () => fileInput.click());
-                uploadZone.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    uploadZone.classList.add('drag-over');
-                });
-                uploadZone.addEventListener('dragleave', () => {
-                    uploadZone.classList.remove('drag-over');
-                });
-                uploadZone.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    uploadZone.classList.remove('drag-over');
-                    if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
-                });
-            }
-            if (selectFileBtn) {
-                selectFileBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    fileInput.click();
-                });
-            }
-            if (fileInput) {
-                fileInput.addEventListener('change', e => {
-                    if (e.target.files && e.target.files[0]) processFile(e.target.files[0]);
-                });
-            }
-        }
+        await loadBooks();
+        setupUploadZone();
         
         document.getElementById('bookSelect').addEventListener('change', loadTopics);
         document.getElementById('downloadBtn').addEventListener('click', downloadTemplate);
         document.getElementById('uploadBtn').addEventListener('click', uploadToDatabase);
-        
-        setupUploadZone();
-        loadBooks();
     }
     
-    addLog('Checking for Supabase library...', 'info');
-    setTimeout(init, 100);
+    init();
 </script>
 </body>
 </html>
