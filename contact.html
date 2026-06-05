@@ -37,7 +37,6 @@
         .navbar-scrolled .text-white\/60 { color: #718096 !important; }
         .navbar-scrolled i { color: #667eea !important; }
         
-        /* Toast Notification */
         .toast {
             position: fixed;
             bottom: 20px;
@@ -56,7 +55,6 @@
 <body class="disable-select">
 <div class="max-w-6xl mx-auto px-4">
     
-    <!-- Modern Navigation Bar -->
     <nav class="bg-white/10 backdrop-blur-lg rounded-full px-4 md:px-6 py-3 mb-8 sticky top-4 z-50 shadow-lg">
         <div class="flex justify-between items-center">
             <div class="flex items-center gap-2">
@@ -65,7 +63,6 @@
                 <span class="text-white/60 text-xs hidden sm:inline">| Master Every Chapter</span>
             </div>
             
-            <!-- Desktop Menu - Clean URLs to separate pages -->
             <div class="desktop-menu flex gap-3 md:gap-6">
                 <a href="/" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap">🏠 Home</a>
                 <a href="/quiz" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap flex items-center gap-1">📝 Quiz <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1">FREE</span></a>
@@ -74,7 +71,6 @@
                 <a href="/privacy" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap">🔒 Privacy</a>
             </div>
             
-            <!-- Mobile Menu Button -->
             <div class="mobile-menu-btn relative">
                 <button onclick="toggleMobileMenu()" class="text-white text-2xl">
                     <i class="fas fa-bars"></i>
@@ -90,7 +86,6 @@
         </div>
     </nav>
 
-    <!-- Contact Page Content -->
     <div class="quiz-card rounded-2xl p-6 md:p-8 shadow-xl">
         <div class="text-center mb-8">
             <i class="fas fa-envelope text-5xl text-purple-600 mb-4"></i>
@@ -141,7 +136,6 @@
     </footer>
 </div>
 
-<!-- Toast Notification -->
 <div id="toast" class="toast hidden"></div>
 
 <script>
@@ -179,13 +173,11 @@
         }
     });
 
-    // Mobile Menu Toggle
     function toggleMobileMenu() {
         const dropdown = document.getElementById('mobileDropdown');
         dropdown.classList.toggle('hidden');
     }
 
-    // Navbar scroll effect
     function initNavbarScroll() {
         const navbar = document.querySelector('nav.bg-white\\/10');
         if (!navbar) return;
@@ -198,120 +190,63 @@
         });
     }
 
-    // Contact Form Handler with Database Integration
+    // Contact Form Handler
     document.getElementById('contactForm')?.addEventListener('submit', async function(e) {
         e.preventDefault();
         
         const submitBtn = document.getElementById('submitContactBtn');
         const originalBtnText = submitBtn.innerHTML;
         
-        // Get form values
         const name = document.getElementById('contactName').value;
         const email = document.getElementById('contactEmail').value;
         const type = document.getElementById('contactType').value;
         const message = document.getElementById('contactMessage').value;
         
-        console.log('=== Form Submission Started ===');
-        console.log('Name:', name);
-        console.log('Email:', email);
-        console.log('Type:', type);
-        console.log('Message length:', message.length);
-        
-        // Validate
         if (!name || !email || !message) {
-            console.log('Validation failed: missing fields');
             showToast('Please fill all required fields', true);
             return;
         }
         
-        // Email validation
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
-            console.log('Validation failed: invalid email');
             showToast('Please enter a valid email address', true);
             return;
         }
         
-        // Show loading state
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
         
         try {
-            console.log('Attempting to insert into Supabase...');
-            
-            // Insert into Supabase
-            const { data, error } = await supabase
+            // Try a simple insert without select first
+            const { error } = await supabase
                 .from('contact_messages')
-                .insert([
-                    {
-                        name: name,
-                        email: email,
-                        message_type: type,
-                        message: message,
-                        status: 'unread',
-                        created_at: new Date().toISOString()
-                    }
-                ])
-                .select();
+                .insert({
+                    name: name,
+                    email: email,
+                    message_type: type,
+                    message: message,
+                    status: 'unread'
+                });
             
             if (error) {
-                console.error('Supabase error details:', error);
-                console.error('Error code:', error.code);
-                console.error('Error message:', error.message);
+                console.error('Supabase error:', error);
                 throw error;
             }
             
-            console.log('Insert successful! Data received:', data);
-            console.log('=== Form Submission Success ===');
-            
-            // Success message based on type
-            const isBookRequest = type === 'Book Request' || message.toLowerCase().includes('book');
+            const isBookRequest = type === 'Book Request';
             showToast(isBookRequest ? '✅ Book request submitted! We\'ll add it within 48 hours.' : '✅ Thank you for your message! We\'ll get back to you soon.');
-            
-            // Reset form
             this.reset();
             
         } catch (error) {
-            console.error('=== Form Submission Failed ===');
-            console.error('Error object:', error);
-            console.error('Error message:', error.message);
-            
-            let errorMsg = 'Failed to send message. ';
-            if (error.message) {
-                errorMsg += error.message;
-            } else {
-                errorMsg += 'Please try again later.';
-            }
-            showToast('❌ ' + errorMsg, true);
+            console.error('Error:', error);
+            showToast('❌ Failed to send message. Error: ' + (error.message || 'Please try again.'), true);
         } finally {
-            // Reset button
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalBtnText;
-            console.log('=== Form Submission Ended ===');
         }
     });
 
-    // Test Supabase connection on page load
-    async function testConnection() {
-        console.log('Testing Supabase connection...');
-        try {
-            const { data, error } = await supabase.from('contact_messages').select('count', { count: 'exact', head: true });
-            if (error) {
-                console.error('Connection test failed:', error);
-            } else {
-                console.log('Supabase connection successful!');
-            }
-        } catch(e) {
-            console.error('Connection test error:', e);
-        }
-    }
-    
-    testConnection();
-
-    // Make functions global
     window.toggleMobileMenu = toggleMobileMenu;
-    
-    // Initialize
     initNavbarScroll();
 </script>
 </body>
