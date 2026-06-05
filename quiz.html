@@ -13,6 +13,10 @@
       gtag('js', new Date());
       gtag('config', 'G-5WGZ1P0EV1');
     </script>
+    
+    <!-- MathJax for rendering mathematical equations -->
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async></script>
+    
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome Icons -->
@@ -47,6 +51,23 @@
         .navbar-scrolled .text-white { color: #2d3748 !important; }
         .navbar-scrolled .text-white\/60 { color: #718096 !important; }
         .navbar-scrolled i { color: #667eea !important; }
+        
+        /* Math rendering styles */
+        .math-rendered {
+            display: inline;
+            line-height: 1.6;
+        }
+        .math-rendered mjx-container {
+            display: inline-block;
+            margin: 0 2px;
+        }
+        .question-text {
+            font-size: 1.125rem;
+            line-height: 1.6;
+        }
+        .option-text {
+            display: inline;
+        }
     </style>
 </head>
 <body class="disable-select">
@@ -127,7 +148,7 @@
         <div class="w-full bg-gray-200 rounded-full h-2 mb-6">
             <div id="progressFill" class="progress-bar bg-gradient-to-r from-purple-600 to-indigo-600 h-2 rounded-full" style="width: 0%"></div>
         </div>
-        <h3 id="questionText" class="text-lg md:text-2xl font-bold text-gray-800 mb-6">Loading question...</h3>
+        <h3 id="questionText" class="text-lg md:text-2xl font-bold text-gray-800 mb-6 question-text">Loading question...</h3>
         <div id="optionsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6"></div>
         <div id="feedbackMessage" class="mb-6 hidden p-4 rounded-xl text-white font-semibold"></div>
         <button id="nextBtn" class="w-full bg-gray-800 text-white font-bold py-3 rounded-xl hover:bg-gray-900 transition disabled:opacity-50 disabled:cursor-not-allowed">
@@ -240,6 +261,27 @@
         }
     }
 
+    // Function to render math content
+    async function renderMathInElement(element) {
+        if (window.MathJax && element) {
+            try {
+                await MathJax.typesetPromise([element]);
+            } catch(e) {
+                console.log('MathJax error:', e);
+            }
+        }
+    }
+    
+    // Function to process text with math delimiters
+    function processMathContent(text) {
+        if (!text) return '';
+        // Check if text contains LaTeX delimiters
+        if (text.includes('\\(') || text.includes('\\[') || text.includes('$$')) {
+            return text;
+        }
+        return text;
+    }
+
     // Initialize Supabase Service
     const supabaseService = new SupabaseService();
 
@@ -340,11 +382,16 @@
         }
     }
 
-    function renderQuestion() {
+    async function renderQuestion() {
         if (!quizQuestions.length || quizIndex >= quizQuestions.length) return;
         
         const q = quizQuestions[quizIndex];
-        document.getElementById('questionText').textContent = q.text;
+        
+        // Set question text with math support
+        const questionElement = document.getElementById('questionText');
+        const processedQuestion = processMathContent(q.text);
+        questionElement.innerHTML = processedQuestion;
+        
         document.getElementById('questionCounter').textContent = `Question ${quizIndex + 1} / ${quizQuestions.length}`;
         document.getElementById('scoreDisplay').textContent = `Score: ${quizScore}`;
         document.getElementById('progressFill').style.width = `${((quizIndex + 1) / quizQuestions.length) * 100}%`;
@@ -354,7 +401,8 @@
         
         q.options.forEach((opt, idx) => {
             const btn = document.createElement('button');
-            btn.textContent = `${String.fromCharCode(65+idx)}. ${opt}`;
+            const processedOpt = processMathContent(opt);
+            btn.innerHTML = `${String.fromCharCode(65+idx)}. <span class="option-text">${processedOpt}</span>`;
             btn.className = `option-btn w-full text-left p-3 rounded-xl bg-white text-gray-800 font-medium transition text-sm md:text-base`;
             btn.addEventListener('click', () => handleAnswer(idx));
             container.appendChild(btn);
@@ -363,9 +411,13 @@
         document.getElementById('feedbackMessage').classList.add('hidden');
         document.getElementById('nextBtn').disabled = true;
         quizLocked = false;
+        
+        // Render math in question and options
+        await renderMathInElement(questionElement);
+        await renderMathInElement(container);
     }
 
-    function handleAnswer(selectedIdx) {
+    async function handleAnswer(selectedIdx) {
         if (quizLocked) return;
         
         const q = quizQuestions[quizIndex];
@@ -377,21 +429,27 @@
         });
         
         const feedbackDiv = document.getElementById('feedbackMessage');
+        const processedExplanation = processMathContent(q.explanation);
+        
         if (isCorrect) {
             quizScore++;
             feedbackDiv.className = "correct-feedback p-4 rounded-xl text-white font-semibold mb-6";
-            feedbackDiv.innerHTML = `<i class="fas fa-check-circle mr-2"></i> ✅ Correct! ${escapeHtml(q.explanation)}`;
+            feedbackDiv.innerHTML = `<i class="fas fa-check-circle mr-2"></i> ✅ Correct! <span class="math-content">${processedExplanation}</span>`;
             document.getElementById('scoreDisplay').textContent = `Score: ${quizScore}`;
         } else {
             const correctLetter = String.fromCharCode(65+q.correct);
             const correctText = q.options[q.correct];
+            const processedCorrectText = processMathContent(correctText);
             feedbackDiv.className = "wrong-feedback p-4 rounded-xl text-white font-semibold mb-6";
-            feedbackDiv.innerHTML = `<i class="fas fa-times-circle mr-2"></i> ❌ Wrong! Correct answer: ${correctLetter}. ${correctText}<br><span class="text-sm mt-1 block">${escapeHtml(q.explanation)}</span>`;
+            feedbackDiv.innerHTML = `<i class="fas fa-times-circle mr-2"></i> ❌ Wrong! Correct answer: ${correctLetter}. <span class="math-content">${processedCorrectText}</span><br><span class="text-sm mt-1 block">${processedExplanation}</span>`;
         }
         
         feedbackDiv.classList.remove('hidden');
         quizLocked = true;
         document.getElementById('nextBtn').disabled = false;
+        
+        // Render math in feedback
+        await renderMathInElement(feedbackDiv);
     }
 
     function nextQuestion() {
@@ -443,7 +501,7 @@
             
             document.getElementById('quizArea').classList.remove('hidden');
             document.getElementById('resultsArea').classList.add('hidden');
-            renderQuestion();
+            await renderQuestion();
             
             showToast(`Loaded ${questions.length} questions! Good luck!`);
             
@@ -480,7 +538,7 @@
     loadBooks();
     initNavbarScroll();
     
-    console.log('Quiz page initialized');
+    console.log('Quiz page initialized with MathJax support');
 </script>
 </body>
 </html>
