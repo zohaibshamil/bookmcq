@@ -182,6 +182,7 @@
                 <button id="tabCategoriesBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">🏷️ Categories</button>
                 <button id="tabBulkUploadBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">📤 Bulk Upload</button>
                 <button id="tabAdminsBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">👑 Admins</button>
+                <button id="tabMessagesBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">📬 Messages</button>
             </div>
 
             <!-- Books Tab -->
@@ -385,9 +386,7 @@
                     <button id="nextPageBtn" class="bg-gray-500 text-white px-4 py-2 rounded-lg">Next</button>
                 </div>
                 
-                <!-- ============================================ -->
-                <!-- BULK DELETE SECTION - ADDED BELOW PAGINATION -->
-                <!-- ============================================ -->
+                <!-- Bulk Delete Section -->
                 <div class="bulk-delete-card mt-6">
                     <div class="bulk-delete-header">
                         <i class="fas fa-trash-alt text-2xl"></i>
@@ -419,7 +418,6 @@
                         </div>
                     </div>
                     
-                    <!-- Preview Count Section -->
                     <div id="bulkDeletePreview" class="delete-preview hidden">
                         <div class="flex justify-between items-center">
                             <div>
@@ -434,7 +432,6 @@
                         <div id="bulkDeleteDetails" class="text-xs text-gray-600 mt-2"></div>
                     </div>
                     
-                    <!-- Delete Button -->
                     <button id="bulkDeleteBtn" class="danger-btn w-full text-white font-bold py-3 rounded-xl mt-4 flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
                         <i class="fas fa-trash-alt"></i> Delete Selected Questions
                     </button>
@@ -462,6 +459,52 @@
                 <h2 class="text-xl font-bold mb-4">👑 Admin Users</h2>
                 <div id="adminsList">Loading...</div>
             </div>
+            
+            <!-- Messages Tab -->
+            <div id="messagesTab" class="hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">📬 Contact Messages</h2>
+                    <div class="flex gap-2">
+                        <select id="messageStatusFilter" class="p-2 border rounded-lg text-sm bg-white">
+                            <option value="all">All Messages</option>
+                            <option value="unread">Unread</option>
+                            <option value="read">Read</option>
+                            <option value="replied">Replied</option>
+                        </select>
+                        <button id="refreshMessagesBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                        <button id="exportMessagesBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                            <i class="fas fa-download"></i> Export CSV
+                        </button>
+                        <button id="deleteAllMessagesBtn" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">
+                            <i class="fas fa-trash-alt"></i> Delete All
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Stats Summary -->
+                <div class="grid grid-cols-3 gap-3 mb-4">
+                    <div class="bg-blue-50 p-3 rounded-lg text-center">
+                        <p class="text-2xl font-bold text-blue-600" id="totalMessagesCount">0</p>
+                        <p class="text-xs text-gray-600">Total</p>
+                    </div>
+                    <div class="bg-red-50 p-3 rounded-lg text-center">
+                        <p class="text-2xl font-bold text-red-600" id="unreadMessagesCount">0</p>
+                        <p class="text-xs text-gray-600">Unread</p>
+                    </div>
+                    <div class="bg-green-50 p-3 rounded-lg text-center">
+                        <p class="text-2xl font-bold text-green-600" id="repliedMessagesCount">0</p>
+                        <p class="text-xs text-gray-600">Replied</p>
+                    </div>
+                </div>
+                
+                <div id="messagesList" class="space-y-3 max-h-[600px] overflow-y-auto">
+                    <div class="skeleton h-24 rounded-lg mb-2"></div>
+                    <div class="skeleton h-24 rounded-lg mb-2"></div>
+                    <div class="skeleton h-24 rounded-lg mb-2"></div>
+                </div>
+            </div>
         </div>
         
         <div id="nonAdminView" class="hidden text-center py-8">
@@ -472,7 +515,7 @@
     </div>
 </div>
 
-<!-- Edit Modals (same as before - keep all existing modals) -->
+<!-- Edit Modals -->
 <div id="editBookModal" class="hidden modal">
     <div class="modal-content p-6">
         <h3 class="text-xl font-bold mb-4">Edit Book</h3>
@@ -773,7 +816,8 @@
                     loadFilterBooksCached(),
                     loadTopicFilterBooksCached(),
                     loadCategoriesCached(),
-                    loadBulkDeleteBooks()
+                    loadBulkDeleteBooks(),
+                    loadMessages()
                 ]);
                 setupBookFilters();
                 setupMathPreviews();
@@ -855,6 +899,211 @@
             showToast('Error: ' + e.message, true);
         }
     };
+
+    // ============ CONTACT MESSAGES FUNCTIONS ============
+    async function loadMessages() {
+        const container = document.getElementById('messagesList');
+        const statusFilter = document.getElementById('messageStatusFilter')?.value || 'all';
+        
+        if (container) {
+            container.innerHTML = '<div class="skeleton h-24 rounded-lg mb-2"></div><div class="skeleton h-24 rounded-lg mb-2"></div><div class="skeleton h-24 rounded-lg mb-2"></div>';
+        }
+        
+        let query = _supabase.from('contact_messages').select('*').order('created_at', { ascending: false });
+        
+        if (statusFilter !== 'all') {
+            query = query.eq('status', statusFilter);
+        }
+        
+        const { data, error } = await query;
+        
+        if (error) {
+            console.error('Error loading messages:', error);
+            if (container) container.innerHTML = '<p class="text-gray-500 text-center py-4">Error loading messages</p>';
+            return;
+        }
+        
+        // Update stats
+        const totalCount = data?.length || 0;
+        const unreadCount = data?.filter(m => m.status === 'unread').length || 0;
+        const repliedCount = data?.filter(m => m.status === 'replied').length || 0;
+        
+        const totalEl = document.getElementById('totalMessagesCount');
+        const unreadEl = document.getElementById('unreadMessagesCount');
+        const repliedEl = document.getElementById('repliedMessagesCount');
+        
+        if (totalEl) totalEl.textContent = totalCount;
+        if (unreadEl) unreadEl.textContent = unreadCount;
+        if (repliedEl) repliedEl.textContent = repliedCount;
+        
+        if (!data || data.length === 0) {
+            if (container) container.innerHTML = '<p class="text-gray-500 text-center py-8">No messages yet</p>';
+            return;
+        }
+        
+        if (container) {
+            container.innerHTML = data.map(msg => {
+                const statusColor = msg.status === 'unread' ? 'bg-red-100 text-red-800 border-red-300' : 
+                                   msg.status === 'read' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' : 
+                                   'bg-green-100 text-green-800 border-green-300';
+                const statusText = msg.status === 'unread' ? 'Unread' : 
+                                  msg.status === 'read' ? 'Read' : 'Replied';
+                const statusIcon = msg.status === 'unread' ? 'fa-circle' : 
+                                  msg.status === 'read' ? 'fa-check-circle' : 'fa-reply-all';
+                
+                const messageTypeIcon = msg.message_type === 'Book Request' ? 'fa-book' :
+                                       msg.message_type === 'Report an Issue' ? 'fa-exclamation-triangle' :
+                                       msg.message_type === 'Feature Suggestion' ? 'fa-lightbulb' : 'fa-envelope';
+                
+                const messageTypeColor = msg.message_type === 'Book Request' ? 'bg-amber-100 text-amber-800' :
+                                        msg.message_type === 'Report an Issue' ? 'bg-red-100 text-red-800' :
+                                        msg.message_type === 'Feature Suggestion' ? 'bg-purple-100 text-purple-800' :
+                                        'bg-blue-100 text-blue-800';
+                
+                return `
+                    <div class="bg-white p-4 rounded-lg border ${statusColor} shadow-sm hover:shadow-md transition">
+                        <div class="flex justify-between items-start mb-2 flex-wrap gap-2">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-user-circle text-purple-600 text-xl"></i>
+                                <div>
+                                    <span class="font-bold text-gray-800">${escapeHtml(msg.name)}</span>
+                                    <span class="text-gray-500 text-sm ml-2">(${escapeHtml(msg.email)})</span>
+                                </div>
+                            </div>
+                            <div class="flex gap-2 items-center flex-wrap">
+                                <span class="px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${statusColor}">
+                                    <i class="fas ${statusIcon} text-xs"></i> ${statusText}
+                                </span>
+                                <span class="px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${messageTypeColor}">
+                                    <i class="fas ${messageTypeIcon} text-xs"></i> ${escapeHtml(msg.message_type)}
+                                </span>
+                                <span class="text-gray-400 text-xs">${new Date(msg.created_at).toLocaleString()}</span>
+                            </div>
+                        </div>
+                        <p class="text-gray-700 text-sm mb-3 pl-7">${escapeHtml(msg.message)}</p>
+                        <div class="flex gap-2 pl-7">
+                            <button onclick="updateMessageStatus(${msg.id}, 'read')" class="text-blue-600 hover:text-blue-800 text-sm transition ${msg.status === 'read' ? 'opacity-50 cursor-not-allowed' : ''}" ${msg.status === 'read' ? 'disabled' : ''}>
+                                <i class="fas fa-check-circle"></i> Mark as Read
+                            </button>
+                            <button onclick="updateMessageStatus(${msg.id}, 'replied')" class="text-green-600 hover:text-green-800 text-sm transition ${msg.status === 'replied' ? 'opacity-50 cursor-not-allowed' : ''}" ${msg.status === 'replied' ? 'disabled' : ''}>
+                                <i class="fas fa-reply"></i> Mark as Replied
+                            </button>
+                            <button onclick="deleteMessage(${msg.id})" class="text-red-600 hover:text-red-800 text-sm transition">
+                                <i class="fas fa-trash-alt"></i> Delete
+                            </button>
+                            <button onclick="copyMessageToClipboard('${escapeHtml(msg.name)}', '${escapeHtml(msg.email)}', '${escapeHtml(msg.message)}')" class="text-gray-500 hover:text-gray-700 text-sm transition">
+                                <i class="fas fa-copy"></i> Copy
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    }
+    
+    async function updateMessageStatus(id, status) {
+        const { error } = await _supabase
+            .from('contact_messages')
+            .update({ status: status })
+            .eq('id', id);
+        
+        if (error) {
+            showToast('Error updating status', true);
+        } else {
+            showToast(`Message marked as ${status}`);
+            loadMessages();
+        }
+    }
+    
+    async function deleteMessage(id) {
+        if (confirm('Delete this message?')) {
+            const { error } = await _supabase
+                .from('contact_messages')
+                .delete()
+                .eq('id', id);
+            
+            if (error) {
+                showToast('Error deleting message', true);
+            } else {
+                showToast('Message deleted');
+                loadMessages();
+            }
+        }
+    }
+    
+    async function deleteAllMessages() {
+        const confirmed = confirm('⚠️ WARNING: This will delete ALL contact messages. This action cannot be undone.\n\nType "DELETE ALL" to confirm.');
+        if (!confirmed) return;
+        
+        const confirmation = prompt('Type "DELETE ALL" to permanently delete all messages:');
+        if (confirmation !== 'DELETE ALL') {
+            showToast('Deletion cancelled', false);
+            return;
+        }
+        
+        showToast('Deleting all messages...');
+        
+        const { error } = await _supabase
+            .from('contact_messages')
+            .delete()
+            .neq('id', 0);
+        
+        if (error) {
+            showToast('Error deleting messages: ' + error.message, true);
+        } else {
+            showToast('✅ All messages deleted successfully');
+            loadMessages();
+        }
+    }
+    
+    function copyMessageToClipboard(name, email, message) {
+        const textToCopy = `From: ${name}\nEmail: ${email}\n\nMessage:\n${message}`;
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            showToast('Message copied to clipboard');
+        }).catch(() => {
+            showToast('Failed to copy', true);
+        });
+    }
+    
+    async function exportMessagesToCSV() {
+        const { data, error } = await _supabase.from('contact_messages').select('*').order('created_at', { ascending: false });
+        
+        if (error) {
+            showToast('Error exporting messages', true);
+            return;
+        }
+        
+        if (!data || data.length === 0) {
+            showToast('No messages to export', true);
+            return;
+        }
+        
+        // Convert to CSV
+        const headers = ['ID', 'Name', 'Email', 'Message Type', 'Message', 'Status', 'Created At'];
+        const csvRows = [headers];
+        
+        data.forEach(msg => {
+            csvRows.push([
+                msg.id,
+                `"${msg.name.replace(/"/g, '""')}"`,
+                `"${msg.email.replace(/"/g, '""')}"`,
+                msg.message_type,
+                `"${msg.message.replace(/"/g, '""')}"`,
+                msg.status,
+                new Date(msg.created_at).toLocaleString()
+            ]);
+        });
+        
+        const csvContent = csvRows.map(row => row.join(',')).join('\n');
+        const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `bookmcq_messages_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('Messages exported successfully');
+    }
 
     // ============ CACHED CATEGORIES ============
     async function loadCategoriesCached() {
@@ -1753,7 +2002,6 @@
         const topicId = document.getElementById('bulkDeleteTopicId').value;
         const difficulty = document.getElementById('bulkDeleteDifficulty').value;
         
-        // Build query to count questions
         let query = _supabase.from('questions').select('id, topics!inner(book_id)', { count: 'exact' });
         
         if (bookId) {
@@ -1840,7 +2088,6 @@
         
         showToast(`Deleting ${bulkDeleteCount} questions... This may take a moment.`);
         
-        // First, get all question IDs to delete
         let query = _supabase.from('questions').select('id');
         
         if (bookId) {
@@ -1871,7 +2118,6 @@
         
         const questionIds = questionsToDelete.map(q => q.id);
         
-        // Delete options first (due to foreign key constraints)
         const { error: optionsError } = await _supabase
             .from('options')
             .delete()
@@ -1882,7 +2128,6 @@
             return;
         }
         
-        // Delete questions
         const { error: questionsError } = await _supabase
             .from('questions')
             .delete()
@@ -1895,14 +2140,12 @@
         
         showToast(`✅ Successfully deleted ${questionIds.length} questions!`);
         
-        // Refresh everything
         await Promise.all([
             loadQuestions(),
             refreshBulkDeletePreview(),
             loadTopicsCached()
         ]);
         
-        // Reset bulk delete form
         document.getElementById('bulkDeleteBookId').value = '';
         document.getElementById('bulkDeleteTopicId').innerHTML = '<option value="">Select a book first</option>';
         document.getElementById('bulkDeleteTopicId').disabled = true;
@@ -1942,9 +2185,10 @@
         document.getElementById('categoriesTab').classList.add('hidden');
         document.getElementById('bulkUploadTab').classList.add('hidden');
         document.getElementById('adminsTab').classList.add('hidden');
+        document.getElementById('messagesTab').classList.add('hidden');
         document.getElementById(`${tabName}Tab`).classList.remove('hidden');
         
-        const buttons = ['Books', 'Topics', 'Questions', 'Categories', 'BulkUpload', 'Admins'];
+        const buttons = ['Books', 'Topics', 'Questions', 'Categories', 'BulkUpload', 'Admins', 'Messages'];
         buttons.forEach(btn => {
             const btnElement = document.getElementById(`tab${btn}Btn`);
             if (btnElement) {
@@ -1963,6 +2207,7 @@
             loadBulkDeleteBooks();
         }
         if (tabName === 'categories') loadCategoriesCached();
+        if (tabName === 'messages') loadMessages();
     }
 
     async function checkSession() {
@@ -1988,7 +2233,8 @@
                     loadFilterBooksCached(),
                     loadTopicFilterBooksCached(),
                     loadCategoriesCached(),
-                    loadBulkDeleteBooks()
+                    loadBulkDeleteBooks(),
+                    loadMessages()
                 ]);
                 setupBookFilters();
                 setupMathPreviews();
@@ -2014,6 +2260,7 @@
         document.getElementById('tabCategoriesBtn').addEventListener('click', () => showTab('categories'));
         document.getElementById('tabBulkUploadBtn').addEventListener('click', () => showTab('bulkupload'));
         document.getElementById('tabAdminsBtn').addEventListener('click', () => showTab('admins'));
+        document.getElementById('tabMessagesBtn').addEventListener('click', () => showTab('messages'));
         
         document.getElementById('showAddBookBtn').addEventListener('click', () => {
             document.getElementById('addBookForm').classList.remove('hidden');
@@ -2119,6 +2366,27 @@
         const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
         if (bulkDeleteBtn) {
             bulkDeleteBtn.addEventListener('click', executeBulkDelete);
+        }
+        
+        // Messages Tab Event Listeners
+        const messageStatusFilter = document.getElementById('messageStatusFilter');
+        if (messageStatusFilter) {
+            messageStatusFilter.addEventListener('change', loadMessages);
+        }
+        
+        const refreshMessagesBtn = document.getElementById('refreshMessagesBtn');
+        if (refreshMessagesBtn) {
+            refreshMessagesBtn.addEventListener('click', loadMessages);
+        }
+        
+        const exportMessagesBtn = document.getElementById('exportMessagesBtn');
+        if (exportMessagesBtn) {
+            exportMessagesBtn.addEventListener('click', exportMessagesToCSV);
+        }
+        
+        const deleteAllMessagesBtn = document.getElementById('deleteAllMessagesBtn');
+        if (deleteAllMessagesBtn) {
+            deleteAllMessagesBtn.addEventListener('click', deleteAllMessages);
         }
         
         // Make math functions globally available
