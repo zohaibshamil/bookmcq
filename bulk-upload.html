@@ -25,7 +25,6 @@
         .step-circle { transition: all 0.2s ease; }
         .step-card:hover .step-circle { transform: scale(1.1); }
         
-        /* Math preview styles */
         .math-preview {
             background: #f8f9fa;
             border-left: 4px solid #8b5cf6;
@@ -40,15 +39,9 @@
             margin-bottom: 5px;
             font-weight: 600;
         }
-        .math-rendered {
-            line-height: 1.6;
-        }
-        .math-rendered mjx-container {
-            display: inline-block;
-            margin: 0 2px;
-        }
+        .math-rendered { line-height: 1.6; }
+        .math-rendered mjx-container { display: inline-block; margin: 0 2px; }
         
-        /* Progress bar styles */
         .progress-container {
             background: #e5e7eb;
             border-radius: 10px;
@@ -80,7 +73,6 @@
 
 <div class="max-w-4xl mx-auto">
     
-    <!-- Header -->
     <div class="text-center mb-8">
         <div class="inline-flex items-center gap-2 bg-white/20 backdrop-blur rounded-full px-6 py-2 mb-4">
             <i class="fas fa-cloud-upload-alt text-white"></i>
@@ -91,17 +83,15 @@
         <p class="text-white/50 text-sm mt-1">Supports LaTeX math: \( \sqrt{x} \) or $$ \frac{a}{b} $$</p>
     </div>
 
-    <!-- Main Card -->
     <div class="upload-card p-6 md:p-8 shadow-xl">
         
-        <!-- Back Link -->
         <div class="mb-6">
             <a href="admin.html" class="text-purple-600 hover:text-purple-800 inline-flex items-center gap-2 transition">
                 <i class="fas fa-arrow-left"></i> Back to Admin Panel
             </a>
         </div>
 
-        <!-- Step 1: Select Book - Modern Card -->
+        <!-- Step 1: Select Book -->
         <div class="step-card bg-gradient-to-r from-blue-50 to-indigo-50 p-5 rounded-2xl mb-6 border border-blue-100 transition hover:shadow-md">
             <div class="flex items-center gap-4 mb-4">
                 <div class="step-circle w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-md">1</div>
@@ -114,7 +104,7 @@
             </select>
         </div>
 
-        <!-- Step 2: Select Topic - Modern Card -->
+        <!-- Step 2: Select Topic -->
         <div class="step-card bg-gradient-to-r from-green-50 to-emerald-50 p-5 rounded-2xl mb-6 border border-green-100 transition hover:shadow-md">
             <div class="flex items-center gap-4 mb-4">
                 <div class="step-circle w-10 h-10 bg-green-600 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-md">2</div>
@@ -127,7 +117,7 @@
             </select>
         </div>
 
-        <!-- Step 3: Download Template - Modern Card -->
+        <!-- Step 3: Download Template -->
         <div class="step-card bg-gradient-to-r from-yellow-50 to-amber-50 p-5 rounded-2xl mb-6 border border-yellow-100 transition hover:shadow-md">
             <div class="flex items-center gap-4 mb-4">
                 <div class="step-circle w-10 h-10 bg-yellow-600 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-md">3</div>
@@ -137,12 +127,13 @@
             </div>
             <p class="text-sm text-gray-600 mb-3">Download the template, fill with your questions, then upload back.</p>
             <p class="text-xs text-purple-600 mb-3">💡 Use LaTeX for math: \( \sqrt{x} \), \( \frac{a}{b} \), \( \lim_{x \to 0} \), etc.</p>
+            <p class="text-xs text-red-500 mb-3">⚠️ Difficulty must be exactly: <strong>easy</strong>, <strong>medium</strong>, or <strong>hard</strong> (lowercase)</p>
             <button id="downloadBtn" class="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded-xl inline-flex items-center gap-2 transition transform hover:scale-105 shadow-md">
                 <i class="fas fa-download"></i> Download CSV Template
             </button>
         </div>
 
-        <!-- Step 4: Upload File - Modern Upload Zone -->
+        <!-- Step 4: Upload File -->
         <div class="step-card bg-gradient-to-r from-purple-50 to-pink-50 p-5 rounded-2xl mb-6 border border-purple-100 transition hover:shadow-md">
             <div class="flex items-center gap-4 mb-4">
                 <div class="step-circle w-10 h-10 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-md">4</div>
@@ -151,7 +142,6 @@
                 <i class="fas fa-cloud-upload-alt text-purple-400 text-2xl"></i>
             </div>
             
-            <!-- Modern Upload Zone -->
             <div id="uploadZone" class="upload-zone rounded-xl p-10 text-center transition">
                 <i class="fas fa-cloud-upload-alt text-5xl text-purple-400 mb-4"></i>
                 <p class="text-gray-600 font-medium">Click or drag & drop your file here</p>
@@ -162,7 +152,7 @@
                 </button>
             </div>
             
-            <!-- Progress Indicator Section -->
+            <!-- Progress Section -->
             <div id="progressSection" style="display: none;" class="mt-4">
                 <div class="bg-white rounded-xl p-4 shadow-sm">
                     <div class="flex justify-between items-center mb-2">
@@ -178,9 +168,7 @@
                         <span id="uploadedCount">0</span>
                         <span id="totalCount">0</span>
                     </div>
-                    <div id="statusMessages" class="mt-3 max-h-40 overflow-y-auto text-xs space-y-1">
-                        <!-- Status messages will appear here -->
-                    </div>
+                    <div id="statusMessages" class="mt-3 max-h-40 overflow-y-auto text-xs space-y-1"></div>
                 </div>
             </div>
             
@@ -189,10 +177,7 @@
             </button>
         </div>
         
-        <!-- Preview Section -->
         <div id="previewDiv" style="margin-top: 15px; display: none;"></div>
-        
-        <!-- Math Preview Section -->
         <div id="mathPreviewDiv" class="math-preview hidden mt-4">
             <div class="math-preview-label">📐 Math Preview (First question):</div>
             <div id="mathPreviewContent" class="math-rendered"></div>
@@ -202,13 +187,12 @@
 
 <script>
     // ============================================
-    // 1. SECURE KEY VERIFICATION (No URL Parameter)
+    // 1. SECURE KEY VERIFICATION
     // ============================================
     const SECRET_KEY = 'BookMCQ_Admin_Secure_Key_2024';
 
     function verifyAccess() {
         const storedKey = sessionStorage.getItem('bookmcq_bulk_access');
-        
         if (storedKey === SECRET_KEY) {
             sessionStorage.removeItem('bookmcq_bulk_access');
             return true;
@@ -222,9 +206,6 @@
         throw new Error("Access Denied");
     }
 
-    // ============================================
-    // 2. LOGGING FUNCTION (Kept for console, removed from UI)
-    // ============================================
     function addLog(msg, type = 'info') {
         console.log(`[${new Date().toLocaleTimeString()}] ${msg}`);
     }
@@ -233,23 +214,79 @@
     addLog('✅ Key verified', 'success');
     
     // ============================================
-    // 3. SAFE STRING HELPER (Prevents "includes is not a function" error)
+    // 2. SAFE STRING HELPER
     // ============================================
     function safeString(value) {
         if (value === null || value === undefined) return '';
         return String(value);
     }
     
+    // ============================================
+    // 3. VALIDATE AND FIX DIFFICULTY VALUE
+    // ============================================
+    function validateAndFixDifficulty(value) {
+        const str = safeString(value).toLowerCase().trim();
+        
+        // Exact matches
+        if (str === 'easy') return 'easy';
+        if (str === 'medium') return 'medium';
+        if (str === 'hard') return 'hard';
+        
+        // Common variations - map to correct values
+        if (str === 'e' || str === '1' || str === 'beginner') return 'easy';
+        if (str === 'm' || str === '2' || str === 'intermediate') return 'medium';
+        if (str === 'h' || str === '3' || str === 'advanced' || str === 'difficult') return 'hard';
+        
+        // Default to medium if invalid
+        console.warn(`Invalid difficulty value: "${value}", defaulting to "medium"`);
+        return 'medium';
+    }
+    
+    // Validate entire question object
+    function validateQuestion(q, index) {
+        const errors = [];
+        const warnings = [];
+        
+        // Check required fields
+        if (!safeString(q.question_text).trim()) {
+            errors.push('question_text is empty');
+        }
+        if (!safeString(q.option_a).trim()) {
+            errors.push('option_a is empty');
+        }
+        if (!safeString(q.option_b).trim()) {
+            errors.push('option_b is empty');
+        }
+        if (!safeString(q.option_c).trim()) {
+            errors.push('option_c is empty');
+        }
+        if (!safeString(q.option_d).trim()) {
+            errors.push('option_d is empty');
+        }
+        
+        // Check correct_answer
+        const correctAnswer = parseInt(safeString(q.correct_answer));
+        if (isNaN(correctAnswer) || correctAnswer < 0 || correctAnswer > 3) {
+            errors.push(`correct_answer must be 0,1,2,3 (got: ${q.correct_answer})`);
+        }
+        
+        // Check difficulty
+        const difficulty = safeString(q.difficulty).toLowerCase();
+        if (!['easy', 'medium', 'hard'].includes(difficulty)) {
+            warnings.push(`difficulty "${difficulty}" will be fixed to appropriate value`);
+        }
+        
+        return { isValid: errors.length === 0, errors, warnings, fixedDifficulty: validateAndFixDifficulty(q.difficulty) };
+    }
+    
     function safeProcessMathContent(text) {
         const str = safeString(text);
-        // Check if text contains LaTeX delimiters
         if (str.includes('\\(') || str.includes('\\[') || str.includes('$$')) {
             return str;
         }
         return str;
     }
     
-    // Function to render math in element
     async function renderMathInElement(element) {
         if (window.MathJax && element) {
             try {
@@ -257,30 +294,6 @@
             } catch(e) {
                 console.log('MathJax error:', e);
             }
-        }
-    }
-    
-    // Function to update progress UI
-    function updateProgress(current, total, statusMessage) {
-        const percent = Math.round((current / total) * 100);
-        const progressFill = document.getElementById('progressFill');
-        const progressPercent = document.getElementById('progressPercent');
-        const uploadedCount = document.getElementById('uploadedCount');
-        const totalCount = document.getElementById('totalCount');
-        const statusMessages = document.getElementById('statusMessages');
-        
-        if (progressFill) progressFill.style.width = `${percent}%`;
-        if (progressPercent) progressPercent.textContent = `${percent}%`;
-        if (uploadedCount) uploadedCount.textContent = current;
-        if (totalCount) totalCount.textContent = total;
-        
-        if (statusMessage && statusMessages) {
-            const timestamp = new Date().toLocaleTimeString();
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'text-gray-600';
-            messageDiv.innerHTML = `[${timestamp}] ${statusMessage}`;
-            statusMessages.appendChild(messageDiv);
-            statusMessages.scrollTop = statusMessages.scrollHeight;
         }
     }
     
@@ -310,6 +323,30 @@
         addLog('✅ Supabase client ready', 'success');
         
         let currentQuestions = [];
+        let validationReport = { valid: [], invalid: [], warnings: [] };
+        
+        function updateProgress(current, total, statusMessage) {
+            const percent = total > 0 ? Math.round((current / total) * 100) : 0;
+            const progressFill = document.getElementById('progressFill');
+            const progressPercent = document.getElementById('progressPercent');
+            const uploadedCount = document.getElementById('uploadedCount');
+            const totalCount = document.getElementById('totalCount');
+            const statusMessages = document.getElementById('statusMessages');
+            
+            if (progressFill) progressFill.style.width = `${percent}%`;
+            if (progressPercent) progressPercent.textContent = `${percent}%`;
+            if (uploadedCount) uploadedCount.textContent = current;
+            if (totalCount) totalCount.textContent = total;
+            
+            if (statusMessage && statusMessages) {
+                const timestamp = new Date().toLocaleTimeString();
+                const messageDiv = document.createElement('div');
+                messageDiv.className = statusMessage.includes('✅') ? 'text-green-600' : (statusMessage.includes('❌') ? 'text-red-600' : 'text-gray-600');
+                messageDiv.innerHTML = `[${timestamp}] ${statusMessage}`;
+                statusMessages.appendChild(messageDiv);
+                statusMessages.scrollTop = statusMessages.scrollHeight;
+            }
+        }
         
         async function loadBooks() {
             addLog('Fetching books from database...', 'info');
@@ -385,21 +422,64 @@
                     addLog(`✅ Loaded ${rows.length} questions`, 'success');
                     if (rows.length === 0) return;
                     
-                    // Safe process each row
-                    currentQuestions = rows.map(row => {
-                        const processed = {};
-                        Object.keys(row).forEach(key => {
-                            processed[key] = safeString(row[key]);
+                    // Validate all questions before processing
+                    validationReport = { valid: [], invalid: [], warnings: [] };
+                    const validatedQuestions = [];
+                    
+                    for (let i = 0; i < rows.length; i++) {
+                        const row = rows[i];
+                        const validation = validateQuestion(row, i);
+                        
+                        if (validation.isValid) {
+                            const processed = {
+                                question_text: safeString(row.question_text),
+                                option_a: safeString(row.option_a),
+                                option_b: safeString(row.option_b),
+                                option_c: safeString(row.option_c),
+                                option_d: safeString(row.option_d),
+                                correct_answer: parseInt(safeString(row.correct_answer)) || 0,
+                                difficulty: validation.fixedDifficulty,
+                                explanation: safeString(row.explanation) || ''
+                            };
+                            validatedQuestions.push(processed);
+                            validationReport.valid.push(i + 1);
+                            if (validation.warnings.length > 0) {
+                                validationReport.warnings.push(`Row ${i + 1}: ${validation.warnings.join(', ')}`);
+                            }
+                        } else {
+                            validationReport.invalid.push({ row: i + 1, errors: validation.errors });
+                        }
+                    }
+                    
+                    currentQuestions = validatedQuestions;
+                    
+                    // Show validation report
+                    let validationHtml = '';
+                    if (validationReport.invalid.length > 0) {
+                        validationHtml += `<div class="bg-red-50 border-l-4 border-red-500 p-3 mb-3 rounded">`;
+                        validationHtml += `<p class="text-red-700 font-semibold">❌ ${validationReport.invalid.length} invalid rows found and will be skipped:</p>`;
+                        validationReport.invalid.forEach(inv => {
+                            validationHtml += `<p class="text-red-600 text-sm">Row ${inv.row}: ${inv.errors.join(', ')}</p>`;
                         });
-                        return processed;
-                    });
+                        validationHtml += `</div>`;
+                    }
+                    
+                    if (validationReport.warnings.length > 0) {
+                        validationHtml += `<div class="bg-yellow-50 border-l-4 border-yellow-500 p-3 mb-3 rounded">`;
+                        validationHtml += `<p class="text-yellow-700 font-semibold">⚠️ Warnings (auto-fixed):</p>`;
+                        validationReport.warnings.forEach(warning => {
+                            validationHtml += `<p class="text-yellow-600 text-sm">${warning}</p>`;
+                        });
+                        validationHtml += `</div>`;
+                    }
                     
                     const previewDiv = document.getElementById('previewDiv');
                     const uploadBtn = document.getElementById('uploadBtn');
                     const mathPreviewDiv = document.getElementById('mathPreviewDiv');
                     const mathPreviewContent = document.getElementById('mathPreviewContent');
                     
-                    let html = '<h3 class="font-bold text-gray-700 mb-2">📋 Preview (first 3 rows):</h3>';
+                    let html = validationHtml;
+                    html += '<h3 class="font-bold text-gray-700 mb-2">📋 Preview (first 3 rows):</h3>';
                     html += '<div class="preview-table"><table>';
                     const headers = Object.keys(currentQuestions[0]);
                     html += '<thead><tr style="background:#f0fdf4;">' + headers.map(h => `<th style="padding:8px; border:1px solid #d1d5db; text-align:left; background:#dcfce7;">${escapeHtml(h)}</th>`).join('') + '</thead><tbody>';
@@ -407,25 +487,25 @@
                         html += '<tr>' + headers.map(h => `<td style="padding:8px; border:1px solid #d1d5db;">${escapeHtml(safeString(currentQuestions[i][h]).substring(0, 50))}</td>`).join('') + '</tr>';
                     }
                     html += '</tbody></table></div>';
-                    html += `<p class="text-green-600 text-sm mt-2"><i class="fas fa-check-circle"></i> ✅ ${currentQuestions.length} questions ready to upload</p>`;
+                    html += `<p class="text-green-600 text-sm mt-2"><i class="fas fa-check-circle"></i> ✅ ${currentQuestions.length} valid questions ready to upload</p>`;
+                    if (validationReport.invalid.length > 0) {
+                        html += `<p class="text-red-500 text-sm">⚠️ ${validationReport.invalid.length} rows were invalid and will be skipped</p>`;
+                    }
                     
                     previewDiv.innerHTML = html;
                     previewDiv.style.display = 'block';
                     uploadBtn.style.display = 'inline-flex';
                     
-                    // Show math preview for first question
                     if (currentQuestions.length > 0) {
                         const firstQuestion = currentQuestions[0];
                         const questionText = safeString(firstQuestion.question_text);
                         const processedQuestion = safeProcessMathContent(questionText);
                         mathPreviewContent.innerHTML = `
                             <div class="mb-2"><strong>Question:</strong> <span class="math-content">${escapeHtml(processedQuestion)}</span></div>
-                            <div class="text-sm text-gray-500 mt-2">Other fields also support LaTeX math syntax</div>
+                            <div class="text-sm text-gray-500 mt-2">Difficulty: ${firstQuestion.difficulty}</div>
                         `;
                         mathPreviewDiv.classList.remove('hidden');
                         renderMathInElement(mathPreviewContent);
-                    } else {
-                        mathPreviewDiv.classList.add('hidden');
                     }
                     
                 } catch(e) {
@@ -447,12 +527,11 @@
             }
             
             if (!currentQuestions.length) {
-                addLog('❌ No questions to upload', 'error');
-                alert('No questions to upload. Please select a file first.');
+                addLog('❌ No valid questions to upload', 'error');
+                alert('No valid questions to upload. Please check your file.');
                 return;
             }
             
-            // Show progress section
             const progressSection = document.getElementById('progressSection');
             const uploadBtn = document.getElementById('uploadBtn');
             const previewDiv = document.getElementById('previewDiv');
@@ -461,7 +540,6 @@
             uploadBtn.style.display = 'none';
             previewDiv.style.display = 'none';
             
-            // Clear previous status messages
             const statusMessages = document.getElementById('statusMessages');
             if (statusMessages) statusMessages.innerHTML = '';
             
@@ -470,10 +548,9 @@
             let failed = 0;
             const failedIndices = [];
             
-            addLog(`📤 Uploading ${total} questions...`, 'info');
+            addLog(`📤 Uploading ${total} valid questions...`, 'info');
             updateProgress(0, total, 'Starting upload...');
             
-            // Process in batches of 5 to avoid rate limiting
             const BATCH_SIZE = 5;
             const batches = [];
             for (let i = 0; i < total; i += BATCH_SIZE) {
@@ -489,7 +566,6 @@
                 
                 updateProgress(processedCount, total, `Processing batch ${batchIndex + 1}/${batches.length} (questions ${batchStart}-${batchEnd})...`);
                 
-                // Process each question in the batch sequentially
                 for (let i = 0; i < batch.length; i++) {
                     const q = batch[i];
                     const globalIndex = batchIndex * BATCH_SIZE + i;
@@ -500,8 +576,8 @@
                         const { data, error } = await supabase.from('questions').insert({
                             topic_id: parseInt(topicId),
                             question_text: safeString(q.question_text),
-                            difficulty: safeString(q.difficulty) || 'medium',
-                            correct_answer: parseInt(safeString(q.correct_answer)) || 0,
+                            difficulty: q.difficulty, // Already validated
+                            correct_answer: q.correct_answer,
                             explanation: safeString(q.explanation) || ''
                         }).select();
                         
@@ -522,7 +598,7 @@
                         }
                         success++;
                         processedCount++;
-                        updateProgress(processedCount, total, `✅ Question ${globalIndex + 1}/${total} uploaded successfully`);
+                        updateProgress(processedCount, total, `✅ Question ${globalIndex + 1}/${total} uploaded successfully (Difficulty: ${q.difficulty})`);
                         addLog(`✅ ${globalIndex + 1}/${total} uploaded`, 'success');
                         
                     } catch(e) {
@@ -533,17 +609,14 @@
                         addLog(`❌ ${globalIndex + 1}/${total} failed: ${e.message}`, 'error');
                     }
                     
-                    // Small delay between questions to avoid rate limiting
                     await new Promise(resolve => setTimeout(resolve, 100));
                 }
                 
-                // Delay between batches
                 if (batchIndex < batches.length - 1) {
                     await new Promise(resolve => setTimeout(resolve, 500));
                 }
             }
             
-            // Final summary
             const finalMessage = `📊 Upload Complete! Success: ${success}, Failed: ${failed}`;
             updateProgress(success, total, finalMessage);
             addLog(`📊 Complete: ${success} uploaded, ${failed} failed`, success > 0 ? 'success' : 'error');
@@ -552,7 +625,7 @@
                 updateProgress(success, total, `⚠️ Failed question numbers: ${failedIndices.join(', ')}`);
             }
             
-            alert(`Upload complete!\n✅ Success: ${success} questions added\n❌ Failed: ${failed} questions\n\n${failedIndices.length > 0 ? `Failed question numbers: ${failedIndices.join(', ')}` : 'All questions uploaded successfully!'}`);
+            alert(`Upload complete!\n✅ Success: ${success} questions added\n❌ Failed: ${failed} questions\n\n${failedIndices.length > 0 ? `Failed question numbers: ${failedIndices.join(', ')}` : 'All valid questions uploaded successfully!'}`);
             
             if (success > 0) {
                 document.getElementById('previewDiv').style.display = 'none';
@@ -562,7 +635,6 @@
                 currentQuestions = [];
             }
             
-            // Hide progress section after 3 seconds
             setTimeout(() => {
                 progressSection.style.display = 'none';
             }, 3000);
@@ -573,7 +645,6 @@
             return String(str).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
         }
         
-        // Setup file upload zone
         function setupUploadZone() {
             const uploadZone = document.getElementById('uploadZone');
             const fileInput = document.getElementById('fileInput');
