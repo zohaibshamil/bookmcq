@@ -76,6 +76,11 @@
             font-size: 0.875rem;
             line-height: 1.5;
         }
+        
+        /* Per page selector styles */
+        .per-page-selector {
+            max-width: 150px;
+        }
     </style>
 </head>
 <body class="disable-select">
@@ -117,7 +122,8 @@
         </h2>
         <p class="text-gray-600 mb-6">Browse and practice questions organized by book, chapter, and topic</p>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <!-- Filter Row - Added Difficulty Filter -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">📚 Select Book</label>
                 <select id="practiceBookSelect" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500">
@@ -130,9 +136,29 @@
                     <option value="">Select a book first</option>
                 </select>
             </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">⚡ Difficulty Level</label>
+                <select id="practiceDifficultySelect" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <option value="">All Difficulties</option>
+                    <option value="easy">🌱 Easy</option>
+                    <option value="medium">⚡ Medium</option>
+                    <option value="hard">🔥 Hard</option>
+                </select>
+            </div>
         </div>
         
-        <div id="practiceQuestionsContainer" class="space-y-4 mt-6">
+        <!-- Per Page Selector Row -->
+        <div class="flex justify-end items-center mb-4">
+            <label class="text-sm font-semibold text-gray-700 mr-2">Show:</label>
+            <select id="perPageSelect" class="per-page-selector p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                <option value="10">10 per page</option>
+                <option value="25">25 per page</option>
+                <option value="50">50 per page</option>
+                <option value="0">All Questions</option>
+            </select>
+        </div>
+        
+        <div id="practiceQuestionsContainer" class="space-y-4 mt-2">
             <div class="text-center py-8 text-gray-500">Select a book and topic to view questions</div>
         </div>
         
@@ -254,26 +280,50 @@
         async getPaginatedQuestions(topicId, page = 1, pageSize = 10) {
             const from = (page - 1) * pageSize;
             const to = from + pageSize - 1;
-            const cacheKey = `questions_page_${topicId}_${page}`;
+            const cacheKey = `questions_page_${topicId}_${page}_${pageSize}`;
             const cached = this.#cache.get(cacheKey);
             if (cached) return cached;
-            const { data, error, count } = await this.#supabase.from('questions')
+            
+            let query = this.#supabase.from('questions')
                 .select(`id, question_text, difficulty, correct_answer, explanation, options (option_text, option_index)`, { count: 'exact' })
-                .eq('topic_id', topicId)
-                .range(from, to)
-                .order('id');
-            if (error) throw error;
-            const formatted = (data || []).map(q => ({
-                id: q.id, 
-                text: q.question_text,
-                options: (q.options || []).sort((a,b) => a.option_index - b.option_index).map(o => o.option_text),
-                correct: q.correct_answer, 
-                explanation: q.explanation || 'No explanation available', 
-                difficulty: q.difficulty
-            }));
-            const result = { questions: formatted, total: count || 0 };
-            this.#cache.set(cacheKey, result);
-            return result;
+                .eq('topic_id', topicId);
+            
+            // Apply difficulty filter if selected
+            const difficultyFilter = document.getElementById('practiceDifficultySelect')?.value;
+            if (difficultyFilter && difficultyFilter !== '') {
+                query = query.eq('difficulty', difficultyFilter);
+            }
+            
+            // If pageSize is 0 (All), fetch all questions
+            if (pageSize === 0) {
+                const { data, error, count } = await query.order('id');
+                if (error) throw error;
+                const formatted = (data || []).map(q => ({
+                    id: q.id, 
+                    text: q.question_text,
+                    options: (q.options || []).sort((a,b) => a.option_index - b.option_index).map(o => o.option_text),
+                    correct: q.correct_answer, 
+                    explanation: q.explanation || 'No explanation available', 
+                    difficulty: q.difficulty
+                }));
+                const result = { questions: formatted, total: count || 0 };
+                this.#cache.set(cacheKey, result);
+                return result;
+            } else {
+                const { data, error, count } = await query.range(from, to).order('id');
+                if (error) throw error;
+                const formatted = (data || []).map(q => ({
+                    id: q.id, 
+                    text: q.question_text,
+                    options: (q.options || []).sort((a,b) => a.option_index - b.option_index).map(o => o.option_text),
+                    correct: q.correct_answer, 
+                    explanation: q.explanation || 'No explanation available', 
+                    difficulty: q.difficulty
+                }));
+                const result = { questions: formatted, total: count || 0 };
+                this.#cache.set(cacheKey, result);
+                return result;
+            }
         }
     }
 
@@ -284,6 +334,7 @@
     let totalPages = 0;
     let currentTopicId = null;
     let questionsCache = new Map();
+    let currentPerPage = 10;
 
     function showToast(message, isError = false) {
         const toast = document.getElementById('toast');
@@ -349,18 +400,27 @@
         container.innerHTML = '<div class="skeleton h-32 w-full mb-4"></div><div class="skeleton h-32 w-full mb-4"></div>';
         
         try {
-            const result = await supabaseService.getPaginatedQuestions(topicId, page, 10);
+            // Get current per page value (0 means ALL)
+            const perPageSelect = document.getElementById('perPageSelect');
+            currentPerPage = parseInt(perPageSelect.value);
             
-            totalPages = Math.ceil(result.total / 10);
+            const result = await supabaseService.getPaginatedQuestions(topicId, page, currentPerPage);
+            
+            // Calculate total pages (if not showing all)
+            if (currentPerPage === 0) {
+                totalPages = 1;
+            } else {
+                totalPages = Math.ceil(result.total / currentPerPage);
+            }
             renderPagination();
             
             if (!result.questions || result.questions.length === 0) {
-                container.innerHTML = '<div class="text-center py-8 text-gray-500">No questions found for this topic</div>';
+                container.innerHTML = '<div class="text-center py-8 text-gray-500">No questions found for the selected filters</div>';
                 return;
             }
             
             container.innerHTML = result.questions.map((q, idx) => {
-                const globalNumber = (page - 1) * 10 + idx + 1;
+                const globalNumber = currentPerPage === 0 ? idx + 1 : (page - 1) * currentPerPage + idx + 1;
                 const difficultyColor = q.difficulty === 'easy' ? 'text-green-600 bg-green-50' : 
                                       q.difficulty === 'medium' ? 'text-yellow-600 bg-yellow-50' : 
                                       'text-red-600 bg-red-50';
@@ -402,6 +462,13 @@
     function renderPagination() {
         const container = document.getElementById('practicePagination');
         if (!container) return;
+        
+        // Don't show pagination if showing all questions
+        if (currentPerPage === 0 || totalPages <= 1) {
+            container.innerHTML = '';
+            return;
+        }
+        
         container.innerHTML = `
             <div class="flex justify-between items-center">
                 <button id="practicePrevBtn" class="bg-gray-500 text-white px-4 py-2 rounded-lg disabled:opacity-50" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>
@@ -428,11 +495,27 @@
             else navbar.classList.remove('navbar-scrolled');
         });
     }
+    
+    // Refresh questions when filters change
+    function refreshQuestions() {
+        if (currentTopicId) {
+            currentPage = 1;
+            loadQuestions(currentTopicId, 1);
+        }
+    }
 
     document.getElementById('practiceBookSelect').addEventListener('change', loadTopics);
     document.getElementById('practiceTopicSelect').addEventListener('change', (e) => {
-        if (e.target.value) loadQuestions(e.target.value);
+        if (e.target.value) {
+            currentPage = 1;
+            loadQuestions(e.target.value, 1);
+        }
     });
+    
+    // Add event listeners for filters
+    document.getElementById('practiceDifficultySelect').addEventListener('change', refreshQuestions);
+    document.getElementById('perPageSelect').addEventListener('change', refreshQuestions);
+    
     window.toggleMobileMenu = toggleMobileMenu;
     
     loadBooks();
