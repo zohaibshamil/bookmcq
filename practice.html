@@ -249,9 +249,21 @@
             } catch(e) { return null; }
         }
         remove(key) { localStorage.removeItem(this.#cachePrefix + key); }
+        
+        // New method to clear all cache
+        clearAllCache() {
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith(this.#cachePrefix)) {
+                    keysToRemove.push(key);
+                }
+            }
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+        }
     }
 
-    // Supabase Service (from combined code)
+    // Supabase Service (from combined code) - Updated to NOT cache difficulty queries
     class SupabaseService {
         #supabase;
         #cache;
@@ -277,21 +289,27 @@
             this.#cache.set(`topics_${bookId}`, data);
             return data;
         }
-        async getPaginatedQuestions(topicId, page = 1, pageSize = 10) {
+        async getPaginatedQuestions(topicId, page = 1, pageSize = 10, difficulty = '') {
             const from = (page - 1) * pageSize;
             const to = from + pageSize - 1;
-            const cacheKey = `questions_page_${topicId}_${page}_${pageSize}`;
+            
+            // Include difficulty in cache key to differentiate between different difficulty filters
+            const difficultySuffix = difficulty ? `_${difficulty}` : '_all';
+            const cacheKey = `questions_page_${topicId}_${page}_${pageSize}${difficultySuffix}`;
+            
+            // Check cache first
             const cached = this.#cache.get(cacheKey);
-            if (cached) return cached;
+            if (cached) {
+                return cached;
+            }
             
             let query = this.#supabase.from('questions')
                 .select(`id, question_text, difficulty, correct_answer, explanation, options (option_text, option_index)`, { count: 'exact' })
                 .eq('topic_id', topicId);
             
             // Apply difficulty filter if selected
-            const difficultyFilter = document.getElementById('practiceDifficultySelect')?.value;
-            if (difficultyFilter && difficultyFilter !== '') {
-                query = query.eq('difficulty', difficultyFilter);
+            if (difficulty && difficulty !== '') {
+                query = query.eq('difficulty', difficulty);
             }
             
             // If pageSize is 0 (All), fetch all questions
@@ -307,6 +325,7 @@
                     difficulty: q.difficulty
                 }));
                 const result = { questions: formatted, total: count || 0 };
+                // Store in cache
                 this.#cache.set(cacheKey, result);
                 return result;
             } else {
@@ -321,9 +340,23 @@
                     difficulty: q.difficulty
                 }));
                 const result = { questions: formatted, total: count || 0 };
+                // Store in cache
                 this.#cache.set(cacheKey, result);
                 return result;
             }
+        }
+        
+        // New method to clear question cache for a specific topic
+        clearQuestionCacheForTopic(topicId) {
+            if (!topicId) return;
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.includes(`questions_page_${topicId}`)) {
+                    keysToRemove.push(key);
+                }
+            }
+            keysToRemove.forEach(key => localStorage.removeItem(key));
         }
     }
 
@@ -333,7 +366,6 @@
     let currentPage = 1;
     let totalPages = 0;
     let currentTopicId = null;
-    let questionsCache = new Map();
     let currentPerPage = 10;
 
     function showToast(message, isError = false) {
@@ -404,7 +436,10 @@
             const perPageSelect = document.getElementById('perPageSelect');
             currentPerPage = parseInt(perPageSelect.value);
             
-            const result = await supabaseService.getPaginatedQuestions(topicId, page, currentPerPage);
+            // Get current difficulty filter
+            const difficultyFilter = document.getElementById('practiceDifficultySelect')?.value || '';
+            
+            const result = await supabaseService.getPaginatedQuestions(topicId, page, currentPerPage, difficultyFilter);
             
             // Calculate total pages (if not showing all)
             if (currentPerPage === 0) {
