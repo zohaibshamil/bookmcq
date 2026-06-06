@@ -137,6 +137,7 @@
             </div>
             <p class="text-sm text-gray-600 mb-3">Download the template, fill with your questions, then upload back.</p>
             <p class="text-xs text-purple-600 mb-3">💡 Use LaTeX for math: \( \sqrt{x} \), \( \frac{a}{b} \), \( \lim_{x \to 0} \), etc.</p>
+            <p class="text-xs text-blue-600 mb-3">📌 <strong>Important:</strong> For correct_answer, use A, B, C, or D (not numbers). Example: A, B, C, or D</p>
             <button id="downloadBtn" class="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded-xl inline-flex items-center gap-2 transition transform hover:scale-105 shadow-md">
                 <i class="fas fa-download"></i> Download CSV Template
             </button>
@@ -233,16 +234,38 @@
     addLog('✅ Key verified', 'success');
     
     // ============================================
-    // 3. SAFE STRING HELPER (Prevents "includes is not a function" error)
+    // 3. SAFE STRING HELPER
     // ============================================
     function safeString(value) {
         if (value === null || value === undefined) return '';
         return String(value);
     }
     
+    // ============================================
+    // 4. CONVERT LETTER ANSWER TO NUMBER
+    // ============================================
+    function convertAnswerToNumber(answer) {
+        const str = safeString(answer).toUpperCase().trim();
+        
+        // Handle letter inputs (A, B, C, D)
+        if (str === 'A') return 0;
+        if (str === 'B') return 1;
+        if (str === 'C') return 2;
+        if (str === 'D') return 3;
+        
+        // Handle number inputs (0,1,2,3) for backward compatibility
+        if (str === '0') return 0;
+        if (str === '1') return 1;
+        if (str === '2') return 2;
+        if (str === '3') return 3;
+        
+        // Default to 0 if invalid
+        console.warn(`Invalid correct_answer value: "${answer}", defaulting to A (0)`);
+        return 0;
+    }
+    
     function safeProcessMathContent(text) {
         const str = safeString(text);
-        // Check if text contains LaTeX delimiters
         if (str.includes('\\(') || str.includes('\\[') || str.includes('$$')) {
             return str;
         }
@@ -285,7 +308,7 @@
     }
     
     // ============================================
-    // 4. SUPABASE & CORE LOGIC
+    // 5. SUPABASE & CORE LOGIC
     // ============================================
     function checkLibraries() {
         if (typeof window.supabase !== 'undefined') {
@@ -359,7 +382,8 @@
         function downloadTemplate() {
             addLog('Generating CSV template...', 'info');
             const headers = ['question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'difficulty', 'explanation'];
-            const example = ['What does \( \text{typeof null} \) return?', 'null', 'undefined', 'object', 'number', '2', 'easy', '\( \text{typeof null} \) returns "object" due to a historical bug in JavaScript'];
+            // Now using letter 'C' instead of number 2 for correct_answer
+            const example = ['What does \( \text{typeof null} \) return?', 'null', 'undefined', 'object', 'number', 'C', 'easy', '\( \text{typeof null} \) returns "object" due to a historical bug in JavaScript'];
             const csv = [headers.join(','), example.map(cell => `"${safeString(cell).replace(/"/g, '""')}"`).join(',')].join('\n');
             
             const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
@@ -385,12 +409,18 @@
                     addLog(`✅ Loaded ${rows.length} questions`, 'success');
                     if (rows.length === 0) return;
                     
-                    // Safe process each row
+                    // Safe process each row and convert correct_answer from letter to number
                     currentQuestions = rows.map(row => {
                         const processed = {};
                         Object.keys(row).forEach(key => {
                             processed[key] = safeString(row[key]);
                         });
+                        // Convert the correct_answer from letter (A,B,C,D) to number (0,1,2,3)
+                        const originalAnswer = processed.correct_answer;
+                        processed.correct_answer_numeric = convertAnswerToNumber(originalAnswer);
+                        if (originalAnswer !== processed.correct_answer_numeric.toString() && !['0','1','2','3'].includes(originalAnswer)) {
+                            addLog(`⚠️ Converted correct_answer from "${originalAnswer}" to "${processed.correct_answer_numeric}" (${String.fromCharCode(65+processed.correct_answer_numeric)})`, 'warning');
+                        }
                         return processed;
                     });
                     
@@ -401,13 +431,30 @@
                     
                     let html = '<h3 class="font-bold text-gray-700 mb-2">📋 Preview (first 3 rows):</h3>';
                     html += '<div class="preview-table"><table>';
-                    const headers = Object.keys(currentQuestions[0]);
+                    const headers = Object.keys(currentQuestions[0]).filter(h => h !== 'correct_answer_numeric');
                     html += '<thead><tr style="background:#f0fdf4;">' + headers.map(h => `<th style="padding:8px; border:1px solid #d1d5db; text-align:left; background:#dcfce7;">${escapeHtml(h)}</th>`).join('') + '</thead><tbody>';
                     for (let i = 0; i < Math.min(3, currentQuestions.length); i++) {
-                        html += '<tr>' + headers.map(h => `<td style="padding:8px; border:1px solid #d1d5db;">${escapeHtml(safeString(currentQuestions[i][h]).substring(0, 50))}</td>`).join('') + '</tr>';
+                        html += '<tr>' + headers.map(h => {
+                            let value = safeString(currentQuestions[i][h]);
+                            if (h === 'correct_answer') {
+                                // Show the letter version in preview
+                                const numVal = currentQuestions[i].correct_answer_numeric;
+                                value = String.fromCharCode(65 + numVal);
+                            }
+                            return `<td style="padding:8px; border:1px solid #d1d5db;">${escapeHtml(value.substring(0, 50))}</td>`;
+                        }).join('') + '</tr>';
                     }
                     html += '</tbody></table></div>';
                     html += `<p class="text-green-600 text-sm mt-2"><i class="fas fa-check-circle"></i> ✅ ${currentQuestions.length} questions ready to upload</p>`;
+                    
+                    // Show conversion warning if any answers were converted
+                    const convertedCount = currentQuestions.filter(q => {
+                        const orig = safeString(q.correct_answer);
+                        return !['0','1','2','3','A','B','C','D','a','b','c','d'].includes(orig) || (orig.length > 1);
+                    }).length;
+                    if (convertedCount > 0) {
+                        html += `<p class="text-yellow-600 text-sm mt-1"><i class="fas fa-exclamation-triangle"></i> ⚠️ ${convertedCount} question(s) had invalid correct_answer values and were fixed to defaults.</p>`;
+                    }
                     
                     previewDiv.innerHTML = html;
                     previewDiv.style.display = 'block';
@@ -420,7 +467,7 @@
                         const processedQuestion = safeProcessMathContent(questionText);
                         mathPreviewContent.innerHTML = `
                             <div class="mb-2"><strong>Question:</strong> <span class="math-content">${escapeHtml(processedQuestion)}</span></div>
-                            <div class="text-sm text-gray-500 mt-2">Other fields also support LaTeX math syntax</div>
+                            <div class="text-sm text-gray-500 mt-2">Correct Answer: ${String.fromCharCode(65 + firstQuestion.correct_answer_numeric)}</div>
                         `;
                         mathPreviewDiv.classList.remove('hidden');
                         renderMathInElement(mathPreviewContent);
@@ -497,11 +544,14 @@
                     try {
                         updateProgress(processedCount, total, `Uploading question ${globalIndex + 1}/${total}...`);
                         
+                        // Use the numeric value we already converted
+                        const correctAnswerNumeric = q.correct_answer_numeric !== undefined ? q.correct_answer_numeric : convertAnswerToNumber(q.correct_answer);
+                        
                         const { data, error } = await supabase.from('questions').insert({
                             topic_id: parseInt(topicId),
                             question_text: safeString(q.question_text),
                             difficulty: safeString(q.difficulty) || 'medium',
-                            correct_answer: parseInt(safeString(q.correct_answer)) || 0,
+                            correct_answer: correctAnswerNumeric,
                             explanation: safeString(q.explanation) || ''
                         }).select();
                         
@@ -522,7 +572,7 @@
                         }
                         success++;
                         processedCount++;
-                        updateProgress(processedCount, total, `✅ Question ${globalIndex + 1}/${total} uploaded successfully`);
+                        updateProgress(processedCount, total, `✅ Question ${globalIndex + 1}/${total} uploaded successfully (Answer: ${String.fromCharCode(65 + correctAnswerNumeric)})`);
                         addLog(`✅ ${globalIndex + 1}/${total} uploaded`, 'success');
                         
                     } catch(e) {
