@@ -244,21 +244,67 @@
             this.#cache.set(`topics_${bookId}`, data);
             return data;
         }
-        async getQuestions(topicId, difficulty, limit = 15) {
-            const cacheKey = `questions_${topicId}_${difficulty}`;
-            const cached = this.#cache.get(cacheKey);
-            if (cached) return cached;
-            let query = this.#supabase.from('questions').select(`id, question_text, difficulty, correct_answer, explanation, options (option_text, option_index)`).eq('topic_id', topicId).eq('difficulty', difficulty).limit(limit);
-            const { data, error } = await query;
-            if (error) throw error;
-            const formatted = (data || []).map(q => ({
-                id: q.id, text: q.question_text,
-                options: (q.options || []).sort((a,b) => a.option_index - b.option_index).map(o => o.option_text),
-                correct: q.correct_answer, explanation: q.explanation || 'No explanation available', difficulty: q.difficulty
-            }));
-            this.#cache.set(cacheKey, formatted);
-            return formatted;
+async getQuestions(topicId, difficulty, limit = 15) {
+    const cacheKey = `questions_${topicId}_${difficulty}`;
+    const cached = this.#cache.get(cacheKey);
+    if (cached) {
+        // Randomly shuffle cached questions and return first 'limit'
+        const shuffled = [...cached];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
         }
+        return shuffled.slice(0, limit);
+    }
+    
+    // First, get total count of questions matching the criteria
+    const { count, error: countError } = await this.#supabase
+        .from('questions')
+        .select('*', { count: 'exact', head: true })
+        .eq('topic_id', topicId)
+        .eq('difficulty', difficulty);
+    
+    if (countError) throw countError;
+    if (!count || count === 0) return [];
+    
+    // Get random offset to fetch different questions each time
+    const randomOffset = Math.floor(Math.random() * Math.max(1, count - limit + 1));
+    
+    let query = this.#supabase
+        .from('questions')
+        .select(`id, question_text, difficulty, correct_answer, explanation, options (option_text, option_index)`)
+        .eq('topic_id', topicId)
+        .eq('difficulty', difficulty)
+        .range(randomOffset, randomOffset + limit - 1);
+    
+    const { data, error } = await query;
+    if (error) throw error;
+    
+    const formatted = (data || []).map(q => ({
+        id: q.id, text: q.question_text,
+        options: (q.options || []).sort((a,b) => a.option_index - b.option_index).map(o => o.option_text),
+        correct: q.correct_answer, explanation: q.explanation || 'No explanation available', difficulty: q.difficulty
+    }));
+    
+    // Store ALL questions in cache for future randomization (not just the fetched ones)
+    // Fetch all questions for this topic/difficulty to cache
+    const { data: allData } = await this.#supabase
+        .from('questions')
+        .select(`id, question_text, difficulty, correct_answer, explanation, options (option_text, option_index)`)
+        .eq('topic_id', topicId)
+        .eq('difficulty', difficulty);
+    
+    if (allData && allData.length > 0) {
+        const allFormatted = allData.map(q => ({
+            id: q.id, text: q.question_text,
+            options: (q.options || []).sort((a,b) => a.option_index - b.option_index).map(o => o.option_text),
+            correct: q.correct_answer, explanation: q.explanation || 'No explanation available', difficulty: q.difficulty
+        }));
+        this.#cache.set(cacheKey, allFormatted);
+    }
+    
+    return formatted;
+}
     }
 
     // Function to render math content
