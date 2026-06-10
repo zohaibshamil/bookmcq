@@ -570,6 +570,23 @@
                 display: none !important;
             }
         }
+        
+        /* Flash News Styles */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .news-item {
+            transition: all 0.3s ease;
+        }
+        .news-item:not(:last-child) {
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            padding-bottom: 6px;
+            margin-bottom: 6px;
+        }
     </style>
 </head>
 <body class="disable-select">
@@ -608,6 +625,24 @@
         <a href="/practice" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center">📚 Practice <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span></a>
         <a href="/contact" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition">📧 Contact</a>
         <a href="/privacy" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition">🔒 Privacy</a>
+    </div>
+
+    <!-- Flash News / Announcement Bar - Shows ALL recent updates -->
+    <div id="flashNewsBar" class="hidden mb-4 rounded-xl overflow-hidden shadow-md">
+        <div class="bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-bullhorn text-white text-lg animate-pulse"></i>
+                    <span class="text-white font-semibold text-sm">📢 Updates:</span>
+                </div>
+                <button id="closeFlashNews" class="text-white/80 hover:text-white transition">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="flashNewsContainer" class="mt-1 space-y-1">
+                <div class="text-white text-sm" id="flashNewsMessage">Loading updates...</div>
+            </div>
+        </div>
     </div>
 
     <!-- Home Page -->
@@ -1230,6 +1265,173 @@
         sendBtn.onclick = sendMessage;
         chatInput.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
     }
+
+    // ============================================
+    // DYNAMIC FLASH NEWS - SHOWS ALL RECENT UPDATES
+    // ============================================
+    
+    // Function to get ALL recent updates (books, chapters, categories from last 7 days)
+    async function getAllRecentUpdates() {
+        try {
+            const today = new Date();
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(today.getDate() - 7);
+            const sevenDaysAgoStr = sevenDaysAgo.toISOString();
+            
+            // Get recent books (last 7 days)
+            const { data: recentBooks, error: booksError } = await supabaseService.supabase
+                .from('books')
+                .select('id, title, created_at')
+                .gte('created_at', sevenDaysAgoStr)
+                .order('created_at', { ascending: false });
+            
+            // Get recent topics/chapters (last 7 days)
+            const { data: recentTopics, error: topicsError } = await supabaseService.supabase
+                .from('topics')
+                .select('id, name, book_id, created_at, books(title)')
+                .gte('created_at', sevenDaysAgoStr)
+                .order('created_at', { ascending: false });
+            
+            // Get recent categories (last 7 days)
+            const { data: recentCategories, error: categoriesError } = await supabaseService.supabase
+                .from('categories')
+                .select('id, name, created_at')
+                .gte('created_at', sevenDaysAgoStr)
+                .order('created_at', { ascending: false });
+            
+            const updates = [];
+            
+            // Process books
+            if (recentBooks && recentBooks.length > 0) {
+                recentBooks.forEach(book => {
+                    updates.push({
+                        type: 'book',
+                        id: `book_${book.id}`,
+                        message: `📖 New book: "${book.title}" added with MCQs!`,
+                        date: book.created_at,
+                        isLatest: updates.length === 0
+                    });
+                });
+            }
+            
+            // Process topics/chapters
+            if (recentTopics && recentTopics.length > 0) {
+                // Group topics by book to show latest chapter per book
+                const topicsByBook = {};
+                recentTopics.forEach(topic => {
+                    const bookTitle = topic.books?.title || 'Unknown';
+                    if (!topicsByBook[bookTitle] || new Date(topic.created_at) > new Date(topicsByBook[bookTitle].date)) {
+                        topicsByBook[bookTitle] = {
+                            topic: topic,
+                            date: topic.created_at
+                        };
+                    }
+                });
+                
+                // Add the latest chapter per book
+                Object.values(topicsByBook).forEach(({ topic }) => {
+                    const bookTitle = topic.books?.title || 'Unknown';
+                    updates.push({
+                        type: 'chapter',
+                        id: `topic_${topic.id}`,
+                        message: `📚 New chapter "${topic.name}" added to "${bookTitle}"!`,
+                        date: topic.created_at,
+                        isLatest: updates.length === 0
+                    });
+                });
+            }
+            
+            // Process categories
+            if (recentCategories && recentCategories.length > 0) {
+                recentCategories.forEach(category => {
+                    updates.push({
+                        type: 'category',
+                        id: `category_${category.id}`,
+                        message: `🏷️ New category "${category.name}" now available!`,
+                        date: category.created_at,
+                        isLatest: updates.length === 0
+                    });
+                });
+            }
+            
+            // Sort by date (newest first)
+            updates.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            return updates;
+            
+        } catch (error) {
+            console.error('Error getting recent updates:', error);
+            return [];
+        }
+    }
+    
+    // Function to get dismissed items from localStorage
+    function getDismissedItems() {
+        const dismissed = localStorage.getItem('dismissedFlashNewsItems');
+        return dismissed ? JSON.parse(dismissed) : [];
+    }
+    
+    // Function to save dismissed item
+    function dismissNewsItem(itemId) {
+        const dismissed = getDismissedItems();
+        if (!dismissed.includes(itemId)) {
+            dismissed.push(itemId);
+            localStorage.setItem('dismissedFlashNewsItems', JSON.stringify(dismissed));
+        }
+    }
+    
+    // Main function to display flash news
+    async function displayFlashNews() {
+        const flashBar = document.getElementById('flashNewsBar');
+        const container = document.getElementById('flashNewsContainer');
+        
+        if (!flashBar || !container) return;
+        
+        const updates = await getAllRecentUpdates();
+        const dismissedItems = getDismissedItems();
+        
+        // Filter out dismissed items
+        const visibleUpdates = updates.filter(update => !dismissedItems.includes(update.id));
+        
+        if (visibleUpdates.length === 0) {
+            flashBar.classList.add('hidden');
+            return;
+        }
+        
+        // Build HTML for all updates
+        let updatesHtml = '';
+        visibleUpdates.forEach((update, index) => {
+            const isLast = index === visibleUpdates.length - 1;
+            updatesHtml += `
+                <div class="news-item flex items-center justify-between gap-2 ${!isLast ? 'pb-1 mb-1 border-b border-white/20' : ''}">
+                    <div class="flex-1">
+                        <span class="text-white text-sm">${update.message}</span>
+                    </div>
+                    <button onclick="dismissNewsItemHandler('${update.id}')" class="text-white/60 hover:text-white transition text-xs ml-2">
+                        <i class="fas fa-times-circle"></i>
+                    </button>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = updatesHtml;
+        flashBar.classList.remove('hidden');
+    }
+    
+    // Global handler for dismiss
+    window.dismissNewsItemHandler = function(itemId) {
+        dismissNewsItem(itemId);
+        displayFlashNews(); // Refresh the display
+    };
+    
+    // Close entire bar button
+    document.getElementById('closeFlashNews')?.addEventListener('click', function() {
+        const flashBar = document.getElementById('flashNewsBar');
+        flashBar.classList.add('hidden');
+    });
+    
+    // Initialize flash news
+    displayFlashNews();
 
     // Initialize
     const security = new SecurityManager();
