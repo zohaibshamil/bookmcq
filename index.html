@@ -1349,97 +1349,131 @@ class NewsTicker {
     constructor(supabaseClient) { 
         this.supabase = supabaseClient; 
         this.sevenDaysAgo = new Date(); 
-        this.sevenDaysAgo.setDate(this.sevenDaysAgo.getDate() - 7); 
+        this.sevenDaysAgo.setDate(this.sevenDaysAgo.getDate() - 7);
+        console.log('NewsTicker initialized. Looking for data since:', this.sevenDaysAgo);
     }
     
     async getRecentBooks() { 
-        const { data } = await this.supabase.from('books').select('title, author, created_at').gte('created_at', this.sevenDaysAgo.toISOString()); 
-        return data || []; 
+        try {
+            console.log('Fetching recent books...');
+            const { data, error } = await this.supabase
+                .from('books')
+                .select('title, author, created_at')
+                .gte('created_at', this.sevenDaysAgo.toISOString());
+            
+            if (error) {
+                console.error('Books error:', error);
+                return [];
+            }
+            console.log('Books found:', data ? data.length : 0);
+            return data || [];
+        } catch(e) {
+            console.error('Books exception:', e);
+            return [];
+        }
     }
     
     async getRecentCategories() { 
-        const { data } = await this.supabase.from('categories').select('name, created_at').gte('created_at', this.sevenDaysAgo.toISOString()); 
-        return data || []; 
+        try {
+            console.log('Fetching recent categories...');
+            const { data, error } = await this.supabase
+                .from('categories')
+                .select('name, created_at')
+                .gte('created_at', this.sevenDaysAgo.toISOString());
+            
+            if (error) {
+                console.error('Categories error:', error);
+                return [];
+            }
+            console.log('Categories found:', data ? data.length : 0);
+            return data || [];
+        } catch(e) {
+            console.error('Categories exception:', e);
+            return [];
+        }
     }
     
     async getRecentChapters() {
         try {
-            // First try to get from chapters table
-            const { data, error } = await this.supabase
-                .from('chapters')
-                .select('name, book_id, created_at')
-                .gte('created_at', this.sevenDaysAgo.toISOString());
+            console.log('Fetching recent chapters from questions table...');
             
-            if (error) throw error;
-            
-            if (data && data.length > 0) {
-                // Get book titles for each chapter
-                const chaptersWithBooks = await Promise.all(data.map(async (ch) => {
-                    let bookTitle = 'Unknown Book';
-                    if (ch.book_id) {
-                        const { data: bookData } = await this.supabase
-                            .from('books')
-                            .select('title')
-                            .eq('id', ch.book_id)
-                            .single();
-                        if (bookData) bookTitle = bookData.title;
-                    }
-                    return {
-                        name: ch.name,
-                        book_title: bookTitle,
-                        created_at: ch.created_at
-                    };
-                }));
-                return chaptersWithBooks;
-            }
-        } catch(e) {
-            console.log('Chapters table error, checking questions:', e);
-        }
-        
-        // Fallback: Get unique chapters from questions table
-        const { data: qData } = await this.supabase
-            .from('questions')
-            .select('chapter_name, book_id, created_at')
-            .gte('created_at', this.sevenDaysAgo.toISOString());
-        
-        if (!qData || qData.length === 0) return [];
-        
-        const map = new Map();
-        for (const q of qData) {
-            if (q.chapter_name) {
-                const key = `${q.book_id}-${q.chapter_name}`;
-                if (!map.has(key)) {
-                    let bookTitle = 'Unknown Book';
-                    if (q.book_id) {
-                        const { data: bookData } = await this.supabase
-                            .from('books')
-                            .select('title')
-                            .eq('id', q.book_id)
-                            .single();
-                        if (bookData) bookTitle = bookData.title;
-                    }
-                    map.set(key, {
-                        name: q.chapter_name,
-                        book_title: bookTitle,
-                        created_at: q.created_at
-                    });
-                }
-            }
-        }
-        return Array.from(map.values());
-    }
-    
-    async getRecentChapterMcqs() {
-        try {
-            // Get all questions from last 7 days with chapter info
+            // Get unique chapters from questions table (simpler approach)
             const { data, error } = await this.supabase
                 .from('questions')
                 .select('chapter_name, book_id, created_at')
                 .gte('created_at', this.sevenDaysAgo.toISOString())
                 .not('chapter_name', 'is', null);
             
-            if (error) throw error;
-            if (!data || data.length === 0) return [];
+            if (error) {
+                console.error('Chapters error:', error);
+                return [];
+            }
+            
+            if (!data || data.length === 0) {
+                console.log('No chapters found in questions');
+                return [];
+            }
+            
+            console.log('Raw questions data with chapters:', data.length);
+            
+            // Get unique chapters
+            const uniqueChapters = new Map();
+            for (const q of data) {
+                if (q.chapter_name && q.chapter_name.trim() !== '') {
+                    const key = `${q.book_id}-${q.chapter_name}`;
+                    if (!uniqueChapters.has(key)) {
+                        // Get book title
+                        let bookTitle = 'Unknown Book';
+                        if (q.book_id) {
+                            const { data: bookData } = await this.supabase
+                                .from('books')
+                                .select('title')
+                                .eq('id', q.book_id)
+                                .single();
+                            if (bookData) {
+                                bookTitle = bookData.title;
+                                console.log(`Found book: ${bookTitle} for chapter: ${q.chapter_name}`);
+                            }
+                        }
+                        uniqueChapters.set(key, {
+                            name: q.chapter_name,
+                            book_title: bookTitle,
+                            created_at: q.created_at
+                        });
+                    }
+                }
+            }
+            
+            const result = Array.from(uniqueChapters.values());
+            console.log('Unique chapters found:', result.length);
+            return result;
+        } catch(e) {
+            console.error('Chapters exception:', e);
+            return [];
+        }
+    }
+    
+    async getRecentChapterMcqs() {
+        try {
+            console.log('Fetching recent MCQs by chapter...');
+            
+            const { data, error } = await this.supabase
+                .from('questions')
+                .select('chapter_name, book_id, created_at')
+                .gte('created_at', this.sevenDaysAgo.toISOString())
+                .not('chapter_name', 'is', null);
+            
+            if (error) {
+                console.error('MCQs error:', error);
+                return [];
+            }
+            
+            if (!data || data.length === 0) {
+                console.log('No MCQs found in last 7 days');
+                return [];
+            }
+            
+            console.log('Raw MCQs data:', data.length);
             
             // Group by book and chapter
             const chapterMcqMap = new Map();
@@ -1456,7 +1490,9 @@ class NewsTicker {
                                 .select('title')
                                 .eq('id', q.book_id)
                                 .single();
-                            if (bookData) bookTitle = bookData.title;
+                            if (bookData) {
+                                bookTitle = bookData.title;
+                            }
                         }
                         chapterMcqMap.set(key, {
                             book_title: bookTitle,
@@ -1466,16 +1502,17 @@ class NewsTicker {
                         });
                     }
                     chapterMcqMap.get(key).mcq_count++;
-                    // Keep earliest creation time
-                    if (new Date(q.created_at) < new Date(chapterMcqMap.get(key).first_seen)) {
-                        chapterMcqMap.get(key).first_seen = q.created_at;
-                    }
                 }
             }
             
-            return Array.from(chapterMcqMap.values());
-        } catch (error) {
-            console.error('Error fetching chapter MCQs:', error);
+            const result = Array.from(chapterMcqMap.values());
+            console.log('Chapter MCQs grouped:', result.length);
+            result.forEach(r => {
+                console.log(`  - ${r.mcq_count} MCQ(s) in "${r.chapter_name}" (${r.book_title})`);
+            });
+            return result;
+        } catch(e) {
+            console.error('MCQs exception:', e);
             return [];
         }
     }
@@ -1484,50 +1521,51 @@ class NewsTicker {
         const date = new Date(dateStr); 
         const hours = Math.floor((new Date() - date) / 3600000); 
         if (hours < 1) return 'just now'; 
-        if (hours < 24) return `${hours}h ago`; 
+        if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`; 
         const days = Math.floor(hours / 24); 
-        return days === 1 ? 'yesterday' : `${days}d ago`; 
+        return days === 1 ? 'yesterday' : `${days} days ago`; 
     }
     
     async generateNewsItems() {
-        console.log('Fetching news items...');
+        console.log('========== GENERATING NEWS ITEMS ==========');
         
-        const [books, cats, chapters, chapterMcqs] = await Promise.all([
-            this.getRecentBooks(),
-            this.getRecentCategories(),
-            this.getRecentChapters(),
-            this.getRecentChapterMcqs()
-        ]);
+        const books = await this.getRecentBooks();
+        const cats = await this.getRecentCategories();
+        const chapters = await this.getRecentChapters();
+        const chapterMcqs = await this.getRecentChapterMcqs();
         
-        console.log('Books found:', books.length);
-        console.log('Categories found:', cats.length);
-        console.log('Chapters found:', chapters.length);
-        console.log('Chapter MCQs found:', chapterMcqs.length);
+        console.log('Summary - Books:', books.length, '| Categories:', cats.length, '| Chapters:', chapters.length, '| Chapter MCQs:', chapterMcqs.length);
         
         const items = [];
         
         // New Books
-        books.forEach(b => items.push({ 
-            icon: '📚', 
-            text: `New Book: "${b.title}"${b.author ? ` by ${b.author}` : ''} (${this.formatTimeAgo(b.created_at)})`, 
-            time: new Date(b.created_at) 
-        }));
+        books.forEach(b => {
+            items.push({ 
+                icon: '📚', 
+                text: `New Book: "${b.title}"${b.author ? ` by ${b.author}` : ''} (${this.formatTimeAgo(b.created_at)})`, 
+                time: new Date(b.created_at) 
+            });
+        });
         
         // New Categories
-        cats.forEach(c => items.push({ 
-            icon: '🏷️', 
-            text: `New Category: ${c.name} (${this.formatTimeAgo(c.created_at)})`, 
-            time: new Date(c.created_at) 
-        }));
+        cats.forEach(c => {
+            items.push({ 
+                icon: '🏷️', 
+                text: `New Category: ${c.name} (${this.formatTimeAgo(c.created_at)})`, 
+                time: new Date(c.created_at) 
+            });
+        });
         
         // New Chapters
-        chapters.forEach(ch => items.push({ 
-            icon: '📖', 
-            text: `New Chapter: "${ch.name}" added to "${ch.book_title}" (${this.formatTimeAgo(ch.created_at)})`, 
-            time: new Date(ch.created_at) 
-        }));
+        chapters.forEach(ch => {
+            items.push({ 
+                icon: '📖', 
+                text: `New Chapter: "${ch.name}" added to "${ch.book_title}" (${this.formatTimeAgo(ch.created_at)})`, 
+                time: new Date(ch.created_at) 
+            });
+        });
         
-        // NEW MCQs added to chapters
+        // New MCQs added to chapters
         chapterMcqs.forEach(cm => {
             if (cm.mcq_count === 1) {
                 items.push({ 
@@ -1547,21 +1585,42 @@ class NewsTicker {
         // Sort by most recent first
         items.sort((a, b) => b.time - a.time);
         
-        console.log('Total news items:', items.length);
+        console.log('Total news items generated:', items.length);
+        if (items.length === 0) {
+            console.log('NO NEWS ITEMS FOUND! Check your database has data from the last 7 days.');
+            console.log('Date filter:', this.sevenDaysAgo.toISOString());
+        } else {
+            console.log('First few items:');
+            items.slice(0, 3).forEach(item => {
+                console.log(`  - ${item.text}`);
+            });
+        }
+        
         return items.slice(0, 20);
     }
     
     async startTicker() {
         try {
+            console.log('Starting news ticker...');
             const items = await this.generateNewsItems();
             const container = document.getElementById('newsTickerContainer');
             const track = document.getElementById('tickerTrack');
             
-            console.log('Displaying items:', items.length);
+            if (!container) {
+                console.error('newsTickerContainer element not found!');
+                return;
+            }
+            
+            if (!track) {
+                console.error('tickerTrack element not found!');
+                return;
+            }
+            
+            console.log('Items to display:', items.length);
             
             if (!items.length) { 
-                if (container) container.classList.add('hidden'); 
-                console.log('No news items to display');
+                container.classList.add('hidden'); 
+                console.log('No items to display, hiding ticker');
                 return; 
             }
             
@@ -1576,12 +1635,13 @@ class NewsTicker {
             });
             html += html;
             track.innerHTML = html;
-            // Faster scrolling (8-15 seconds)
+            
             const speed = Math.max(8, Math.min(15, 8000 / items.length));
             track.style.animation = `scrollLeft ${speed}s linear infinite`;
-            console.log('News ticker started with', items.length, 'items, speed:', speed + 's');
+            console.log('News ticker started! Speed:', speed + 's', 'Items:', items.length);
+            
         } catch (error) {
-            console.error('Error starting news ticker:', error);
+            console.error('Error in startTicker:', error);
         }
     }
 }
@@ -1598,10 +1658,15 @@ class NewsTicker {
         } catch(e) { console.error('Error loading stats:', e); }
     }
     
-    // ADDED: Initialize news ticker
-    async function initNewsTicker() {
+// Initialize news ticker
+async function initNewsTicker() {
+    try {
+        console.log('initNewsTicker called');
+        console.log('Supabase client available:', !!supabaseService.supabase);
+        
         const ticker = new NewsTicker(supabaseService.supabase);
         await ticker.startTicker();
+        
         const closeBtn = document.getElementById('closeNewsTicker');
         if (closeBtn) {
             closeBtn.addEventListener('click', () => {
@@ -1609,7 +1674,10 @@ class NewsTicker {
                 if (container) container.classList.add('hidden');
             });
         }
+    } catch (error) {
+        console.error('Error in initNewsTicker:', error);
     }
+}
     
     loadStats();
     setupAIChat(supabaseService);
