@@ -1344,11 +1344,13 @@
         chatInput.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
     }
 
-// ========== SCROLLING NEWS TICKER WITH DATES ==========
+// ========== SCROLLING NEWS TICKER - MATCHING YOUR DATABASE SCHEMA ==========
 class NewsTicker {
     constructor(supabaseClient) { 
         this.supabase = supabaseClient; 
-        console.log('NewsTicker initialized');
+        this.sevenDaysAgo = new Date(); 
+        this.sevenDaysAgo.setDate(this.sevenDaysAgo.getDate() - 7);
+        console.log('NewsTicker initialized - looking for data from last 7 days');
     }
     
     formatTimeAgo(dateStr) { 
@@ -1371,17 +1373,13 @@ class NewsTicker {
         try {
             const { data, error } = await this.supabase
                 .from('books')
-                .select('title, author');
+                .select('title, author, created_at')
+                .gte('created_at', this.sevenDaysAgo.toISOString())
+                .order('created_at', { ascending: false });
             
             if (error) throw error;
-            console.log('Books found:', data ? data.length : 0);
-            
-            // Add a simulated date for demo (in real app, use created_at column)
-            return (data || []).map(book => ({
-                ...book,
-                // If you have a date column, use it. For now, using current date
-                created_at: new Date().toISOString()
-            }));
+            console.log('Books found (last 7 days):', data ? data.length : 0);
+            return data || [];
         } catch(e) {
             console.error('Books error:', e);
             return [];
@@ -1392,167 +1390,187 @@ class NewsTicker {
         try {
             const { data, error } = await this.supabase
                 .from('categories')
-                .select('name');
+                .select('name, created_at')
+                .gte('created_at', this.sevenDaysAgo.toISOString())
+                .order('created_at', { ascending: false });
             
             if (error) throw error;
-            console.log('Categories found:', data ? data.length : 0);
-            
-            return (data || []).map(cat => ({
-                ...cat,
-                created_at: new Date().toISOString()
-            }));
+            console.log('Categories found (last 7 days):', data ? data.length : 0);
+            return data || [];
         } catch(e) {
             console.error('Categories error:', e);
             return [];
         }
     }
     
-    async getRecentChapters() {
+    async getRecentTopics() {
         try {
+            // Topics table holds chapters
             const { data, error } = await this.supabase
-                .from('questions')
-                .select('chapter_name, book_id, created_at')
-                .not('chapter_name', 'is', null);
+                .from('topics')
+                .select('id, name, book_id, created_at')
+                .gte('created_at', this.sevenDaysAgo.toISOString())
+                .order('created_at', { ascending: false });
             
             if (error) throw error;
             
             if (!data || data.length === 0) return [];
             
-            const uniqueChapters = new Map();
-            for (const q of data) {
-                if (q.chapter_name && q.chapter_name.trim() !== '') {
-                    const key = `${q.book_id}-${q.chapter_name}`;
-                    if (!uniqueChapters.has(key)) {
-                        let bookTitle = 'Unknown Book';
-                        if (q.book_id) {
-                            const { data: bookData } = await this.supabase
-                                .from('books')
-                                .select('title')
-                                .eq('id', q.book_id)
-                                .single();
-                            if (bookData) bookTitle = bookData.title;
-                        }
-                        uniqueChapters.set(key, {
-                            name: q.chapter_name,
-                            book_title: bookTitle,
-                            created_at: q.created_at || new Date().toISOString()
-                        });
-                    }
-                }
-            }
+            console.log('Topics found (last 7 days):', data.length);
             
-            return Array.from(uniqueChapters.values());
+            // Get book titles for each topic
+            const topicsWithBooks = await Promise.all(data.map(async (topic) => {
+                let bookTitle = 'Unknown Book';
+                if (topic.book_id) {
+                    const { data: bookData } = await this.supabase
+                        .from('books')
+                        .select('title')
+                        .eq('id', topic.book_id)
+                        .single();
+                    if (bookData) bookTitle = bookData.title;
+                }
+                return {
+                    name: topic.name,
+                    book_title: bookTitle,
+                    created_at: topic.created_at
+                };
+            }));
+            
+            return topicsWithBooks;
         } catch(e) {
-            console.error('Chapters error:', e);
+            console.error('Topics error:', e);
             return [];
         }
     }
     
-    async getRecentChapterMcqs() {
+    async getRecentQuestions() {
         try {
+            // Get recent questions with their topic and book info
             const { data, error } = await this.supabase
                 .from('questions')
-                .select('chapter_name, book_id, created_at')
-                .not('chapter_name', 'is', null);
+                .select(`
+                    id,
+                    topic_id,
+                    created_at,
+                    topics!inner (
+                        id,
+                        name,
+                        book_id,
+                        books!inner (
+                            id,
+                            title
+                        )
+                    )
+                `)
+                .gte('created_at', this.sevenDaysAgo.toISOString())
+                .order('created_at', { ascending: false });
             
             if (error) throw error;
             
             if (!data || data.length === 0) return [];
             
-            const chapterMcqMap = new Map();
+            console.log('Questions found (last 7 days):', data.length);
+            
+            // Group by topic to count MCQs per topic/chapter
+            const topicQuestionMap = new Map();
             
             for (const q of data) {
-                if (q.chapter_name && q.chapter_name.trim() !== '') {
-                    const key = `${q.book_id}-${q.chapter_name}`;
-                    if (!chapterMcqMap.has(key)) {
-                        let bookTitle = 'Unknown Book';
-                        if (q.book_id) {
-                            const { data: bookData } = await this.supabase
-                                .from('books')
-                                .select('title')
-                                .eq('id', q.book_id)
-                                .single();
-                            if (bookData) bookTitle = bookData.title;
-                        }
-                        chapterMcqMap.set(key, {
+                if (q.topics) {
+                    const topicId = q.topic_id;
+                    const topicName = q.topics.name;
+                    const bookTitle = q.topics.books?.title || 'Unknown Book';
+                    const key = `${topicId}`;
+                    
+                    if (!topicQuestionMap.has(key)) {
+                        topicQuestionMap.set(key, {
+                            topic_name: topicName,
                             book_title: bookTitle,
-                            chapter_name: q.chapter_name,
                             mcq_count: 0,
-                            created_at: q.created_at || new Date().toISOString()
+                            created_at: q.created_at
                         });
                     }
-                    chapterMcqMap.get(key).mcq_count++;
+                    topicQuestionMap.get(key).mcq_count++;
                 }
             }
             
-            return Array.from(chapterMcqMap.values());
+            return Array.from(topicQuestionMap.values());
         } catch(e) {
-            console.error('MCQs error:', e);
+            console.error('Questions error:', e);
             return [];
         }
     }
     
     async generateNewsItems() {
-        console.log('Generating news items with dates...');
+        console.log('Generating news items from database...');
         
         const books = await this.getRecentBooks();
-        const cats = await this.getRecentCategories();
-        const chapters = await this.getRecentChapters();
-        const chapterMcqs = await this.getRecentChapterMcqs();
+        const categories = await this.getRecentCategories();
+        const topics = await this.getRecentTopics();
+        const questions = await this.getRecentQuestions();
         
-        console.log('Books:', books.length, 'Categories:', cats.length, 'Chapters:', chapters.length, 'Chapter MCQs:', chapterMcqs.length);
+        console.log('Summary - Books:', books.length, '| Categories:', categories.length, '| Topics:', topics.length, '| Questions (grouped):', questions.length);
         
         const items = [];
         
         // New Books
-        books.forEach(b => {
+        books.forEach(book => {
             items.push({ 
                 icon: '📚', 
-                text: `New Book: "${b.title}"${b.author ? ` by ${b.author}` : ''} (${this.formatTimeAgo(b.created_at)})`,
-                time: new Date(b.created_at)
+                text: `New Book Added: "${book.title}"${book.author ? ` by ${book.author}` : ''} (${this.formatTimeAgo(book.created_at)})`,
+                time: new Date(book.created_at)
             });
         });
         
         // New Categories
-        cats.forEach(c => {
+        categories.forEach(cat => {
             items.push({ 
                 icon: '🏷️', 
-                text: `New Category: ${c.name} (${this.formatTimeAgo(c.created_at)})`,
-                time: new Date(c.created_at)
+                text: `New Category Added: ${cat.name} (${this.formatTimeAgo(cat.created_at)})`,
+                time: new Date(cat.created_at)
             });
         });
         
-        // New Chapters
-        chapters.forEach(ch => {
+        // New Topics/Chapters
+        topics.forEach(topic => {
             items.push({ 
                 icon: '📖', 
-                text: `New Chapter: "${ch.name}" added to "${ch.book_title}" (${this.formatTimeAgo(ch.created_at)})`,
-                time: new Date(ch.created_at)
+                text: `New Chapter/Topic Added: "${topic.name}" in "${topic.book_title}" (${this.formatTimeAgo(topic.created_at)})`,
+                time: new Date(topic.created_at)
             });
         });
         
-        // New MCQs added to chapters
-        chapterMcqs.forEach(cm => {
-            const timeAgo = this.formatTimeAgo(cm.created_at);
-            if (cm.mcq_count === 1) {
+        // New Questions/MCQs added to topics
+        questions.forEach(q => {
+            if (q.mcq_count === 1) {
                 items.push({ 
                     icon: '❓', 
-                    text: `New MCQ added to Chapter "${cm.chapter_name}" in "${cm.book_title}" (${timeAgo})`,
-                    time: new Date(cm.created_at)
+                    text: `New MCQ Added to Chapter "${q.topic_name}" in "${q.book_title}" (${this.formatTimeAgo(q.created_at)})`,
+                    time: new Date(q.created_at)
                 });
             } else {
                 items.push({ 
                     icon: '❓', 
-                    text: `${cm.mcq_count} new MCQs added to Chapter "${cm.chapter_name}" in "${cm.book_title}" (${timeAgo})`,
-                    time: new Date(cm.created_at)
+                    text: `${q.mcq_count} New MCQs Added to Chapter "${q.topic_name}" in "${q.book_title}" (${this.formatTimeAgo(q.created_at)})`,
+                    time: new Date(q.created_at)
                 });
             }
         });
         
-        // Sort by most recent first (newest items first)
+        // Sort by most recent first
         items.sort((a, b) => b.time - a.time);
         
-        console.log('Total items:', items.length);
+        console.log('Total news items generated:', items.length);
+        
+        // Show sample of what was found
+        if (items.length > 0) {
+            console.log('Sample items:');
+            items.slice(0, 3).forEach(item => {
+                console.log(`  - ${item.text}`);
+            });
+        } else {
+            console.log('No items found in the last 7 days. Try adding some data to your database!');
+        }
+        
         return items.slice(0, 20);
     }
     
@@ -1564,7 +1582,7 @@ class NewsTicker {
             
             if (!items.length) { 
                 if (container) container.classList.add('hidden');
-                console.log('No items to show - ticker hidden');
+                console.log('No items to display - ticker hidden');
                 return; 
             }
             
@@ -1580,9 +1598,9 @@ class NewsTicker {
             html += html;
             track.innerHTML = html;
             
-            const speed = Math.max(8, Math.min(15, 8000 / items.length));
+            const speed = Math.max(6, Math.min(15, 6000 / items.length));
             track.style.animation = `scrollLeft ${speed}s linear infinite`;
-            console.log('Ticker started with', items.length, 'items, showing time ago');
+            console.log('News ticker started with', items.length, 'items');
             
         } catch (error) {
             console.error('Ticker error:', error);
