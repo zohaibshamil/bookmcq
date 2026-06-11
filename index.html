@@ -1344,93 +1344,175 @@
         chatInput.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
     }
 
-    // ========== ADDED: SCROLLING NEWS TICKER WITH MULTIPLE NEWS ITEMS ==========
-    class NewsTicker {
-        constructor(supabaseClient) { 
-            this.supabase = supabaseClient; 
-            this.sevenDaysAgo = new Date(); 
-            this.sevenDaysAgo.setDate(this.sevenDaysAgo.getDate() - 7); 
-        }
+// ========== SCROLLING NEWS TICKER WITH MULTIPLE NEWS ITEMS ==========
+class NewsTicker {
+    constructor(supabaseClient) { 
+        this.supabase = supabaseClient; 
+        this.sevenDaysAgo = new Date(); 
+        this.sevenDaysAgo.setDate(this.sevenDaysAgo.getDate() - 7); 
+    }
+    
+    async getRecentBooks() { 
+        const { data } = await this.supabase.from('books').select('title, author, created_at').gte('created_at', this.sevenDaysAgo.toISOString()); 
+        return data || []; 
+    }
+    
+    async getRecentCategories() { 
+        const { data } = await this.supabase.from('categories').select('name, created_at').gte('created_at', this.sevenDaysAgo.toISOString()); 
+        return data || []; 
+    }
+    
+    async getRecentChapters() {
+        try { 
+            const { data } = await this.supabase.from('chapters').select('name, book_id, created_at, books:book_id(title)').gte('created_at', this.sevenDaysAgo.toISOString()); 
+            if (data?.length) return data; 
+        } catch(e) {}
         
-        async getRecentBooks() { 
-            const { data } = await this.supabase.from('books').select('title, author, created_at').gte('created_at', this.sevenDaysAgo.toISOString()); 
-            return data || []; 
-        }
-        
-        async getRecentCategories() { 
-            const { data } = await this.supabase.from('categories').select('name, created_at').gte('created_at', this.sevenDaysAgo.toISOString()); 
-            return data || []; 
-        }
-        
-        async getRecentChapters() {
-            try { 
-                const { data } = await this.supabase.from('chapters').select('name, book_id, created_at, books:book_id(title)').gte('created_at', this.sevenDaysAgo.toISOString()); 
-                if (data?.length) return data; 
-            } catch(e) {}
+        const { data: qData } = await this.supabase.from('questions').select('chapter_name, book_id, created_at, books:book_id(title)').gte('created_at', this.sevenDaysAgo.toISOString());
+        if (!qData) return [];
+        const map = new Map(); 
+        qData.forEach(q => { 
+            if (q.chapter_name) { 
+                const key = `${q.book_id}-${q.chapter_name}`; 
+                if (!map.has(key)) map.set(key, { name: q.chapter_name, book_title: q.books?.title, created_at: q.created_at }); 
+            } 
+        });
+        return Array.from(map.values());
+    }
+    
+    // NEW: Get MCQs added to existing chapters
+    async getRecentChapterMcqs() {
+        try {
+            const { data, error } = await this.supabase
+                .from('questions')
+                .select(`
+                    id,
+                    chapter_name,
+                    book_id,
+                    created_at,
+                    books:book_id (
+                        id,
+                        title,
+                        author
+                    )
+                `)
+                .gte('created_at', this.sevenDaysAgo.toISOString())
+                .order('created_at', { ascending: false });
             
-            const { data: qData } = await this.supabase.from('questions').select('chapter_name, book_id, created_at, books:book_id(title)').gte('created_at', this.sevenDaysAgo.toISOString());
-            if (!qData) return [];
-            const map = new Map(); 
-            qData.forEach(q => { 
-                if (q.chapter_name) { 
-                    const key = `${q.book_id}-${q.chapter_name}`; 
-                    if (!map.has(key)) map.set(key, { name: q.chapter_name, book_title: q.books?.title, created_at: q.created_at }); 
-                } 
+            if (error) throw error;
+            if (!data || data.length === 0) return [];
+            
+            const chapterMcqMap = new Map();
+            data.forEach(q => {
+                if (q.chapter_name) {
+                    const key = `${q.book_id}-${q.chapter_name}`;
+                    if (!chapterMcqMap.has(key)) {
+                        chapterMcqMap.set(key, {
+                            book_id: q.book_id,
+                            book_title: q.books?.title || 'Unknown Book',
+                            chapter_name: q.chapter_name,
+                            mcq_count: 0,
+                            first_seen: q.created_at
+                        });
+                    }
+                    chapterMcqMap.get(key).mcq_count++;
+                }
             });
-            return Array.from(map.values());
-        }
-        
-        async getRecentMcqs() { 
-            const { data } = await this.supabase.from('questions').select('id, created_at').gte('created_at', this.sevenDaysAgo.toISOString()); 
-            return data || []; 
-        }
-        
-        formatTimeAgo(dateStr) { 
-            const date = new Date(dateStr); 
-            const hours = Math.floor((new Date() - date) / 3600000); 
-            if (hours < 1) return 'just now'; 
-            if (hours < 24) return `${hours}h ago`; 
-            const days = Math.floor(hours / 24); 
-            return days === 1 ? 'yesterday' : `${days}d ago`; 
-        }
-        
-        async generateNewsItems() {
-            const [books, cats, chapters, mcqs] = await Promise.all([
-                this.getRecentBooks(), 
-                this.getRecentCategories(), 
-                this.getRecentChapters(), 
-                this.getRecentMcqs()
-            ]);
-            const items = [];
-            books.forEach(b => items.push({ icon: '📚', text: `New Book: "${b.title}"${b.author ? ` by ${b.author}` : ''} (${this.formatTimeAgo(b.created_at)})`, time: new Date(b.created_at) }));
-            cats.forEach(c => items.push({ icon: '🏷️', text: `New Category: ${c.name} (${this.formatTimeAgo(c.created_at)})`, time: new Date(c.created_at) }));
-            chapters.forEach(ch => items.push({ icon: '📖', text: `New Chapter: "${ch.name}" from "${ch.book_title || 'Book'}" (${this.formatTimeAgo(ch.created_at)})`, time: new Date(ch.created_at) }));
-            if (mcqs.length > 0 && items.length === 0) items.push({ icon: '❓', text: `${mcqs.length} New MCQ${mcqs.length > 1 ? 's' : ''} Added! (${this.formatTimeAgo(mcqs[0].created_at)})`, time: new Date(mcqs[0].created_at) });
-            items.sort((a, b) => b.time - a.time);
-            return items.slice(0, 15);
-        }
-        
-        async startTicker() {
-            const items = await this.generateNewsItems();
-            const container = document.getElementById('newsTickerContainer');
-            const track = document.getElementById('tickerTrack');
-            if (!items.length) { 
-                if (container) container.classList.add('hidden'); 
-                return; 
-            }
-            container.classList.remove('hidden');
-            let html = '';
-            items.forEach(item => { 
-                html += `<div class="ticker-item"><i class="fas ${item.icon === '📚' ? 'fa-book' : item.icon === '🏷️' ? 'fa-tag' : item.icon === '📖' ? 'fa-chapter' : 'fa-question-circle'}"></i> ${item.text}</div>`; 
-            });
-            html += html;
-            track.innerHTML = html;
-            // FASTER SCROLLING: Changed from 20-50 seconds to 8-15 seconds
-            const speed = Math.max(8, Math.min(15, 8000 / items.length));
-            track.style.animation = `scrollLeft ${speed}s linear infinite`;
+            
+            return Array.from(chapterMcqMap.values());
+        } catch (error) {
+            console.error('Error fetching chapter MCQs:', error);
+            return [];
         }
     }
-
+    
+    formatTimeAgo(dateStr) { 
+        const date = new Date(dateStr); 
+        const hours = Math.floor((new Date() - date) / 3600000); 
+        if (hours < 1) return 'just now'; 
+        if (hours < 24) return `${hours}h ago`; 
+        const days = Math.floor(hours / 24); 
+        return days === 1 ? 'yesterday' : `${days}d ago`; 
+    }
+    
+    async generateNewsItems() {
+        const [books, cats, chapters, chapterMcqs] = await Promise.all([
+            this.getRecentBooks(),
+            this.getRecentCategories(),
+            this.getRecentChapters(),
+            this.getRecentChapterMcqs()
+        ]);
+        
+        const items = [];
+        
+        // New Books
+        books.forEach(b => items.push({ 
+            icon: '📚', 
+            text: `New Book: "${b.title}"${b.author ? ` by ${b.author}` : ''} (${this.formatTimeAgo(b.created_at)})`, 
+            time: new Date(b.created_at) 
+        }));
+        
+        // New Categories
+        cats.forEach(c => items.push({ 
+            icon: '🏷️', 
+            text: `New Category: ${c.name} (${this.formatTimeAgo(c.created_at)})`, 
+            time: new Date(c.created_at) 
+        }));
+        
+        // New Chapters
+        chapters.forEach(ch => items.push({ 
+            icon: '📖', 
+            text: `New Chapter: "${ch.name}" added to "${ch.book_title || 'Book'}" (${this.formatTimeAgo(ch.created_at)})`, 
+            time: new Date(ch.created_at) 
+        }));
+        
+        // NEW MCQs added to chapters
+        chapterMcqs.forEach(cm => {
+            if (cm.mcq_count === 1) {
+                items.push({ 
+                    icon: '❓', 
+                    text: `New MCQ added to Chapter "${cm.chapter_name}" in "${cm.book_title}" (${this.formatTimeAgo(cm.first_seen)})`, 
+                    time: new Date(cm.first_seen) 
+                });
+            } else {
+                items.push({ 
+                    icon: '❓', 
+                    text: `${cm.mcq_count} new MCQs added to Chapter "${cm.chapter_name}" in "${cm.book_title}" (${this.formatTimeAgo(cm.first_seen)})`, 
+                    time: new Date(cm.first_seen) 
+                });
+            }
+        });
+        
+        // Sort by most recent first
+        items.sort((a, b) => b.time - a.time);
+        
+        return items.slice(0, 20);
+    }
+    
+    async startTicker() {
+        const items = await this.generateNewsItems();
+        const container = document.getElementById('newsTickerContainer');
+        const track = document.getElementById('tickerTrack');
+        if (!items.length) { 
+            if (container) container.classList.add('hidden'); 
+            return; 
+        }
+        container.classList.remove('hidden');
+        let html = '';
+        items.forEach(item => { 
+            let iconClass = 'fa-book';
+            if (item.icon === '🏷️') iconClass = 'fa-tag';
+            else if (item.icon === '📖') iconClass = 'fa-chapter';
+            else if (item.icon === '❓') iconClass = 'fa-question-circle';
+            html += `<div class="ticker-item"><i class="fas ${iconClass}"></i> ${item.text}</div>`; 
+        });
+        html += html;
+        track.innerHTML = html;
+        // Faster scrolling
+        const speed = Math.max(8, Math.min(15, 8000 / items.length));
+        track.style.animation = `scrollLeft ${speed}s linear infinite`;
+    }
+}
     // Initialize
     const security = new SecurityManager();
     const supabaseService = new SupabaseService();
