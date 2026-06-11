@@ -1344,11 +1344,27 @@
         chatInput.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
     }
 
-// ========== SCROLLING NEWS TICKER - NO DATE FILTERS ==========
+// ========== SCROLLING NEWS TICKER WITH DATES ==========
 class NewsTicker {
     constructor(supabaseClient) { 
         this.supabase = supabaseClient; 
-        console.log('NewsTicker initialized - showing ALL data');
+        console.log('NewsTicker initialized');
+    }
+    
+    formatTimeAgo(dateStr) { 
+        if (!dateStr) return 'recently';
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+        
+        if (diffMins < 1) return 'just now';
+        if (diffMins < 60) return `${diffMins} minute${diffMins === 1 ? '' : 's'} ago`;
+        if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+        if (diffDays === 1) return 'yesterday';
+        return `${diffDays} days ago`;
     }
     
     async getRecentBooks() { 
@@ -1359,7 +1375,13 @@ class NewsTicker {
             
             if (error) throw error;
             console.log('Books found:', data ? data.length : 0);
-            return data || [];
+            
+            // Add a simulated date for demo (in real app, use created_at column)
+            return (data || []).map(book => ({
+                ...book,
+                // If you have a date column, use it. For now, using current date
+                created_at: new Date().toISOString()
+            }));
         } catch(e) {
             console.error('Books error:', e);
             return [];
@@ -1374,7 +1396,11 @@ class NewsTicker {
             
             if (error) throw error;
             console.log('Categories found:', data ? data.length : 0);
-            return data || [];
+            
+            return (data || []).map(cat => ({
+                ...cat,
+                created_at: new Date().toISOString()
+            }));
         } catch(e) {
             console.error('Categories error:', e);
             return [];
@@ -1385,7 +1411,7 @@ class NewsTicker {
         try {
             const { data, error } = await this.supabase
                 .from('questions')
-                .select('chapter_name, book_id')
+                .select('chapter_name, book_id, created_at')
                 .not('chapter_name', 'is', null);
             
             if (error) throw error;
@@ -1408,7 +1434,8 @@ class NewsTicker {
                         }
                         uniqueChapters.set(key, {
                             name: q.chapter_name,
-                            book_title: bookTitle
+                            book_title: bookTitle,
+                            created_at: q.created_at || new Date().toISOString()
                         });
                     }
                 }
@@ -1425,7 +1452,7 @@ class NewsTicker {
         try {
             const { data, error } = await this.supabase
                 .from('questions')
-                .select('chapter_name, book_id')
+                .select('chapter_name, book_id, created_at')
                 .not('chapter_name', 'is', null);
             
             if (error) throw error;
@@ -1450,7 +1477,8 @@ class NewsTicker {
                         chapterMcqMap.set(key, {
                             book_title: bookTitle,
                             chapter_name: q.chapter_name,
-                            mcq_count: 0
+                            mcq_count: 0,
+                            created_at: q.created_at || new Date().toISOString()
                         });
                     }
                     chapterMcqMap.get(key).mcq_count++;
@@ -1464,12 +1492,8 @@ class NewsTicker {
         }
     }
     
-    formatTimeAgo(dateStr) { 
-        return 'recently';
-    }
-    
     async generateNewsItems() {
-        console.log('Generating news items...');
+        console.log('Generating news items with dates...');
         
         const books = await this.getRecentBooks();
         const cats = await this.getRecentCategories();
@@ -1480,33 +1504,53 @@ class NewsTicker {
         
         const items = [];
         
+        // New Books
         books.forEach(b => {
             items.push({ 
                 icon: '📚', 
-                text: `Book: "${b.title}"${b.author ? ` by ${b.author}` : ''} available now`
+                text: `New Book: "${b.title}"${b.author ? ` by ${b.author}` : ''} (${this.formatTimeAgo(b.created_at)})`,
+                time: new Date(b.created_at)
             });
         });
         
+        // New Categories
         cats.forEach(c => {
             items.push({ 
                 icon: '🏷️', 
-                text: `Category: ${c.name} available`
+                text: `New Category: ${c.name} (${this.formatTimeAgo(c.created_at)})`,
+                time: new Date(c.created_at)
             });
         });
         
+        // New Chapters
         chapters.forEach(ch => {
             items.push({ 
                 icon: '📖', 
-                text: `Chapter: "${ch.name}" in "${ch.book_title}"`
+                text: `New Chapter: "${ch.name}" added to "${ch.book_title}" (${this.formatTimeAgo(ch.created_at)})`,
+                time: new Date(ch.created_at)
             });
         });
         
+        // New MCQs added to chapters
         chapterMcqs.forEach(cm => {
-            items.push({ 
-                icon: '❓', 
-                text: `${cm.mcq_count} MCQ(s) in Chapter "${cm.chapter_name}" (${cm.book_title})`
-            });
+            const timeAgo = this.formatTimeAgo(cm.created_at);
+            if (cm.mcq_count === 1) {
+                items.push({ 
+                    icon: '❓', 
+                    text: `New MCQ added to Chapter "${cm.chapter_name}" in "${cm.book_title}" (${timeAgo})`,
+                    time: new Date(cm.created_at)
+                });
+            } else {
+                items.push({ 
+                    icon: '❓', 
+                    text: `${cm.mcq_count} new MCQs added to Chapter "${cm.chapter_name}" in "${cm.book_title}" (${timeAgo})`,
+                    time: new Date(cm.created_at)
+                });
+            }
         });
+        
+        // Sort by most recent first (newest items first)
+        items.sort((a, b) => b.time - a.time);
         
         console.log('Total items:', items.length);
         return items.slice(0, 20);
@@ -1538,7 +1582,7 @@ class NewsTicker {
             
             const speed = Math.max(8, Math.min(15, 8000 / items.length));
             track.style.animation = `scrollLeft ${speed}s linear infinite`;
-            console.log('Ticker started with', items.length, 'items');
+            console.log('Ticker started with', items.length, 'items, showing time ago');
             
         } catch (error) {
             console.error('Ticker error:', error);
