@@ -27,8 +27,35 @@
         .nav-link::after { content: ''; position: absolute; bottom: -5px; left: 0; width: 0; height: 2px; background: white; transition: width 0.3s ease; }
         .nav-link:hover::after, .nav-link.active::after { width: 100%; }
         .disable-select { user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; }
-        .mobile-menu-btn { display: none; }
-        @media (max-width: 768px) { .mobile-menu-btn { display: block; } .desktop-menu { display: none; } }
+        
+        /* Mobile menu styles - matching home page */
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        @media (max-width: 768px) {
+            .desktop-menu {
+                display: none !important;
+            }
+            .mobile-menu-btn {
+                display: block;
+            }
+        }
+        
+        @media (min-width: 769px) {
+            .mobile-menu-btn {
+                display: none;
+            }
+            #mobileDropdown {
+                display: none !important;
+            }
+        }
+        
         .navbar-scrolled { background: white !important; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
         .navbar-scrolled .nav-link { color: #4a5568 !important; }
         .navbar-scrolled .nav-link:hover { color: #667eea !important; }
@@ -71,20 +98,21 @@
                 <a href="/privacy" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap">🔒 Privacy</a>
             </div>
             
-            <div class="mobile-menu-btn relative">
-                <button onclick="toggleMobileMenu()" class="text-white text-2xl">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <div id="mobileDropdown" class="hidden absolute top-full right-0 mt-2 bg-white rounded-xl shadow-xl w-48 py-2 z-50">
-                    <a href="/" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition">🏠 Home</a>
-                    <a href="/quiz" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center">📝 Quiz <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span></a>
-                    <a href="/practice" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center">📚 Practice <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span></a>
-                    <a href="/contact" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition">📧 Contact</a>
-                    <a href="/privacy" class="block px-4 py-2 text-gray-700 hover:bg-purple-50 transition">🔒 Privacy</a>
-                </div>
-            </div>
+            <!-- Mobile Hamburger Button -->
+            <button id="mobileMenuBtn" class="mobile-menu-btn text-white text-2xl">
+                ☰
+            </button>
         </div>
     </nav>
+    
+    <!-- Mobile Dropdown Menu -->
+    <div id="mobileDropdown" class="hidden bg-white rounded-xl shadow-xl w-full mb-4 py-2 z-50" style="display: none;">
+        <a href="/" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition">🏠 Home</a>
+        <a href="/quiz" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center">📝 Quiz <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span></a>
+        <a href="/practice" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center">📚 Practice <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span></a>
+        <a href="/contact" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition">📧 Contact</a>
+        <a href="/privacy" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition">🔒 Privacy</a>
+    </div>
 
     <div class="quiz-card rounded-2xl p-6 md:p-8 shadow-xl">
         <div class="text-center mb-8">
@@ -172,9 +200,38 @@
         }
     });
 
-    function toggleMobileMenu() {
+    // Mobile Menu functionality (matching home page)
+    function initMobileMenu() {
+        const mobileBtn = document.getElementById('mobileMenuBtn');
         const dropdown = document.getElementById('mobileDropdown');
-        dropdown.classList.toggle('hidden');
+        
+        if (mobileBtn && dropdown) {
+            mobileBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (dropdown.style.display === 'none' || dropdown.style.display === '') {
+                    dropdown.style.display = 'block';
+                } else {
+                    dropdown.style.display = 'none';
+                }
+            });
+            
+            // Close dropdown when clicking outside (on mobile)
+            document.addEventListener('click', function(e) {
+                const isMobile = window.innerWidth <= 768;
+                if (isMobile && dropdown && mobileBtn) {
+                    if (!mobileBtn.contains(e.target) && !dropdown.contains(e.target)) {
+                        dropdown.style.display = 'none';
+                    }
+                }
+            });
+            
+            // Reset dropdown visibility on window resize
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 768) {
+                    dropdown.style.display = 'none';
+                }
+            });
+        }
     }
 
     function initNavbarScroll() {
@@ -256,8 +313,8 @@
         }
     });
 
-    window.toggleMobileMenu = toggleMobileMenu;
     initNavbarScroll();
+    initMobileMenu(); // Added mobile menu initialization
 </script>
 </body>
 </html>
