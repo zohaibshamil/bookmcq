@@ -1369,6 +1369,16 @@ class NewsTicker {
         return `${diffDays} days ago`;
     }
     
+    getColorForType(icon) {
+        switch(icon) {
+            case '📚': return '#FFD700'; // Gold/Yellow for Books
+            case '🏷️': return '#90EE90'; // Light Green for Categories
+            case '📖': return '#87CEEB'; // Sky Blue for Chapters/Topics
+            case '❓': return '#FFB6C1'; // Light Pink for MCQs
+            default: return '#FFFFFF'; // White default
+        }
+    }
+    
     async getRecentBooks() { 
         try {
             const { data, error } = await this.supabase
@@ -1512,44 +1522,54 @@ class NewsTicker {
         
         const items = [];
         
-        // New Books
+        // New Books - Gold/Yellow color
         books.forEach(book => {
             items.push({ 
                 icon: '📚', 
+                iconClass: 'fa-book',
+                color: '#FFD700',
                 text: `New Book Added: "${book.title}"${book.author ? ` by ${book.author}` : ''} (${this.formatTimeAgo(book.created_at)})`,
                 time: new Date(book.created_at)
             });
         });
         
-        // New Categories
+        // New Categories - Light Green color
         categories.forEach(cat => {
             items.push({ 
                 icon: '🏷️', 
+                iconClass: 'fa-tag',
+                color: '#90EE90',
                 text: `New Category Added: ${cat.name} (${this.formatTimeAgo(cat.created_at)})`,
                 time: new Date(cat.created_at)
             });
         });
         
-        // New Topics/Chapters
+        // New Topics/Chapters - Sky Blue color
         topics.forEach(topic => {
             items.push({ 
                 icon: '📖', 
+                iconClass: 'fa-book-open',
+                color: '#87CEEB',
                 text: `New Chapter/Topic Added: "${topic.name}" in "${topic.book_title}" (${this.formatTimeAgo(topic.created_at)})`,
                 time: new Date(topic.created_at)
             });
         });
         
-        // New Questions/MCQs added to topics
+        // New Questions/MCQs - Light Pink color
         questions.forEach(q => {
             if (q.mcq_count === 1) {
                 items.push({ 
                     icon: '❓', 
+                    iconClass: 'fa-question-circle',
+                    color: '#FFB6C1',
                     text: `New MCQ Added to Chapter "${q.topic_name}" in "${q.book_title}" (${this.formatTimeAgo(q.created_at)})`,
                     time: new Date(q.created_at)
                 });
             } else {
                 items.push({ 
                     icon: '❓', 
+                    iconClass: 'fa-question-circle',
+                    color: '#FFB6C1',
                     text: `${q.mcq_count} New MCQs Added to Chapter "${q.topic_name}" in "${q.book_title}" (${this.formatTimeAgo(q.created_at)})`,
                     time: new Date(q.created_at)
                 });
@@ -1589,18 +1609,19 @@ class NewsTicker {
             container.classList.remove('hidden');
             let html = '';
             items.forEach(item => { 
-                let iconClass = 'fa-book';
-                if (item.icon === '🏷️') iconClass = 'fa-tag';
-                else if (item.icon === '📖') iconClass = 'fa-book-open';
-                else if (item.icon === '❓') iconClass = 'fa-question-circle';
-                html += `<div class="ticker-item"><i class="fas ${iconClass}"></i> ${item.text}</div>`; 
+                // Apply inline style with the specific color for each item
+                html += `<div class="ticker-item" style="color: ${item.color}; text-shadow: 0 0 3px rgba(0,0,0,0.3);">
+                            <i class="fas ${item.iconClass}" style="color: ${item.color};"></i> 
+                            ${item.text}
+                         </div>`; 
             });
             html += html;
             track.innerHTML = html;
             
-            const speed = Math.max(20, Math.min(40, 15000 / items.length));
+            // NORMAL SPEED: 12-25 seconds
+            const speed = Math.max(12, Math.min(25, 12000 / items.length));
             track.style.animation = `scrollLeft ${speed}s linear infinite`;
-            console.log('News ticker started with', items.length, 'items');
+            console.log('News ticker started with', items.length, 'items, speed:', speed + 's');
             
         } catch (error) {
             console.error('Ticker error:', error);
