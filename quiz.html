@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-
     <link rel="canonical" href="https://bookmcq.com/quiz">
     <title>BookMCQ - Quiz Mode</title>
     <meta name="description" content="Take timed quizzes with topic-wise and difficulty-based MCQs.">
+    
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-5WGZ1P0EV1"></script>
     <script>
@@ -15,6 +15,9 @@
       gtag('js', new Date());
       gtag('config', 'G-5WGZ1P0EV1');
     </script>
+    
+    <!-- jsPDF for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
     <!-- MathJax for rendering mathematical equations -->
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async></script>
@@ -34,10 +37,8 @@
         .quiz-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
         .option-btn { transition: all 0.2s ease; border: 2px solid #e2e8f0; cursor: pointer; }
         .option-btn:hover:not(:disabled) { background-color: #667eea; border-color: #667eea; color: white; transform: scale(1.02); }
+        .option-btn.disabled-option, .option-btn:disabled { cursor: not-allowed; opacity: 0.6; }
         .selected-option { background-color: #667eea !important; border-color: #667eea !important; color: white !important; }
-        .correct-feedback { background-color: #10b981; animation: fadeInUp 0.4s ease; }
-        .wrong-feedback { background-color: #ef4444; animation: fadeInUp 0.4s ease; }
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .progress-bar { transition: width 0.5s ease; }
         .nav-link { position: relative; transition: all 0.3s ease; }
         .nav-link::after { content: ''; position: absolute; bottom: -5px; left: 0; width: 0; height: 2px; background: white; transition: width 0.3s ease; }
@@ -45,33 +46,14 @@
         .disable-select { user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; }
         .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; background-color: #1f2937; color: white; padding: 12px 24px; border-radius: 8px; font-size: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         
-        /* Mobile menu styles - matching home page */
-        .mobile-menu-btn {
-            display: none;
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.5rem;
-            cursor: pointer;
-        }
+        .timer-warning { animation: timerBlink 0.5s ease-in-out infinite; }
+        @keyframes timerBlink { 0%, 100% { background: linear-gradient(135deg, #ef4444, #dc2626); transform: scale(1); } 50% { background: linear-gradient(135deg, #dc2626, #b91c1c); transform: scale(1.05); } }
+        .warning-toast { background: linear-gradient(135deg, #f59e0b, #d97706); animation: shake 0.5s ease-in-out; }
+        @keyframes shake { 0%, 100% { transform: translateX(-50%) translateX(0); } 25% { transform: translateX(-50%) translateX(-10px); } 75% { transform: translateX(-50%) translateX(10px); } }
         
-        @media (max-width: 768px) {
-            .desktop-menu {
-                display: none !important;
-            }
-            .mobile-menu-btn {
-                display: block;
-            }
-        }
-        
-        @media (min-width: 769px) {
-            .mobile-menu-btn {
-                display: none;
-            }
-            #mobileDropdown {
-                display: none !important;
-            }
-        }
+        .mobile-menu-btn { display: none; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
+        @media (max-width: 768px) { .desktop-menu { display: none !important; } .mobile-menu-btn { display: block; } }
+        @media (min-width: 769px) { .mobile-menu-btn { display: none; } #mobileDropdown { display: none !important; } }
         
         .navbar-scrolled { background: white !important; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
         .navbar-scrolled .nav-link { color: #4a5568 !important; }
@@ -81,29 +63,39 @@
         .navbar-scrolled .text-white\/60 { color: #718096 !important; }
         .navbar-scrolled i { color: #667eea !important; }
         
-        /* Math rendering styles */
-        .math-rendered {
-            display: inline;
-            line-height: 1.6;
-        }
-        .math-rendered mjx-container {
-            display: inline-block;
-            margin: 0 2px;
-        }
-        .question-text {
-            font-size: 1.125rem;
-            line-height: 1.6;
-        }
-        .option-text {
-            display: inline;
-        }
+        .math-rendered { display: inline; line-height: 1.6; }
+        .math-rendered mjx-container { display: inline-block; margin: 0 2px; }
+        .question-text { font-size: 1.125rem; line-height: 1.6; }
+        .option-text { display: inline; }
+        
+        .certificate-card { background: linear-gradient(135deg, #fff 0%, #fef3c7 100%); border: 2px solid #f59e0b; border-radius: 1rem; padding: 1.5rem; margin-top: 1.5rem; }
+        .performance-excellent { color: #10b981; }
+        .performance-good { color: #3b82f6; }
+        .performance-average { color: #f59e0b; }
+        .performance-poor { color: #ef4444; }
+        
+        .multi-select { position: relative; width: 100%; }
+        .multi-select .select-btn { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 12px; background: white; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+        .multi-select .select-btn span { color: #6b7280; }
+        .multi-select .select-btn i { transition: transform 0.2s; }
+        .multi-select.active .select-btn i { transform: rotate(180deg); }
+        .multi-select .dropdown-content { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #d1d5db; border-radius: 12px; margin-top: 5px; z-index: 100; max-height: 200px; overflow-y: auto; display: none; }
+        .multi-select.active .dropdown-content { display: block; }
+        .multi-select .dropdown-item { padding: 10px 12px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.2s; }
+        .multi-select .dropdown-item:hover { background: #f3e8ff; }
+        .multi-select .dropdown-item input { width: 16px; height: 16px; cursor: pointer; accent-color: #7c3aed; margin: 0; }
+        .multi-select .dropdown-item label { cursor: pointer; flex: 1; color: #374151; font-size: 14px; }
+        
+        .single-select { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 12px; background: white; font-size: 14px; cursor: pointer; }
+        
+        .professional-cert-btn { background: linear-gradient(135deg, #8b5cf6, #6d28d9); transition: all 0.3s ease; }
+        .professional-cert-btn:hover { transform: scale(1.02); box-shadow: 0 10px 25px -5px rgba(139, 92, 246, 0.5); }
     </style>
 </head>
 <body class="disable-select">
 
 <div class="max-w-6xl mx-auto px-4">
     
-    <!-- Navigation Bar -->
     <nav class="bg-white/10 backdrop-blur-lg rounded-full px-4 md:px-6 py-3 mb-8 sticky top-4 z-50 shadow-lg">
         <div class="flex justify-between items-center">
             <div class="flex items-center gap-2">
@@ -118,14 +110,10 @@
                 <a href="/contact" class="nav-link text-white/80 hover:text-white transition">📧 Contact</a>
                 <a href="/privacy" class="nav-link text-white/80 hover:text-white transition">🔒 Privacy</a>
             </div>
-            <!-- Mobile Hamburger Button -->
-            <button id="mobileMenuBtn" class="mobile-menu-btn text-white text-2xl">
-                ☰
-            </button>
+            <button id="mobileMenuBtn" class="mobile-menu-btn text-white text-2xl">☰</button>
         </div>
     </nav>
     
-    <!-- Mobile Dropdown Menu -->
     <div id="mobileDropdown" class="hidden bg-white rounded-xl shadow-xl w-full mb-4 py-2 z-50" style="display: none;">
         <a href="/" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition">🏠 Home</a>
         <a href="/quiz" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center">📝 Quiz <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span></a>
@@ -139,25 +127,41 @@
         <h2 class="text-xl md:text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
             <i class="fas fa-filter text-purple-600"></i> Filter Questions
         </h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">📚 Select Book</label>
-                <select id="bookSelect" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                <select id="bookSelect" class="single-select">
                     <option value="">Loading books...</option>
                 </select>
             </div>
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">🏷️ Topic</label>
-                <select id="topicSelect" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm" disabled>
+                <select id="topicSelect" class="single-select" disabled>
                     <option value="">Select a book first</option>
                 </select>
             </div>
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">⚡ Difficulty Level</label>
-                <select id="difficultySelect" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
-                    <option value="easy">🌱 Easy</option>
-                    <option value="medium">⚡ Medium</option>
-                    <option value="hard">🔥 Hard</option>
+                <div class="multi-select" id="difficultyMultiSelect">
+                    <div class="select-btn">
+                        <span id="difficultySelectedText">Select Difficulties</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="dropdown-content">
+                        <div class="dropdown-item"><input type="checkbox" id="difficultyEasy" value="easy"><label for="difficultyEasy">🌱 Easy</label></div>
+                        <div class="dropdown-item"><input type="checkbox" id="difficultyMedium" value="medium"><label for="difficultyMedium">⚡ Medium</label></div>
+                        <div class="dropdown-item"><input type="checkbox" id="difficultyHard" value="hard"><label for="difficultyHard">🔥 Hard</label></div>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">📊 Number of Questions</label>
+                <select id="questionCountSelect" class="single-select">
+                    <option value="20">20 Questions</option>
+                    <option value="40">40 Questions</option>
+                    <option value="60">60 Questions</option>
+                    <option value="80">80 Questions</option>
+                    <option value="100">100 Questions</option>
                 </select>
             </div>
         </div>
@@ -173,8 +177,8 @@
                 <span id="questionCounter" class="font-bold text-sm">Question 1 / 0</span>
             </div>
             <div class="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-full">
-                <i class="fas fa-star text-yellow-500"></i>
-                <span id="scoreDisplay" class="font-bold text-sm">Score: 0</span>
+                <i class="fas fa-clock text-purple-600"></i>
+                <span id="timerDisplay" class="font-bold text-sm">Time: 00:00</span>
             </div>
         </div>
         <div class="w-full bg-gray-200 rounded-full h-2 mb-6">
@@ -182,13 +186,17 @@
         </div>
         <h3 id="questionText" class="text-lg md:text-2xl font-bold text-gray-800 mb-6 question-text">Loading question...</h3>
         <div id="optionsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6"></div>
-        <div id="feedbackMessage" class="mb-6 hidden p-4 rounded-xl text-white font-semibold"></div>
-        <button id="nextBtn" class="w-full bg-gray-800 text-white font-bold py-3 rounded-xl hover:bg-gray-900 transition disabled:opacity-50 disabled:cursor-not-allowed">
-            Next Question <i class="fas fa-arrow-right ml-2"></i>
-        </button>
+        <div class="flex gap-3">
+            <button id="skipBtn" class="w-1/3 bg-orange-500 text-white font-bold py-3 rounded-xl hover:bg-orange-600 transition">
+                <i class="fas fa-forward mr-2"></i> Skip Question
+            </button>
+            <button id="nextBtn" class="w-2/3 bg-gray-800 text-white font-bold py-3 rounded-xl hover:bg-gray-900 transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                Next Question <i class="fas fa-arrow-right ml-2"></i>
+            </button>
+        </div>
     </div>
 
-    <div id="resultsArea" class="hidden quiz-card rounded-2xl p-6 md:p-8 text-center shadow-xl">
+    <div id="resultsArea" class="hidden quiz-card rounded-2xl p-6 md:p-8 shadow-xl">
         <i class="fas fa-trophy text-6xl text-yellow-500 mb-4"></i>
         <h2 class="text-2xl md:text-3xl font-bold mb-2">Quiz Completed!</h2>
         <p class="text-gray-600 mb-4">Your Performance</p>
@@ -196,9 +204,41 @@
         <div class="w-full bg-gray-200 rounded-full h-4 mb-6">
             <div id="resultProgress" class="bg-gradient-to-r from-purple-600 to-indigo-600 h-4 rounded-full" style="width: 0%"></div>
         </div>
-        <button id="restartBtn" class="bg-purple-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-purple-700 transition">
-            <i class="fas fa-redo-alt mr-2"></i> Try Another Quiz
-        </button>
+        
+        <div id="performanceMessage" class="text-lg font-semibold mb-4"></div>
+        
+        <div class="certificate-card">
+            <div class="flex items-center gap-3 mb-3">
+                <i class="fas fa-certificate text-3xl text-purple-600"></i>
+                <h3 class="text-xl font-bold text-gray-800">Professional Certificate</h3>
+            </div>
+            <p class="text-gray-700 mb-4">Get your professional certificate to showcase your achievement!</p>
+            <button id="getProfessionalCertBtn" class="professional-cert-btn w-full text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2">
+                <i class="fas fa-download"></i> Get Professional Certificate
+            </button>
+        </div>
+        
+        <div class="flex flex-wrap gap-3 mt-6">
+            <button id="restartBtn" class="flex-1 bg-purple-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-purple-700 transition">
+                <i class="fas fa-redo-alt mr-2"></i> Try Another Quiz
+            </button>
+            <button id="reviewAnswersBtn" class="flex-1 bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition">
+                <i class="fas fa-eye mr-2"></i> Review Answers
+            </button>
+            <button id="downloadAppreciationCertBtn" class="flex-1 bg-green-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 transition">
+                <i class="fas fa-download mr-2"></i> Download Appreciation Certificate
+            </button>
+        </div>
+    </div>
+
+    <div id="reviewModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[80vh] overflow-y-auto p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">Answer Review</h2>
+                <button id="closeReviewModal" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            <div id="reviewContent" class="space-y-4"></div>
+        </div>
     </div>
 
     <footer class="mt-12 text-center text-white/60 text-xs md:text-sm py-6">
@@ -211,16 +251,6 @@
 <script>
     // Security
     document.addEventListener('contextmenu', (e) => { e.preventDefault(); return false; });
-    document.addEventListener('keydown', (e) => {
-        const forbidden = ['PrintScreen', 'F12', 'F5', 'F11',
-            (e.ctrlKey && e.shiftKey && e.key === 'I'),
-            (e.ctrlKey && e.shiftKey && e.key === 'C'),
-            (e.ctrlKey && e.key === 'u'),
-            (e.ctrlKey && e.key === 's')];
-        if (forbidden.includes(e.key) || forbidden.some(cond => cond === true)) {
-            e.preventDefault(); return false;
-        }
-    });
     document.addEventListener('dragstart', (e) => { e.preventDefault(); return false; });
     document.addEventListener('selectstart', (e) => {
         if (!e.target.closest('input') && !e.target.closest('textarea')) {
@@ -228,15 +258,15 @@
         }
     });
 
-    // Cache Manager (from combined code)
+    const SUPABASE_URL = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
+    const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
     class CacheManager {
         #cachePrefix = 'bookmcq_';
         #ttl = 3600000;
         set(key, data, ttl = this.#ttl) {
-            try {
-                localStorage.setItem(this.#cachePrefix + key, JSON.stringify({ data, timestamp: Date.now(), ttl }));
-                return true;
-            } catch(e) { return false; }
+            try { localStorage.setItem(this.#cachePrefix + key, JSON.stringify({ data, timestamp: Date.now(), ttl })); return true; } catch(e) { return false; }
         }
         get(key) {
             try {
@@ -249,124 +279,47 @@
         }
         remove(key) { localStorage.removeItem(this.#cachePrefix + key); }
     }
-
-    // Supabase Service (from combined code)
-    class SupabaseService {
-        #supabase;
-        #cache;
-        #url = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
-        #key = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
-        constructor() {
-            this.#cache = new CacheManager();
-            this.#supabase = window.supabase.createClient(this.#url, this.#key);
-        }
-        async getBooks() {
-            const cached = this.#cache.get('books');
-            if (cached) return cached;
-            const { data, error } = await this.#supabase.from('books').select('id, title, author, category').order('title');
-            if (error) throw error;
-            this.#cache.set('books', data);
-            return data;
-        }
-        async getTopics(bookId) {
-            const cached = this.#cache.get(`topics_${bookId}`);
-            if (cached) return cached;
-            const { data, error } = await this.#supabase.from('topics').select('id, name, chapter_number').eq('book_id', bookId).order('chapter_number');
-            if (error) throw error;
-            this.#cache.set(`topics_${bookId}`, data);
-            return data;
-        }
-async getQuestions(topicId, difficulty, limit = 15) {
-    const cacheKey = `questions_${topicId}_${difficulty}`;
-    const cached = this.#cache.get(cacheKey);
-    if (cached) {
-        // Randomly shuffle cached questions and return first 'limit'
-        const shuffled = [...cached];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
-        return shuffled.slice(0, limit);
-    }
-    
-    // First, get total count of questions matching the criteria
-    const { count, error: countError } = await this.#supabase
-        .from('questions')
-        .select('*', { count: 'exact', head: true })
-        .eq('topic_id', topicId)
-        .eq('difficulty', difficulty);
-    
-    if (countError) throw countError;
-    if (!count || count === 0) return [];
-    
-    // Get random offset to fetch different questions each time
-    const randomOffset = Math.floor(Math.random() * Math.max(1, count - limit + 1));
-    
-    let query = this.#supabase
-        .from('questions')
-        .select(`id, question_text, difficulty, correct_answer, explanation, options (option_text, option_index)`)
-        .eq('topic_id', topicId)
-        .eq('difficulty', difficulty)
-        .range(randomOffset, randomOffset + limit - 1);
-    
-    const { data, error } = await query;
-    if (error) throw error;
-    
-    const formatted = (data || []).map(q => ({
-        id: q.id, text: q.question_text,
-        options: (q.options || []).sort((a,b) => a.option_index - b.option_index).map(o => o.option_text),
-        correct: q.correct_answer, explanation: q.explanation || 'No explanation available', difficulty: q.difficulty
-    }));
-    
-    // Store ALL questions in cache for future randomization (not just the fetched ones)
-    // Fetch all questions for this topic/difficulty to cache
-    const { data: allData } = await this.#supabase
-        .from('questions')
-        .select(`id, question_text, difficulty, correct_answer, explanation, options (option_text, option_index)`)
-        .eq('topic_id', topicId)
-        .eq('difficulty', difficulty);
-    
-    if (allData && allData.length > 0) {
-        const allFormatted = allData.map(q => ({
-            id: q.id, text: q.question_text,
-            options: (q.options || []).sort((a,b) => a.option_index - b.option_index).map(o => o.option_text),
-            correct: q.correct_answer, explanation: q.explanation || 'No explanation available', difficulty: q.difficulty
-        }));
-        this.#cache.set(cacheKey, allFormatted);
-    }
-    
-    return formatted;
-}
-    }
-
-    // Function to render math content
-    async function renderMathInElement(element) {
-        if (window.MathJax && element) {
-            try {
-                await MathJax.typesetPromise([element]);
-            } catch(e) {
-                console.log('MathJax error:', e);
-            }
-        }
-    }
-    
-    // Function to process text with math delimiters
-    function processMathContent(text) {
-        if (!text) return '';
-        // Check if text contains LaTeX delimiters
-        if (text.includes('\\(') || text.includes('\\[') || text.includes('$$')) {
-            return text;
-        }
-        return text;
-    }
-
-    // Initialize Supabase Service
-    const supabaseService = new SupabaseService();
+    const cacheManager = new CacheManager();
 
     let quizQuestions = [];
     let quizIndex = 0;
     let quizScore = 0;
     let quizLocked = false;
+    let userAnswers = [];
+    let tabSwitchCount = 0;
+    let timerInterval = null;
+    let timeRemaining = 0;
+    let isQuizActive = false;
+    let currentTopicId = null;
+    let currentTopicName = '';
+
+    function initMultiSelect() {
+        const multiSelect = document.getElementById('difficultyMultiSelect');
+        const selectBtn = multiSelect.querySelector('.select-btn');
+        const checkboxes = multiSelect.querySelectorAll('input[type="checkbox"]');
+        selectBtn.addEventListener('click', () => { multiSelect.classList.toggle('active'); });
+        document.addEventListener('click', (e) => { if (!multiSelect.contains(e.target)) multiSelect.classList.remove('active'); });
+        function updateSelectedText() {
+            const selected = [];
+            if (document.getElementById('difficultyEasy').checked) selected.push('🌱 Easy');
+            if (document.getElementById('difficultyMedium').checked) selected.push('⚡ Medium');
+            if (document.getElementById('difficultyHard').checked) selected.push('🔥 Hard');
+            const selectedText = document.getElementById('difficultySelectedText');
+            if (selected.length === 0) { selectedText.textContent = 'Select Difficulties'; selectedText.style.color = '#6b7280'; }
+            else if (selected.length === 3) { selectedText.textContent = 'All Difficulties'; selectedText.style.color = '#374151'; }
+            else { selectedText.textContent = selected.join(', '); selectedText.style.color = '#374151'; }
+        }
+        checkboxes.forEach(checkbox => { checkbox.addEventListener('change', updateSelectedText); });
+        updateSelectedText();
+    }
+
+    function getSelectedDifficulties() {
+        const difficulties = [];
+        if (document.getElementById('difficultyEasy').checked) difficulties.push('easy');
+        if (document.getElementById('difficultyMedium').checked) difficulties.push('medium');
+        if (document.getElementById('difficultyHard').checked) difficulties.push('hard');
+        return difficulties;
+    }
 
     function showToast(message, isError = false) {
         const toast = document.getElementById('toast');
@@ -376,62 +329,98 @@ async getQuestions(topicId, difficulty, limit = 15) {
         setTimeout(() => toast.classList.add('hidden'), 3000);
     }
 
+    function showWarningToast(message) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
+        toast.classList.add('warning-toast');
+        toast.classList.remove('hidden');
+        setTimeout(() => { toast.classList.add('hidden'); toast.classList.remove('warning-toast'); }, 3000);
+    }
+
     function escapeHtml(str) {
         if (!str) return '';
         return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;');
     }
 
+    function initTabSwitchDetection() {
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden && isQuizActive && !quizLocked) {
+                tabSwitchCount++;
+                if (tabSwitchCount === 1) showWarningToast('⚠️ Warning: Tab switching detected!');
+                else if (tabSwitchCount >= 2) { showWarningToast('⚠️ Tab switched multiple times! Restarting quiz...'); resetAndRestartQuiz(); }
+            }
+        });
+    }
+
+    function resetAndRestartQuiz() {
+        if (timerInterval) clearInterval(timerInterval);
+        isQuizActive = false;
+        document.getElementById('quizArea').classList.add('hidden');
+        document.getElementById('resultsArea').classList.add('hidden');
+        startQuiz();
+    }
+
+    function startTimer() {
+        if (timerInterval) clearInterval(timerInterval);
+        const totalTimeSeconds = quizQuestions.length * 45;
+        timeRemaining = totalTimeSeconds;
+        updateTimerDisplay();
+        timerInterval = setInterval(() => {
+            if (timeRemaining <= 0) {
+                clearInterval(timerInterval);
+                if (isQuizActive) { showToast('⏰ Time\'s up! Auto-submitting quiz...'); completeQuiz(); }
+            } else {
+                timeRemaining--;
+                updateTimerDisplay();
+                if (timeRemaining === 60) showWarningToast('⚠️ 1 minute remaining!');
+            }
+        }, 1000);
+    }
+    
+    function updateTimerDisplay() {
+        const minutes = Math.floor(timeRemaining / 60);
+        const seconds = timeRemaining % 60;
+        document.getElementById('timerDisplay').textContent = `Time: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        if (timeRemaining <= 60) document.getElementById('timerDisplay').classList.add('text-red-600', 'font-bold');
+    }
+
     async function loadBooks() {
         const bookSelect = document.getElementById('bookSelect');
         bookSelect.innerHTML = '<option value="">Loading books...</option>';
-        
         try {
-            const books = await supabaseService.getBooks();
-            
-            if (!books || books.length === 0) {
-                bookSelect.innerHTML = '<option value="">No books available</option>';
-                showToast('No books found. Please add books through admin panel.', true);
-                return;
+            const cached = cacheManager.get('books');
+            let books;
+            if (cached) books = cached;
+            else {
+                const { data, error } = await _supabase.from('books').select('id, title, author, category').order('title');
+                if (error) throw error;
+                books = data;
+                cacheManager.set('books', books);
             }
-            
+            if (!books || books.length === 0) { bookSelect.innerHTML = '<option value="">No books available</option>'; return; }
             bookSelect.innerHTML = '<option value="">-- Select a Book --</option>';
-            books.forEach(book => {
-                const option = document.createElement('option');
-                option.value = book.id;
-                option.textContent = book.title;
-                bookSelect.appendChild(option);
-            });
-            
-        } catch (err) {
-            console.error('Error loading books:', err);
-            bookSelect.innerHTML = '<option value="">Error loading books</option>';
-            showToast('Failed to load books. Please check your connection.', true);
-        }
+            books.forEach(book => { const option = document.createElement('option'); option.value = book.id; option.textContent = book.title; bookSelect.appendChild(option); });
+        } catch (err) { console.error('Error loading books:', err); bookSelect.innerHTML = '<option value="">Error loading books</option>'; }
     }
 
     async function loadTopics() {
         const bookId = document.getElementById('bookSelect').value;
         const topicSelect = document.getElementById('topicSelect');
-        
-        if (!bookId) {
-            topicSelect.innerHTML = '<option value="">Select a book first</option>';
-            topicSelect.disabled = true;
-            return;
-        }
-        
-        topicSelect.innerHTML = '<option value="">Loading topics...</option>';
-        topicSelect.disabled = false;
-        
+        if (!bookId) { topicSelect.innerHTML = '<option value="">Select a book first</option>'; topicSelect.disabled = true; return; }
+        topicSelect.innerHTML = '<option value="">Loading topics...</option>'; topicSelect.disabled = false;
         try {
-            const topics = await supabaseService.getTopics(bookId);
-            
-            if (!topics || topics.length === 0) {
-                topicSelect.innerHTML = '<option value="">No topics available</option>';
-                topicSelect.disabled = true;
-                showToast('No topics found for this book. Please add topics through admin panel.', true);
-                return;
+            const cacheKey = `topics_${bookId}`;
+            const cached = cacheManager.get(cacheKey);
+            let topics;
+            if (cached) topics = cached;
+            else {
+                const { data, error } = await _supabase.from('topics').select('id, name, chapter_number').eq('book_id', bookId).order('chapter_number');
+                if (error) throw error;
+                topics = data;
+                cacheManager.set(cacheKey, topics);
             }
-            
+            if (!topics || topics.length === 0) { topicSelect.innerHTML = '<option value="">No topics available</option>'; topicSelect.disabled = true; return; }
             topicSelect.innerHTML = '<option value="">-- Select a Topic --</option>';
             topics.forEach(topic => {
                 const option = document.createElement('option');
@@ -440,38 +429,72 @@ async getQuestions(topicId, difficulty, limit = 15) {
                 option.textContent = display;
                 topicSelect.appendChild(option);
             });
-            
             topicSelect.disabled = false;
-            
-        } catch (err) {
-            console.error('Error loading topics:', err);
-            topicSelect.innerHTML = '<option value="">Error loading topics</option>';
-            topicSelect.disabled = true;
-        }
+        } catch (err) { console.error('Error loading topics:', err); topicSelect.innerHTML = '<option value="">Error loading topics</option>'; topicSelect.disabled = true; }
     }
 
-    async function loadQuestions(topicId, difficulty, limit = 15) {
-        try {
-            const questions = await supabaseService.getQuestions(topicId, difficulty, limit);
-            return questions;
-        } catch (err) {
-            console.error('Error in loadQuestions:', err);
-            throw err;
+    async function loadQuestions(topicId, difficulties, limit = 15) {
+        if (!difficulties || difficulties.length === 0) return [];
+        
+        let distribution = {};
+        if (difficulties.length === 1) distribution[difficulties[0]] = 100;
+        else if (difficulties.length === 2) { distribution[difficulties[0]] = 60; distribution[difficulties[1]] = 40; }
+        else if (difficulties.length === 3) { distribution['easy'] = 40; distribution['medium'] = 30; distribution['hard'] = 30; }
+        
+        const questionsToFetch = {};
+        let totalRequested = 0;
+        for (const [diff, percentage] of Object.entries(distribution)) {
+            let count = Math.round((percentage / 100) * limit);
+            if (count === 0 && percentage > 0) count = 1;
+            questionsToFetch[diff] = count;
+            totalRequested += count;
         }
+        if (totalRequested !== limit) {
+            const diff = limit - totalRequested;
+            const lastDiff = Object.keys(questionsToFetch).pop();
+            if (lastDiff) questionsToFetch[lastDiff] += diff;
+        }
+        
+        const allQuestions = [];
+        for (const [difficulty, count] of Object.entries(questionsToFetch)) {
+            if (count <= 0) continue;
+            const cacheKey = `all_questions_${topicId}_${difficulty}`;
+            let cachedQuestions = cacheManager.get(cacheKey);
+            let questionsPool;
+            if (cachedQuestions) questionsPool = cachedQuestions;
+            else {
+                const { data, error } = await _supabase
+                    .from('questions')
+                    .select(`id, question_text, difficulty, correct_answer, explanation, options (option_text, option_index)`)
+                    .eq('topic_id', topicId)
+                    .eq('difficulty', difficulty);
+                if (error) continue;
+                if (!data || data.length === 0) continue;
+                questionsPool = data.map(q => ({
+                    id: q.id, text: q.question_text,
+                    options: (q.options || []).sort((a,b) => a.option_index - b.option_index).map(o => o.option_text),
+                    correct: q.correct_answer, explanation: q.explanation || 'No explanation available', difficulty: q.difficulty
+                }));
+                cacheManager.set(cacheKey, questionsPool);
+            }
+            if (questionsPool.length === 0) continue;
+            const shuffledPool = [...questionsPool];
+            for (let i = shuffledPool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [shuffledPool[i], shuffledPool[j]] = [shuffledPool[j], shuffledPool[i]]; }
+            const selected = shuffledPool.slice(0, Math.min(count, shuffledPool.length));
+            allQuestions.push(...selected);
+        }
+        for (let i = allQuestions.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [allQuestions[i], allQuestions[j]] = [allQuestions[j], allQuestions[i]]; }
+        return allQuestions;
     }
 
     async function renderQuestion() {
-        if (!quizQuestions.length || quizIndex >= quizQuestions.length) return;
+        if (!quizQuestions.length || quizIndex >= quizQuestions.length) { completeQuiz(); return; }
         
         const q = quizQuestions[quizIndex];
-        
-        // Set question text with math support
         const questionElement = document.getElementById('questionText');
-        const processedQuestion = processMathContent(q.text);
-        questionElement.innerHTML = processedQuestion;
+        questionElement.innerHTML = processMathContent(q.text);
         
         document.getElementById('questionCounter').textContent = `Question ${quizIndex + 1} / ${quizQuestions.length}`;
-        document.getElementById('scoreDisplay').textContent = `Score: ${quizScore}`;
         document.getElementById('progressFill').style.width = `${((quizIndex + 1) / quizQuestions.length) * 100}%`;
         
         const container = document.getElementById('optionsContainer');
@@ -479,18 +502,22 @@ async getQuestions(topicId, difficulty, limit = 15) {
         
         q.options.forEach((opt, idx) => {
             const btn = document.createElement('button');
-            const processedOpt = processMathContent(opt);
-            btn.innerHTML = `${String.fromCharCode(65+idx)}. <span class="option-text">${processedOpt}</span>`;
+            btn.innerHTML = `${String.fromCharCode(65+idx)}. <span class="option-text">${processMathContent(opt)}</span>`;
             btn.className = `option-btn w-full text-left p-3 rounded-xl bg-white text-gray-800 font-medium transition text-sm md:text-base`;
-            btn.addEventListener('click', () => handleAnswer(idx));
+            
+            if (userAnswers[quizIndex] !== undefined && userAnswers[quizIndex] !== null) {
+                btn.disabled = true;
+                btn.classList.add('disabled-option');
+                if (userAnswers[quizIndex] === idx) btn.classList.add('selected-option');
+            } else {
+                btn.addEventListener('click', () => handleAnswer(idx));
+            }
             container.appendChild(btn);
         });
         
-        document.getElementById('feedbackMessage').classList.add('hidden');
-        document.getElementById('nextBtn').disabled = true;
-        quizLocked = false;
+        document.getElementById('nextBtn').disabled = (userAnswers[quizIndex] !== undefined && userAnswers[quizIndex] !== null);
+        quizLocked = (userAnswers[quizIndex] !== undefined && userAnswers[quizIndex] !== null);
         
-        // Render math in question and options
         await renderMathInElement(questionElement);
         await renderMathInElement(container);
     }
@@ -504,146 +531,255 @@ async getQuestions(topicId, difficulty, limit = 15) {
         document.querySelectorAll('.option-btn').forEach((btn, idx) => {
             btn.classList.remove('selected-option');
             if (idx === selectedIdx) btn.classList.add('selected-option');
+            btn.disabled = true;
+            btn.classList.add('disabled-option');
         });
         
-        const feedbackDiv = document.getElementById('feedbackMessage');
-        const processedExplanation = processMathContent(q.explanation);
+        if (isCorrect) quizScore++;
         
-        if (isCorrect) {
-            quizScore++;
-            feedbackDiv.className = "correct-feedback p-4 rounded-xl text-white font-semibold mb-6";
-            feedbackDiv.innerHTML = `<i class="fas fa-check-circle mr-2"></i> ✅ Correct! <span class="math-content">${processedExplanation}</span>`;
-            document.getElementById('scoreDisplay').textContent = `Score: ${quizScore}`;
-        } else {
-            const correctLetter = String.fromCharCode(65+q.correct);
-            const correctText = q.options[q.correct];
-            const processedCorrectText = processMathContent(correctText);
-            feedbackDiv.className = "wrong-feedback p-4 rounded-xl text-white font-semibold mb-6";
-            feedbackDiv.innerHTML = `<i class="fas fa-times-circle mr-2"></i> ❌ Wrong! Correct answer: ${correctLetter}. <span class="math-content">${processedCorrectText}</span><br><span class="text-sm mt-1 block">${processedExplanation}</span>`;
+        userAnswers[quizIndex] = selectedIdx;
+        quizLocked = true;
+        document.getElementById('nextBtn').disabled = false;
+    }
+
+    function skipQuestion() {
+        if (quizLocked) return;
+        
+        if (userAnswers[quizIndex] === undefined) {
+            userAnswers[quizIndex] = null;
+            
+            // Move this question to the end of the array without increasing length
+            const skippedQuestion = quizQuestions.splice(quizIndex, 1)[0];
+            const skippedAnswer = userAnswers.splice(quizIndex, 1)[0];
+            quizQuestions.push(skippedQuestion);
+            userAnswers.push(skippedAnswer);
+            
+            showToast('Question skipped. It will appear at the end.', false);
         }
         
-        feedbackDiv.classList.remove('hidden');
         quizLocked = true;
         document.getElementById('nextBtn').disabled = false;
         
-        // Render math in feedback
-        await renderMathInElement(feedbackDiv);
+        document.querySelectorAll('.option-btn').forEach(btn => {
+            btn.disabled = true;
+            btn.classList.add('disabled-option');
+        });
     }
 
     function nextQuestion() {
         if (!quizLocked) return;
         
         quizIndex++;
+        
         if (quizIndex < quizQuestions.length) {
             renderQuestion();
         } else {
-            document.getElementById('quizArea').classList.add('hidden');
-            document.getElementById('resultsArea').classList.remove('hidden');
-            document.getElementById('finalScore').textContent = quizScore;
-            document.getElementById('totalQuestions').textContent = quizQuestions.length;
-            const percentage = (quizScore / quizQuestions.length) * 100;
-            document.getElementById('resultProgress').style.width = `${percentage}%`;
-            showToast(`Quiz completed! You scored ${quizScore}/${quizQuestions.length}`);
+            // Check if any questions are still unanswered
+            const hasUnanswered = userAnswers.some(ans => ans === undefined);
+            if (hasUnanswered) {
+                quizIndex = userAnswers.findIndex(ans => ans === undefined);
+                if (quizIndex !== -1) {
+                    showToast('Please answer all questions before completing the quiz.', false);
+                    renderQuestion();
+                    return;
+                }
+            }
+            completeQuiz();
         }
+    }
+
+    function processMathContent(text) {
+        if (!text) return '';
+        if (text.includes('\\(') || text.includes('\\[') || text.includes('$$')) return text;
+        return text;
+    }
+
+    async function renderMathInElement(element) {
+        if (window.MathJax && element) {
+            try { await MathJax.typesetPromise([element]); } catch(e) { console.log('MathJax error:', e); }
+        }
+    }
+
+    function completeQuiz() {
+        if (timerInterval) clearInterval(timerInterval);
+        isQuizActive = false;
+        
+        document.getElementById('quizArea').classList.add('hidden');
+        document.getElementById('resultsArea').classList.remove('hidden');
+        
+        const total = quizQuestions.length;
+        const percentage = (quizScore / total) * 100;
+        
+        document.getElementById('finalScore').textContent = quizScore;
+        document.getElementById('totalQuestions').textContent = total;
+        document.getElementById('resultProgress').style.width = `${percentage}%`;
+        
+        const perfDiv = document.getElementById('performanceMessage');
+        let performanceText = '', performanceClass = '';
+        if (percentage >= 90) { performanceText = `🎉 Outstanding! You scored ${percentage.toFixed(1)}% - Excellent performance!`; performanceClass = 'performance-excellent'; }
+        else if (percentage >= 75) { performanceText = `👍 Great job! You scored ${percentage.toFixed(1)}% - Good performance!`; performanceClass = 'performance-good'; }
+        else if (percentage >= 60) { performanceText = `📚 Good effort! You scored ${percentage.toFixed(1)}% - You're on the right track.`; performanceClass = 'performance-average'; }
+        else { performanceText = `📖 Keep practicing! You scored ${percentage.toFixed(1)}% - Don't give up!`; performanceClass = 'performance-poor'; }
+        perfDiv.innerHTML = `<span class="${performanceClass}">${performanceText}</span>`;
+        
+        showToast(`Quiz completed! You scored ${quizScore}/${total} (${percentage.toFixed(1)}%)`);
     }
 
     async function startQuiz() {
         const bookId = document.getElementById('bookSelect').value;
         const topicId = document.getElementById('topicSelect').value;
-        const difficulty = document.getElementById('difficultySelect').value;
+        currentTopicId = topicId;
+        const selectedDifficulties = getSelectedDifficulties();
+        const topicSelect = document.getElementById('topicSelect');
+        currentTopicName = topicSelect.options[topicSelect.selectedIndex]?.text || 'Quiz';
+        const selectedQuestionCount = parseInt(document.getElementById('questionCountSelect').value);
         
-        if (!bookId) {
-            showToast('Please select a book first', true);
-            return;
-        }
-        
-        if (!topicId) {
-            showToast('Please select a topic first', true);
-            return;
-        }
+        if (!bookId) { showToast('Please select a book first', true); return; }
+        if (!topicId) { showToast('Please select a topic first', true); return; }
+        if (selectedDifficulties.length === 0) { showToast('Please select at least one difficulty level', true); return; }
         
         showToast('Loading questions...');
-        
         try {
-            const questions = await loadQuestions(topicId, difficulty, 15);
+            const questions = await loadQuestions(topicId, selectedDifficulties, selectedQuestionCount);
+            if (!questions || questions.length === 0) { showToast('No questions found. Try different options!', true); return; }
             
-            if (!questions || questions.length === 0) {
-                showToast('No questions found for these filters. Try different options!', true);
-                return;
-            }
-            
-            quizQuestions = questions;
+            quizQuestions = [...questions];
             quizIndex = 0;
             quizScore = 0;
             quizLocked = false;
+            userAnswers = new Array(questions.length);
+            tabSwitchCount = 0;
+            isQuizActive = true;
             
             document.getElementById('quizArea').classList.remove('hidden');
             document.getElementById('resultsArea').classList.add('hidden');
+            
             await renderQuestion();
-            
+            startTimer();
             showToast(`Loaded ${questions.length} questions! Good luck!`);
-            
         } catch(e) {
             console.error('Start quiz error:', e);
             showToast('Error loading questions. Please try again.', true);
         }
     }
 
-    // Mobile Menu functionality (matching home page)
+    function reviewAnswers() {
+        const reviewContent = document.getElementById('reviewContent');
+        reviewContent.innerHTML = quizQuestions.map((q, idx) => {
+            const userAnswer = userAnswers[idx];
+            const isCorrect = userAnswer !== null && userAnswer !== undefined && userAnswer === q.correct;
+            const statusIcon = isCorrect ? '✅' : (userAnswer === null || userAnswer === undefined ? '⏭️' : '❌');
+            const statusText = isCorrect ? 'Correct' : (userAnswer === null || userAnswer === undefined ? 'Skipped' : 'Wrong');
+            const statusColor = isCorrect ? 'text-green-600' : (userAnswer === null || userAnswer === undefined ? 'text-orange-600' : 'text-red-600');
+            const userAnswerText = (userAnswer !== null && userAnswer !== undefined) ? q.options[userAnswer] : 'Not answered';
+            const correctAnswerText = q.options[q.correct];
+            return `<div class="border-b pb-3 mb-3"><div class="flex items-center gap-2 mb-2"><span class="font-bold text-purple-600">Q${idx + 1}</span><span class="${statusColor} font-semibold">${statusIcon} ${statusText}</span></div><p class="text-gray-800 mb-2">${escapeHtml(q.text)}</p><div class="text-sm text-gray-600"><div>Your Answer: <span class="${isCorrect ? 'text-green-600' : 'text-red-600'}">${escapeHtml(userAnswerText)}</span></div><div>Correct Answer: <span class="text-green-600">${escapeHtml(correctAnswerText)}</span></div>${!isCorrect && userAnswer !== null ? `<div class="text-blue-600 mt-1">Explanation: ${escapeHtml(q.explanation)}</div>` : ''}</div></div>`;
+        }).join('');
+        document.getElementById('reviewModal').classList.remove('hidden');
+    }
+
+    function downloadAppreciationCertificate() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('landscape');
+        const percentage = (quizScore / quizQuestions.length) * 100;
+        const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        const certId = 'BMCQ-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
+        
+        let certificateTitle = 'PARTICIPATION CERTIFICATE';
+        if (percentage >= 90) certificateTitle = 'CERTIFICATE OF EXCELLENCE';
+        else if (percentage >= 75) certificateTitle = 'CERTIFICATE OF ACHIEVEMENT';
+        else if (percentage >= 60) certificateTitle = 'CERTIFICATE OF COMPLETION';
+        
+        doc.setFillColor(255, 255, 255);
+        doc.rect(0, 0, 297, 210, 'F');
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.5);
+        doc.line(20, 25, 277, 25);
+        doc.setFontSize(18);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 100, 100);
+        doc.text('BOOKMCQ', 148.5, 45, { align: 'center' });
+        doc.setFontSize(24);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(139, 92, 246);
+        doc.text(certificateTitle, 148.5, 65, { align: 'center' });
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 100, 100);
+        doc.text(date, 148.5, 82, { align: 'center' });
+        doc.setFontSize(26);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        doc.text('[Participant Name]', 148.5, 108, { align: 'center' });
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(80, 80, 80);
+        doc.text('has successfully completed', 148.5, 125, { align: 'center' });
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(139, 92, 246);
+        const wrappedTopic = doc.splitTextToSize(currentTopicName, 200);
+        doc.text(wrappedTopic, 148.5, 140, { align: 'center' });
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(80, 80, 80);
+        doc.text(`with a score of ${quizScore}/${quizQuestions.length} (${percentage.toFixed(1)}%)`, 148.5, 155, { align: 'center' });
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.5);
+        doc.line(60, 165, 237, 165);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(80, 80, 80);
+        doc.text('Dr. Academic Director', 148.5, 180, { align: 'center' });
+        doc.text('Course Director', 148.5, 187, { align: 'center' });
+        doc.text('BookMCQ', 148.5, 194, { align: 'center' });
+        doc.setFontSize(8);
+        doc.setTextColor(120, 120, 120);
+        doc.text(`Verified at: https://bookmcq.com/verify/${certId}`, 148.5, 205, { align: 'center' });
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text('BookMCQ has confirmed the identity of this individual and their participation in this course.', 148.5, 215, { align: 'center' });
+        doc.save(`BookMCQ_Certificate_${currentTopicName.replace(/\s/g, '_')}.pdf`);
+        showToast('Appreciation Certificate downloaded!');
+    }
+
+    document.getElementById('getProfessionalCertBtn').addEventListener('click', () => {
+        const certificateData = { score: quizScore, total: quizQuestions.length, percentage: (quizScore / quizQuestions.length) * 100, topicName: currentTopicName, date: new Date().toISOString() };
+        sessionStorage.setItem('quizCertificateData', JSON.stringify(certificateData));
+        window.location.href = '/certificate-register.html';
+    });
+
+    document.getElementById('downloadAppreciationCertBtn').addEventListener('click', downloadAppreciationCertificate);
+    document.getElementById('startQuizBtn').addEventListener('click', startQuiz);
+    document.getElementById('restartBtn').addEventListener('click', startQuiz);
+    document.getElementById('nextBtn').addEventListener('click', nextQuestion);
+    document.getElementById('skipBtn').addEventListener('click', skipQuestion);
+    document.getElementById('reviewAnswersBtn').addEventListener('click', reviewAnswers);
+    document.getElementById('closeReviewModal').addEventListener('click', () => document.getElementById('reviewModal').classList.add('hidden'));
+    document.getElementById('bookSelect').addEventListener('change', loadTopics);
+    document.getElementById('reviewModal').addEventListener('click', (e) => { if (e.target === document.getElementById('reviewModal')) document.getElementById('reviewModal').classList.add('hidden'); });
+    
     function initMobileMenu() {
         const mobileBtn = document.getElementById('mobileMenuBtn');
         const dropdown = document.getElementById('mobileDropdown');
-        
         if (mobileBtn && dropdown) {
-            mobileBtn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                if (dropdown.style.display === 'none' || dropdown.style.display === '') {
-                    dropdown.style.display = 'block';
-                } else {
-                    dropdown.style.display = 'none';
-                }
-            });
-            
-            // Close dropdown when clicking outside (on mobile)
-            document.addEventListener('click', function(e) {
-                const isMobile = window.innerWidth <= 768;
-                if (isMobile && dropdown && mobileBtn) {
-                    if (!mobileBtn.contains(e.target) && !dropdown.contains(e.target)) {
-                        dropdown.style.display = 'none';
-                    }
-                }
-            });
-            
-            // Reset dropdown visibility on window resize
-            window.addEventListener('resize', function() {
-                if (window.innerWidth > 768) {
-                    dropdown.style.display = 'none';
-                }
-            });
+            mobileBtn.addEventListener('click', (e) => { e.stopPropagation(); dropdown.style.display = dropdown.style.display === 'none' || dropdown.style.display === '' ? 'block' : 'none'; });
+            document.addEventListener('click', (e) => { if (window.innerWidth <= 768 && dropdown && mobileBtn && !mobileBtn.contains(e.target) && !dropdown.contains(e.target)) dropdown.style.display = 'none'; });
+            window.addEventListener('resize', () => { if (window.innerWidth > 768) dropdown.style.display = 'none'; });
         }
     }
 
     function initNavbarScroll() {
         const navbar = document.querySelector('nav.bg-white\\/10');
-        if (!navbar) return;
-        window.addEventListener('scroll', () => {
-            if (window.scrollY > 50) navbar.classList.add('navbar-scrolled');
-            else navbar.classList.remove('navbar-scrolled');
-        });
+        if (navbar) { window.addEventListener('scroll', () => { if (window.scrollY > 50) navbar.classList.add('navbar-scrolled'); else navbar.classList.remove('navbar-scrolled'); }); }
     }
 
-    // Initialize event listeners
-    document.getElementById('startQuizBtn').addEventListener('click', startQuiz);
-    document.getElementById('restartBtn').addEventListener('click', startQuiz);
-    document.getElementById('nextBtn').addEventListener('click', nextQuestion);
-    document.getElementById('bookSelect').addEventListener('change', loadTopics);
-    
-    // Load books when page loads
     loadBooks();
     initNavbarScroll();
-    initMobileMenu(); // Added mobile menu initialization
-    
-    console.log('Quiz page initialized with MathJax support');
+    initMobileMenu();
+    initTabSwitchDetection();
+    initMultiSelect();
+    console.log('Quiz page initialized - fixed skip logic, total questions remain constant');
 </script>
 </body>
 </html>
