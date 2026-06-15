@@ -74,19 +74,66 @@
         .performance-average { color: #f59e0b; }
         .performance-poor { color: #ef4444; }
         
+        /* Enhanced multi-select dropdown with search */
         .multi-select { position: relative; width: 100%; }
         .multi-select .select-btn { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 12px; background: white; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
-        .multi-select .select-btn span { color: #6b7280; }
+        .multi-select .select-btn span { color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .multi-select .select-btn i { transition: transform 0.2s; }
         .multi-select.active .select-btn i { transform: rotate(180deg); }
-        .multi-select .dropdown-content { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #d1d5db; border-radius: 12px; margin-top: 5px; z-index: 100; max-height: 200px; overflow-y: auto; display: none; }
+        .multi-select .dropdown-content { 
+            position: absolute; 
+            top: 100%; 
+            left: 0; 
+            right: 0; 
+            background: white; 
+            border: 1px solid #d1d5db; 
+            border-radius: 12px; 
+            margin-top: 5px; 
+            z-index: 100; 
+            max-height: 280px; 
+            overflow-y: auto; 
+            display: none; 
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+        }
         .multi-select.active .dropdown-content { display: block; }
+        .multi-select .dropdown-search { padding: 10px; border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; background: white; z-index: 1; }
+        .multi-select .dropdown-search input { width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; }
+        .multi-select .dropdown-search input:focus { border-color: #7c3aed; ring: 2px solid #7c3aed; }
+        .multi-select .dropdown-items { max-height: 220px; overflow-y: auto; }
         .multi-select .dropdown-item { padding: 10px 12px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.2s; }
         .multi-select .dropdown-item:hover { background: #f3e8ff; }
         .multi-select .dropdown-item input { width: 16px; height: 16px; cursor: pointer; accent-color: #7c3aed; margin: 0; }
         .multi-select .dropdown-item label { cursor: pointer; flex: 1; color: #374151; font-size: 14px; }
+        .multi-select .dropdown-item .topic-chapter { font-size: 11px; color: #8b5cf6; margin-left: 8px; }
         
-        .single-select { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 12px; background: white; font-size: 14px; cursor: pointer; }
+        /* Single select dropdown with search (for book and number of questions) */
+        .single-select-wrapper { position: relative; width: 100%; }
+        .single-select-btn { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 12px; background: white; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+        .single-select-btn span { color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .single-select-btn i { transition: transform 0.2s; }
+        .single-select-wrapper.active .single-select-btn i { transform: rotate(180deg); }
+        .single-select-wrapper .dropdown-content { 
+            position: absolute; 
+            top: 100%; 
+            left: 0; 
+            right: 0; 
+            background: white; 
+            border: 1px solid #d1d5db; 
+            border-radius: 12px; 
+            margin-top: 5px; 
+            z-index: 100; 
+            max-height: 280px; 
+            overflow-y: auto; 
+            display: none; 
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+        }
+        .single-select-wrapper.active .dropdown-content { display: block; }
+        .single-select-wrapper .dropdown-search { padding: 10px; border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; background: white; z-index: 1; }
+        .single-select-wrapper .dropdown-search input { width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; }
+        .single-select-wrapper .dropdown-search input:focus { border-color: #7c3aed; }
+        .single-select-wrapper .dropdown-items { max-height: 220px; overflow-y: auto; }
+        .single-select-wrapper .dropdown-item { padding: 10px 12px; cursor: pointer; transition: background 0.2s; }
+        .single-select-wrapper .dropdown-item:hover { background: #f3e8ff; }
         
         .professional-cert-btn { background: linear-gradient(135deg, #8b5cf6, #6d28d9); transition: all 0.3s ease; }
         .professional-cert-btn:hover { transform: scale(1.02); box-shadow: 0 10px 25px -5px rgba(139, 92, 246, 0.5); }
@@ -130,15 +177,37 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">📚 Select Book</label>
-                <select id="bookSelect" class="single-select">
-                    <option value="">Loading books...</option>
-                </select>
+                <div class="single-select-wrapper" id="bookSelectWrapper">
+                    <div class="single-select-btn">
+                        <span id="bookSelectedText">Loading books...</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="dropdown-content">
+                        <div class="dropdown-search">
+                            <input type="text" id="bookSearchInput" placeholder="Search books..." autocomplete="off">
+                        </div>
+                        <div id="bookDropdownItems" class="dropdown-items">
+                            <div class="dropdown-item">Loading books...</div>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">🏷️ Topic</label>
-                <select id="topicSelect" class="single-select" disabled>
-                    <option value="">Select a book first</option>
-                </select>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">🏷️ Select Topics (Multiple)</label>
+                <div class="multi-select" id="topicMultiSelect">
+                    <div class="select-btn">
+                        <span id="topicSelectedText">Select Topics</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="dropdown-content">
+                        <div class="dropdown-search">
+                            <input type="text" id="topicSearchInput" placeholder="Search topics..." autocomplete="off">
+                        </div>
+                        <div id="topicDropdownItems" class="dropdown-items">
+                            <div class="dropdown-item">Select a book first</div>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">⚡ Difficulty Level</label>
@@ -148,21 +217,34 @@
                         <i class="fas fa-chevron-down"></i>
                     </div>
                     <div class="dropdown-content">
-                        <div class="dropdown-item"><input type="checkbox" id="difficultyEasy" value="easy"><label for="difficultyEasy">🌱 Easy</label></div>
-                        <div class="dropdown-item"><input type="checkbox" id="difficultyMedium" value="medium"><label for="difficultyMedium">⚡ Medium</label></div>
-                        <div class="dropdown-item"><input type="checkbox" id="difficultyHard" value="hard"><label for="difficultyHard">🔥 Hard</label></div>
+                        <div class="dropdown-search">
+                            <input type="text" id="difficultySearchInput" placeholder="Search difficulties..." autocomplete="off">
+                        </div>
+                        <div id="difficultyDropdownItems" class="dropdown-items">
+                            <div class="dropdown-item"><input type="checkbox" id="difficultyEasy" value="easy"><label for="difficultyEasy">🌱 Easy</label></div>
+                            <div class="dropdown-item"><input type="checkbox" id="difficultyMedium" value="medium"><label for="difficultyMedium">⚡ Medium</label></div>
+                            <div class="dropdown-item"><input type="checkbox" id="difficultyHard" value="hard"><label for="difficultyHard">🔥 Hard</label></div>
+                        </div>
                     </div>
                 </div>
             </div>
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">📊 Number of Questions</label>
-                <select id="questionCountSelect" class="single-select">
-                    <option value="20">20 Questions</option>
-                    <option value="40">40 Questions</option>
-                    <option value="60">60 Questions</option>
-                    <option value="80">80 Questions</option>
-                    <option value="100">100 Questions</option>
-                </select>
+                <div class="single-select-wrapper" id="questionCountWrapper">
+                    <div class="single-select-btn">
+                        <span id="questionCountSelectedText">20 Questions</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="dropdown-content">
+                        <div class="dropdown-items">
+                            <div class="dropdown-item" data-value="20">20 Questions</div>
+                            <div class="dropdown-item" data-value="40">40 Questions</div>
+                            <div class="dropdown-item" data-value="60">60 Questions</div>
+                            <div class="dropdown-item" data-value="80">80 Questions</div>
+                            <div class="dropdown-item" data-value="100">100 Questions</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         <button id="startQuizBtn" class="mt-6 w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold py-3 rounded-xl hover:opacity-90 transition shadow-lg">
@@ -290,27 +372,177 @@
     let timerInterval = null;
     let timeRemaining = 0;
     let isQuizActive = false;
-    let currentTopicId = null;
+    let currentTopicIds = [];
     let currentTopicName = '';
+    let allTopics = [];
+    let selectedBookId = '';
+    let selectedQuestionCount = 20;
 
-    function initMultiSelect() {
+    // Initialize Single Select with Search (for Book)
+    function initSingleSelectWrapper(wrapperId, searchInputId, itemsContainerId, onSelectCallback) {
+        const wrapper = document.getElementById(wrapperId);
+        const btn = wrapper.querySelector('.single-select-btn');
+        
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            wrapper.classList.toggle('active');
+            if (wrapper.classList.contains('active')) {
+                const searchInput = document.getElementById(searchInputId);
+                if (searchInput) setTimeout(() => searchInput.focus(), 100);
+            }
+        });
+        
+        document.addEventListener('click', (e) => {
+            if (!wrapper.contains(e.target)) {
+                wrapper.classList.remove('active');
+            }
+        });
+        
+        if (searchInputId) {
+            const searchInput = document.getElementById(searchInputId);
+            if (searchInput) {
+                searchInput.addEventListener('input', () => {
+                    const searchTerm = searchInput.value.toLowerCase();
+                    const items = document.querySelectorAll(`#${itemsContainerId} .dropdown-item`);
+                    items.forEach(item => {
+                        const text = item.textContent.toLowerCase();
+                        if (text.includes(searchTerm)) {
+                            item.style.display = 'block';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+                });
+                searchInput.addEventListener('click', (e) => e.stopPropagation());
+            }
+        }
+        
+        // Handle item selection
+        document.querySelectorAll(`#${itemsContainerId} .dropdown-item`).forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const value = item.getAttribute('data-value') || item.textContent;
+                const text = item.textContent;
+                if (onSelectCallback) {
+                    onSelectCallback(value, text);
+                }
+                wrapper.classList.remove('active');
+            });
+        });
+    }
+
+    // Topic Multi-select with search
+    function initTopicMultiSelect() {
+        const container = document.getElementById('topicMultiSelect');
+        const selectBtn = container.querySelector('.select-btn');
+        const searchInput = document.getElementById('topicSearchInput');
+        
+        selectBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            container.classList.toggle('active');
+            if (container.classList.contains('active') && searchInput) {
+                setTimeout(() => searchInput.focus(), 100);
+            }
+        });
+        
+        document.addEventListener('click', (e) => {
+            if (!container.contains(e.target)) {
+                container.classList.remove('active');
+            }
+        });
+        
+        if (searchInput) {
+            searchInput.addEventListener('input', () => updateTopicSelectedText());
+            searchInput.addEventListener('click', (e) => e.stopPropagation());
+        }
+    }
+
+    function updateTopicSelectedText() {
+        const selectedTopics = Array.from(document.querySelectorAll('#topicDropdownItems input[type="checkbox"]:checked')).map(cb => cb.value);
+        const searchTerm = document.getElementById('topicSearchInput')?.value.toLowerCase() || '';
+        
+        const items = document.querySelectorAll('#topicDropdownItems .dropdown-item');
+        items.forEach(item => {
+            const label = item.querySelector('label')?.textContent.toLowerCase() || '';
+            if (label.includes(searchTerm)) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+        
+        const selectedText = document.getElementById('topicSelectedText');
+        if (selectedTopics.length === 0) {
+            selectedText.textContent = 'Select Topics';
+            selectedText.style.color = '#6b7280';
+        } else if (selectedTopics.length === allTopics.length) {
+            selectedText.textContent = 'All Topics';
+            selectedText.style.color = '#374151';
+        } else if (selectedTopics.length <= 2) {
+            const names = selectedTopics.map(t => t.split('|')[0]).join(', ');
+            selectedText.textContent = names;
+            selectedText.style.color = '#374151';
+        } else {
+            selectedText.textContent = `${selectedTopics.length} topics selected`;
+            selectedText.style.color = '#374151';
+        }
+    }
+
+    function getSelectedTopicIds() {
+        const selectedTopics = Array.from(document.querySelectorAll('#topicDropdownItems input[type="checkbox"]:checked')).map(cb => cb.value);
+        return selectedTopics.map(t => parseInt(t.split('|')[1]));
+    }
+
+    function initDifficultyMultiSelect() {
         const multiSelect = document.getElementById('difficultyMultiSelect');
         const selectBtn = multiSelect.querySelector('.select-btn');
         const checkboxes = multiSelect.querySelectorAll('input[type="checkbox"]');
-        selectBtn.addEventListener('click', () => { multiSelect.classList.toggle('active'); });
-        document.addEventListener('click', (e) => { if (!multiSelect.contains(e.target)) multiSelect.classList.remove('active'); });
-        function updateSelectedText() {
+        const searchInput = document.getElementById('difficultySearchInput');
+        
+        selectBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            multiSelect.classList.toggle('active');
+            if (multiSelect.classList.contains('active') && searchInput) {
+                setTimeout(() => searchInput.focus(), 100);
+            }
+        });
+        
+        document.addEventListener('click', (e) => {
+            if (!multiSelect.contains(e.target)) {
+                multiSelect.classList.remove('active');
+            }
+        });
+        
+        if (searchInput) {
+            searchInput.addEventListener('input', () => updateDifficultySelectedText());
+            searchInput.addEventListener('click', (e) => e.stopPropagation());
+        }
+        
+        function updateDifficultySelectedText() {
             const selected = [];
             if (document.getElementById('difficultyEasy').checked) selected.push('🌱 Easy');
             if (document.getElementById('difficultyMedium').checked) selected.push('⚡ Medium');
             if (document.getElementById('difficultyHard').checked) selected.push('🔥 Hard');
+            
+            const searchTerm = document.getElementById('difficultySearchInput')?.value.toLowerCase() || '';
+            const items = document.querySelectorAll('#difficultyDropdownItems .dropdown-item');
+            items.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            
             const selectedText = document.getElementById('difficultySelectedText');
             if (selected.length === 0) { selectedText.textContent = 'Select Difficulties'; selectedText.style.color = '#6b7280'; }
             else if (selected.length === 3) { selectedText.textContent = 'All Difficulties'; selectedText.style.color = '#374151'; }
             else { selectedText.textContent = selected.join(', '); selectedText.style.color = '#374151'; }
         }
-        checkboxes.forEach(checkbox => { checkbox.addEventListener('change', updateSelectedText); });
-        updateSelectedText();
+        
+        checkboxes.forEach(checkbox => { checkbox.addEventListener('change', updateDifficultySelectedText); });
+        updateDifficultySelectedText();
     }
 
     function getSelectedDifficulties() {
@@ -386,8 +618,8 @@
     }
 
     async function loadBooks() {
-        const bookSelect = document.getElementById('bookSelect');
-        bookSelect.innerHTML = '<option value="">Loading books...</option>';
+        const container = document.getElementById('bookDropdownItems');
+        container.innerHTML = '<div class="dropdown-item">Loading books...</div>';
         try {
             const cached = cacheManager.get('books');
             let books;
@@ -398,43 +630,111 @@
                 books = data;
                 cacheManager.set('books', books);
             }
-            if (!books || books.length === 0) { bookSelect.innerHTML = '<option value="">No books available</option>'; return; }
-            bookSelect.innerHTML = '<option value="">-- Select a Book --</option>';
-            books.forEach(book => { const option = document.createElement('option'); option.value = book.id; option.textContent = book.title; bookSelect.appendChild(option); });
-        } catch (err) { console.error('Error loading books:', err); bookSelect.innerHTML = '<option value="">Error loading books</option>'; }
+            if (!books || books.length === 0) { 
+                container.innerHTML = '<div class="dropdown-item">No books available</div>';
+                document.getElementById('bookSelectedText').textContent = 'No books available';
+                return; 
+            }
+            
+            container.innerHTML = books.map(book => `
+                <div class="dropdown-item" data-value="${book.id}" data-title="${escapeHtml(book.title)}">
+                    ${escapeHtml(book.title)} ${book.author ? `by ${escapeHtml(book.author)}` : ''}
+                </div>
+            `).join('');
+            
+            // Add click handlers for book items
+            document.querySelectorAll('#bookDropdownItems .dropdown-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const bookId = item.getAttribute('data-value');
+                    const bookTitle = item.getAttribute('data-title');
+                    selectedBookId = bookId;
+                    document.getElementById('bookSelectedText').textContent = bookTitle;
+                    document.getElementById('bookSelectedText').style.color = '#374151';
+                    document.getElementById('bookSelectWrapper').classList.remove('active');
+                    loadTopics();
+                });
+            });
+            
+            // Initialize search for books
+            const searchInput = document.getElementById('bookSearchInput');
+            if (searchInput) {
+                searchInput.addEventListener('input', () => {
+                    const term = searchInput.value.toLowerCase();
+                    const items = document.querySelectorAll('#bookDropdownItems .dropdown-item');
+                    items.forEach(item => {
+                        const text = item.textContent.toLowerCase();
+                        if (text.includes(term)) {
+                            item.style.display = 'block';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+                });
+            }
+            
+        } catch (err) { 
+            console.error('Error loading books:', err);
+            container.innerHTML = '<div class="dropdown-item">Error loading books</div>';
+        }
     }
 
     async function loadTopics() {
-        const bookId = document.getElementById('bookSelect').value;
-        const topicSelect = document.getElementById('topicSelect');
-        if (!bookId) { topicSelect.innerHTML = '<option value="">Select a book first</option>'; topicSelect.disabled = true; return; }
-        topicSelect.innerHTML = '<option value="">Loading topics...</option>'; topicSelect.disabled = false;
+        if (!selectedBookId) { 
+            document.getElementById('topicDropdownItems').innerHTML = '<div class="dropdown-item">Select a book first</div>';
+            document.getElementById('topicSelectedText').textContent = 'Select Topics';
+            return; 
+        }
+        
+        document.getElementById('topicDropdownItems').innerHTML = '<div class="dropdown-item">Loading topics...</div>';
+        
         try {
-            const cacheKey = `topics_${bookId}`;
+            const cacheKey = `topics_${selectedBookId}`;
             const cached = cacheManager.get(cacheKey);
             let topics;
             if (cached) topics = cached;
             else {
-                const { data, error } = await _supabase.from('topics').select('id, name, chapter_number').eq('book_id', bookId).order('chapter_number');
+                const { data, error } = await _supabase.from('topics').select('id, name, chapter_number').eq('book_id', selectedBookId).order('chapter_number');
                 if (error) throw error;
                 topics = data;
                 cacheManager.set(cacheKey, topics);
             }
-            if (!topics || topics.length === 0) { topicSelect.innerHTML = '<option value="">No topics available</option>'; topicSelect.disabled = true; return; }
-            topicSelect.innerHTML = '<option value="">-- Select a Topic --</option>';
-            topics.forEach(topic => {
-                const option = document.createElement('option');
-                option.value = topic.id;
-                const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
-                option.textContent = display;
-                topicSelect.appendChild(option);
+            
+            allTopics = topics || [];
+            
+            if (!topics || topics.length === 0) {
+                document.getElementById('topicDropdownItems').innerHTML = '<div class="dropdown-item">No topics available</div>';
+                document.getElementById('topicSelectedText').textContent = 'Select Topics';
+                return;
+            }
+            
+            const topicsHtml = topics.map(topic => {
+                const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${escapeHtml(topic.name)}` : escapeHtml(topic.name);
+                const chapterText = topic.chapter_number ? `(Chapter ${topic.chapter_number})` : '';
+                return `
+                    <div class="dropdown-item">
+                        <input type="checkbox" id="topic_${topic.id}" value="${escapeHtml(topic.name)}|${topic.id}">
+                        <label for="topic_${topic.id}">${display} <span class="topic-chapter">${chapterText}</span></label>
+                    </div>
+                `;
+            }).join('');
+            
+            document.getElementById('topicDropdownItems').innerHTML = topicsHtml;
+            document.getElementById('topicSearchInput').value = '';
+            
+            document.querySelectorAll('#topicDropdownItems input[type="checkbox"]').forEach(cb => {
+                cb.addEventListener('change', updateTopicSelectedText);
             });
-            topicSelect.disabled = false;
-        } catch (err) { console.error('Error loading topics:', err); topicSelect.innerHTML = '<option value="">Error loading topics</option>'; topicSelect.disabled = true; }
+            
+            updateTopicSelectedText();
+            
+        } catch (err) {
+            console.error('Error loading topics:', err);
+            document.getElementById('topicDropdownItems').innerHTML = '<div class="dropdown-item">Error loading topics</div>';
+        }
     }
 
-    async function loadQuestions(topicId, difficulties, limit = 15) {
-        if (!difficulties || difficulties.length === 0) return [];
+    async function loadQuestionsFromMultipleTopics(topicIds, difficulties, limit = 15) {
+        if (!difficulties || difficulties.length === 0 || !topicIds || topicIds.length === 0) return [];
         
         let distribution = {};
         if (difficulties.length === 1) distribution[difficulties[0]] = 100;
@@ -456,17 +756,21 @@
         }
         
         const allQuestions = [];
+        const topicIdsStr = topicIds.sort().join('_');
+        
         for (const [difficulty, count] of Object.entries(questionsToFetch)) {
             if (count <= 0) continue;
-            const cacheKey = `all_questions_${topicId}_${difficulty}`;
+            const cacheKey = `all_questions_multi_${topicIdsStr}_${difficulty}`;
             let cachedQuestions = cacheManager.get(cacheKey);
             let questionsPool;
-            if (cachedQuestions) questionsPool = cachedQuestions;
-            else {
+            
+            if (cachedQuestions) {
+                questionsPool = cachedQuestions;
+            } else {
                 const { data, error } = await _supabase
                     .from('questions')
                     .select(`id, question_text, difficulty, correct_answer, explanation, options (option_text, option_index)`)
-                    .eq('topic_id', topicId)
+                    .in('topic_id', topicIds)
                     .eq('difficulty', difficulty);
                 if (error) continue;
                 if (!data || data.length === 0) continue;
@@ -548,7 +852,6 @@
         if (userAnswers[quizIndex] === undefined) {
             userAnswers[quizIndex] = null;
             
-            // Move this question to the end of the array without increasing length
             const skippedQuestion = quizQuestions.splice(quizIndex, 1)[0];
             const skippedAnswer = userAnswers.splice(quizIndex, 1)[0];
             quizQuestions.push(skippedQuestion);
@@ -574,7 +877,6 @@
         if (quizIndex < quizQuestions.length) {
             renderQuestion();
         } else {
-            // Check if any questions are still unanswered
             const hasUnanswered = userAnswers.some(ans => ans === undefined);
             if (hasUnanswered) {
                 quizIndex = userAnswers.findIndex(ans => ans === undefined);
@@ -626,21 +928,20 @@
     }
 
     async function startQuiz() {
-        const bookId = document.getElementById('bookSelect').value;
-        const topicId = document.getElementById('topicSelect').value;
-        currentTopicId = topicId;
+        const selectedTopicIds = getSelectedTopicIds();
         const selectedDifficulties = getSelectedDifficulties();
-        const topicSelect = document.getElementById('topicSelect');
-        currentTopicName = topicSelect.options[topicSelect.selectedIndex]?.text || 'Quiz';
-        const selectedQuestionCount = parseInt(document.getElementById('questionCountSelect').value);
         
-        if (!bookId) { showToast('Please select a book first', true); return; }
-        if (!topicId) { showToast('Please select a topic first', true); return; }
+        if (!selectedBookId) { showToast('Please select a book first', true); return; }
+        if (selectedTopicIds.length === 0) { showToast('Please select at least one topic', true); return; }
         if (selectedDifficulties.length === 0) { showToast('Please select at least one difficulty level', true); return; }
+        
+        currentTopicIds = selectedTopicIds;
+        const selectedTopicsNames = Array.from(document.querySelectorAll('#topicDropdownItems input[type="checkbox"]:checked')).map(cb => cb.value.split('|')[0]);
+        currentTopicName = selectedTopicsNames.join(', ');
         
         showToast('Loading questions...');
         try {
-            const questions = await loadQuestions(topicId, selectedDifficulties, selectedQuestionCount);
+            const questions = await loadQuestionsFromMultipleTopics(selectedTopicIds, selectedDifficulties, selectedQuestionCount);
             if (!questions || questions.length === 0) { showToast('No questions found. Try different options!', true); return; }
             
             quizQuestions = [...questions];
@@ -743,6 +1044,34 @@
         showToast('Appreciation Certificate downloaded!');
     }
 
+    // Initialize Question Count Selector
+    function initQuestionCountSelector() {
+        const wrapper = document.getElementById('questionCountWrapper');
+        const btn = wrapper.querySelector('.single-select-btn');
+        const items = document.querySelectorAll('#questionCountWrapper .dropdown-item');
+        
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            wrapper.classList.toggle('active');
+        });
+        
+        document.addEventListener('click', (e) => {
+            if (!wrapper.contains(e.target)) {
+                wrapper.classList.remove('active');
+            }
+        });
+        
+        items.forEach(item => {
+            item.addEventListener('click', () => {
+                const value = parseInt(item.getAttribute('data-value'));
+                const text = item.textContent;
+                selectedQuestionCount = value;
+                document.getElementById('questionCountSelectedText').textContent = text;
+                wrapper.classList.remove('active');
+            });
+        });
+    }
+
     document.getElementById('getProfessionalCertBtn').addEventListener('click', () => {
         const certificateData = { score: quizScore, total: quizQuestions.length, percentage: (quizScore / quizQuestions.length) * 100, topicName: currentTopicName, date: new Date().toISOString() };
         sessionStorage.setItem('quizCertificateData', JSON.stringify(certificateData));
@@ -756,7 +1085,6 @@
     document.getElementById('skipBtn').addEventListener('click', skipQuestion);
     document.getElementById('reviewAnswersBtn').addEventListener('click', reviewAnswers);
     document.getElementById('closeReviewModal').addEventListener('click', () => document.getElementById('reviewModal').classList.add('hidden'));
-    document.getElementById('bookSelect').addEventListener('change', loadTopics);
     document.getElementById('reviewModal').addEventListener('click', (e) => { if (e.target === document.getElementById('reviewModal')) document.getElementById('reviewModal').classList.add('hidden'); });
     
     function initMobileMenu() {
@@ -774,12 +1102,17 @@
         if (navbar) { window.addEventListener('scroll', () => { if (window.scrollY > 50) navbar.classList.add('navbar-scrolled'); else navbar.classList.remove('navbar-scrolled'); }); }
     }
 
+    // Initialize Book Select Wrapper
+    initSingleSelectWrapper('bookSelectWrapper', 'bookSearchInput', 'bookDropdownItems', null);
+    
     loadBooks();
     initNavbarScroll();
     initMobileMenu();
     initTabSwitchDetection();
-    initMultiSelect();
-    console.log('Quiz page initialized - fixed skip logic, total questions remain constant');
+    initTopicMultiSelect();
+    initDifficultyMultiSelect();
+    initQuestionCountSelector();
+    console.log('Quiz page initialized - with search in all dropdowns, scroller after 2 items');
 </script>
 </body>
 </html>
