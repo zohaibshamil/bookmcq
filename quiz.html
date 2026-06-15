@@ -33,7 +33,7 @@
     <link rel="stylesheet" href="styles.css">
     <style>
         body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
-        .quiz-card { backdrop-filter: blur(10px); background: rgba(255,255,255,0.95); transition: transform 0.3s ease, box-shadow 0.3s ease; border-radius: 1.5rem; overflow: hidden; }
+        .quiz-card { backdrop-filter: blur(10px); background: rgba(255,255,255,0.95); transition: transform 0.3s ease, box-shadow 0.3s ease; border-radius: 1.5rem; overflow: visible; position: relative; }
         .quiz-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
         .option-btn { transition: all 0.2s ease; border: 2px solid #e2e8f0; cursor: pointer; }
         .option-btn:hover:not(:disabled) { background-color: #667eea; border-color: #667eea; color: white; transform: scale(1.02); }
@@ -74,8 +74,8 @@
         .performance-average { color: #f59e0b; }
         .performance-poor { color: #ef4444; }
         
-        /* Enhanced multi-select dropdown with search */
-        .multi-select { position: relative; width: 100%; }
+        /* Enhanced multi-select dropdown with search - FIXED OVERLAP ISSUE */
+        .multi-select { position: relative; width: 100%; z-index: 10; }
         .multi-select .select-btn { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 12px; background: white; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
         .multi-select .select-btn span { color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .multi-select .select-btn i { transition: transform 0.2s; }
@@ -89,25 +89,25 @@
             border: 1px solid #d1d5db; 
             border-radius: 12px; 
             margin-top: 5px; 
-            z-index: 100; 
+            z-index: 9999; 
             max-height: 280px; 
             overflow-y: auto; 
             display: none; 
-            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2);
         }
         .multi-select.active .dropdown-content { display: block; }
-        .multi-select .dropdown-search { padding: 10px; border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; background: white; z-index: 1; }
+        .multi-select .dropdown-search { padding: 10px; border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; background: white; z-index: 10; }
         .multi-select .dropdown-search input { width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; }
         .multi-select .dropdown-search input:focus { border-color: #7c3aed; ring: 2px solid #7c3aed; }
         .multi-select .dropdown-items { max-height: 220px; overflow-y: auto; }
-        .multi-select .dropdown-item { padding: 10px 12px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.2s; }
+        .multi-select .dropdown-item { padding: 10px 12px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.2s; border-bottom: 1px solid #f3f4f6; }
         .multi-select .dropdown-item:hover { background: #f3e8ff; }
         .multi-select .dropdown-item input { width: 16px; height: 16px; cursor: pointer; accent-color: #7c3aed; margin: 0; }
         .multi-select .dropdown-item label { cursor: pointer; flex: 1; color: #374151; font-size: 14px; }
         .multi-select .dropdown-item .topic-chapter { font-size: 11px; color: #8b5cf6; margin-left: 8px; }
         
         /* Single select dropdown with search (for book and number of questions) */
-        .single-select-wrapper { position: relative; width: 100%; }
+        .single-select-wrapper { position: relative; width: 100%; z-index: 10; }
         .single-select-btn { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 12px; background: white; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
         .single-select-btn span { color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .single-select-btn i { transition: transform 0.2s; }
@@ -121,22 +121,35 @@
             border: 1px solid #d1d5db; 
             border-radius: 12px; 
             margin-top: 5px; 
-            z-index: 100; 
+            z-index: 9999; 
             max-height: 280px; 
             overflow-y: auto; 
             display: none; 
-            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2);
         }
         .single-select-wrapper.active .dropdown-content { display: block; }
-        .single-select-wrapper .dropdown-search { padding: 10px; border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; background: white; z-index: 1; }
+        .single-select-wrapper .dropdown-search { padding: 10px; border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; background: white; z-index: 10; }
         .single-select-wrapper .dropdown-search input { width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; }
         .single-select-wrapper .dropdown-search input:focus { border-color: #7c3aed; }
         .single-select-wrapper .dropdown-items { max-height: 220px; overflow-y: auto; }
-        .single-select-wrapper .dropdown-item { padding: 10px 12px; cursor: pointer; transition: background 0.2s; }
+        .single-select-wrapper .dropdown-item { padding: 10px 12px; cursor: pointer; transition: background 0.2s; border-bottom: 1px solid #f3f4f6; }
         .single-select-wrapper .dropdown-item:hover { background: #f3e8ff; }
+        .single-select-wrapper .dropdown-item:last-child { border-bottom: none; }
+        
+        /* Make sure dropdowns don't get cut off by the card */
+        .grid { position: relative; z-index: 5; }
+        .grid > div { position: relative; z-index: 10; }
+        
+        /* For number of questions dropdown - ensure visibility */
+        #questionCountWrapper { z-index: 15; }
         
         .professional-cert-btn { background: linear-gradient(135deg, #8b5cf6, #6d28d9); transition: all 0.3s ease; }
         .professional-cert-btn:hover { transform: scale(1.02); box-shadow: 0 10px 25px -5px rgba(139, 92, 246, 0.5); }
+        
+        /* Ensure dropdown content appears above everything */
+        .dropdown-content { z-index: 9999 !important; }
+        .multi-select .dropdown-content { z-index: 9999 !important; }
+        .single-select-wrapper .dropdown-content { z-index: 9999 !important; }
     </style>
 </head>
 <body class="disable-select">
