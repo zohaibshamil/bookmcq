@@ -391,83 +391,80 @@
     let selectedBookId = '';
     let selectedQuestionCount = 20;
 
+    // Close all dropdowns function
+    function closeAllDropdowns() {
+        // Close book select wrapper
+        const bookWrapper = document.getElementById('bookSelectWrapper');
+        if (bookWrapper) bookWrapper.classList.remove('active');
+        
+        // Close topic multi select
+        const topicMultiSelect = document.getElementById('topicMultiSelect');
+        if (topicMultiSelect) topicMultiSelect.classList.remove('active');
+        
+        // Close difficulty multi select
+        const difficultyMultiSelect = document.getElementById('difficultyMultiSelect');
+        if (difficultyMultiSelect) difficultyMultiSelect.classList.remove('active');
+        
+        // Close question count wrapper
+        const questionCountWrapper = document.getElementById('questionCountWrapper');
+        if (questionCountWrapper) questionCountWrapper.classList.remove('active');
+    }
+
     // Initialize Single Select with Search (for Book)
     function initSingleSelectWrapper(wrapperId, searchInputId, itemsContainerId, onSelectCallback) {
         const wrapper = document.getElementById(wrapperId);
+        if (!wrapper) return;
         const btn = wrapper.querySelector('.single-select-btn');
         
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
-            wrapper.classList.toggle('active');
+            // Close all other dropdowns first
+            closeAllDropdowns();
+            // Then open this one
+            wrapper.classList.add('active');
             if (wrapper.classList.contains('active')) {
                 const searchInput = document.getElementById(searchInputId);
                 if (searchInput) setTimeout(() => searchInput.focus(), 100);
             }
         });
         
-        document.addEventListener('click', (e) => {
-            if (!wrapper.contains(e.target)) {
-                wrapper.classList.remove('active');
-            }
-        });
-        
-        if (searchInputId) {
-            const searchInput = document.getElementById(searchInputId);
-            if (searchInput) {
-                searchInput.addEventListener('input', () => {
-                    const searchTerm = searchInput.value.toLowerCase();
-                    const items = document.querySelectorAll(`#${itemsContainerId} .dropdown-item`);
-                    items.forEach(item => {
-                        const text = item.textContent.toLowerCase();
-                        if (text.includes(searchTerm)) {
-                            item.style.display = 'block';
-                        } else {
-                            item.style.display = 'none';
+        // Handle item selection
+        if (itemsContainerId) {
+            const container = document.getElementById(itemsContainerId);
+            if (container) {
+                container.addEventListener('click', (e) => {
+                    const item = e.target.closest('.dropdown-item');
+                    if (item) {
+                        e.stopPropagation();
+                        const value = item.getAttribute('data-value') || item.textContent;
+                        const text = item.textContent;
+                        if (onSelectCallback) {
+                            onSelectCallback(value, text);
                         }
-                    });
+                        wrapper.classList.remove('active');
+                    }
                 });
-                searchInput.addEventListener('click', (e) => e.stopPropagation());
             }
         }
-        
-        // Handle item selection
-        document.querySelectorAll(`#${itemsContainerId} .dropdown-item`).forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const value = item.getAttribute('data-value') || item.textContent;
-                const text = item.textContent;
-                if (onSelectCallback) {
-                    onSelectCallback(value, text);
-                }
-                wrapper.classList.remove('active');
-            });
-        });
     }
 
     // Topic Multi-select with search
     function initTopicMultiSelect() {
         const container = document.getElementById('topicMultiSelect');
+        if (!container) return;
         const selectBtn = container.querySelector('.select-btn');
         const searchInput = document.getElementById('topicSearchInput');
         
         selectBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            container.classList.toggle('active');
+            // Close all other dropdowns first
+            closeAllDropdowns();
+            // Then open this one
+            container.classList.add('active');
             if (container.classList.contains('active') && searchInput) {
                 setTimeout(() => searchInput.focus(), 100);
             }
         });
-        
-        document.addEventListener('click', (e) => {
-            if (!container.contains(e.target)) {
-                container.classList.remove('active');
-            }
-        });
-        
-        if (searchInput) {
-            searchInput.addEventListener('input', () => updateTopicSelectedText());
-            searchInput.addEventListener('click', (e) => e.stopPropagation());
-        }
     }
 
     function updateTopicSelectedText() {
@@ -488,7 +485,7 @@
         if (selectedTopics.length === 0) {
             selectedText.textContent = 'Select Topics';
             selectedText.style.color = '#6b7280';
-        } else if (selectedTopics.length === allTopics.length) {
+        } else if (selectedTopics.length === allTopics.length && allTopics.length > 0) {
             selectedText.textContent = 'All Topics';
             selectedText.style.color = '#374151';
         } else if (selectedTopics.length <= 2) {
@@ -508,21 +505,19 @@
 
     function initDifficultyMultiSelect() {
         const multiSelect = document.getElementById('difficultyMultiSelect');
+        if (!multiSelect) return;
         const selectBtn = multiSelect.querySelector('.select-btn');
         const checkboxes = multiSelect.querySelectorAll('input[type="checkbox"]');
         const searchInput = document.getElementById('difficultySearchInput');
         
         selectBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            multiSelect.classList.toggle('active');
+            // Close all other dropdowns first
+            closeAllDropdowns();
+            // Then open this one
+            multiSelect.classList.add('active');
             if (multiSelect.classList.contains('active') && searchInput) {
                 setTimeout(() => searchInput.focus(), 100);
-            }
-        });
-        
-        document.addEventListener('click', (e) => {
-            if (!multiSelect.contains(e.target)) {
-                multiSelect.classList.remove('active');
             }
         });
         
@@ -565,6 +560,51 @@
         if (document.getElementById('difficultyHard').checked) difficulties.push('hard');
         return difficulties;
     }
+
+    // Initialize Question Count Selector
+    function initQuestionCountSelector() {
+        const wrapper = document.getElementById('questionCountWrapper');
+        if (!wrapper) return;
+        const btn = wrapper.querySelector('.single-select-btn');
+        const items = document.querySelectorAll('#questionCountWrapper .dropdown-item');
+        
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            // Close all other dropdowns first
+            closeAllDropdowns();
+            // Then open this one
+            wrapper.classList.add('active');
+        });
+        
+        items.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const value = parseInt(item.getAttribute('data-value'));
+                const text = item.textContent;
+                selectedQuestionCount = value;
+                document.getElementById('questionCountSelectedText').textContent = text;
+                wrapper.classList.remove('active');
+            });
+        });
+    }
+
+    // Global click handler to close dropdowns when clicking outside
+    document.addEventListener('click', function(e) {
+        // Check if click is outside all dropdowns
+        const bookWrapper = document.getElementById('bookSelectWrapper');
+        const topicMultiSelect = document.getElementById('topicMultiSelect');
+        const difficultyMultiSelect = document.getElementById('difficultyMultiSelect');
+        const questionCountWrapper = document.getElementById('questionCountWrapper');
+        
+        const isInsideBook = bookWrapper && bookWrapper.contains(e.target);
+        const isInsideTopic = topicMultiSelect && topicMultiSelect.contains(e.target);
+        const isInsideDifficulty = difficultyMultiSelect && difficultyMultiSelect.contains(e.target);
+        const isInsideQuestionCount = questionCountWrapper && questionCountWrapper.contains(e.target);
+        
+        if (!isInsideBook && !isInsideTopic && !isInsideDifficulty && !isInsideQuestionCount) {
+            closeAllDropdowns();
+        }
+    });
 
     function showToast(message, isError = false) {
         const toast = document.getElementById('toast');
@@ -632,6 +672,7 @@
 
     async function loadBooks() {
         const container = document.getElementById('bookDropdownItems');
+        if (!container) return;
         container.innerHTML = '<div class="dropdown-item">Loading books...</div>';
         try {
             const cached = cacheManager.get('books');
@@ -657,7 +698,8 @@
             
             // Add click handlers for book items
             document.querySelectorAll('#bookDropdownItems .dropdown-item').forEach(item => {
-                item.addEventListener('click', () => {
+                item.addEventListener('click', (e) => {
+                    e.stopPropagation();
                     const bookId = item.getAttribute('data-value');
                     const bookTitle = item.getAttribute('data-title');
                     selectedBookId = bookId;
@@ -1057,34 +1099,6 @@
         showToast('Appreciation Certificate downloaded!');
     }
 
-    // Initialize Question Count Selector
-    function initQuestionCountSelector() {
-        const wrapper = document.getElementById('questionCountWrapper');
-        const btn = wrapper.querySelector('.single-select-btn');
-        const items = document.querySelectorAll('#questionCountWrapper .dropdown-item');
-        
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            wrapper.classList.toggle('active');
-        });
-        
-        document.addEventListener('click', (e) => {
-            if (!wrapper.contains(e.target)) {
-                wrapper.classList.remove('active');
-            }
-        });
-        
-        items.forEach(item => {
-            item.addEventListener('click', () => {
-                const value = parseInt(item.getAttribute('data-value'));
-                const text = item.textContent;
-                selectedQuestionCount = value;
-                document.getElementById('questionCountSelectedText').textContent = text;
-                wrapper.classList.remove('active');
-            });
-        });
-    }
-
     document.getElementById('getProfessionalCertBtn').addEventListener('click', () => {
         const certificateData = { score: quizScore, total: quizQuestions.length, percentage: (quizScore / quizQuestions.length) * 100, topicName: currentTopicName, date: new Date().toISOString() };
         sessionStorage.setItem('quizCertificateData', JSON.stringify(certificateData));
@@ -1125,7 +1139,7 @@
     initTopicMultiSelect();
     initDifficultyMultiSelect();
     initQuestionCountSelector();
-    console.log('Quiz page initialized - with search in all dropdowns, scroller after 2 items');
+    console.log('Quiz page initialized - with proper dropdown closing');
 </script>
 </body>
 </html>
