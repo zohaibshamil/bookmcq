@@ -429,7 +429,7 @@
     </div>
 
     <!-- Quiz Page Content -->
-    <div class="quiz-card rounded-2xl p-6 mb-8 shadow-xl">
+    <div class="quiz-card rounded-2xl p-6 mb-8 shadow-xl" style="position: relative; z-index: 1;">
         <h2 class="text-xl md:text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
             <i class="fas fa-filter text-purple-600"></i> Filter Questions
         </h2>
@@ -781,7 +781,8 @@
     
     function updateTopicSelectedTextMobile() {
         const selectedCheckboxes = document.querySelectorAll('#mobileDropdownBody input[type="checkbox"]:checked');
-        const selectedTopics = Array.from(selectedCheckboxes).map(cb => cb.value).filter(v => v !== 'all');
+        // Filter out the "selectAllTopics" checkbox value
+        const selectedTopics = Array.from(selectedCheckboxes).map(cb => cb.value).filter(v => v !== 'all' && v !== '');
         
         const selectedText = document.getElementById('topicSelectedText');
         if (selectedTopics.length === 0) {
@@ -1269,6 +1270,8 @@
 
     function updateTopicSelectedText() {
         const selectedTopics = Array.from(document.querySelectorAll('#topicDropdownItems input[type="checkbox"]:checked')).map(cb => cb.value);
+        // Filter out the "all" value from select all checkbox
+        const filteredTopics = selectedTopics.filter(v => v !== 'all' && v !== '');
         const searchTerm = document.getElementById('topicSearchInput')?.value.toLowerCase() || '';
         
         const items = document.querySelectorAll('#topicDropdownItems .dropdown-item');
@@ -1298,25 +1301,27 @@
         }
         
         const selectedText = document.getElementById('topicSelectedText');
-        if (selectedTopics.length === 0) {
+        if (filteredTopics.length === 0) {
             selectedText.textContent = 'Select Topics';
             selectedText.style.color = '#6b7280';
-        } else if (selectedTopics.length === allTopics.length && allTopics.length > 0) {
+        } else if (filteredTopics.length === allTopics.length && allTopics.length > 0) {
             selectedText.textContent = 'All Chapters';
             selectedText.style.color = '#374151';
-        } else if (selectedTopics.length <= 2) {
-            const names = selectedTopics.map(t => t.split('|')[0]).join(', ');
+        } else if (filteredTopics.length <= 2) {
+            const names = filteredTopics.map(t => t.split('|')[0]).join(', ');
             selectedText.textContent = names;
             selectedText.style.color = '#374151';
         } else {
-            selectedText.textContent = `${selectedTopics.length} chapters selected`;
+            selectedText.textContent = `${filteredTopics.length} chapters selected`;
             selectedText.style.color = '#374151';
         }
     }
 
     function getSelectedTopicIds() {
         const selectedTopics = Array.from(document.querySelectorAll('#topicDropdownItems input[type="checkbox"]:checked')).map(cb => cb.value);
-        return selectedTopics.map(t => parseInt(t.split('|')[1]));
+        // Filter out the "all" value
+        const filtered = selectedTopics.filter(v => v !== 'all' && v !== '');
+        return filtered.map(t => parseInt(t.split('|')[1]));
     }
 
     function initDifficultyMultiSelect() {
