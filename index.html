@@ -1537,127 +1537,83 @@ async generateNewsItems() {
     
     const items = [];
     
-    // New Books (each book is a separate update)
+    // New Books
     books.forEach(book => {
         items.push({ 
             icon: '📚', 
             text: `New Book Added: "${book.title}"${book.author ? ` by ${book.author}` : ''} (${this.formatTimeAgo(book.created_at)})`,
-            time: new Date(book.created_at),
-            type: 'book',
-            bookId: book.id || book.title
+            time: new Date(book.created_at)
         });
     });
     
-    // New Categories (each category is a separate update)
+    // New Categories
     categories.forEach(cat => {
         items.push({ 
             icon: '🏷️', 
             text: `New Category Added: ${cat.name} (${this.formatTimeAgo(cat.created_at)})`,
-            time: new Date(cat.created_at),
-            type: 'category',
-            categoryId: cat.name
+            time: new Date(cat.created_at)
         });
     });
     
-    // Track the latest chapter per book and its details
+    // For each book, find ONLY the LATEST chapter added
     const latestChapterPerBook = new Map();
     topics.forEach(topic => {
-        const key = topic.book_title;
+        const bookKey = topic.book_title;
         const updateTime = new Date(topic.created_at);
-        if (!latestChapterPerBook.has(key) || updateTime > latestChapterPerBook.get(key).time) {
-            latestChapterPerBook.set(key, {
+        
+        if (!latestChapterPerBook.has(bookKey) || updateTime > latestChapterPerBook.get(bookKey).time) {
+            latestChapterPerBook.set(bookKey, {
                 chapterName: topic.name,
                 bookTitle: topic.book_title,
-                time: updateTime,
-                type: 'chapter'
+                time: updateTime
             });
         }
     });
     
-    // Track the latest MCQ addition per book with chapter details
+    // Add the latest chapter for each book to items
+    latestChapterPerBook.forEach((data) => {
+        items.push({
+            icon: '📖',
+            text: `New Chapter Added: "${data.chapterName}" in "${data.bookTitle}" (${this.formatTimeAgo(data.time)})`,
+            time: data.time
+        });
+    });
+    
+    // For each book, find ONLY the LATEST MCQ addition
     const latestMcqPerBook = new Map();
     questions.forEach(q => {
-        const key = q.book_title;
+        const bookKey = q.book_title;
         const updateTime = new Date(q.created_at);
-        if (!latestMcqPerBook.has(key) || updateTime > latestMcqPerBook.get(key).time) {
-            latestMcqPerBook.set(key, {
+        
+        if (!latestMcqPerBook.has(bookKey) || updateTime > latestMcqPerBook.get(bookKey).time) {
+            latestMcqPerBook.set(bookKey, {
                 chapterName: q.topic_name,
                 bookTitle: q.book_title,
                 mcqCount: q.mcq_count,
-                time: updateTime,
-                type: 'mcq'
+                time: updateTime
             });
         }
     });
     
-    // NOW - For each book, compare if the latest chapter addition or latest MCQ addition is more recent
-    // And show ONLY the most recent one with full details
-    
-    // Get all unique books from both chapter and MCQ updates
-    const allBookKeys = new Set([...latestChapterPerBook.keys(), ...latestMcqPerBook.keys()]);
-    
-    allBookKeys.forEach(bookKey => {
-        const chapterUpdate = latestChapterPerBook.get(bookKey);
-        const mcqUpdate = latestMcqPerBook.get(bookKey);
-        
-        // If only chapter exists
-        if (chapterUpdate && !mcqUpdate) {
-            items.push({
-                icon: '📖',
-                text: `New Chapter Added: "${chapterUpdate.chapterName}" in "${chapterUpdate.bookTitle}" (${this.formatTimeAgo(chapterUpdate.time)})`,
-                time: chapterUpdate.time,
-                type: 'chapter',
-                bookTitle: bookKey
-            });
-        }
-        // If only MCQ exists
-        else if (!chapterUpdate && mcqUpdate) {
-            const mcqText = mcqUpdate.mcqCount === 1 ? 
-                `New MCQ Added to Chapter "${mcqUpdate.chapterName}" in "${mcqUpdate.bookTitle}"` : 
-                `${mcqUpdate.mcqCount} New MCQs Added to Chapter "${mcqUpdate.chapterName}" in "${mcqUpdate.bookTitle}"`;
-            items.push({
-                icon: '❓',
-                text: `${mcqText} (${this.formatTimeAgo(mcqUpdate.time)})`,
-                time: mcqUpdate.time,
-                type: 'mcq',
-                bookTitle: bookKey
-            });
-        }
-        // If both exist, show ONLY the most recent one
-        else if (chapterUpdate && mcqUpdate) {
-            if (chapterUpdate.time > mcqUpdate.time) {
-                // Chapter is more recent
-                items.push({
-                    icon: '📖',
-                    text: `New Chapter Added: "${chapterUpdate.chapterName}" in "${chapterUpdate.bookTitle}" (${this.formatTimeAgo(chapterUpdate.time)})`,
-                    time: chapterUpdate.time,
-                    type: 'chapter',
-                    bookTitle: bookKey
-                });
-            } else {
-                // MCQ is more recent (or same time)
-                const mcqText = mcqUpdate.mcqCount === 1 ? 
-                    `New MCQ Added to Chapter "${mcqUpdate.chapterName}" in "${mcqUpdate.bookTitle}"` : 
-                    `${mcqUpdate.mcqCount} New MCQs Added to Chapter "${mcqUpdate.chapterName}" in "${mcqUpdate.bookTitle}"`;
-                items.push({
-                    icon: '❓',
-                    text: `${mcqText} (${this.formatTimeAgo(mcqUpdate.time)})`,
-                    time: mcqUpdate.time,
-                    type: 'mcq',
-                    bookTitle: bookKey
-                });
-            }
-        }
+    // Add the latest MCQ addition for each book to items
+    latestMcqPerBook.forEach((data) => {
+        const mcqText = data.mcqCount === 1 ? 
+            `New MCQ Added to Chapter "${data.chapterName}" in "${data.bookTitle}"` : 
+            `${data.mcqCount} New MCQs Added to Chapter "${data.chapterName}" in "${data.bookTitle}"`;
+        items.push({
+            icon: '❓',
+            text: `${mcqText} (${this.formatTimeAgo(data.time)})`,
+            time: data.time
+        });
     });
     
     // Sort all items by most recent first
     items.sort((a, b) => b.time - a.time);
     
-    console.log('Total news items (only latest per book with full details):', items.length);
+    console.log('Total news items:', items.length);
     
-    // Show sample
     if (items.length > 0) {
-        console.log('Final items:');
+        console.log('News items:');
         items.slice(0, 5).forEach(item => {
             console.log(`  - ${item.text}`);
         });
