@@ -1405,8 +1405,12 @@
         }
     });
 
+    // FIXED: Filter out topics with 0 MCQs before loading questions
     async function loadQuestionsFromMultipleTopics(topicIds, difficulties, limit = 15) {
-        if (!difficulties || difficulties.length === 0 || !topicIds || topicIds.length === 0) return [];
+        // Filter out topics that have 0 MCQs
+        const validTopicIds = topicIds.filter(id => (topicMcqCounts[id] || 0) > 0);
+        
+        if (!difficulties || difficulties.length === 0 || validTopicIds.length === 0) return [];
         
         let distribution = {};
         if (difficulties.length === 1) distribution[difficulties[0]] = 100;
@@ -1428,7 +1432,7 @@
         }
         
         const allQuestions = [];
-        const topicIdsStr = topicIds.sort().join('_');
+        const topicIdsStr = validTopicIds.sort().join('_');
         
         for (const [difficulty, count] of Object.entries(questionsToFetch)) {
             if (count <= 0) continue;
@@ -1442,7 +1446,7 @@
                 const { data, error } = await _supabase
                     .from('questions')
                     .select(`id, question_text, difficulty, correct_answer, explanation, options (option_text, option_index)`)
-                    .in('topic_id', topicIds)
+                    .in('topic_id', validTopicIds)
                     .eq('difficulty', difficulty);
                 if (error) continue;
                 if (!data || data.length === 0) continue;
