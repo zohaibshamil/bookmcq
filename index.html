@@ -1535,126 +1535,139 @@ async generateNewsItems() {
     
     console.log('Summary - Books:', books.length, '| Categories:', categories.length, '| Topics:', topics.length, '| Questions (grouped):', questions.length);
     
-    const items = [];
+    // Track the latest update for each book
+    const latestUpdatePerBook = new Map();
     
-    // New Books (each book is a separate update)
+    // Process Books
     books.forEach(book => {
-        items.push({ 
-            icon: '📚', 
-            text: `New Book Added: "${book.title}"${book.author ? ` by ${book.author}` : ''} (${this.formatTimeAgo(book.created_at)})`,
-            time: new Date(book.created_at),
-            type: 'book',
-            bookId: book.id || book.title
-        });
+        const key = book.id || book.title;
+        const updateTime = new Date(book.created_at);
+        if (!latestUpdatePerBook.has(key) || updateTime > latestUpdatePerBook.get(key).time) {
+            latestUpdatePerBook.set(key, {
+                type: 'book',
+                icon: '📚',
+                text: `New Book Added: "${book.title}"${book.author ? ` by ${book.author}` : ''}`,
+                time: updateTime,
+                bookTitle: book.title
+            });
+        }
     });
     
-    // New Categories (each category is a separate update)
+    // Process Categories (these are separate from books, keep as is)
     categories.forEach(cat => {
         items.push({ 
             icon: '🏷️', 
-            text: `New Category Added: ${cat.name} (${this.formatTimeAgo(cat.created_at)})`,
-            time: new Date(cat.created_at),
-            type: 'category',
-            categoryId: cat.name
+            text: `New Category Added: ${cat.name}`,
+            time: new Date(cat.created_at)
         });
     });
     
-    // GROUP TOPICS BY BOOK - Show only one update per book
-    const topicsByBook = new Map();
+    // Process Topics - For each book, keep ONLY the most recent topic/chapter
+    const latestTopicPerBook = new Map();
     topics.forEach(topic => {
         const key = topic.book_title;
-        if (!topicsByBook.has(key)) {
-            topicsByBook.set(key, {
-                bookTitle: topic.book_title,
-                count: 0,
-                latestTime: new Date(topic.created_at)
-            });
-        }
-        const entry = topicsByBook.get(key);
-        entry.count++;
-        const topicTime = new Date(topic.created_at);
-        if (topicTime > entry.latestTime) {
-            entry.latestTime = topicTime;
-        }
-    });
-    
-    // Add grouped topic updates to items
-    topicsByBook.forEach((entry) => {
-        if (entry.count === 1) {
-            items.push({ 
-                icon: '📖', 
-                text: `New Chapter Added to "${entry.bookTitle}" (${this.formatTimeAgo(entry.latestTime)})`,
-                time: entry.latestTime,
+        const updateTime = new Date(topic.created_at);
+        if (!latestTopicPerBook.has(key) || updateTime > latestTopicPerBook.get(key).time) {
+            latestTopicPerBook.set(key, {
                 type: 'topic',
-                bookId: entry.bookTitle
-            });
-        } else {
-            items.push({ 
-                icon: '📖', 
-                text: `${entry.count} New Chapters Added to "${entry.bookTitle}" (${this.formatTimeAgo(entry.latestTime)})`,
-                time: entry.latestTime,
-                type: 'topic',
-                bookId: entry.bookTitle
+                icon: '📖',
+                text: `New Chapter Added: "${topic.name}" in "${topic.book_title}"`,
+                time: updateTime,
+                bookTitle: topic.book_title
             });
         }
     });
     
-    // GROUP MCQs BY BOOK - Show only one update per book
-    const mcqsByBook = new Map();
+    // Process Questions - For each book, keep ONLY the most recent MCQ addition
+    const latestMcqPerBook = new Map();
     questions.forEach(q => {
         const key = q.book_title;
-        if (!mcqsByBook.has(key)) {
-            mcqsByBook.set(key, {
-                bookTitle: q.book_title,
-                totalMcqs: 0,
-                latestTime: new Date(q.created_at)
-            });
-        }
-        const entry = mcqsByBook.get(key);
-        entry.totalMcqs += q.mcq_count;
-        const qTime = new Date(q.created_at);
-        if (qTime > entry.latestTime) {
-            entry.latestTime = qTime;
-        }
-    });
-    
-    // Add grouped MCQ updates to items
-    mcqsByBook.forEach((entry) => {
-        if (entry.totalMcqs === 1) {
-            items.push({ 
-                icon: '❓', 
-                text: `New MCQ Added to "${entry.bookTitle}" (${this.formatTimeAgo(entry.latestTime)})`,
-                time: entry.latestTime,
+        const updateTime = new Date(q.created_at);
+        if (!latestMcqPerBook.has(key) || updateTime > latestMcqPerBook.get(key).time) {
+            const mcqText = q.mcq_count === 1 ? 
+                `New MCQ Added to "${q.book_title}"` : 
+                `${q.mcq_count} New MCQs Added to "${q.book_title}"`;
+            latestMcqPerBook.set(key, {
                 type: 'mcq',
-                bookId: entry.bookTitle
-            });
-        } else {
-            items.push({ 
-                icon: '❓', 
-                text: `${entry.totalMcqs} New MCQs Added to "${entry.bookTitle}" (${this.formatTimeAgo(entry.latestTime)})`,
-                time: entry.latestTime,
-                type: 'mcq',
-                bookId: entry.bookTitle
+                icon: '❓',
+                text: mcqText,
+                time: updateTime,
+                bookTitle: q.book_title
             });
         }
     });
     
-    // Sort by most recent first
-    items.sort((a, b) => b.time - a.time);
+    // Now combine - For each book, we need to find the SINGLE most recent update
+    // This means checking across books, topics, and mcqs for each book
+    const allUpdatesPerBook = new Map();
     
-    console.log('Total news items generated (grouped):', items.length);
+    // Add topic updates
+    latestTopicPerBook.forEach((value, key) => {
+        if (!allUpdatesPerBook.has(key)) {
+            allUpdatesPerBook.set(key, { updates: [] });
+        }
+        allUpdatesPerBook.get(key).updates.push(value);
+    });
     
-    // Show sample of what was found
-    if (items.length > 0) {
-        console.log('Sample items (grouped):');
-        items.slice(0, 3).forEach(item => {
+    // Add MCQ updates
+    latestMcqPerBook.forEach((value, key) => {
+        if (!allUpdatesPerBook.has(key)) {
+            allUpdatesPerBook.set(key, { updates: [] });
+        }
+        allUpdatesPerBook.get(key).updates.push(value);
+    });
+    
+    // Add Book updates (new books)
+    latestUpdatePerBook.forEach((value, key) => {
+        if (!allUpdatesPerBook.has(key)) {
+            allUpdatesPerBook.set(key, { updates: [] });
+        }
+        allUpdatesPerBook.get(key).updates.push(value);
+    });
+    
+    // For each book, keep ONLY the most recent update among all types
+    const finalItems = [];
+    allUpdatesPerBook.forEach((bookData) => {
+        if (bookData.updates.length > 0) {
+            // Find the most recent update for this book
+            let latest = bookData.updates[0];
+            for (let i = 1; i < bookData.updates.length; i++) {
+                if (bookData.updates[i].time > latest.time) {
+                    latest = bookData.updates[i];
+                }
+            }
+            // Add time ago to the text
+            finalItems.push({
+                icon: latest.icon,
+                text: `${latest.text} (${this.formatTimeAgo(latest.time)})`,
+                time: latest.time
+            });
+        }
+    });
+    
+    // Add categories to items (these are separate and not tied to books)
+    categories.forEach(cat => {
+        finalItems.push({ 
+            icon: '🏷️', 
+            text: `New Category Added: ${cat.name} (${this.formatTimeAgo(cat.created_at)})`,
+            time: new Date(cat.created_at)
+        });
+    });
+    
+    // Sort all items by most recent first
+    finalItems.sort((a, b) => b.time - a.time);
+    
+    console.log('Total news items (only latest per book):', finalItems.length);
+    
+    // Show sample
+    if (finalItems.length > 0) {
+        console.log('Final items (only latest per book):');
+        finalItems.slice(0, 5).forEach(item => {
             console.log(`  - ${item.text}`);
         });
-    } else {
-        console.log('No items found in the last 7 days. Try adding some data to your database!');
     }
     
-    return items.slice(0, 20);
+    return finalItems.slice(0, 20);
 }
     
     async startTicker() {
