@@ -29,6 +29,14 @@
     <link rel="alternate" href="https://bookmcq.com/" hreflang="en-ng">
     <link rel="alternate" href="https://bookmcq.com/" hreflang="en-za">
     
+    <!-- Placeholder for future multilingual versions - uncomment when you create translated pages -->
+    <!-- <link rel="alternate" href="https://bookmcq.com/ur/" hreflang="ur">
+    <link rel="alternate" href="https://bookmcq.com/hi/" hreflang="hi">
+    <link rel="alternate" href="https://bookmcq.com/ar/" hreflang="ar">
+    <link rel="alternate" href="https://bookmcq.com/es/" hreflang="es">
+    <link rel="alternate" href="https://bookmcq.com/fr/" hreflang="fr">
+    <link rel="alternate" href="https://bookmcq.com/bn/" hreflang="bn"> -->
+    
     <!-- Open Graph / Social Media Meta Tags -->
     <meta property="og:title" content="BookMCQ - One Paper MCQ | Govt & Private Job Preparation">
     <meta property="og:description" content="Practice subject-wise MCQs for government jobs, private jobs, and competitive exams worldwide. One paper preparation made easy.">
@@ -594,31 +602,31 @@
             font-size: 1.1rem;
             animation: pulse 1.5s infinite;
         }
-        @keyframes blinkIcon {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
-        }
+@keyframes blinkIcon {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
 
-        /* Subtle glow on hover */
-        .news-ticker-label:hover {
-            box-shadow: 0 0 20px rgba(255,65,108,0.9);
-            transition: box-shadow 0.3s ease;
-        }
-        /* NEWS text with glow */
-        .news-ticker-label span {
-            letter-spacing: 2px;
-            font-weight: 800;
-            animation: textGlow 1.5s ease-in-out infinite;
-        }
+/* Subtle glow on hover */
+.news-ticker-label:hover {
+    box-shadow: 0 0 20px rgba(255,65,108,0.9);
+    transition: box-shadow 0.3s ease;
+}
+/* NEWS text with glow */
+.news-ticker-label span {
+    letter-spacing: 2px;
+    font-weight: 800;
+    animation: textGlow 1.5s ease-in-out infinite;
+}
 
-        @keyframes textGlow {
-            0%, 100% {
-                text-shadow: 0 0 5px rgba(255,255,255,0.8);
-            }
-            50% {
-                text-shadow: 0 0 15px rgba(255,255,255,1), 0 0 5px #ff416c;
-            }
-        }
+@keyframes textGlow {
+    0%, 100% {
+        text-shadow: 0 0 5px rgba(255,255,255,0.8);
+    }
+    50% {
+        text-shadow: 0 0 15px rgba(255,255,255,1), 0 0 5px #ff416c;
+    }
+}
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.6; }
@@ -777,7 +785,7 @@
                     <h2 class="text-xl font-bold text-gray-800">About BookMCQ</h2>
                 </div>
                 <div style="text-align: justify; max-width: 800px; margin: 0 auto; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6;">
-                  <p>Our mission is to provide a comprehensive, accessible, and effective platform for students and professionals to test their knowledge across hundreds of books and subjects. Whether you're preparing for government jobs, private sector recruitment, or competitive examinations worldwide, BookMCQ has everything you need.</p>
+                  <p>Our mission is to provide a comprehensive, accessible, and effective platform for students and professionals to test their knowledge across hundreds of books and subjects. Whether you’re preparing for government jobs, private sector recruitment, or competitive examinations worldwide, BookMCQ has everything you need.</p>
                 
                   <ul style="padding-left: 1.2rem;">
                     <li><strong>One Paper MCQ Preparation</strong> – Master the art of solving multiple-choice questions for CSS, PMS, UPSC, FPSC, PPSC, SPSC, BPSC, IBPS, SSC, Banking, and other competitive exams.</li>
@@ -1361,325 +1369,327 @@
         chatInput.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
     }
 
-    // ========== FIXED: SCROLLING NEWS TICKER - SHOW ONLY LATEST UPDATE PER BOOK ==========
-    class NewsTicker {
-        constructor(supabaseClient) { 
-            this.supabase = supabaseClient; 
-            this.sevenDaysAgo = new Date(); 
-            this.sevenDaysAgo.setDate(this.sevenDaysAgo.getDate() - 7);
-            console.log('NewsTicker initialized - looking for data from last 7 days');
-        }
+// ========== SCROLLING NEWS TICKER - MATCHING YOUR DATABASE SCHEMA ==========
+class NewsTicker {
+    constructor(supabaseClient) { 
+        this.supabase = supabaseClient; 
+        this.sevenDaysAgo = new Date(); 
+        this.sevenDaysAgo.setDate(this.sevenDaysAgo.getDate() - 7);
+        console.log('NewsTicker initialized - looking for data from last 7 days');
+    }
+    
+    formatTimeAgo(dateStr) { 
+        if (!dateStr) return 'recently';
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
         
-        formatTimeAgo(dateStr) { 
-            if (!dateStr) return 'recently';
-            const date = new Date(dateStr);
-            const now = new Date();
-            const diffMs = now - date;
-            const diffMins = Math.floor(diffMs / 60000);
-            const diffHours = Math.floor(diffMs / 3600000);
-            const diffDays = Math.floor(diffMs / 86400000);
+        if (diffMins < 1) return 'just now';
+        if (diffMins < 60) return `${diffMins} minute${diffMins === 1 ? '' : 's'} ago`;
+        if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+        if (diffDays === 1) return 'yesterday';
+        return `${diffDays} days ago`;
+    }
+    
+    async getRecentBooks() { 
+        try {
+            const { data, error } = await this.supabase
+                .from('books')
+                .select('title, author, created_at')
+                .gte('created_at', this.sevenDaysAgo.toISOString())
+                .order('created_at', { ascending: false });
             
-            if (diffMins < 1) return 'just now';
-            if (diffMins < 60) return `${diffMins} minute${diffMins === 1 ? '' : 's'} ago`;
-            if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
-            if (diffDays === 1) return 'yesterday';
-            return `${diffDays} days ago`;
-        }
-        
-        async getRecentBooks() { 
-            try {
-                const { data, error } = await this.supabase
-                    .from('books')
-                    .select('id, title, author, created_at')
-                    .gte('created_at', this.sevenDaysAgo.toISOString())
-                    .order('created_at', { ascending: false });
-                
-                if (error) throw error;
-                console.log('Books found (last 7 days):', data ? data.length : 0);
-                return data || [];
-            } catch(e) {
-                console.error('Books error:', e);
-                return [];
-            }
-        }
-        
-        async getRecentCategories() { 
-            try {
-                const { data, error } = await this.supabase
-                    .from('categories')
-                    .select('name, created_at')
-                    .gte('created_at', this.sevenDaysAgo.toISOString())
-                    .order('created_at', { ascending: false });
-                
-                if (error) throw error;
-                console.log('Categories found (last 7 days):', data ? data.length : 0);
-                return data || [];
-            } catch(e) {
-                console.error('Categories error:', e);
-                return [];
-            }
-        }
-        
-        async getRecentTopics() {
-            try {
-                const { data, error } = await this.supabase
-                    .from('topics')
-                    .select('id, name, book_id, created_at')
-                    .gte('created_at', this.sevenDaysAgo.toISOString())
-                    .order('created_at', { ascending: false });
-                
-                if (error) throw error;
-                if (!data || data.length === 0) return [];
-                
-                console.log('Topics found (last 7 days):', data.length);
-                
-                // Get book titles for each topic
-                const topicsWithBooks = await Promise.all(data.map(async (topic) => {
-                    let bookTitle = 'Unknown Book';
-                    let bookId = null;
-                    if (topic.book_id) {
-                        const { data: bookData } = await this.supabase
-                            .from('books')
-                            .select('id, title')
-                            .eq('id', topic.book_id)
-                            .single();
-                        if (bookData) {
-                            bookTitle = bookData.title;
-                            bookId = bookData.id;
-                        }
-                    }
-                    return {
-                        name: topic.name,
-                        book_title: bookTitle,
-                        book_id: bookId,
-                        created_at: topic.created_at
-                    };
-                }));
-                
-                return topicsWithBooks;
-            } catch(e) {
-                console.error('Topics error:', e);
-                return [];
-            }
-        }
-        
-        async getRecentQuestions() {
-            try {
-                const { data, error } = await this.supabase
-                    .from('questions')
-                    .select(`
-                        id,
-                        topic_id,
-                        created_at,
-                        topics!inner (
-                            id,
-                            name,
-                            book_id,
-                            books!inner (
-                                id,
-                                title
-                            )
-                        )
-                    `)
-                    .gte('created_at', this.sevenDaysAgo.toISOString())
-                    .order('created_at', { ascending: false });
-                
-                if (error) throw error;
-                if (!data || data.length === 0) return [];
-                
-                console.log('Questions found (last 7 days):', data.length);
-                
-                // Group by topic to count MCQs per topic/chapter
-                const topicQuestionMap = new Map();
-                
-                for (const q of data) {
-                    if (q.topics) {
-                        const topicId = q.topic_id;
-                        const topicName = q.topics.name;
-                        const bookTitle = q.topics.books?.title || 'Unknown Book';
-                        const bookId = q.topics.books?.id || null;
-                        const key = `${topicId}`;
-                        
-                        if (!topicQuestionMap.has(key)) {
-                            topicQuestionMap.set(key, {
-                                topic_name: topicName,
-                                book_title: bookTitle,
-                                book_id: bookId,
-                                mcq_count: 0,
-                                created_at: q.created_at
-                            });
-                        }
-                        topicQuestionMap.get(key).mcq_count++;
-                    }
-                }
-                
-                return Array.from(topicQuestionMap.values());
-            } catch(e) {
-                console.error('Questions error:', e);
-                return [];
-            }
-        }
-        
-        async generateNewsItems() {
-            console.log('Generating news items from database...');
-            
-            const books = await this.getRecentBooks();
-            const categories = await this.getRecentCategories();
-            const topics = await this.getRecentTopics();
-            const questions = await this.getRecentQuestions();
-            
-            console.log('Summary - Books:', books.length, '| Categories:', categories.length, '| Topics:', topics.length, '| Questions (grouped):', questions.length);
-            
-            // ========== FIX: Group updates by BOOK to show only the latest per book ==========
-            const bookUpdateMap = new Map();
-            
-            // Process new books
-            books.forEach(book => {
-                const key = `book_${book.id}`;
-                if (!bookUpdateMap.has(key) || new Date(book.created_at) > bookUpdateMap.get(key).time) {
-                    bookUpdateMap.set(key, {
-                        type: 'book',
-                        icon: '📚',
-                        text: `New Book Added: "${book.title}"${book.author ? ` by ${book.author}` : ''} (${this.formatTimeAgo(book.created_at)})`,
-                        time: new Date(book.created_at),
-                        bookId: book.id,
-                        bookTitle: book.title
-                    });
-                }
-            });
-            
-            // Process new categories (these are global, not per book)
-            categories.forEach(cat => {
-                const key = `category_${cat.name}`;
-                if (!bookUpdateMap.has(key) || new Date(cat.created_at) > bookUpdateMap.get(key).time) {
-                    bookUpdateMap.set(key, {
-                        type: 'category',
-                        icon: '🏷️',
-                        text: `New Category Added: ${cat.name} (${this.formatTimeAgo(cat.created_at)})`,
-                        time: new Date(cat.created_at)
-                    });
-                }
-            });
-            
-            // Process new topics/chapters - GROUP BY BOOK, keep only the latest topic per book
-            const topicByBook = new Map();
-            topics.forEach(topic => {
-                const bookKey = topic.book_id || 'unknown';
-                if (!topicByBook.has(bookKey) || new Date(topic.created_at) > topicByBook.get(bookKey).time) {
-                    topicByBook.set(bookKey, {
-                        topic_name: topic.name,
-                        book_title: topic.book_title,
-                        book_id: topic.book_id,
-                        created_at: topic.created_at,
-                        time: new Date(topic.created_at)
-                    });
-                }
-            });
-            
-            // Add the latest topic per book as a news item
-            topicByBook.forEach((topic, bookId) => {
-                const key = `topic_book_${bookId}`;
-                if (!bookUpdateMap.has(key) || topic.time > bookUpdateMap.get(key).time) {
-                    bookUpdateMap.set(key, {
-                        type: 'topic',
-                        icon: '📖',
-                        text: `New Chapter Added: "${topic.topic_name}" in "${topic.book_title}" (${this.formatTimeAgo(topic.created_at)})`,
-                        time: topic.time,
-                        bookId: topic.book_id,
-                        bookTitle: topic.book_title
-                    });
-                }
-            });
-            
-            // Process questions/MCQs - GROUP BY BOOK, keep only the latest MCQ addition per book
-            const questionByBook = new Map();
-            questions.forEach(q => {
-                const bookKey = q.book_id || 'unknown';
-                if (!questionByBook.has(bookKey) || new Date(q.created_at) > questionByBook.get(bookKey).time) {
-                    questionByBook.set(bookKey, {
-                        topic_name: q.topic_name,
-                        book_title: q.book_title,
-                        book_id: q.book_id,
-                        mcq_count: q.mcq_count,
-                        created_at: q.created_at,
-                        time: new Date(q.created_at)
-                    });
-                }
-            });
-            
-            // Add the latest MCQ addition per book as a news item
-            questionByBook.forEach((q, bookId) => {
-                const key = `question_book_${bookId}`;
-                if (!bookUpdateMap.has(key) || q.time > bookUpdateMap.get(key).time) {
-                    let text = '';
-                    if (q.mcq_count === 1) {
-                        text = `New MCQ Added to Chapter "${q.topic_name}" in "${q.book_title}" (${this.formatTimeAgo(q.created_at)})`;
-                    } else {
-                        text = `${q.mcq_count} New MCQs Added to Chapter "${q.topic_name}" in "${q.book_title}" (${this.formatTimeAgo(q.created_at)})`;
-                    }
-                    bookUpdateMap.set(key, {
-                        type: 'question',
-                        icon: '❓',
-                        text: text,
-                        time: q.time,
-                        bookId: q.book_id,
-                        bookTitle: q.book_title
-                    });
-                }
-            });
-            
-            // Convert map to array and sort by time (most recent first)
-            const items = Array.from(bookUpdateMap.values());
-            items.sort((a, b) => b.time - a.time);
-            
-            console.log('Total unique news items (one per book/update):', items.length);
-            
-            if (items.length > 0) {
-                console.log('Sample items (showing only latest per book):');
-                items.slice(0, 5).forEach(item => {
-                    console.log(`  - ${item.text}`);
-                });
-            } else {
-                console.log('No items found in the last 7 days. Try adding some data to your database!');
-            }
-            
-            return items.slice(0, 20);
-        }
-        
-        async startTicker() {
-            try {
-                const items = await this.generateNewsItems();
-                const container = document.getElementById('newsTickerContainer');
-                const track = document.getElementById('tickerTrack');
-                
-                if (!items.length) { 
-                    if (container) container.classList.add('hidden');
-                    console.log('No items to display - ticker hidden');
-                    return; 
-                }
-                
-                container.classList.remove('hidden');
-                let html = '';
-                items.forEach(item => { 
-                    let iconClass = 'fa-book';
-                    if (item.icon === '🏷️') iconClass = 'fa-tag';
-                    else if (item.icon === '📖') iconClass = 'fa-book-open';
-                    else if (item.icon === '❓') iconClass = 'fa-question-circle';
-                    html += `<div class="ticker-item"><i class="fas ${iconClass}"></i> ${item.text}</div>`; 
-                });
-                html += html;
-                track.innerHTML = html;
-                
-                const speed = Math.max(20, Math.min(50, 20000 / items.length));
-                track.style.animation = `scrollLeft ${speed}s linear infinite`;
-                console.log('News ticker started with', items.length, 'items (unique per book)');
-                
-            } catch (error) {
-                console.error('Ticker error:', error);
-            }
+            if (error) throw error;
+            console.log('Books found (last 7 days):', data ? data.length : 0);
+            return data || [];
+        } catch(e) {
+            console.error('Books error:', e);
+            return [];
         }
     }
-
+    
+    async getRecentCategories() { 
+        try {
+            const { data, error } = await this.supabase
+                .from('categories')
+                .select('name, created_at')
+                .gte('created_at', this.sevenDaysAgo.toISOString())
+                .order('created_at', { ascending: false });
+            
+            if (error) throw error;
+            console.log('Categories found (last 7 days):', data ? data.length : 0);
+            return data || [];
+        } catch(e) {
+            console.error('Categories error:', e);
+            return [];
+        }
+    }
+    
+    async getRecentTopics() {
+        try {
+            // Topics table holds chapters
+            const { data, error } = await this.supabase
+                .from('topics')
+                .select('id, name, book_id, created_at')
+                .gte('created_at', this.sevenDaysAgo.toISOString())
+                .order('created_at', { ascending: false });
+            
+            if (error) throw error;
+            
+            if (!data || data.length === 0) return [];
+            
+            console.log('Topics found (last 7 days):', data.length);
+            
+            // Get book titles for each topic
+            const topicsWithBooks = await Promise.all(data.map(async (topic) => {
+                let bookTitle = 'Unknown Book';
+                if (topic.book_id) {
+                    const { data: bookData } = await this.supabase
+                        .from('books')
+                        .select('title')
+                        .eq('id', topic.book_id)
+                        .single();
+                    if (bookData) bookTitle = bookData.title;
+                }
+                return {
+                    name: topic.name,
+                    book_title: bookTitle,
+                    created_at: topic.created_at
+                };
+            }));
+            
+            return topicsWithBooks;
+        } catch(e) {
+            console.error('Topics error:', e);
+            return [];
+        }
+    }
+    
+    async getRecentQuestions() {
+        try {
+            // Get recent questions with their topic and book info
+            const { data, error } = await this.supabase
+                .from('questions')
+                .select(`
+                    id,
+                    topic_id,
+                    created_at,
+                    topics!inner (
+                        id,
+                        name,
+                        book_id,
+                        books!inner (
+                            id,
+                            title
+                        )
+                    )
+                `)
+                .gte('created_at', this.sevenDaysAgo.toISOString())
+                .order('created_at', { ascending: false });
+            
+            if (error) throw error;
+            
+            if (!data || data.length === 0) return [];
+            
+            console.log('Questions found (last 7 days):', data.length);
+            
+            // Group by topic to count MCQs per topic/chapter
+            const topicQuestionMap = new Map();
+            
+            for (const q of data) {
+                if (q.topics) {
+                    const topicId = q.topic_id;
+                    const topicName = q.topics.name;
+                    const bookTitle = q.topics.books?.title || 'Unknown Book';
+                    const key = `${topicId}`;
+                    
+                    if (!topicQuestionMap.has(key)) {
+                        topicQuestionMap.set(key, {
+                            topic_name: topicName,
+                            book_title: bookTitle,
+                            mcq_count: 0,
+                            created_at: q.created_at
+                        });
+                    }
+                    topicQuestionMap.get(key).mcq_count++;
+                }
+            }
+            
+            return Array.from(topicQuestionMap.values());
+        } catch(e) {
+            console.error('Questions error:', e);
+            return [];
+        }
+    }
+    
+async generateNewsItems() {
+    console.log('Generating news items from database...');
+    
+    const books = await this.getRecentBooks();
+    const categories = await this.getRecentCategories();
+    const topics = await this.getRecentTopics();
+    const questions = await this.getRecentQuestions();
+    
+    console.log('Summary - Books:', books.length, '| Categories:', categories.length, '| Topics:', topics.length, '| Questions (grouped):', questions.length);
+    
+    const items = [];
+    
+    // New Books (each book is a separate update)
+    books.forEach(book => {
+        items.push({ 
+            icon: '📚', 
+            text: `New Book Added: "${book.title}"${book.author ? ` by ${book.author}` : ''} (${this.formatTimeAgo(book.created_at)})`,
+            time: new Date(book.created_at),
+            type: 'book',
+            bookId: book.id || book.title
+        });
+    });
+    
+    // New Categories (each category is a separate update)
+    categories.forEach(cat => {
+        items.push({ 
+            icon: '🏷️', 
+            text: `New Category Added: ${cat.name} (${this.formatTimeAgo(cat.created_at)})`,
+            time: new Date(cat.created_at),
+            type: 'category',
+            categoryId: cat.name
+        });
+    });
+    
+    // GROUP TOPICS BY BOOK - Show only one update per book
+    const topicsByBook = new Map();
+    topics.forEach(topic => {
+        const key = topic.book_title;
+        if (!topicsByBook.has(key)) {
+            topicsByBook.set(key, {
+                bookTitle: topic.book_title,
+                count: 0,
+                latestTime: new Date(topic.created_at)
+            });
+        }
+        const entry = topicsByBook.get(key);
+        entry.count++;
+        const topicTime = new Date(topic.created_at);
+        if (topicTime > entry.latestTime) {
+            entry.latestTime = topicTime;
+        }
+    });
+    
+    // Add grouped topic updates to items
+    topicsByBook.forEach((entry) => {
+        if (entry.count === 1) {
+            items.push({ 
+                icon: '📖', 
+                text: `New Chapter Added to "${entry.bookTitle}" (${this.formatTimeAgo(entry.latestTime)})`,
+                time: entry.latestTime,
+                type: 'topic',
+                bookId: entry.bookTitle
+            });
+        } else {
+            items.push({ 
+                icon: '📖', 
+                text: `${entry.count} New Chapters Added to "${entry.bookTitle}" (${this.formatTimeAgo(entry.latestTime)})`,
+                time: entry.latestTime,
+                type: 'topic',
+                bookId: entry.bookTitle
+            });
+        }
+    });
+    
+    // GROUP MCQs BY BOOK - Show only one update per book
+    const mcqsByBook = new Map();
+    questions.forEach(q => {
+        const key = q.book_title;
+        if (!mcqsByBook.has(key)) {
+            mcqsByBook.set(key, {
+                bookTitle: q.book_title,
+                totalMcqs: 0,
+                latestTime: new Date(q.created_at)
+            });
+        }
+        const entry = mcqsByBook.get(key);
+        entry.totalMcqs += q.mcq_count;
+        const qTime = new Date(q.created_at);
+        if (qTime > entry.latestTime) {
+            entry.latestTime = qTime;
+        }
+    });
+    
+    // Add grouped MCQ updates to items
+    mcqsByBook.forEach((entry) => {
+        if (entry.totalMcqs === 1) {
+            items.push({ 
+                icon: '❓', 
+                text: `New MCQ Added to "${entry.bookTitle}" (${this.formatTimeAgo(entry.latestTime)})`,
+                time: entry.latestTime,
+                type: 'mcq',
+                bookId: entry.bookTitle
+            });
+        } else {
+            items.push({ 
+                icon: '❓', 
+                text: `${entry.totalMcqs} New MCQs Added to "${entry.bookTitle}" (${this.formatTimeAgo(entry.latestTime)})`,
+                time: entry.latestTime,
+                type: 'mcq',
+                bookId: entry.bookTitle
+            });
+        }
+    });
+    
+    // Sort by most recent first
+    items.sort((a, b) => b.time - a.time);
+    
+    console.log('Total news items generated (grouped):', items.length);
+    
+    // Show sample of what was found
+    if (items.length > 0) {
+        console.log('Sample items (grouped):');
+        items.slice(0, 3).forEach(item => {
+            console.log(`  - ${item.text}`);
+        });
+    } else {
+        console.log('No items found in the last 7 days. Try adding some data to your database!');
+    }
+    
+    return items.slice(0, 20);
+}
+    
+    async startTicker() {
+        try {
+            const items = await this.generateNewsItems();
+            const container = document.getElementById('newsTickerContainer');
+            const track = document.getElementById('tickerTrack');
+            
+            if (!items.length) { 
+                if (container) container.classList.add('hidden');
+                console.log('No items to display - ticker hidden');
+                return; 
+            }
+            
+            container.classList.remove('hidden');
+            let html = '';
+            items.forEach(item => { 
+                let iconClass = 'fa-book';
+                if (item.icon === '🏷️') iconClass = 'fa-tag';
+                else if (item.icon === '📖') iconClass = 'fa-book-open';
+                else if (item.icon === '❓') iconClass = 'fa-question-circle';
+                html += `<div class="ticker-item"><i class="fas ${iconClass}"></i> ${item.text}</div>`; 
+            });
+            html += html;
+            track.innerHTML = html;
+            
+            const speed = Math.max(20, Math.min(50, 20000 / items.length));
+            track.style.animation = `scrollLeft ${speed}s linear infinite`;
+            console.log('News ticker started with', items.length, 'items');
+            
+        } catch (error) {
+            console.error('Ticker error:', error);
+        }
+    }
+}
     // Initialize
     const security = new SecurityManager();
     const supabaseService = new SupabaseService();
@@ -1693,26 +1703,26 @@
         } catch(e) { console.error('Error loading stats:', e); }
     }
     
-    // Initialize news ticker
-    async function initNewsTicker() {
-        try {
-            console.log('initNewsTicker called');
-            console.log('Supabase client available:', !!supabaseService.supabase);
-            
-            const ticker = new NewsTicker(supabaseService.supabase);
-            await ticker.startTicker();
-            
-            const closeBtn = document.getElementById('closeNewsTicker');
-            if (closeBtn) {
-                closeBtn.addEventListener('click', () => {
-                    const container = document.getElementById('newsTickerContainer');
-                    if (container) container.classList.add('hidden');
-                });
-            }
-        } catch (error) {
-            console.error('Error in initNewsTicker:', error);
+// Initialize news ticker
+async function initNewsTicker() {
+    try {
+        console.log('initNewsTicker called');
+        console.log('Supabase client available:', !!supabaseService.supabase);
+        
+        const ticker = new NewsTicker(supabaseService.supabase);
+        await ticker.startTicker();
+        
+        const closeBtn = document.getElementById('closeNewsTicker');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                const container = document.getElementById('newsTickerContainer');
+                if (container) container.classList.add('hidden');
+            });
         }
+    } catch (error) {
+        console.error('Error in initNewsTicker:', error);
     }
+}
     
     loadStats();
     setupAIChat(supabaseService);
