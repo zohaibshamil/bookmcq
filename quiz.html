@@ -80,31 +80,6 @@
         .multi-select .select-btn span { color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .multi-select .select-btn i { transition: transform 0.2s; }
         .multi-select.active .select-btn i { transform: rotate(180deg); }
-        .multi-select .dropdown-content { 
-            position: absolute; 
-            top: 100%; 
-            left: 0; 
-            right: 0; 
-            background: white; 
-            border: 1px solid #d1d5db; 
-            border-radius: 12px; 
-            margin-top: 5px; 
-            z-index: 9999; 
-            max-height: 280px; 
-            overflow-y: auto; 
-            display: none; 
-            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2);
-        }
-        .multi-select.active .dropdown-content { display: block; }
-        .multi-select .dropdown-search { padding: 10px; border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; background: white; z-index: 10; }
-        .multi-select .dropdown-search input { width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; }
-        .multi-select .dropdown-search input:focus { border-color: #7c3aed; ring: 2px solid #7c3aed; }
-        .multi-select .dropdown-items { max-height: 220px; overflow-y: auto; }
-        .multi-select .dropdown-item { padding: 10px 12px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.2s; border-bottom: 1px solid #f3f4f6; }
-        .multi-select .dropdown-item:hover { background: #f3e8ff; }
-        .multi-select .dropdown-item input { width: 16px; height: 16px; cursor: pointer; accent-color: #7c3aed; margin: 0; }
-        .multi-select .dropdown-item label { cursor: pointer; flex: 1; color: #374151; font-size: 14px; }
-        .multi-select .dropdown-item .topic-chapter { font-size: 11px; color: #8b5cf6; margin-left: 8px; }
         
         /* Single select dropdown with search (for book and number of questions) */
         .single-select-wrapper { position: relative; width: 100%; z-index: 10; }
@@ -112,29 +87,6 @@
         .single-select-btn span { color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .single-select-btn i { transition: transform 0.2s; }
         .single-select-wrapper.active .single-select-btn i { transform: rotate(180deg); }
-        .single-select-wrapper .dropdown-content { 
-            position: absolute; 
-            top: 100%; 
-            left: 0; 
-            right: 0; 
-            background: white; 
-            border: 1px solid #d1d5db; 
-            border-radius: 12px; 
-            margin-top: 5px; 
-            z-index: 9999; 
-            max-height: 280px; 
-            overflow-y: auto; 
-            display: none; 
-            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2);
-        }
-        .single-select-wrapper.active .dropdown-content { display: block; }
-        .single-select-wrapper .dropdown-search { padding: 10px; border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; background: white; z-index: 10; }
-        .single-select-wrapper .dropdown-search input { width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; }
-        .single-select-wrapper .dropdown-search input:focus { border-color: #7c3aed; }
-        .single-select-wrapper .dropdown-items { max-height: 220px; overflow-y: auto; }
-        .single-select-wrapper .dropdown-item { padding: 10px 12px; cursor: pointer; transition: background 0.2s; border-bottom: 1px solid #f3f4f6; }
-        .single-select-wrapper .dropdown-item:hover { background: #f3e8ff; }
-        .single-select-wrapper .dropdown-item:last-child { border-bottom: none; }
         
         /* Make sure dropdowns don't get cut off by the card */
         .grid { position: relative; z-index: 5; }
@@ -146,10 +98,304 @@
         .professional-cert-btn { background: linear-gradient(135deg, #8b5cf6, #6d28d9); transition: all 0.3s ease; }
         .professional-cert-btn:hover { transform: scale(1.02); box-shadow: 0 10px 25px -5px rgba(139, 92, 246, 0.5); }
         
-        /* Ensure dropdown content appears above everything */
-        .dropdown-content { z-index: 9999 !important; }
-        .multi-select .dropdown-content { z-index: 9999 !important; }
-        .single-select-wrapper .dropdown-content { z-index: 9999 !important; }
+        /* FIX: Ensure the quiz card doesn't clip dropdowns */
+        .quiz-card { overflow: visible !important; }
+
+        /* ================================================ */
+        /* MOBILE DROPDOWN OVERLAY - BODY LEVEL RENDERING */
+        /* ================================================ */
+        #mobileDropdownOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 9999999;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            animation: overlayFadeIn 0.25s ease;
+        }
+        
+        #mobileDropdownOverlay.active {
+            display: flex !important;
+        }
+        
+        @keyframes overlayFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        #mobileDropdownContent {
+            background: white;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 70vh;
+            overflow: hidden;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.5);
+            animation: contentSlideUp 0.25s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        @keyframes contentSlideUp {
+            from {
+                opacity: 0;
+                transform: scale(0.95) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+        
+        #mobileDropdownHeader {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid #e5e7eb;
+            background: white;
+            border-radius: 20px 20px 0 0;
+            flex-shrink: 0;
+        }
+        
+        #mobileDropdownHeader h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+            margin: 0;
+        }
+        
+        #mobileDropdownHeader .close-btn {
+            background: none;
+            border: none;
+            font-size: 22px;
+            color: #6b7280;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+        
+        #mobileDropdownHeader .close-btn:hover {
+            background: #f3f4f6;
+        }
+        
+        #mobileDropdownBody {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0;
+        }
+        
+        #mobileDropdownBody .dropdown-search {
+            padding: 12px 16px;
+            border-bottom: 1px solid #e5e7eb;
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 5;
+        }
+        
+        #mobileDropdownBody .dropdown-search input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 14px;
+            outline: none;
+        }
+        
+        #mobileDropdownBody .dropdown-search input:focus {
+            border-color: #7c3aed;
+            ring: 2px solid #7c3aed;
+        }
+        
+        #mobileDropdownBody .dropdown-items {
+            padding: 4px 0;
+            max-height: calc(70vh - 140px);
+            overflow-y: auto;
+        }
+        
+        #mobileDropdownBody .dropdown-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #f3f4f6;
+            transition: background 0.2s;
+        }
+        
+        #mobileDropdownBody .dropdown-item:hover {
+            background: #f3e8ff;
+        }
+        
+        #mobileDropdownBody .dropdown-item:last-child {
+            border-bottom: none;
+        }
+        
+        #mobileDropdownBody .dropdown-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #7c3aed;
+        }
+        
+        #mobileDropdownBody .dropdown-item label {
+            cursor: pointer;
+            flex: 1;
+            color: #374151;
+            font-size: 14px;
+        }
+        
+        #mobileDropdownBody .dropdown-item .topic-chapter {
+            font-size: 11px;
+            color: #8b5cf6;
+            margin-left: 8px;
+        }
+        
+        #mobileDropdownBody .dropdown-item .mcq-count {
+            font-size: 10px;
+            color: #6b7280;
+            background: #f3f4f6;
+            padding: 2px 10px;
+            border-radius: 12px;
+            margin-left: auto;
+        }
+        
+        #mobileDropdownBody .select-all-item {
+            background: #f5f3ff;
+            border-bottom: 2px solid #e5e7eb;
+            font-weight: 500;
+        }
+        
+        #mobileDropdownBody .select-all-item:hover {
+            background: #ede9fe;
+        }
+        
+        /* Desktop dropdown styles - hidden on mobile */
+        .desktop-dropdown-content {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 12px;
+            margin-top: 5px;
+            z-index: 99999;
+            max-height: 280px;
+            overflow-y: auto;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2);
+        }
+        
+        .single-select-wrapper.active .desktop-dropdown-content,
+        .multi-select.active .desktop-dropdown-content {
+            display: block;
+        }
+        
+        .desktop-dropdown-content .dropdown-search {
+            padding: 10px;
+            border-bottom: 1px solid #e5e7eb;
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 10;
+        }
+        
+        .desktop-dropdown-content .dropdown-search input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 13px;
+            outline: none;
+        }
+        
+        .desktop-dropdown-content .dropdown-search input:focus {
+            border-color: #7c3aed;
+        }
+        
+        .desktop-dropdown-content .dropdown-items {
+            max-height: 220px;
+            overflow-y: auto;
+        }
+        
+        .desktop-dropdown-content .dropdown-item {
+            padding: 10px 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .desktop-dropdown-content .dropdown-item:hover {
+            background: #f3e8ff;
+        }
+        
+        .desktop-dropdown-content .dropdown-item:last-child {
+            border-bottom: none;
+        }
+        
+        .desktop-dropdown-content .dropdown-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: #7c3aed;
+        }
+        
+        .desktop-dropdown-content .dropdown-item label {
+            cursor: pointer;
+            flex: 1;
+            color: #374151;
+            font-size: 14px;
+        }
+        
+        .desktop-dropdown-content .dropdown-item .topic-chapter {
+            font-size: 11px;
+            color: #8b5cf6;
+            margin-left: 8px;
+        }
+        
+        .desktop-dropdown-content .dropdown-item .mcq-count {
+            font-size: 10px;
+            color: #6b7280;
+            background: #f3f4f6;
+            padding: 1px 8px;
+            border-radius: 12px;
+            margin-left: auto;
+        }
+        
+        .desktop-dropdown-content .select-all-item {
+            background: #f5f3ff;
+            border-bottom: 2px solid #e5e7eb;
+            font-weight: 500;
+        }
+        
+        .desktop-dropdown-content .select-all-item:hover {
+            background: #ede9fe;
+        }
+        
+        @media (max-width: 768px) {
+            .desktop-dropdown-content {
+                display: none !important;
+            }
+        }
+        
+        @media (min-width: 769px) {
+            #mobileDropdownOverlay {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 <body class="disable-select">
@@ -191,11 +437,11 @@
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">📚 Select Book</label>
                 <div class="single-select-wrapper" id="bookSelectWrapper">
-                    <div class="single-select-btn">
+                    <div class="single-select-btn" data-dropdown="book">
                         <span id="bookSelectedText">Loading books...</span>
                         <i class="fas fa-chevron-down"></i>
                     </div>
-                    <div class="dropdown-content">
+                    <div class="desktop-dropdown-content" id="bookDesktopDropdown">
                         <div class="dropdown-search">
                             <input type="text" id="bookSearchInput" placeholder="Search books..." autocomplete="off">
                         </div>
@@ -208,11 +454,11 @@
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">🏷️ Select Topics (Multiple)</label>
                 <div class="multi-select" id="topicMultiSelect">
-                    <div class="select-btn">
+                    <div class="select-btn" data-dropdown="topics">
                         <span id="topicSelectedText">Select Topics</span>
                         <i class="fas fa-chevron-down"></i>
                     </div>
-                    <div class="dropdown-content">
+                    <div class="desktop-dropdown-content" id="topicDesktopDropdown">
                         <div class="dropdown-search">
                             <input type="text" id="topicSearchInput" placeholder="Search topics..." autocomplete="off">
                         </div>
@@ -225,11 +471,11 @@
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">⚡ Difficulty Level</label>
                 <div class="multi-select" id="difficultyMultiSelect">
-                    <div class="select-btn">
+                    <div class="select-btn" data-dropdown="difficulty">
                         <span id="difficultySelectedText">Select Difficulties</span>
                         <i class="fas fa-chevron-down"></i>
                     </div>
-                    <div class="dropdown-content">
+                    <div class="desktop-dropdown-content" id="difficultyDesktopDropdown">
                         <div class="dropdown-search">
                             <input type="text" id="difficultySearchInput" placeholder="Search difficulties..." autocomplete="off">
                         </div>
@@ -244,11 +490,11 @@
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">📊 Number of Questions</label>
                 <div class="single-select-wrapper" id="questionCountWrapper">
-                    <div class="single-select-btn">
+                    <div class="single-select-btn" data-dropdown="count">
                         <span id="questionCountSelectedText">20 Questions</span>
                         <i class="fas fa-chevron-down"></i>
                     </div>
-                    <div class="dropdown-content">
+                    <div class="desktop-dropdown-content" id="countDesktopDropdown">
                         <div class="dropdown-items">
                             <div class="dropdown-item" data-value="20">20 Questions</div>
                             <div class="dropdown-item" data-value="40">40 Questions</div>
@@ -343,6 +589,17 @@
 
 <div id="toast" class="toast hidden"></div>
 
+<!-- MOBILE DROPDOWN OVERLAY -->
+<div id="mobileDropdownOverlay">
+    <div id="mobileDropdownContent">
+        <div id="mobileDropdownHeader">
+            <h3 id="mobileDropdownTitle">Select Option</h3>
+            <button class="close-btn" id="mobileDropdownClose">&times;</button>
+        </div>
+        <div id="mobileDropdownBody"></div>
+    </div>
+</div>
+
 <script>
     // Security
     document.addEventListener('contextmenu', (e) => { e.preventDefault(); return false; });
@@ -390,221 +647,357 @@
     let allTopics = [];
     let selectedBookId = '';
     let selectedQuestionCount = 20;
+    let topicMcqCounts = {};
+    let currentDropdownType = null;
+    let selectedBookTitle = '';
 
-    // Close all dropdowns function
-    function closeAllDropdowns() {
-        // Close book select wrapper
-        const bookWrapper = document.getElementById('bookSelectWrapper');
-        if (bookWrapper) bookWrapper.classList.remove('active');
+    // Mobile dropdown overlay functions
+    function showMobileDropdown(title, html, type) {
+        const overlay = document.getElementById('mobileDropdownOverlay');
+        const titleEl = document.getElementById('mobileDropdownTitle');
+        const body = document.getElementById('mobileDropdownBody');
         
-        // Close topic multi select
-        const topicMultiSelect = document.getElementById('topicMultiSelect');
-        if (topicMultiSelect) topicMultiSelect.classList.remove('active');
+        titleEl.textContent = title;
+        body.innerHTML = html;
+        currentDropdownType = type;
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
         
-        // Close difficulty multi select
-        const difficultyMultiSelect = document.getElementById('difficultyMultiSelect');
-        if (difficultyMultiSelect) difficultyMultiSelect.classList.remove('active');
-        
-        // Close question count wrapper
-        const questionCountWrapper = document.getElementById('questionCountWrapper');
-        if (questionCountWrapper) questionCountWrapper.classList.remove('active');
-    }
-
-    // Initialize Single Select with Search (for Book)
-    function initSingleSelectWrapper(wrapperId, searchInputId, itemsContainerId, onSelectCallback) {
-        const wrapper = document.getElementById(wrapperId);
-        if (!wrapper) return;
-        const btn = wrapper.querySelector('.single-select-btn');
-        
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            // Close all other dropdowns first
-            closeAllDropdowns();
-            // Then open this one
-            wrapper.classList.add('active');
-            if (wrapper.classList.contains('active')) {
-                const searchInput = document.getElementById(searchInputId);
-                if (searchInput) setTimeout(() => searchInput.focus(), 100);
-            }
-        });
-        
-        // Handle item selection
-        if (itemsContainerId) {
-            const container = document.getElementById(itemsContainerId);
-            if (container) {
-                container.addEventListener('click', (e) => {
-                    const item = e.target.closest('.dropdown-item');
-                    if (item) {
-                        e.stopPropagation();
-                        const value = item.getAttribute('data-value') || item.textContent;
-                        const text = item.textContent;
-                        if (onSelectCallback) {
-                            onSelectCallback(value, text);
-                        }
-                        wrapper.classList.remove('active');
+        // Handle search input if present
+        const searchInput = body.querySelector('.dropdown-search input');
+        if (searchInput) {
+            setTimeout(() => searchInput.focus(), 200);
+            searchInput.addEventListener('input', function() {
+                const term = this.value.toLowerCase();
+                const items = body.querySelectorAll('.dropdown-item');
+                items.forEach(item => {
+                    const text = item.textContent.toLowerCase();
+                    if (text.includes(term)) {
+                        item.style.display = 'flex';
+                    } else {
+                        item.style.display = 'none';
                     }
                 });
-            }
+            });
+        }
+        
+        // Handle item clicks
+        body.querySelectorAll('.dropdown-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                // Don't close if clicking checkbox or label
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'LABEL') {
+                    return;
+                }
+                // For checkbox items, toggle the checkbox
+                const checkbox = this.querySelector('input[type="checkbox"]');
+                if (checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    checkbox.dispatchEvent(new Event('change'));
+                    return;
+                }
+                // For regular items
+                const value = this.getAttribute('data-value');
+                const text = this.textContent.trim();
+                handleDropdownSelection(type, value, text);
+                hideMobileDropdown();
+            });
+        });
+        
+        // Handle checkbox changes
+        body.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            cb.addEventListener('change', function() {
+                handleCheckboxChange(type, this);
+            });
+        });
+    }
+    
+    function hideMobileDropdown() {
+        const overlay = document.getElementById('mobileDropdownOverlay');
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+        currentDropdownType = null;
+    }
+    
+    function handleDropdownSelection(type, value, text) {
+        if (type === 'book') {
+            selectedBookId = value;
+            selectedBookTitle = text;
+            document.getElementById('bookSelectedText').textContent = text;
+            document.getElementById('bookSelectedText').style.color = '#374151';
+            loadTopics();
+        } else if (type === 'count') {
+            selectedQuestionCount = parseInt(value);
+            document.getElementById('questionCountSelectedText').textContent = text;
         }
     }
-
-    // Topic Multi-select with search
-    function initTopicMultiSelect() {
-        const container = document.getElementById('topicMultiSelect');
-        if (!container) return;
-        const selectBtn = container.querySelector('.select-btn');
-        const searchInput = document.getElementById('topicSearchInput');
-        
-        selectBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            // Close all other dropdowns first
-            closeAllDropdowns();
-            // Then open this one
-            container.classList.add('active');
-            if (container.classList.contains('active') && searchInput) {
-                setTimeout(() => searchInput.focus(), 100);
+    
+    function handleCheckboxChange(type, checkbox) {
+        if (type === 'topics') {
+            if (checkbox.id === 'selectAllTopics') {
+                const allCheckboxes = document.querySelectorAll('#mobileDropdownBody input[type="checkbox"]:not(#selectAllTopics)');
+                allCheckboxes.forEach(cb => {
+                    cb.checked = checkbox.checked;
+                });
             }
-        });
+            updateTopicSelectedTextMobile();
+            
+            // ALSO SYNC TO DESKTOP CHECKBOXES
+            const desktopSelectAll = document.getElementById('selectAllTopics');
+            if (desktopSelectAll) {
+                desktopSelectAll.checked = checkbox.checked;
+            }
+            
+            // Sync all topic checkboxes to desktop
+            const mobileCheckboxes = document.querySelectorAll('#mobileDropdownBody input[type="checkbox"]:not(#selectAllTopics)');
+            mobileCheckboxes.forEach(mcb => {
+                const topicId = mcb.id.replace('topic_', '');
+                const desktopCb = document.getElementById(`topic_${topicId}`);
+                if (desktopCb) {
+                    desktopCb.checked = mcb.checked;
+                }
+            });
+            
+            updateTopicSelectedText();
+            
+        } else if (type === 'difficulty') {
+            // Sync mobile difficulty checkboxes to desktop
+            const mobileEasy = document.querySelector('#mobileDropdownBody #difficultyEasy');
+            const mobileMedium = document.querySelector('#mobileDropdownBody #difficultyMedium');
+            const mobileHard = document.querySelector('#mobileDropdownBody #difficultyHard');
+            
+            const desktopEasy = document.getElementById('difficultyEasy');
+            const desktopMedium = document.getElementById('difficultyMedium');
+            const desktopHard = document.getElementById('difficultyHard');
+            
+            if (mobileEasy && desktopEasy) desktopEasy.checked = mobileEasy.checked;
+            if (mobileMedium && desktopMedium) desktopMedium.checked = mobileMedium.checked;
+            if (mobileHard && desktopHard) desktopHard.checked = mobileHard.checked;
+            
+            // Update both mobile and desktop text displays
+            updateDifficultySelectedTextMobile();
+            updateDifficultySelectedText();
+        }
     }
-
-    function updateTopicSelectedText() {
-        const selectedTopics = Array.from(document.querySelectorAll('#topicDropdownItems input[type="checkbox"]:checked')).map(cb => cb.value);
-        const searchTerm = document.getElementById('topicSearchInput')?.value.toLowerCase() || '';
-        
-        const items = document.querySelectorAll('#topicDropdownItems .dropdown-item');
-        items.forEach(item => {
-            const label = item.querySelector('label')?.textContent.toLowerCase() || '';
-            if (label.includes(searchTerm)) {
-                item.style.display = 'flex';
-            } else {
-                item.style.display = 'none';
-            }
-        });
+    
+    function updateTopicSelectedTextMobile() {
+        const selectedCheckboxes = document.querySelectorAll('#mobileDropdownBody input[type="checkbox"]:checked');
+        const selectedTopics = Array.from(selectedCheckboxes).map(cb => cb.value).filter(v => v !== 'all');
         
         const selectedText = document.getElementById('topicSelectedText');
         if (selectedTopics.length === 0) {
             selectedText.textContent = 'Select Topics';
             selectedText.style.color = '#6b7280';
         } else if (selectedTopics.length === allTopics.length && allTopics.length > 0) {
-            selectedText.textContent = 'All Topics';
+            selectedText.textContent = 'All Chapters';
             selectedText.style.color = '#374151';
         } else if (selectedTopics.length <= 2) {
             const names = selectedTopics.map(t => t.split('|')[0]).join(', ');
             selectedText.textContent = names;
             selectedText.style.color = '#374151';
         } else {
-            selectedText.textContent = `${selectedTopics.length} topics selected`;
+            selectedText.textContent = `${selectedTopics.length} chapters selected`;
             selectedText.style.color = '#374151';
+        }
+        
+        // Update select all checkbox state
+        const selectAll = document.getElementById('selectAllTopics');
+        if (selectAll) {
+            const allCheckboxes = document.querySelectorAll('#mobileDropdownBody input[type="checkbox"]:not(#selectAllTopics)');
+            const checkedCheckboxes = document.querySelectorAll('#mobileDropdownBody input[type="checkbox"]:checked:not(#selectAllTopics)');
+            if (allCheckboxes.length > 0 && checkedCheckboxes.length === allCheckboxes.length) {
+                selectAll.checked = true;
+                selectAll.indeterminate = false;
+            } else if (checkedCheckboxes.length > 0) {
+                selectAll.checked = false;
+                selectAll.indeterminate = true;
+            } else {
+                selectAll.checked = false;
+                selectAll.indeterminate = false;
+            }
+        }
+    }
+    
+    function updateDifficultySelectedTextMobile() {
+        const selected = [];
+        const easyCb = document.querySelector('#mobileDropdownBody #difficultyEasy');
+        const mediumCb = document.querySelector('#mobileDropdownBody #difficultyMedium');
+        const hardCb = document.querySelector('#mobileDropdownBody #difficultyHard');
+        
+        if (easyCb && easyCb.checked) selected.push('🌱 Easy');
+        if (mediumCb && mediumCb.checked) selected.push('⚡ Medium');
+        if (hardCb && hardCb.checked) selected.push('🔥 Hard');
+        
+        const selectedText = document.getElementById('difficultySelectedText');
+        if (selected.length === 0) { 
+            selectedText.textContent = 'Select Difficulties'; 
+            selectedText.style.color = '#6b7280'; 
+        } else if (selected.length === 3) { 
+            selectedText.textContent = 'All Difficulties'; 
+            selectedText.style.color = '#374151'; 
+        } else { 
+            selectedText.textContent = selected.join(', '); 
+            selectedText.style.color = '#374151'; 
         }
     }
 
-    function getSelectedTopicIds() {
-        const selectedTopics = Array.from(document.querySelectorAll('#topicDropdownItems input[type="checkbox"]:checked')).map(cb => cb.value);
-        return selectedTopics.map(t => parseInt(t.split('|')[1]));
+    // Close all dropdowns function
+    function closeAllDropdowns() {
+        const bookWrapper = document.getElementById('bookSelectWrapper');
+        if (bookWrapper) bookWrapper.classList.remove('active');
+        
+        const topicMultiSelect = document.getElementById('topicMultiSelect');
+        if (topicMultiSelect) topicMultiSelect.classList.remove('active');
+        
+        const difficultyMultiSelect = document.getElementById('difficultyMultiSelect');
+        if (difficultyMultiSelect) difficultyMultiSelect.classList.remove('active');
+        
+        const questionCountWrapper = document.getElementById('questionCountWrapper');
+        if (questionCountWrapper) questionCountWrapper.classList.remove('active');
+        
+        hideMobileDropdown();
     }
 
-    function initDifficultyMultiSelect() {
-        const multiSelect = document.getElementById('difficultyMultiSelect');
-        if (!multiSelect) return;
-        const selectBtn = multiSelect.querySelector('.select-btn');
-        const checkboxes = multiSelect.querySelectorAll('input[type="checkbox"]');
-        const searchInput = document.getElementById('difficultySearchInput');
+    // Initialize dropdowns
+    function initDropdowns() {
+        // Book dropdown
+        const bookBtn = document.querySelector('#bookSelectWrapper .single-select-btn');
+        if (bookBtn) {
+            bookBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (window.innerWidth <= 768) {
+                    // Mobile: use overlay
+                    const items = document.querySelectorAll('#bookDropdownItems .dropdown-item');
+                    if (items.length === 0 || items[0].textContent.includes('No books') || items[0].textContent.includes('Loading')) {
+                        showToast('Loading books, please wait...', true);
+                        return;
+                    }
+                    let html = '<div class="dropdown-search"><input type="text" placeholder="Search books..." autocomplete="off"></div><div class="dropdown-items">';
+                    items.forEach(item => {
+                        html += item.outerHTML;
+                    });
+                    html += '</div>';
+                    showMobileDropdown('Select Book', html, 'book');
+                } else {
+                    // Desktop: toggle
+                    const wrapper = document.getElementById('bookSelectWrapper');
+                    if (wrapper.classList.contains('active')) {
+                        wrapper.classList.remove('active');
+                    } else {
+                        closeAllDropdowns();
+                        wrapper.classList.add('active');
+                        const searchInput = document.getElementById('bookSearchInput');
+                        if (searchInput) setTimeout(() => searchInput.focus(), 100);
+                    }
+                }
+            });
+        }
         
-        selectBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            // Close all other dropdowns first
-            closeAllDropdowns();
-            // Then open this one
-            multiSelect.classList.add('active');
-            if (multiSelect.classList.contains('active') && searchInput) {
-                setTimeout(() => searchInput.focus(), 100);
+        // Topics dropdown
+        const topicsBtn = document.querySelector('#topicMultiSelect .select-btn');
+        if (topicsBtn) {
+            topicsBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (window.innerWidth <= 768) {
+                    // Mobile: use overlay
+                    const items = document.querySelectorAll('#topicDropdownItems .dropdown-item');
+                    if (items.length === 0 || items[0].textContent.includes('Select a book first') || items[0].textContent.includes('No topics')) {
+                        showToast('Please select a book first', true);
+                        return;
+                    }
+                    let html = '<div class="dropdown-search"><input type="text" placeholder="Search topics..." autocomplete="off"></div><div class="dropdown-items">';
+                    items.forEach(item => {
+                        html += item.outerHTML;
+                    });
+                    html += '</div>';
+                    showMobileDropdown('Select Topics', html, 'topics');
+                } else {
+                    const container = document.getElementById('topicMultiSelect');
+                    if (container.classList.contains('active')) {
+                        container.classList.remove('active');
+                    } else {
+                        closeAllDropdowns();
+                        container.classList.add('active');
+                        const searchInput = document.getElementById('topicSearchInput');
+                        if (searchInput) setTimeout(() => searchInput.focus(), 100);
+                    }
+                }
+            });
+        }
+        
+        // Difficulty dropdown
+        const diffBtn = document.querySelector('#difficultyMultiSelect .select-btn');
+        if (diffBtn) {
+            diffBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (window.innerWidth <= 768) {
+                    // Mobile: use overlay
+                    const items = document.querySelectorAll('#difficultyDropdownItems .dropdown-item');
+                    let html = '<div class="dropdown-search"><input type="text" placeholder="Search difficulties..." autocomplete="off"></div><div class="dropdown-items">';
+                    items.forEach(item => {
+                        html += item.outerHTML;
+                    });
+                    html += '</div>';
+                    showMobileDropdown('Select Difficulty', html, 'difficulty');
+                } else {
+                    const container = document.getElementById('difficultyMultiSelect');
+                    if (container.classList.contains('active')) {
+                        container.classList.remove('active');
+                    } else {
+                        closeAllDropdowns();
+                        container.classList.add('active');
+                        const searchInput = document.getElementById('difficultySearchInput');
+                        if (searchInput) setTimeout(() => searchInput.focus(), 100);
+                    }
+                }
+            });
+        }
+        
+        // Question count dropdown
+        const countBtn = document.querySelector('#questionCountWrapper .single-select-btn');
+        if (countBtn) {
+            countBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (window.innerWidth <= 768) {
+                    // Mobile: use overlay
+                    const items = document.querySelectorAll('#countDesktopDropdown .dropdown-item');
+                    let html = '<div class="dropdown-items">';
+                    items.forEach(item => {
+                        html += item.outerHTML;
+                    });
+                    html += '</div>';
+                    showMobileDropdown('Number of Questions', html, 'count');
+                } else {
+                    const wrapper = document.getElementById('questionCountWrapper');
+                    if (wrapper.classList.contains('active')) {
+                        wrapper.classList.remove('active');
+                    } else {
+                        closeAllDropdowns();
+                        wrapper.classList.add('active');
+                    }
+                }
+            });
+        }
+        
+        // Close overlay on backdrop click
+        document.getElementById('mobileDropdownOverlay').addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideMobileDropdown();
             }
         });
         
-        if (searchInput) {
-            searchInput.addEventListener('input', () => updateDifficultySelectedText());
-            searchInput.addEventListener('click', (e) => e.stopPropagation());
-        }
-        
-        function updateDifficultySelectedText() {
-            const selected = [];
-            if (document.getElementById('difficultyEasy').checked) selected.push('🌱 Easy');
-            if (document.getElementById('difficultyMedium').checked) selected.push('⚡ Medium');
-            if (document.getElementById('difficultyHard').checked) selected.push('🔥 Hard');
-            
-            const searchTerm = document.getElementById('difficultySearchInput')?.value.toLowerCase() || '';
-            const items = document.querySelectorAll('#difficultyDropdownItems .dropdown-item');
-            items.forEach(item => {
-                const text = item.textContent.toLowerCase();
-                if (text.includes(searchTerm)) {
-                    item.style.display = 'flex';
-                } else {
-                    item.style.display = 'none';
-                }
-            });
-            
-            const selectedText = document.getElementById('difficultySelectedText');
-            if (selected.length === 0) { selectedText.textContent = 'Select Difficulties'; selectedText.style.color = '#6b7280'; }
-            else if (selected.length === 3) { selectedText.textContent = 'All Difficulties'; selectedText.style.color = '#374151'; }
-            else { selectedText.textContent = selected.join(', '); selectedText.style.color = '#374151'; }
-        }
-        
-        checkboxes.forEach(checkbox => { checkbox.addEventListener('change', updateDifficultySelectedText); });
-        updateDifficultySelectedText();
-    }
-
-    function getSelectedDifficulties() {
-        const difficulties = [];
-        if (document.getElementById('difficultyEasy').checked) difficulties.push('easy');
-        if (document.getElementById('difficultyMedium').checked) difficulties.push('medium');
-        if (document.getElementById('difficultyHard').checked) difficulties.push('hard');
-        return difficulties;
-    }
-
-    // Initialize Question Count Selector
-    function initQuestionCountSelector() {
-        const wrapper = document.getElementById('questionCountWrapper');
-        if (!wrapper) return;
-        const btn = wrapper.querySelector('.single-select-btn');
-        const items = document.querySelectorAll('#questionCountWrapper .dropdown-item');
-        
-        btn.addEventListener('click', (e) => {
+        // Close overlay on close button
+        document.getElementById('mobileDropdownClose').addEventListener('click', function(e) {
             e.stopPropagation();
-            // Close all other dropdowns first
-            closeAllDropdowns();
-            // Then open this one
-            wrapper.classList.add('active');
+            hideMobileDropdown();
         });
         
-        items.forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const value = parseInt(item.getAttribute('data-value'));
-                const text = item.textContent;
-                selectedQuestionCount = value;
-                document.getElementById('questionCountSelectedText').textContent = text;
-                wrapper.classList.remove('active');
-            });
+        // Close overlay on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                hideMobileDropdown();
+            }
         });
     }
-
-    // Global click handler to close dropdowns when clicking outside
-    document.addEventListener('click', function(e) {
-        // Check if click is outside all dropdowns
-        const bookWrapper = document.getElementById('bookSelectWrapper');
-        const topicMultiSelect = document.getElementById('topicMultiSelect');
-        const difficultyMultiSelect = document.getElementById('difficultyMultiSelect');
-        const questionCountWrapper = document.getElementById('questionCountWrapper');
-        
-        const isInsideBook = bookWrapper && bookWrapper.contains(e.target);
-        const isInsideTopic = topicMultiSelect && topicMultiSelect.contains(e.target);
-        const isInsideDifficulty = difficultyMultiSelect && difficultyMultiSelect.contains(e.target);
-        const isInsideQuestionCount = questionCountWrapper && questionCountWrapper.contains(e.target);
-        
-        if (!isInsideBook && !isInsideTopic && !isInsideDifficulty && !isInsideQuestionCount) {
-            closeAllDropdowns();
-        }
-    });
 
     function showToast(message, isError = false) {
         const toast = document.getElementById('toast');
@@ -696,13 +1089,14 @@
                 </div>
             `).join('');
             
-            // Add click handlers for book items
+            // Desktop: add click handlers for book items
             document.querySelectorAll('#bookDropdownItems .dropdown-item').forEach(item => {
                 item.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const bookId = item.getAttribute('data-value');
                     const bookTitle = item.getAttribute('data-title');
                     selectedBookId = bookId;
+                    selectedBookTitle = bookTitle;
                     document.getElementById('bookSelectedText').textContent = bookTitle;
                     document.getElementById('bookSelectedText').style.color = '#374151';
                     document.getElementById('bookSelectWrapper').classList.remove('active');
@@ -710,7 +1104,6 @@
                 });
             });
             
-            // Initialize search for books
             const searchInput = document.getElementById('bookSearchInput');
             if (searchInput) {
                 searchInput.addEventListener('input', () => {
@@ -733,6 +1126,49 @@
         }
     }
 
+    // COMPLETELY REWRITTEN: Simple and reliable MCQ count
+    async function getMultipleTopicMcqCounts(topicIds) {
+        if (!topicIds || topicIds.length === 0) return {};
+        
+        const results = {};
+        const uncachedIds = [];
+        
+        // Check cache first
+        for (const id of topicIds) {
+            const cacheKey = `topic_mcq_count_${id}`;
+            const cached = cacheManager.get(cacheKey);
+            if (cached !== null && cached !== undefined) {
+                results[id] = cached;
+            } else {
+                uncachedIds.push(id);
+            }
+        }
+        
+        // Query uncached topics one by one - more reliable
+        for (const id of uncachedIds) {
+            try {
+                const { count, error } = await _supabase
+                    .from('questions')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('topic_id', id);
+                
+                if (!error) {
+                    results[id] = count || 0;
+                    cacheManager.set(`topic_mcq_count_${id}`, count || 0);
+                } else {
+                    console.error(`Error counting MCQs for topic ${id}:`, error);
+                    results[id] = 0;
+                }
+            } catch (err) {
+                console.error(`Error counting MCQs for topic ${id}:`, err);
+                results[id] = 0;
+            }
+        }
+        
+        return results;
+    }
+
+    // FIXED: Show ALL topics - NO FILTERING AT ALL
     async function loadTopics() {
         if (!selectedBookId) { 
             document.getElementById('topicDropdownItems').innerHTML = '<div class="dropdown-item">Select a book first</div>';
@@ -754,7 +1190,18 @@
                 cacheManager.set(cacheKey, topics);
             }
             
+            // Get MCQ counts for all topics
+            const topicIds = topics.map(t => t.id);
+            const mcqCounts = await getMultipleTopicMcqCounts(topicIds);
+            topicMcqCounts = mcqCounts;
+            
+            // SHOW ALL TOPICS - NO FILTERING
             allTopics = topics || [];
+            
+            // Debug logging
+            console.log('Total topics:', topics.length);
+            console.log('Topics with MCQs:', Object.keys(mcqCounts).filter(id => mcqCounts[id] > 0).length);
+            console.log('MCQ counts:', mcqCounts);
             
             if (!topics || topics.length === 0) {
                 document.getElementById('topicDropdownItems').innerHTML = '<div class="dropdown-item">No topics available</div>';
@@ -762,13 +1209,25 @@
                 return;
             }
             
-            const topicsHtml = topics.map(topic => {
+            let topicsHtml = `
+                <div class="dropdown-item select-all-item">
+                    <input type="checkbox" id="selectAllTopics" value="all">
+                    <label for="selectAllTopics">📚 Select All Chapters</label>
+                </div>
+            `;
+            
+            topicsHtml += topics.map(topic => {
                 const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${escapeHtml(topic.name)}` : escapeHtml(topic.name);
                 const chapterText = topic.chapter_number ? `(Chapter ${topic.chapter_number})` : '';
+                const mcqCount = mcqCounts[topic.id] || 0;
+                // Show "No MCQs" in red for topics without questions
+                const mcqText = mcqCount > 0 ? `${mcqCount} MCQs` : 'No MCQs';
+                const mcqStyle = mcqCount === 0 ? 'color: #ef4444; font-weight: 500;' : '';
                 return `
                     <div class="dropdown-item">
                         <input type="checkbox" id="topic_${topic.id}" value="${escapeHtml(topic.name)}|${topic.id}">
                         <label for="topic_${topic.id}">${display} <span class="topic-chapter">${chapterText}</span></label>
+                        <span class="mcq-count" style="${mcqStyle}">${mcqText}</span>
                     </div>
                 `;
             }).join('');
@@ -776,9 +1235,29 @@
             document.getElementById('topicDropdownItems').innerHTML = topicsHtml;
             document.getElementById('topicSearchInput').value = '';
             
-            document.querySelectorAll('#topicDropdownItems input[type="checkbox"]').forEach(cb => {
+            const selectAllCheckbox = document.getElementById('selectAllTopics');
+            if (selectAllCheckbox) {
+                selectAllCheckbox.addEventListener('change', function() {
+                    const allCheckboxes = document.querySelectorAll('#topicDropdownItems input[type="checkbox"]:not(#selectAllTopics)');
+                    allCheckboxes.forEach(cb => {
+                        cb.checked = this.checked;
+                    });
+                    updateTopicSelectedText();
+                });
+            }
+            
+            document.querySelectorAll('#topicDropdownItems input[type="checkbox"]:not(#selectAllTopics)').forEach(cb => {
                 cb.addEventListener('change', updateTopicSelectedText);
             });
+            
+            // Auto-select all topics by default
+            const allCheckboxes = document.querySelectorAll('#topicDropdownItems input[type="checkbox"]:not(#selectAllTopics)');
+            allCheckboxes.forEach(cb => {
+                cb.checked = true;
+            });
+            if (selectAllCheckbox) {
+                selectAllCheckbox.checked = true;
+            }
             
             updateTopicSelectedText();
             
@@ -787,6 +1266,144 @@
             document.getElementById('topicDropdownItems').innerHTML = '<div class="dropdown-item">Error loading topics</div>';
         }
     }
+
+    function updateTopicSelectedText() {
+        const selectedTopics = Array.from(document.querySelectorAll('#topicDropdownItems input[type="checkbox"]:checked')).map(cb => cb.value);
+        const searchTerm = document.getElementById('topicSearchInput')?.value.toLowerCase() || '';
+        
+        const items = document.querySelectorAll('#topicDropdownItems .dropdown-item');
+        items.forEach(item => {
+            const label = item.querySelector('label')?.textContent.toLowerCase() || '';
+            if (label.includes(searchTerm)) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+        
+        const selectAllCheckbox = document.getElementById('selectAllTopics');
+        if (selectAllCheckbox) {
+            const allCheckboxes = document.querySelectorAll('#topicDropdownItems input[type="checkbox"]:not(#selectAllTopics)');
+            const checkedCheckboxes = document.querySelectorAll('#topicDropdownItems input[type="checkbox"]:checked:not(#selectAllTopics)');
+            if (allCheckboxes.length > 0 && checkedCheckboxes.length === allCheckboxes.length) {
+                selectAllCheckbox.checked = true;
+                selectAllCheckbox.indeterminate = false;
+            } else if (checkedCheckboxes.length > 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = true;
+            } else {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            }
+        }
+        
+        const selectedText = document.getElementById('topicSelectedText');
+        if (selectedTopics.length === 0) {
+            selectedText.textContent = 'Select Topics';
+            selectedText.style.color = '#6b7280';
+        } else if (selectedTopics.length === allTopics.length && allTopics.length > 0) {
+            selectedText.textContent = 'All Chapters';
+            selectedText.style.color = '#374151';
+        } else if (selectedTopics.length <= 2) {
+            const names = selectedTopics.map(t => t.split('|')[0]).join(', ');
+            selectedText.textContent = names;
+            selectedText.style.color = '#374151';
+        } else {
+            selectedText.textContent = `${selectedTopics.length} chapters selected`;
+            selectedText.style.color = '#374151';
+        }
+    }
+
+    function getSelectedTopicIds() {
+        const selectedTopics = Array.from(document.querySelectorAll('#topicDropdownItems input[type="checkbox"]:checked')).map(cb => cb.value);
+        return selectedTopics.map(t => parseInt(t.split('|')[1]));
+    }
+
+    function initDifficultyMultiSelect() {
+        const multiSelect = document.getElementById('difficultyMultiSelect');
+        if (!multiSelect) return;
+        const checkboxes = multiSelect.querySelectorAll('input[type="checkbox"]');
+        const searchInput = document.getElementById('difficultySearchInput');
+        
+        if (searchInput) {
+            searchInput.addEventListener('input', () => updateDifficultySelectedText());
+            searchInput.addEventListener('click', (e) => e.stopPropagation());
+        }
+        
+        function updateDifficultySelectedText() {
+            const selected = [];
+            if (document.getElementById('difficultyEasy').checked) selected.push('🌱 Easy');
+            if (document.getElementById('difficultyMedium').checked) selected.push('⚡ Medium');
+            if (document.getElementById('difficultyHard').checked) selected.push('🔥 Hard');
+            
+            const searchTerm = document.getElementById('difficultySearchInput')?.value.toLowerCase() || '';
+            const items = document.querySelectorAll('#difficultyDropdownItems .dropdown-item');
+            items.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            
+            const selectedText = document.getElementById('difficultySelectedText');
+            if (selected.length === 0) { selectedText.textContent = 'Select Difficulties'; selectedText.style.color = '#6b7280'; }
+            else if (selected.length === 3) { selectedText.textContent = 'All Difficulties'; selectedText.style.color = '#374151'; }
+            else { selectedText.textContent = selected.join(', '); selectedText.style.color = '#374151'; }
+        }
+        
+        checkboxes.forEach(checkbox => { checkbox.addEventListener('change', updateDifficultySelectedText); });
+        updateDifficultySelectedText();
+    }
+
+    function getSelectedDifficulties() {
+        const difficulties = [];
+        if (document.getElementById('difficultyEasy').checked) difficulties.push('easy');
+        if (document.getElementById('difficultyMedium').checked) difficulties.push('medium');
+        if (document.getElementById('difficultyHard').checked) difficulties.push('hard');
+        return difficulties;
+    }
+
+    // Initialize Question Count Selector - desktop only
+    function initQuestionCountSelector() {
+        const wrapper = document.getElementById('questionCountWrapper');
+        if (!wrapper) return;
+        const items = document.querySelectorAll('#countDesktopDropdown .dropdown-item');
+        
+        items.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const value = parseInt(item.getAttribute('data-value'));
+                const text = item.textContent;
+                selectedQuestionCount = value;
+                document.getElementById('questionCountSelectedText').textContent = text;
+                wrapper.classList.remove('active');
+            });
+        });
+    }
+
+    // Global click handler to close dropdowns when clicking outside - desktop only
+    document.addEventListener('click', function(e) {
+        if (window.innerWidth > 768) {
+            const bookWrapper = document.getElementById('bookSelectWrapper');
+            const topicMultiSelect = document.getElementById('topicMultiSelect');
+            const difficultyMultiSelect = document.getElementById('difficultyMultiSelect');
+            const questionCountWrapper = document.getElementById('questionCountWrapper');
+            
+            const isInsideBook = bookWrapper && bookWrapper.contains(e.target);
+            const isInsideTopic = topicMultiSelect && topicMultiSelect.contains(e.target);
+            const isInsideDifficulty = difficultyMultiSelect && difficultyMultiSelect.contains(e.target);
+            const isInsideQuestionCount = questionCountWrapper && questionCountWrapper.contains(e.target);
+            
+            if (!isInsideBook && !isInsideTopic && !isInsideDifficulty && !isInsideQuestionCount) {
+                bookWrapper?.classList.remove('active');
+                topicMultiSelect?.classList.remove('active');
+                difficultyMultiSelect?.classList.remove('active');
+                questionCountWrapper?.classList.remove('active');
+            }
+        }
+    });
 
     async function loadQuestionsFromMultipleTopics(topicIds, difficulties, limit = 15) {
         if (!difficulties || difficulties.length === 0 || !topicIds || topicIds.length === 0) return [];
@@ -1129,17 +1746,15 @@
         if (navbar) { window.addEventListener('scroll', () => { if (window.scrollY > 50) navbar.classList.add('navbar-scrolled'); else navbar.classList.remove('navbar-scrolled'); }); }
     }
 
-    // Initialize Book Select Wrapper
-    initSingleSelectWrapper('bookSelectWrapper', 'bookSearchInput', 'bookDropdownItems', null);
-    
+    // Initialize everything
     loadBooks();
     initNavbarScroll();
     initMobileMenu();
     initTabSwitchDetection();
-    initTopicMultiSelect();
     initDifficultyMultiSelect();
     initQuestionCountSelector();
-    console.log('Quiz page initialized - with proper dropdown closing');
+    initDropdowns();
+    console.log('Quiz page initialized - with mobile overlay dropdowns');
 </script>
 </body>
 </html>
