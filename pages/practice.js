@@ -20,6 +20,12 @@ export default function Practice({ books }) {
   const [selectedTopic, setSelectedTopic] = useState('')
   const [questions, setQuestions] = useState([])
   const [loading, setLoading] = useState(false)
+  const [toast, setToast] = useState({ show: false, message: '', error: false })
+
+  const showToast = (msg, error = false) => {
+    setToast({ show: true, message: msg, error })
+    setTimeout(() => setToast({ show: false, message: '', error: false }), 3000)
+  }
 
   useEffect(() => {
     if (selectedBook) {
@@ -34,55 +40,70 @@ export default function Practice({ books }) {
   }, [selectedTopic])
 
   async function loadTopics() {
-    const { data } = await supabase
-      .from('topics')
-      .select('id, name, chapter_number')
-      .eq('book_id', selectedBook)
-      .order('chapter_number')
-    
-    setTopics(data || [])
-    setSelectedTopic('')
-    setQuestions([])
+    try {
+      const { data, error } = await supabase
+        .from('topics')
+        .select('id, name, chapter_number')
+        .eq('book_id', selectedBook)
+        .order('chapter_number')
+      
+      if (error) throw error
+      setTopics(data || [])
+      setSelectedTopic('')
+      setQuestions([])
+    } catch (error) {
+      showToast('Error loading topics', true)
+    }
   }
 
   async function loadQuestions() {
     if (!selectedTopic) return
     setLoading(true)
 
-    const { data } = await supabase
-      .from('questions')
-      .select(`
-        id,
-        question_text,
-        difficulty,
-        correct_answer,
-        explanation,
-        options (option_text, option_index)
-      `)
-      .eq('topic_id', selectedTopic)
-      .limit(20)
+    try {
+      const { data, error } = await supabase
+        .from('questions')
+        .select(`
+          id,
+          question_text,
+          difficulty,
+          correct_answer,
+          explanation,
+          options (option_text, option_index)
+        `)
+        .eq('topic_id', selectedTopic)
+        .limit(20)
 
-    const formatted = (data || []).map(q => ({
-      id: q.id,
-      text: q.question_text,
-      options: (q.options || []).sort((a, b) => a.option_index - b.option_index).map(o => o.option_text),
-      correct: q.correct_answer,
-      explanation: q.explanation || 'No explanation available',
-      difficulty: q.difficulty
-    }))
+      if (error) throw error
 
-    setQuestions(formatted)
-    setLoading(false)
+      const formatted = (data || []).map(q => ({
+        id: q.id,
+        text: q.question_text,
+        options: (q.options || []).sort((a, b) => a.option_index - b.option_index).map(o => o.option_text),
+        correct: q.correct_answer,
+        explanation: q.explanation || 'No explanation available',
+        difficulty: q.difficulty
+      }))
+
+      setQuestions(formatted)
+    } catch (error) {
+      showToast('Error loading questions', true)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
     <div className="max-w-6xl mx-auto px-4">
-      <div className="quiz-card">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">📚 Practice MCQs</h2>
+      <div className="quiz-card rounded-2xl p-6 md:p-8 shadow-xl">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+          <i className="fas fa-database text-purple-600"></i> Practice MCQs
+        </h2>
+        <p className="text-gray-600 mb-6">Browse and practice questions organized by book, chapter, and topic</p>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Select Book</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">📚 Select Book</label>
             <select 
               value={selectedBook}
               onChange={(e) => setSelectedBook(e.target.value)}
@@ -96,14 +117,14 @@ export default function Practice({ books }) {
           </div>
           
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Select Topic</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">🏷️ Select Topic / Chapter</label>
             <select 
               value={selectedTopic}
               onChange={(e) => setSelectedTopic(e.target.value)}
               className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
               disabled={!selectedBook}
             >
-              <option value="">-- Select a Topic --</option>
+              <option value="">Select a book first</option>
               {topics.map(topic => (
                 <option key={topic.id} value={topic.id}>
                   {topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name}
@@ -113,7 +134,7 @@ export default function Practice({ books }) {
           </div>
         </div>
         
-        <div className="space-y-4">
+        <div id="practiceQuestionsContainer" className="space-y-4">
           {loading ? (
             <div className="text-center py-8 text-gray-500">Loading questions...</div>
           ) : questions.length === 0 ? (
@@ -127,7 +148,7 @@ export default function Practice({ books }) {
                                     'text-red-600 bg-red-50'
               
               return (
-                <div key={q.id} className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+                <div key={q.id} className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 practice-card">
                   <div className="flex justify-between items-start mb-3 flex-wrap gap-2">
                     <span className="font-bold text-purple-600 text-sm">Q{idx + 1}</span>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${difficultyColor}`}>{q.difficulty.toUpperCase()}</span>
@@ -154,6 +175,29 @@ export default function Practice({ books }) {
           )}
         </div>
       </div>
+
+      {/* MISSING BOOK SECTION */}
+      <div className="missing-book-card rounded-2xl p-6 shadow-xl mt-6">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <i className="fas fa-book-open text-3xl text-amber-600"></i>
+            <div>
+              <h3 className="font-bold text-amber-800 text-lg">Don't see your book?</h3>
+              <p className="text-amber-700 text-sm">Want MCQs from a specific book that's not available yet?</p>
+            </div>
+          </div>
+          <a href="/contact" className="bg-amber-600 text-white px-5 py-2 rounded-full font-medium hover:bg-amber-700 transition flex items-center gap-2">
+            <i className="fas fa-envelope"></i> Request a Book
+          </a>
+        </div>
+      </div>
+
+      {/* Toast */}
+      {toast.show && (
+        <div className={`toast ${toast.error ? 'bg-red-500' : 'bg-gray-800'}`}>
+          {toast.message}
+        </div>
+      )}
     </div>
   )
 }
