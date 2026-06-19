@@ -304,4 +304,84 @@ export default function Home({ stats, categories, books, subjects }) {
               <div className="w-20 h-1 bg-gradient-to-r from-purple-600 to-indigo-600 mx-auto rounded-full"></div>
             </div>
             
-            <div
+            <div className="exam-grid">
+              <div className="exam-card">
+                <div className="exam-icon">🎓</div>
+                <h3 className="exam-title">SAT</h3>
+                <p className="exam-subjects">Math (Algebra, Data, Geometry) · Reading & Writing</p>
+                <div className="exam-books">
+                  <i className="fas fa-book-open text-purple-500 text-xs mr-1"></i> Kaplan, Princeton Review, College Board
+                </div>
+              </div>
+              <div className="exam-card">
+                <div className="exam-icon">✍️</div>
+                <h3 className="exam-title">ACT</h3>
+                <p className="exam-subjects">English · Math · Reading · Science (Optional)</p>
+                <div className="exam-books">
+                  <i className="fas fa-book-open text-purple-500 text-xs mr-1"></i> Barron's, Princeton Review, Magoosh
+                </div>
+              </div>
+              <div className="exam-card">
+                <div className="exam-icon">📊</div>
+                <h3 className="exam-title">GRE</h3>
+                <p className="exam-subjects">Quant (Math) · Verbal · Analytical Writing</p>
+                <div className="exam-books">
+                  <i className="fas fa-book-open text-purple-500 text-xs mr-1"></i> Manhattan Review, Kaplan, ETS
+                </div>
+              </div>
+              <div className="exam-card">
+                <div className="exam-icon">💼</div>
+                <h3 className="exam-title">GMAT</h3>
+                <p className="exam-subjects">Quant · Verbal · Data Insights</p>
+                <div className="exam-books">
+                  <i className="fas fa-book-open text-purple-500 text-xs mr-1"></i> GMAC, Manhattan Prep, PowerScore
+                </div>
+              </div>
+              <div className="exam-card">
+                <div className="exam-icon">🔬</div>
+                <h3 className="exam-title">AP & IB</h3>
+                <p className="exam-subjects">Calculus, Biology, Chemistry, Physics, English, Statistics</p>
+                <div className="exam-books">
+                  <i className="fas fa-book-open text-purple-500 text-xs mr-1"></i> Princeton Review, Cambridge, Norton
+                </div>
+              </div>
+              <div className="exam-card">
+                <div className="exam-icon">⚡</div>
+                <h3 className="exam-title">JEE & NEET</h3>
+                <p className="exam-subjects">Physics · Chemistry · Math (JEE) · Biology (NEET)</p>
+                <div className="exam-books">
+                  <i className="fas fa-book-open text-purple-500 text-xs mr-1"></i> NCERT, H.C. Verma, Irodov, DC Pandey
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <Link href="/quiz" className="mt-8 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 md:px-8 py-2 md:py-3 rounded-full font-bold hover:opacity-90 transition shadow-lg text-sm md:text-base inline-block">
+            Start Practicing Now <i className="fas fa-arrow-right ml-2"></i>
+          </Link>
+        </div>
+      </div>
+
+      {/* MISSING BOOK SECTION */}
+      <div className="missing-book-card rounded-2xl p-6 shadow-xl mt-6">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <i className="fas fa-book-open text-3xl text-amber-600"></i>
+            <div>
+              <h3 className="font-bold text-amber-800 text-lg">Don't see your book?</h3>
+              <p className="text-amber-700 text-sm">Want MCQs from a specific book that's not available yet?</p>
+            </div>
+          </div>
+          <a href="/contact" className="bg-amber-600 text-white px-5 py-2 rounded-full font-medium hover:bg-amber-700 transition flex items-center gap-2">
+            <i className="fas fa-envelope"></i> Request a Book
+          </a>
+        </div>
+      </div>
+
+      {/* FOOTER */}
+      <footer className="mt-12 text-center text-white/60 text-xs md:text-sm py-6">
+        <p>&copy; 2025 BookMCQ. All rights reserved. | Master Every Chapter | One Paper MCQ | Govt & Private Job Preparation</p>
+      </footer>
+    </div>
+  )
+}
