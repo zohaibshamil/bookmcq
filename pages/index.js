@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { useState, useEffect } from 'react'
 
 export async function getStaticProps() {
+  // Fetch all data server-side for SEO
   const { count: booksCount } = await supabase
     .from('books')
     .select('*', { count: 'exact', head: true })
@@ -20,14 +21,47 @@ export async function getStaticProps() {
     .from('books')
     .select('id, title, author, category')
     .order('title')
-    .limit(50)
+    .limit(100)
 
-  // Get unique subjects
+  // Get unique subjects for SEO
   const { data: allBooks } = await supabase
     .from('books')
     .select('category')
   
   const uniqueCategories = [...new Set((allBooks || []).map(b => b.category).filter(Boolean))]
+
+  // Get recent news items for ticker (server-side for SEO)
+  const sevenDaysAgo = new Date()
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+
+  const { data: recentBooks } = await supabase
+    .from('books')
+    .select('title, author, created_at')
+    .gte('created_at', sevenDaysAgo.toISOString())
+    .order('created_at', { ascending: false })
+    .limit(5)
+
+  const { data: recentTopics } = await supabase
+    .from('topics')
+    .select('name, book_id, created_at, books(title)')
+    .gte('created_at', sevenDaysAgo.toISOString())
+    .order('created_at', { ascending: false })
+    .limit(5)
+
+  const newsItems = []
+  recentBooks?.forEach(book => {
+    newsItems.push({
+      icon: '📚',
+      text: `New Book Added: "${book.title}"${book.author ? ` by ${book.author}` : ''}`
+    })
+  })
+  recentTopics?.forEach(topic => {
+    const bookTitle = topic.books?.title || 'Unknown Book'
+    newsItems.push({
+      icon: '📖',
+      text: `New Chapter Added: "${topic.name}" in "${bookTitle}"`
+    })
+  })
 
   return {
     props: {
@@ -35,122 +69,73 @@ export async function getStaticProps() {
       categories: categories || [],
       books: books || [],
       subjects: uniqueCategories || [],
+      newsItems: newsItems.slice(0, 10),
     },
     revalidate: 3600
   }
 }
 
-export default function Home({ stats, categories, books, subjects }) {
+export default function Home({ stats, categories, books: initialBooks, subjects, newsItems: initialNewsItems }) {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState('all')
-  const [filteredBooks, setFilteredBooks] = useState(books)
-  const [newsItems, setNewsItems] = useState([])
+  const [filteredBooks, setFilteredBooks] = useState(initialBooks)
   const [newsVisible, setNewsVisible] = useState(true)
 
-  // Navbar scroll
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50)
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // Filter books by category
   useEffect(() => {
     if (selectedCategory === 'all') {
-      setFilteredBooks(books)
+      setFilteredBooks(initialBooks)
     } else {
-      setFilteredBooks(books.filter(b => b.category === selectedCategory))
+      setFilteredBooks(initialBooks.filter(b => b.category === selectedCategory))
     }
-  }, [selectedCategory, books])
-
-  // Load news ticker
-  useEffect(() => {
-    loadNews()
-  }, [])
-
-  async function loadNews() {
-    try {
-      const sevenDaysAgo = new Date()
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-
-      const { data: recentBooks } = await supabase
-        .from('books')
-        .select('title, author, created_at')
-        .gte('created_at', sevenDaysAgo.toISOString())
-        .order('created_at', { ascending: false })
-        .limit(3)
-
-      const { data: recentTopics } = await supabase
-        .from('topics')
-        .select('name, book_id, created_at, books(title)')
-        .gte('created_at', sevenDaysAgo.toISOString())
-        .order('created_at', { ascending: false })
-        .limit(3)
-
-      const items = []
-
-      recentBooks?.forEach(book => {
-        items.push({
-          icon: '📚',
-          text: `New Book Added: "${book.title}"${book.author ? ` by ${book.author}` : ''}`
-        })
-      })
-
-      recentTopics?.forEach(topic => {
-        const bookTitle = topic.books?.title || 'Unknown Book'
-        items.push({
-          icon: '📖',
-          text: `New Chapter Added: "${topic.name}" in "${bookTitle}"`
-        })
-      })
-
-      setNewsItems(items.slice(0, 10))
-    } catch (error) {
-      console.error('News error:', error)
-    }
-  }
+  }, [selectedCategory, initialBooks])
 
   return (
     <div className="max-w-6xl mx-auto px-4 disable-select">
       {/* NAVBAR */}
       <nav className={`bg-white/10 backdrop-blur-lg rounded-full px-4 md:px-6 py-3 mb-8 sticky top-4 z-50 shadow-lg ${scrolled ? 'navbar-scrolled' : ''}`}>
         <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <i className="fas fa-graduation-cap text-white text-xl md:text-2xl"></i>
             <span className="text-white font-bold text-lg md:text-xl">BookMCQ</span>
             <span className="text-white/60 text-xs hidden sm:inline">| Master Every Chapter</span>
-          </div>
+          </Link>
           <div className="desktop-menu flex gap-3 md:gap-6">
-            <a href="/" className="nav-link active">🏠 Home</a>
-            <a href="/quiz" className="nav-link text-white/80 hover:text-white transition flex items-center gap-1">
+            <Link href="/" className="nav-link active">🏠 Home</Link>
+            <Link href="/quiz" className="nav-link text-white/80 hover:text-white transition flex items-center gap-1">
               📝 Quiz <span className="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1">FREE</span>
-            </a>
-            <a href="/practice" className="nav-link text-white/80 hover:text-white transition flex items-center gap-1">
+            </Link>
+            <Link href="/practice" className="nav-link text-white/80 hover:text-white transition flex items-center gap-1">
               📚 Practice <span className="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1">FREE</span>
-            </a>
-            <a href="/contact" className="nav-link text-white/80 hover:text-white transition">📧 Contact</a>
-            <a href="/privacy" className="nav-link text-white/80 hover:text-white transition">🔒 Privacy</a>
+            </Link>
+            <Link href="/contact" className="nav-link text-white/80 hover:text-white transition">📧 Contact</Link>
+            <Link href="/privacy" className="nav-link text-white/80 hover:text-white transition">🔒 Privacy</Link>
           </div>
           <button onClick={() => setMobileOpen(!mobileOpen)} className="mobile-menu-btn text-white text-2xl">☰</button>
         </div>
       </nav>
 
       {/* MOBILE DROPDOWN */}
-      <div id="mobileDropdown" className={`${mobileOpen ? 'block' : 'hidden'} bg-white rounded-xl shadow-xl w-full mb-4 py-2 z-50`}>
-        <a href="/" className="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition">🏠 Home</a>
-        <a href="/quiz" className="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center">
+      <div className={`${mobileOpen ? 'block' : 'hidden'} bg-white rounded-xl shadow-xl w-full mb-4 py-2 z-50`}>
+        <Link href="/" className="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition">🏠 Home</Link>
+        <Link href="/quiz" className="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center">
           📝 Quiz <span className="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span>
-        </a>
-        <a href="/practice" className="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center">
+        </Link>
+        <Link href="/practice" className="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center">
           📚 Practice <span className="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span>
-        </a>
-        <a href="/contact" className="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition">📧 Contact</a>
-        <a href="/privacy" className="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition">🔒 Privacy</a>
+        </Link>
+        <Link href="/contact" className="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition">📧 Contact</Link>
+        <Link href="/privacy" className="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition">🔒 Privacy</Link>
       </div>
 
       {/* NEWS TICKER */}
-      {newsVisible && newsItems.length > 0 && (
+      {newsVisible && initialNewsItems.length > 0 && (
         <div className="news-ticker-container">
           <div className="news-ticker">
             <div className="news-ticker-label">
@@ -159,16 +144,14 @@ export default function Home({ stats, categories, books, subjects }) {
             </div>
             <div className="ticker-wrapper">
               <div className="ticker-track">
-                {newsItems.map((item, idx) => (
+                {initialNewsItems.map((item, idx) => (
                   <div key={idx} className="ticker-item">
-                    <span>{item.icon}</span>
-                    {item.text}
+                    <span>{item.icon}</span> {item.text}
                   </div>
                 ))}
-                {newsItems.map((item, idx) => (
+                {initialNewsItems.map((item, idx) => (
                   <div key={`dup-${idx}`} className="ticker-item">
-                    <span>{item.icon}</span>
-                    {item.text}
+                    <span>{item.icon}</span> {item.text}
                   </div>
                 ))}
               </div>
@@ -241,7 +224,6 @@ export default function Home({ stats, categories, books, subjects }) {
               <p className="mt-2">With hundreds of books and thousands of carefully crafted questions, BookMCQ is the most comprehensive MCQ platform for students preparing for government jobs, private jobs, competitive exams, and academic success worldwide.</p>
             </div>
             
-            {/* Dynamic Subjects */}
             <div className="mt-4 pt-2">
               <p className="text-sm text-gray-500">
                 <i className="fas fa-spinner fa-spin mr-1"></i> 
@@ -249,7 +231,7 @@ export default function Home({ stats, categories, books, subjects }) {
               </p>
             </div>
             
-            {/* Categories */}
+            {/* CATEGORIES */}
             <div className="mt-6 pt-4 border-t border-purple-200">
               <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
                 <i className="fas fa-tags text-purple-600"></i> Browse by Category
@@ -257,7 +239,7 @@ export default function Home({ stats, categories, books, subjects }) {
               <div className="flex flex-wrap gap-2 mb-4">
                 <button 
                   onClick={() => setSelectedCategory('all')}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition ${selectedCategory === 'all' ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-700 hover:bg-purple-600 hover:text-white'}`}
+                  className={`category-filter-btn px-4 py-2 rounded-full text-sm font-medium ${selectedCategory === 'all' ? 'bg-purple-600 text-white active' : 'bg-purple-100 text-purple-700 hover:bg-purple-600 hover:text-white'}`}
                 >
                   📚 All Books
                 </button>
@@ -265,7 +247,7 @@ export default function Home({ stats, categories, books, subjects }) {
                   <button 
                     key={cat.name}
                     onClick={() => setSelectedCategory(cat.name)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition ${selectedCategory === cat.name ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-700 hover:bg-purple-600 hover:text-white'}`}
+                    className={`category-filter-btn px-4 py-2 rounded-full text-sm font-medium ${selectedCategory === cat.name ? 'bg-purple-600 text-white active' : 'bg-purple-100 text-purple-700 hover:bg-purple-600 hover:text-white'}`}
                   >
                     {cat.name}
                   </button>
@@ -278,7 +260,7 @@ export default function Home({ stats, categories, books, subjects }) {
                 ) : (
                   <div className="books-grid">
                     {filteredBooks.map((book, index) => (
-                      <div key={book.id} className="book-list-item" onClick={() => window.location.href = `/quiz/${book.id}`}>
+                      <div key={book.id} className="book-list-item" onClick={() => window.location.href = '/quiz'}>
                         <div className="book-info">
                           <div className="book-number">{index + 1}</div>
                           <div>
@@ -356,32 +338,27 @@ export default function Home({ stats, categories, books, subjects }) {
             </div>
           </div>
 
+          {/* MISSING BOOK SECTION */}
+          <div className="missing-book-card rounded-2xl p-6 shadow-xl w-full mt-4">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <i className="fas fa-book-open text-3xl text-amber-600"></i>
+                <div>
+                  <h3 className="font-bold text-amber-800 text-lg">Don't see your book?</h3>
+                  <p className="text-amber-700 text-sm">Want MCQs from a specific book that's not available yet?</p>
+                </div>
+              </div>
+              <Link href="/contact" className="bg-amber-600 text-white px-5 py-2 rounded-full font-medium hover:bg-amber-700 transition flex items-center gap-2">
+                <i className="fas fa-envelope"></i> Request a Book
+              </Link>
+            </div>
+          </div>
+
           <Link href="/quiz" className="mt-8 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 md:px-8 py-2 md:py-3 rounded-full font-bold hover:opacity-90 transition shadow-lg text-sm md:text-base inline-block">
             Start Practicing Now <i className="fas fa-arrow-right ml-2"></i>
           </Link>
         </div>
       </div>
-
-      {/* MISSING BOOK SECTION */}
-      <div className="missing-book-card rounded-2xl p-6 shadow-xl mt-6">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <i className="fas fa-book-open text-3xl text-amber-600"></i>
-            <div>
-              <h3 className="font-bold text-amber-800 text-lg">Don't see your book?</h3>
-              <p className="text-amber-700 text-sm">Want MCQs from a specific book that's not available yet?</p>
-            </div>
-          </div>
-          <a href="/contact" className="bg-amber-600 text-white px-5 py-2 rounded-full font-medium hover:bg-amber-700 transition flex items-center gap-2">
-            <i className="fas fa-envelope"></i> Request a Book
-          </a>
-        </div>
-      </div>
-
-      {/* FOOTER */}
-      <footer className="mt-12 text-center text-white/60 text-xs md:text-sm py-6">
-        <p>&copy; 2025 BookMCQ. All rights reserved. | Master Every Chapter | One Paper MCQ | Govt & Private Job Preparation</p>
-      </footer>
     </div>
   )
 }
