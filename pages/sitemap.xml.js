@@ -1,47 +1,42 @@
-import { supabase } from '../lib/supabase'
+export default function Sitemap() {
+  // This page generates sitemap.xml
+}
 
 export async function getServerSideProps({ res }) {
-  const { data: books } = await supabase.from('books').select('id')
-  const { data: topics } = await supabase.from('topics').select('id, book_id')
-
-  const baseUrl = 'https://bookmcq.vercel.app'
-  const now = new Date().toISOString().split('T')[0]
-
-  let sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`
-
-  const pages = ['/', '/quiz', '/practice', '/contact', '/privacy']
-  pages.forEach(page => {
-    sitemap += `
-    <url>
-      <loc>${baseUrl}${page}</loc>
-      <lastmod>${now}</lastmod>
-      <changefreq>${page === '/' ? 'daily' : 'weekly'}</changefreq>
-      <priority>${page === '/' ? '1.0' : '0.8'}</priority>
-    </url>`
-  })
-
-  ;(books || []).forEach(book => {
-    sitemap += `
-    <url>
-      <loc>${baseUrl}/quiz/${book.id}</loc>
-      <lastmod>${now}</lastmod>
-      <changefreq>weekly</changefreq>
-      <priority>0.8</priority>
-    </url>`
-  })
-
-  ;(topics || []).forEach(topic => {
-    sitemap += `
-    <url>
-      <loc>${baseUrl}/quiz/${topic.book_id}/${topic.id}</loc>
-      <lastmod>${now}</lastmod>
-      <changefreq>weekly</changefreq>
-      <priority>0.7</priority>
-    </url>`
-  })
-
-  sitemap += `
+  const baseUrl = 'https://bookmcq.com'
+  
+  const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>${baseUrl}/</loc>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/quiz</loc>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/practice</loc>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/contact</loc>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/privacy</loc>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
 </urlset>`
 
   res.setHeader('Content-Type', 'text/xml')
@@ -50,5 +45,3 @@ export async function getServerSideProps({ res }) {
 
   return { props: {} }
 }
-
-export default function Sitemap() { return null }
