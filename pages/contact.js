@@ -7,12 +7,24 @@ export default function Contact() {
   const [type, setType] = useState('General Inquiry')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const [toast, setToast] = useState({ show: false, message: '', error: false })
+
+  const showToast = (msg, error = false) => {
+    setToast({ show: true, message: msg, error })
+    setTimeout(() => setToast({ show: false, message: '', error: false }), 3000)
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     
     if (!name || !email || !message) {
-      alert('Please fill all required fields')
+      showToast('Please fill all required fields', true)
+      return
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      showToast('Please enter a valid email address', true)
       return
     }
     
@@ -31,13 +43,15 @@ export default function Contact() {
       
       if (error) throw error
       
-      alert('✅ Thank you for your message! We\'ll get back to you soon.')
+      const isBookRequest = type === 'Book Request'
+      showToast(isBookRequest ? '✅ Book request submitted! We\'ll add it within 48 hours.' : '✅ Thank you for your message! We\'ll get back to you soon.')
       setName('')
       setEmail('')
       setType('General Inquiry')
       setMessage('')
     } catch (error) {
-      alert('❌ Failed to send message. Please try again later.')
+      console.error('Error details:', error)
+      showToast('❌ Failed to send message. Please try again later.', true)
     } finally {
       setLoading(false)
     }
@@ -45,7 +59,7 @@ export default function Contact() {
 
   return (
     <div className="max-w-6xl mx-auto px-4">
-      <div className="quiz-card">
+      <div className="quiz-card rounded-2xl p-6 md:p-8 shadow-xl">
         <div className="text-center mb-8">
           <i className="fas fa-envelope text-5xl text-purple-600 mb-4"></i>
           <h2 className="text-3xl font-bold mb-4">Contact Us</h2>
@@ -114,12 +128,19 @@ export default function Contact() {
                 disabled={loading}
                 className="bg-purple-600 text-white px-6 py-2 rounded-xl hover:bg-purple-700 transition flex items-center justify-center gap-2 w-full"
               >
-                {loading ? 'Sending...' : 'Send Message'}
+                {loading ? <><i className="fas fa-spinner fa-spin"></i> Sending...</> : <><i className="fas fa-paper-plane"></i> Send Message</>}
               </button>
             </form>
           </div>
         </div>
       </div>
+      
+      {/* Toast */}
+      {toast.show && (
+        <div className={`toast ${toast.error ? 'bg-red-500' : 'bg-gray-800'}`}>
+          {toast.message}
+        </div>
+      )}
     </div>
   )
 }
