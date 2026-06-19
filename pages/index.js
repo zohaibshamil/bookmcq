@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { useState, useEffect } from 'react'
 
 export async function getStaticProps() {
-  // Fetch all data server-side for SEO
+  // Fetch stats
   const { count: booksCount } = await supabase
     .from('books')
     .select('*', { count: 'exact', head: true })
@@ -12,16 +12,18 @@ export async function getStaticProps() {
     .from('questions')
     .select('*', { count: 'exact', head: true })
   
+  // Fetch categories
   const { data: categories } = await supabase
     .from('categories')
     .select('*')
     .order('name')
   
+  // Fetch books
   const { data: books } = await supabase
     .from('books')
     .select('id, title, author, category')
     .order('title')
-    .limit(100)
+    .limit(50)
 
   // Get unique subjects for SEO
   const { data: allBooks } = await supabase
@@ -30,64 +32,22 @@ export async function getStaticProps() {
   
   const uniqueCategories = [...new Set((allBooks || []).map(b => b.category).filter(Boolean))]
 
-  // Get recent news items for ticker (server-side for SEO)
-  const sevenDaysAgo = new Date()
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-
-  const { data: recentBooks } = await supabase
-    .from('books')
-    .select('title, author, created_at')
-    .gte('created_at', sevenDaysAgo.toISOString())
-    .order('created_at', { ascending: false })
-    .limit(5)
-
-  const { data: recentTopics } = await supabase
-    .from('topics')
-    .select('name, book_id, created_at, books(title)')
-    .gte('created_at', sevenDaysAgo.toISOString())
-    .order('created_at', { ascending: false })
-    .limit(5)
-
-  const newsItems = []
-  recentBooks?.forEach(book => {
-    newsItems.push({
-      icon: '📚',
-      text: `New Book Added: "${book.title}"${book.author ? ` by ${book.author}` : ''}`
-    })
-  })
-  recentTopics?.forEach(topic => {
-    const bookTitle = topic.books?.title || 'Unknown Book'
-    newsItems.push({
-      icon: '📖',
-      text: `New Chapter Added: "${topic.name}" in "${bookTitle}"`
-    })
-  })
-
   return {
     props: {
       stats: { books: booksCount || 0, questions: questionsCount || 0 },
       categories: categories || [],
       books: books || [],
       subjects: uniqueCategories || [],
-      newsItems: newsItems.slice(0, 10),
     },
     revalidate: 3600
   }
 }
 
-export default function Home({ stats, categories, books: initialBooks, subjects, newsItems: initialNewsItems }) {
-  const [scrolled, setScrolled] = useState(false)
-  const [mobileOpen, setMobileOpen] = useState(false)
+export default function Home({ stats, categories, books: initialBooks, subjects }) {
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [filteredBooks, setFilteredBooks] = useState(initialBooks)
-  const [newsVisible, setNewsVisible] = useState(true)
 
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 50)
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
-
+  // Filter books by category
   useEffect(() => {
     if (selectedCategory === 'all') {
       setFilteredBooks(initialBooks)
@@ -97,73 +57,8 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
   }, [selectedCategory, initialBooks])
 
   return (
-    <div className="max-w-6xl mx-auto px-4 disable-select">
-      {/* NAVBAR */}
-      <nav className={`bg-white/10 backdrop-blur-lg rounded-full px-4 md:px-6 py-3 mb-8 sticky top-4 z-50 shadow-lg ${scrolled ? 'navbar-scrolled' : ''}`}>
-        <div className="flex justify-between items-center">
-          <Link href="/" className="flex items-center gap-2">
-            <i className="fas fa-graduation-cap text-white text-xl md:text-2xl"></i>
-            <span className="text-white font-bold text-lg md:text-xl">BookMCQ</span>
-            <span className="text-white/60 text-xs hidden sm:inline">| Master Every Chapter</span>
-          </Link>
-          <div className="desktop-menu flex gap-3 md:gap-6">
-            <Link href="/" className="nav-link active">🏠 Home</Link>
-            <Link href="/quiz" className="nav-link text-white/80 hover:text-white transition flex items-center gap-1">
-              📝 Quiz <span className="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1">FREE</span>
-            </Link>
-            <Link href="/practice" className="nav-link text-white/80 hover:text-white transition flex items-center gap-1">
-              📚 Practice <span className="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1">FREE</span>
-            </Link>
-            <Link href="/contact" className="nav-link text-white/80 hover:text-white transition">📧 Contact</Link>
-            <Link href="/privacy" className="nav-link text-white/80 hover:text-white transition">🔒 Privacy</Link>
-          </div>
-          <button onClick={() => setMobileOpen(!mobileOpen)} className="mobile-menu-btn text-white text-2xl">☰</button>
-        </div>
-      </nav>
-
-      {/* MOBILE DROPDOWN */}
-      <div className={`${mobileOpen ? 'block' : 'hidden'} bg-white rounded-xl shadow-xl w-full mb-4 py-2 z-50`}>
-        <Link href="/" className="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition">🏠 Home</Link>
-        <Link href="/quiz" className="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center">
-          📝 Quiz <span className="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span>
-        </Link>
-        <Link href="/practice" className="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center">
-          📚 Practice <span className="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span>
-        </Link>
-        <Link href="/contact" className="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition">📧 Contact</Link>
-        <Link href="/privacy" className="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition">🔒 Privacy</Link>
-      </div>
-
-      {/* NEWS TICKER */}
-      {newsVisible && initialNewsItems.length > 0 && (
-        <div className="news-ticker-container">
-          <div className="news-ticker">
-            <div className="news-ticker-label">
-              <i className="fas fa-bullhorn"></i>
-              <span>NEWS</span>
-            </div>
-            <div className="ticker-wrapper">
-              <div className="ticker-track">
-                {initialNewsItems.map((item, idx) => (
-                  <div key={idx} className="ticker-item">
-                    <span>{item.icon}</span> {item.text}
-                  </div>
-                ))}
-                {initialNewsItems.map((item, idx) => (
-                  <div key={`dup-${idx}`} className="ticker-item">
-                    <span>{item.icon}</span> {item.text}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <button onClick={() => setNewsVisible(false)} className="close-news-btn">
-              <i className="fas fa-times"></i>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* MAIN CONTENT */}
+    <div className="disable-select">
+      {/* Home Page Content */}
       <div className="quiz-card rounded-2xl p-6 md:p-8 shadow-xl">
         <div className="flex flex-col items-center">
           <div className="bg-gradient-to-r from-purple-100 to-indigo-100 rounded-full p-4 mb-6">
@@ -175,8 +70,8 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
             Your ultimate platform for chapter-wise practice tests from hundreds of books. 
             Master any subject with our difficulty-based MCQ system. Everything you need is right here.
           </p>
-
-          {/* STATS CARDS */}
+          
+          {/* Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 md:gap-8 w-full mt-2 mb-8">
             <div className="stats-card rounded-2xl p-5 md:p-7 text-center cursor-pointer shadow-xl" onClick={() => window.location.href = '/practice'}>
               <i className="fas fa-book text-4xl md:text-5xl mb-3 opacity-80"></i>
@@ -197,20 +92,20 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
               <p className="text-xs mt-1 opacity-70">Monitor improvement →</p>
             </div>
           </div>
-
-          {/* ABOUT SECTION */}
+          
+          {/* About Section */}
           <div className="about-preview rounded-2xl p-6 mb-8 w-full text-left">
             <div className="flex items-center gap-3 mb-4">
               <i className="fas fa-book-open text-2xl text-purple-600"></i>
               <h2 className="text-xl font-bold text-gray-800">About BookMCQ</h2>
             </div>
-            <div style={{ textAlign: 'justify', maxWidth: '800px', margin: '0 auto', lineHeight: '1.6' }}>
+            <div style={{ textAlign: 'justify', maxWidth: '800px', margin: '0 auto', fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', lineHeight: '1.6' }}>
               <p>Our mission is to provide a comprehensive, accessible, and effective platform for students and professionals to test their knowledge across hundreds of books and subjects. Whether you're preparing for government jobs, private sector recruitment, or competitive examinations worldwide, BookMCQ has everything you need.</p>
               
-              <ul style={{ paddingLeft: '1.2rem', marginTop: '0.5rem' }}>
+              <ul style={{ paddingLeft: '1.2rem' }}>
                 <li><strong>One Paper MCQ Preparation</strong> – Master the art of solving multiple-choice questions for CSS, PMS, UPSC, FPSC, PPSC, SPSC, BPSC, IBPS, SSC, Banking, and other competitive exams.</li>
                 <li><strong>One Paper MCQ</strong> – Complete preparation for competitive exams:
-                  <ul style={{ paddingLeft: '1.2rem' }}>
+                  <ul>
                     <li><strong>Government Jobs</strong> – CSS, PMS, UPSC, FPSC, PPSC, SPSC, BPSC preparation</li>
                     <li><strong>Private Jobs</strong> – Banking, IT, Management, and Corporate recruitment tests</li>
                     <li><strong>Subject-wise Practice</strong> – Mathematics, English, General Knowledge, Current Affairs, Computer Science, Physics, Chemistry, Biology, and more</li>
@@ -221,9 +116,10 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
                 </li>
               </ul>
               
-              <p className="mt-2">With hundreds of books and thousands of carefully crafted questions, BookMCQ is the most comprehensive MCQ platform for students preparing for government jobs, private jobs, competitive exams, and academic success worldwide.</p>
+              <p>With hundreds of books and thousands of carefully crafted questions, BookMCQ is the most comprehensive MCQ platform for students preparing for government jobs, private jobs, competitive exams, and academic success worldwide.</p>
             </div>
             
+            {/* Dynamic Subjects */}
             <div className="mt-4 pt-2">
               <p className="text-sm text-gray-500">
                 <i className="fas fa-spinner fa-spin mr-1"></i> 
@@ -231,7 +127,7 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
               </p>
             </div>
             
-            {/* CATEGORIES */}
+            {/* Categories Section */}
             <div className="mt-6 pt-4 border-t border-purple-200">
               <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
                 <i className="fas fa-tags text-purple-600"></i> Browse by Category
@@ -278,8 +174,8 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
               </div>
             </div>
           </div>
-
-          {/* EXAM PREPARATION SECTION */}
+          
+          {/* Exam Preparation Section */}
           <div className="w-full mt-4 mb-10">
             <div className="text-center mb-6">
               <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">Everything for Your Exam Preparation</h2>
@@ -337,8 +233,8 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
               </div>
             </div>
           </div>
-
-          {/* MISSING BOOK SECTION */}
+          
+          {/* Missing Book Section */}
           <div className="missing-book-card rounded-2xl p-6 shadow-xl w-full mt-4">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-3">
@@ -353,7 +249,7 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
               </Link>
             </div>
           </div>
-
+          
           <Link href="/quiz" className="mt-8 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 md:px-8 py-2 md:py-3 rounded-full font-bold hover:opacity-90 transition shadow-lg text-sm md:text-base inline-block">
             Start Practicing Now <i className="fas fa-arrow-right ml-2"></i>
           </Link>
