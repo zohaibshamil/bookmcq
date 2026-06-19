@@ -8,18 +8,10 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
 
   useEffect(() => {
-    window.addEventListener('scroll', () => {
-      setScrolled(window.scrollY > 50)
-    })
+    const handleScroll = () => setScrolled(window.scrollY > 50)
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
   }, [])
-
-  const navItems = [
-    { href: '/', label: '🏠 Home' },
-    { href: '/quiz', label: '📝 Quiz', badge: 'FREE' },
-    { href: '/practice', label: '📚 Practice', badge: 'FREE' },
-    { href: '/contact', label: '📧 Contact' },
-    { href: '/privacy', label: '🔒 Privacy' }
-  ]
 
   return (
     <>
@@ -31,54 +23,50 @@ export default function Navbar() {
             <span className="text-white/60 text-xs hidden sm:inline">| Master Every Chapter</span>
           </Link>
 
+          {/* Desktop Menu */}
           <div className="desktop-menu flex gap-3 md:gap-6">
-            {navItems.map((item) => (
-              <Link 
-                key={item.href}
-                href={item.href}
-                className={`nav-link text-sm md:text-base whitespace-nowrap flex items-center gap-1 ${
-                  router.pathname === item.href ? 'text-white' : 'text-white/80 hover:text-white'
-                } transition`}
-              >
-                {item.label}
-                {item.badge && (
-                  <span className="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1">
-                    {item.badge}
-                  </span>
-                )}
-              </Link>
-            ))}
+            <Link href="/" className={`nav-link ${router.pathname === '/' ? 'active text-white' : 'text-white/80 hover:text-white'} transition`}>
+              🏠 Home
+            </Link>
+            <Link href="/quiz" className={`nav-link ${router.pathname === '/quiz' ? 'active text-white' : 'text-white/80 hover:text-white'} transition flex items-center gap-1`}>
+              📝 Quiz <span className="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1">FREE</span>
+            </Link>
+            <Link href="/practice" className={`nav-link ${router.pathname === '/practice' ? 'active text-white' : 'text-white/80 hover:text-white'} transition flex items-center gap-1`}>
+              📚 Practice <span className="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1">FREE</span>
+            </Link>
+            <Link href="/contact" className={`nav-link ${router.pathname === '/contact' ? 'active text-white' : 'text-white/80 hover:text-white'} transition`}>
+              📧 Contact
+            </Link>
+            <Link href="/privacy" className={`nav-link ${router.pathname === '/privacy' ? 'active text-white' : 'text-white/80 hover:text-white'} transition`}>
+              🔒 Privacy
+            </Link>
           </div>
 
-          <button 
-            className="mobile-menu-btn text-white text-2xl"
-            onClick={() => setMobileOpen(!mobileOpen)}
-          >
+          {/* Mobile Hamburger */}
+          <button onClick={() => setMobileOpen(!mobileOpen)} className="mobile-menu-btn text-white text-2xl">
             ☰
           </button>
         </div>
       </nav>
 
-      {/* Mobile Dropdown */}
-      {mobileOpen && (
-        <div className="bg-white rounded-xl shadow-xl w-full mb-4 py-2 z-50">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center"
-              onClick={() => setMobileOpen(false)}
-            >
-              {item.label}
-              {item.badge && (
-                <span className="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">
-                  {item.badge}
-                </span>
-              )}
-            </Link>
-          ))}
-        </div>
-      )}
+      {/* Mobile Dropdown Menu */}
+      <div className={`${mobileOpen ? 'block' : 'hidden'} bg-white rounded-xl shadow-xl w-full mb-4 py-2 z-50`}>
+        <Link href="/" className="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition" onClick={() => setMobileOpen(false)}>
+          🏠 Home
+        </Link>
+        <Link href="/quiz" className="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center" onClick={() => setMobileOpen(false)}>
+          📝 Quiz <span className="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span>
+        </Link>
+        <Link href="/practice" className="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center" onClick={() => setMobileOpen(false)}>
+          📚 Practice <span className="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span>
+        </Link>
+        <Link href="/contact" className="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition" onClick={() => setMobileOpen(false)}>
+          📧 Contact
+        </Link>
+        <Link href="/privacy" className="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition" onClick={() => setMobileOpen(false)}>
+          🔒 Privacy
+        </Link>
+      </div>
     </>
   )
 }
