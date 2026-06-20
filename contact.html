@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <link rel="canonical" href="https://bookmcq.com/contact">
+    <title>Contact Us - BookMCQ</title>
+    <meta name="description" content="Contact BookMCQ - Have questions or want to request a book? Get in touch with us.">
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-5WGZ1P0EV1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-5WGZ1P0EV1');
+    </script>
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .quiz-card { backdrop-filter: blur(10px); background: rgba(255,255,255,0.95); transition: transform 0.3s ease, box-shadow 0.3s ease; border-radius: 1.5rem; overflow: hidden; }
+        .quiz-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+        .nav-link { position: relative; transition: all 0.3s ease; }
+        .nav-link::after { content: ''; position: absolute; bottom: -5px; left: 0; width: 0; height: 2px; background: white; transition: width 0.3s ease; }
+        .nav-link:hover::after, .nav-link.active::after { width: 100%; }
+        .disable-select { user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; }
+        
+        /* Mobile menu styles - matching home page */
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        @media (max-width: 768px) {
+            .desktop-menu {
+                display: none !important;
+            }
+            .mobile-menu-btn {
+                display: block;
+            }
+        }
+        
+        @media (min-width: 769px) {
+            .mobile-menu-btn {
+                display: none;
+            }
+            #mobileDropdown {
+                display: none !important;
+            }
+        }
+        
+        .navbar-scrolled { background: white !important; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .navbar-scrolled .nav-link { color: #4a5568 !important; }
+        .navbar-scrolled .nav-link:hover { color: #667eea !important; }
+        .navbar-scrolled .nav-link::after { background: #667eea !important; }
+        .navbar-scrolled .text-white { color: #2d3748 !important; }
+        .navbar-scrolled .text-white\/60 { color: #718096 !important; }
+        .navbar-scrolled i { color: #667eea !important; }
+        
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background-color: #1f2937;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="disable-select">
+<div class="max-w-6xl mx-auto px-4">
+    
+    <nav class="bg-white/10 backdrop-blur-lg rounded-full px-4 md:px-6 py-3 mb-8 sticky top-4 z-50 shadow-lg">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-graduation-cap text-white text-xl md:text-2xl"></i>
+                <span class="text-white font-bold text-lg md:text-xl">BookMCQ</span>
+                <span class="text-white/60 text-xs hidden sm:inline">| Master Every Chapter</span>
+            </div>
+            
+            <div class="desktop-menu flex gap-3 md:gap-6">
+                <a href="/" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap">🏠 Home</a>
+                <a href="/quiz" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap flex items-center gap-1">📝 Quiz <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1">FREE</span></a>
+                <a href="/practice" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap flex items-center gap-1">📚 Practice <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1">FREE</span></a>
+                <a href="/contact" class="nav-link active text-white transition text-sm md:text-base whitespace-nowrap">📧 Contact</a>
+                <a href="/privacy" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap">🔒 Privacy</a>
+            </div>
+            
+            <!-- Mobile Hamburger Button -->
+            <button id="mobileMenuBtn" class="mobile-menu-btn text-white text-2xl">
+                ☰
+            </button>
+        </div>
+    </nav>
+    
+    <!-- Mobile Dropdown Menu -->
+    <div id="mobileDropdown" class="hidden bg-white rounded-xl shadow-xl w-full mb-4 py-2 z-50" style="display: none;">
+        <a href="/" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition">🏠 Home</a>
+        <a href="/quiz" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center">📝 Quiz <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span></a>
+        <a href="/practice" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center">📚 Practice <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span></a>
+        <a href="/contact" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition">📧 Contact</a>
+        <a href="/privacy" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition">🔒 Privacy</a>
+    </div>
+
+    <div class="quiz-card rounded-2xl p-6 md:p-8 shadow-xl">
+        <div class="text-center mb-8">
+            <i class="fas fa-envelope text-5xl text-purple-600 mb-4"></i>
+            <h2 class="text-3xl font-bold mb-4">Contact Us</h2>
+            <p class="text-gray-600">Have questions or want to request a book? We'd love to hear from you!</p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+                <h3 class="text-xl font-bold mb-4">Get in Touch</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-envelope text-purple-600 w-6"></i>
+                        <span class="text-gray-600">bookmcq@hotmail.com</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <i class="fab fa-twitter text-purple-600 w-6"></i>
+                        <span class="text-gray-600">@bookmcq</span>
+                    </div>
+                </div>
+                <div class="mt-6 p-4 bg-amber-50 rounded-xl">
+                    <h4 class="font-bold text-amber-800 mb-2"><i class="fas fa-book mr-2"></i> Book Request</h4>
+                    <p class="text-amber-700 text-sm">Don't see the book you're looking for? Submit a request below and we'll add it within 48 hours!</p>
+                </div>
+            </div>
+            <div>
+                <h3 class="text-xl font-bold mb-4">Send a Message</h3>
+                <form id="contactForm">
+                    <input type="text" id="contactName" placeholder="Your Name" class="w-full p-3 border rounded-xl mb-3 text-sm" required>
+                    <input type="email" id="contactEmail" placeholder="Your Email" class="w-full p-3 border rounded-xl mb-3 text-sm" required>
+                    <select id="contactType" class="w-full p-3 border rounded-xl mb-3 text-sm" required>
+                        <option value="General Inquiry">General Inquiry</option>
+                        <option value="Book Request">Book Request</option>
+                        <option value="Report an Issue">Report an Issue</option>
+                        <option value="Feature Suggestion">Feature Suggestion</option>
+                    </select>
+                    <textarea id="contactMessage" rows="4" placeholder="Your Message (include book title and author if requesting)" class="w-full p-3 border rounded-xl mb-3 text-sm" required></textarea>
+                    <button type="submit" id="submitContactBtn" class="bg-purple-600 text-white px-6 py-2 rounded-xl hover:bg-purple-700 transition flex items-center justify-center gap-2">
+                        <i class="fas fa-paper-plane"></i> Send Message
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <footer class="mt-12 text-center text-white/60 text-xs md:text-sm py-6">
+        <p>&copy; 2025 BookMCQ. All rights reserved. | Master Every Chapter</p>
+    </footer>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script>
+    // ============================================
+    // SUPABASE CONFIGURATION
+    // ============================================
+    const SUPABASE_URL = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
+    
+    function showToast(message, isError = false) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.style.background = isError ? '#ef4444' : '#1f2937';
+        toast.classList.remove('hidden');
+        setTimeout(() => toast.classList.add('hidden'), 3000);
+    }
+
+    // Security
+    document.addEventListener('contextmenu', (e) => { e.preventDefault(); return false; });
+    document.addEventListener('keydown', (e) => {
+        const forbidden = ['PrintScreen', 'F12', 'F5', 'F11',
+            (e.ctrlKey && e.shiftKey && e.key === 'I'),
+            (e.ctrlKey && e.shiftKey && e.key === 'C'),
+            (e.ctrlKey && e.key === 'u'),
+            (e.ctrlKey && e.key === 's')];
+        if (forbidden.includes(e.key) || forbidden.some(cond => cond === true)) {
+            e.preventDefault(); return false;
+        }
+    });
+    document.addEventListener('dragstart', (e) => { e.preventDefault(); return false; });
+    document.addEventListener('selectstart', (e) => {
+        if (!e.target.closest('input') && !e.target.closest('textarea')) {
+            e.preventDefault(); return false;
+        }
+    });
+
+    // Mobile Menu functionality (matching home page)
+    function initMobileMenu() {
+        const mobileBtn = document.getElementById('mobileMenuBtn');
+        const dropdown = document.getElementById('mobileDropdown');
+        
+        if (mobileBtn && dropdown) {
+            mobileBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (dropdown.style.display === 'none' || dropdown.style.display === '') {
+                    dropdown.style.display = 'block';
+                } else {
+                    dropdown.style.display = 'none';
+                }
+            });
+            
+            // Close dropdown when clicking outside (on mobile)
+            document.addEventListener('click', function(e) {
+                const isMobile = window.innerWidth <= 768;
+                if (isMobile && dropdown && mobileBtn) {
+                    if (!mobileBtn.contains(e.target) && !dropdown.contains(e.target)) {
+                        dropdown.style.display = 'none';
+                    }
+                }
+            });
+            
+            // Reset dropdown visibility on window resize
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 768) {
+                    dropdown.style.display = 'none';
+                }
+            });
+        }
+    }
+
+    function initNavbarScroll() {
+        const navbar = document.querySelector('nav.bg-white\\/10');
+        if (!navbar) return;
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                navbar.classList.add('navbar-scrolled');
+            } else {
+                navbar.classList.remove('navbar-scrolled');
+            }
+        });
+    }
+
+    // Contact Form Handler - Using direct fetch for reliability
+    document.getElementById('contactForm')?.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const submitBtn = document.getElementById('submitContactBtn');
+        const originalBtnText = submitBtn.innerHTML;
+        
+        const name = document.getElementById('contactName').value;
+        const email = document.getElementById('contactEmail').value;
+        const type = document.getElementById('contactType').value;
+        const message = document.getElementById('contactMessage').value;
+        
+        if (!name || !email || !message) {
+            showToast('Please fill all required fields', true);
+            return;
+        }
+        
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            showToast('Please enter a valid email address', true);
+            return;
+        }
+        
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+        
+        const insertData = {
+            name: name,
+            email: email,
+            message_type: type,
+            message: message,
+            status: 'unread',
+            created_at: new Date().toISOString()
+        };
+        
+        try {
+            // Direct fetch to Supabase REST API
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/contact_messages`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'Prefer': 'return=minimal'
+                },
+                body: JSON.stringify(insertData)
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Fetch error:', errorText);
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
+            }
+            
+            const isBookRequest = type === 'Book Request';
+            showToast(isBookRequest ? '✅ Book request submitted! We\'ll add it within 48 hours.' : '✅ Thank you for your message! We\'ll get back to you soon.');
+            this.reset();
+            
+        } catch (error) {
+            console.error('Error details:', error);
+            showToast('❌ Failed to send message. Please try again later.', true);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+        }
+    });
+
+    initNavbarScroll();
+    initMobileMenu(); // Added mobile menu initialization
+</script>
+</body>
+</html>
