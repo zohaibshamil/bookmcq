@@ -2525,23 +2525,24 @@ async function generateSEOPages() {
                 chaptersHtml += '<p class="text-gray-500 text-center py-4 col-span-full">No chapters available for this book yet.</p>';
             } else {
                 // Sort topics by chapter number
-                const sortedTopics = [...bookTopics].sort((a, b) => (a.chapter_number || 0) - (b.chapter_number || 0));
-                sortedTopics.forEach((topic, idx) => {
-                    const chapterDisplay = topic.chapter_number ? `Ch ${topic.chapter_number}: ` : '';
-                    const mcqCount = questionCountByTopic[topic.id] || 0;
-                    chaptersHtml += `
-                        <div class="book-list-item" onclick="window.location.href='/quiz'">
-                            <div class="book-info">
-                                <div class="book-number">${idx + 1}</div>
-                                <div>
-                                    <div class="book-title">${chapterDisplay}${topic.name}</div>
-                                    <div class="book-author">${mcqCount} MCQs</div>
-                                </div>
-                            </div>
-                            <i class="fas fa-chevron-right text-gray-400 text-sm"></i>
-                        </div>
-                    `;
-                });
+// Sort topics by chapter number
+const sortedTopics = [...bookTopics].sort((a, b) => (a.chapter_number || 0) - (b.chapter_number || 0));
+sortedTopics.forEach((topic, idx) => {
+    const chapterDisplay = topic.chapter_number ? `Ch ${topic.chapter_number}: ` : '';
+    const mcqCount = questionCountByTopic[topic.id] || 0;
+    chaptersHtml += `
+        <div class="book-list-item" onclick="window.location.href='/quiz'">
+            <div class="book-info">
+                <div class="book-number">${idx + 1}</div>
+                <div>
+                    <div class="book-title">${chapterDisplay}${topic.name}</div>
+                    <div class="book-author">${mcqCount} MCQs</div>
+                </div>
+            </div>
+            <i class="fas fa-chevron-right text-gray-400 text-sm"></i>
+        </div>
+    `;
+});
             }
             chaptersHtml += '</div>';
             chaptersHtml += '<p class="text-xs text-gray-400 mt-4 text-center">Click on any chapter to start practicing</p>';
