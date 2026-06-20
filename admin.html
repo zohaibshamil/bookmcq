@@ -2317,6 +2317,112 @@ function showTab(tabName) {
             }
         }
     }
+
+// ============ SEO PAGE GENERATION ============
+let seoGeneratedFiles = [];
+let seoTotalBooks = 0;
+let seoGeneratedCount = 0;
+let seoBooksData = [];
+let cachedTemplate = null;
+
+async function fetchTemplate() {
+    // First try to get template from server
+    try {
+        const response = await fetch('template.html');
+        if (response.ok) {
+            cachedTemplate = await response.text();
+            return cachedTemplate;
+        }
+    } catch(e) {
+        console.log('Could not fetch template.html, using fallback');
+    }
+    
+    // Fallback: try to get from current page but clean it
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = document.documentElement.outerHTML;
+    
+    const adminDashboard = tempDiv.querySelector('#adminDashboard');
+    if (adminDashboard) adminDashboard.remove();
+    
+    const loginScreen = tempDiv.querySelector('#loginScreen');
+    if (loginScreen) loginScreen.remove();
+    
+    const modals = tempDiv.querySelectorAll('.modal');
+    modals.forEach(el => el.remove());
+    
+    const toast = tempDiv.querySelector('#toast');
+    if (toast) toast.remove();
+    
+    const scripts = tempDiv.querySelectorAll('script');
+    scripts.forEach(el => {
+        if (el.textContent.includes('admin') || 
+            el.textContent.includes('SUPABASE') ||
+            el.textContent.includes('login') ||
+            el.textContent.includes('logout')) {
+            el.remove();
+        }
+    });
+    
+    cachedTemplate = tempDiv.innerHTML;
+    return cachedTemplate;
+}
+
+// ============ DYNAMIC: Fetch ALL questions with pagination ============
+async function fetchAllQuestions() {
+    let allQuestions = [];
+    let page = 0;
+    const pageSize = 1000;
+    let hasMore = true;
+    let totalFetched = 0;
+    const logContent = document.getElementById('seoLogContent');
+    
+    if (logContent) {
+        logContent.innerHTML += `<div>🔄 Fetching questions in batches of ${pageSize}...</div>`;
+    }
+    
+    while (hasMore) {
+        const from = page * pageSize;
+        const to = from + pageSize - 1;
+        
+        const { data, error } = await _supabase
+            .from('questions')
+            .select('id, topic_id')
+            .range(from, to);
+        
+        if (error) {
+            console.error('Error fetching questions:', error);
+            break;
+        }
+        
+        if (!data || data.length === 0) {
+            hasMore = false;
+        } else {
+            allQuestions = allQuestions.concat(data);
+            totalFetched += data.length;
+            page++;
+            
+            // Update progress
+            const statusEl = document.getElementById('seoStatus');
+            if (statusEl) {
+                statusEl.textContent = `📦 Fetching questions... ${totalFetched} fetched so far`;
+            }
+            if (logContent) {
+                logContent.innerHTML += `<div>   📥 Batch ${page}: ${data.length} questions (${totalFetched} total)</div>`;
+            }
+            
+            // If we got less than pageSize, we've reached the end
+            if (data.length < pageSize) {
+                hasMore = false;
+            }
+        }
+    }
+    
+    if (logContent) {
+        logContent.innerHTML += `<div>✅ Total questions fetched: ${allQuestions.length}</div>`;
+    }
+    return allQuestions;
+}
+
 async function generateSEOPages() {
     const statusEl = document.getElementById('seoStatus');
     const countEl = document.getElementById('seoCount');
@@ -2341,19 +2447,18 @@ async function generateSEOPages() {
     bookListEl.innerHTML = '<div class="text-gray-500 text-sm">Loading books...</div>';
     
     try {
-        // ============ FIX: ADD .limit(100000) to fetch ALL questions ============
-        const [booksRes, topicsRes, questionsRes, template] = await Promise.all([
+        // ============ DYNAMIC: Fetch ALL questions with pagination ============
+        const [booksRes, topicsRes, questions, template] = await Promise.all([
             _supabase.from('books').select('*').order('title'),
             _supabase.from('topics').select('*, books(title)').order('name'),
-            _supabase.from('questions').select('id, topic_id').limit(100000), // FETCH ALL QUESTIONS
+            fetchAllQuestions(),
             fetchTemplate()
         ]);
         
         const books = booksRes.data || [];
         const topics = topicsRes.data || [];
-        const questions = questionsRes.data || [];
         
-        // ============ FIX: Count questions per topic ============
+        // ============ Count questions per topic ============
         const questionCountByTopic = {};
         questions.forEach(q => {
             if (q.topic_id) {
@@ -2394,13 +2499,12 @@ async function generateSEOPages() {
             const bookTopics = topics.filter(t => t.book_id === book.id);
             const slug = book.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
             
-            // ============ FIX: Count total questions for this book ============
+            // ============ Count total questions for this book ============
             let totalQuestionsForBook = 0;
             bookTopics.forEach(topic => {
                 totalQuestionsForBook += questionCountByTopic[topic.id] || 0;
             });
             
-            // ============ DEBUG: Log per book ============
             console.log(`📊 ${book.title}: ${bookTopics.length} chapters, ${totalQuestionsForBook} MCQs`);
             
             let html = template;
@@ -2453,7 +2557,7 @@ async function generateSEOPages() {
                 `<div class="stats-number">${bookTopics.length}</div>`
             );
             
-            // ============ FIX: Stats - Questions count ============
+            // Stats - Questions count
             html = html.replace(
                 /<div class="stats-number" id="statMcqs">Loading...<\/div>/,
                 `<div class="stats-number">${totalQuestionsForBook}</div>`
@@ -2483,7 +2587,7 @@ async function generateSEOPages() {
                 `<div id="categoryFilters" class="flex flex-wrap gap-2 mb-4"><span class="text-sm text-gray-500">${bookTopics.length} chapters available</span></div>`
             );
             
-            // ============ FIX: Books grid - Show chapters with MCQ count ============
+            // ============ Books grid - Show chapters with MCQ count ============
             let chaptersHtml = '<div class="books-grid">';
             if (bookTopics.length === 0) {
                 chaptersHtml += '<p class="text-gray-500 text-center py-4 col-span-full">No chapters available for this book yet.</p>';
