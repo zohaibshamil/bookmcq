@@ -2393,22 +2393,33 @@ async function generateSEOPages() {
     bookListEl.innerHTML = '<div class="text-gray-500 text-sm">Loading books...</div>';
     
     try {
-        // Fetch all data
-        const [booksRes, topicsRes, template] = await Promise.all([
+        // ============ FIX 1: ADD questionsRes ============
+        const [booksRes, topicsRes, questionsRes] = await Promise.all([
             _supabase.from('books').select('*').order('title'),
             _supabase.from('topics').select('*, books(title)').order('name'),
-            fetchTemplate()
+            _supabase.from('questions').select('id, topic_id'),
         ]);
         
+        // ============ FIX 2: ADD questionCountByTopic ============
         const books = booksRes.data || [];
         const topics = topicsRes.data || [];
+        const questions = questionsRes.data || [];
+        
+        // Count questions per topic
+        const questionCountByTopic = {};
+        questions.forEach(q => {
+            if (q.topic_id) {
+                questionCountByTopic[q.topic_id] = (questionCountByTopic[q.topic_id] || 0) + 1;
+            }
+        });
+        
         seoBooksData = books;
         
         seoTotalBooks = books.length;
         statusEl.textContent = `📚 Found ${books.length} books`;
         countEl.textContent = `${books.length} pages`;
         progressBar.style.width = '20%';
-        logContent.innerHTML += `<div>📚 Found ${books.length} books, ${topics.length} topics</div>`;
+        logContent.innerHTML += `<div>📚 Found ${books.length} books, ${topics.length} topics, ${questions.length} questions</div>`;
         
         if (books.length === 0) {
             statusEl.textContent = '⚠️ No books found to generate pages';
@@ -2417,6 +2428,8 @@ async function generateSEOPages() {
             return;
         }
         
+        // Get current page HTML as template
+        const template = document.documentElement.outerHTML;
         logContent.innerHTML += '<div>📄 Generating pages...</div>';
         
         // Build book list with download buttons
@@ -2427,56 +2440,54 @@ async function generateSEOPages() {
             const bookTopics = topics.filter(t => t.book_id === book.id);
             const slug = book.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
             
+            // ============ FIX 3: Count questions for this book ============
+            let totalQuestionsForBook = 0;
+            bookTopics.forEach(topic => {
+                totalQuestionsForBook += questionCountByTopic[topic.id] || 0;
+            });
+            
             let html = template;
             
             // ===== UPDATE SEO META TAGS =====
-            // Title
             html = html.replace(
                 /<title>.*?<\/title>/,
                 `<title>${book.title} MCQs - Practice Questions for ${book.title} | BookMCQ</title>`
             );
             
-            // Description
             html = html.replace(
                 /<meta name="description" content=".*?">/,
-                `<meta name="description" content="Practice ${book.title} MCQs with chapter-wise questions. ${bookTopics.length} chapters and practice questions available for ${book.title}. Perfect for exam preparation.">`
+                `<meta name="description" content="Practice ${book.title} MCQs with chapter-wise questions. ${bookTopics.length} chapters and ${totalQuestionsForBook} practice questions available for ${book.title}. Perfect for exam preparation.">`
             );
             
-            // Keywords
             html = html.replace(
                 /<meta name="keywords" content=".*?">/,
-                `<meta name="keywords" content="${book.title} MCQs, ${book.title} questions, ${book.title} practice, ${book.title} exam preparation, ${book.category} MCQs">`
+                `<meta name="keywords" content="${book.title} MCQs, ${book.title} questions, ${book.title} practice, ${book.title} exam preparation, ${book.category || ''} MCQs">`
             );
             
-            // Canonical URL
             html = html.replace(
                 /<link rel="canonical" href=".*?">/,
                 `<link rel="canonical" href="https://bookmcq.com/books/${slug}.html">`
             );
             
-            // OG Title
             html = html.replace(
                 /<meta property="og:title" content=".*?">/,
                 `<meta property="og:title" content="${book.title} MCQs - Practice Questions | BookMCQ">`
             );
             
-            // OG Description
             html = html.replace(
                 /<meta property="og:description" content=".*?">/,
-                `<meta property="og:description" content="Practice ${book.title} MCQs with chapter-wise questions. ${bookTopics.length} chapters available for ${book.title}. Perfect for exam preparation.">`
+                `<meta property="og:description" content="Practice ${book.title} MCQs with chapter-wise questions. ${bookTopics.length} chapters and ${totalQuestionsForBook} practice questions available. Perfect for exam preparation.">`
             );
             
             // ===== UPDATE PAGE CONTENT =====
-            // H1 heading
             html = html.replace(
                 /<h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">.*?<\/h1>/,
                 `<h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">${book.title} | Practice MCQs</h1>`
             );
             
-            // Subtitle
             html = html.replace(
                 /<p class="text-gray-600 text-base md:text-lg max-w-2xl mx-auto mb-8 text-center">.*?<\/p>/,
-                `<p class="text-gray-600 text-base md:text-lg max-w-2xl mx-auto mb-8 text-center">Practice chapter-wise MCQs from "${book.title}"${book.author ? ` by ${book.author}` : ''}. ${bookTopics.length} chapters available with practice questions.</p>`
+                `<p class="text-gray-600 text-base md:text-lg max-w-2xl mx-auto mb-8 text-center">Practice chapter-wise MCQs from "${book.title}"${book.author ? ` by ${book.author}` : ''}. ${bookTopics.length} chapters and ${totalQuestionsForBook} practice questions available.</p>`
             );
             
             // Stats - Chapters count
@@ -2485,15 +2496,15 @@ async function generateSEOPages() {
                 `<div class="stats-number">${bookTopics.length}</div>`
             );
             
-            // Stats - Questions count (count questions for this book)
-            let totalQuestions = 0;
-            // We'll count questions for this book from the topics
-            // The actual count will be shown as "Practice Questions"
-            // Let's keep it as total number of topics for now
+            // ============ FIX 4: Stats - Questions count ============
+            html = html.replace(
+                /<div class="stats-number" id="statMcqs">Loading...<\/div>/,
+                `<div class="stats-number">${totalQuestionsForBook}</div>`
+            );
             
             // About content
             const aboutHtml = `
-                <p>Welcome to the <strong>${book.title}</strong> MCQ practice page. This page contains <strong>${bookTopics.length} chapters</strong> from "${book.title}"${book.author ? ` by ${book.author}` : ''}.</p>
+                <p>Welcome to the <strong>${book.title}</strong> MCQ practice page. This page contains <strong>${bookTopics.length} chapters</strong> and <strong>${totalQuestionsForBook} practice questions</strong> from "${book.title}"${book.author ? ` by ${book.author}` : ''}.</p>
                 <p>Practice chapter-wise MCQs to master ${book.title} for your exams. Each question comes with detailed explanations to help you understand the concepts better.</p>
                 ${book.category ? `<p><strong>Category:</strong> ${book.category}</p>` : ''}
                 <p class="mt-2">Start practicing now to improve your knowledge and score well in your exams!</p>
@@ -2509,25 +2520,29 @@ async function generateSEOPages() {
                 `<h3 class="font-bold text-gray-800" id="sectionTitle">📖 Chapters in "${book.title}"</h3>`
             );
             
-            // Category filters - Remove the filter buttons, show only chapters
+            // Category filters - show only chapters
             html = html.replace(
                 /<div id="categoryFilters" class="flex flex-wrap gap-2 mb-4">.*?<\/div>/s,
                 `<div id="categoryFilters" class="flex flex-wrap gap-2 mb-4"><span class="text-sm text-gray-500">${bookTopics.length} chapters available</span></div>`
             );
             
-            // Books grid - Show chapters instead of books
+            // Books grid - Show chapters with MCQ count
             let chaptersHtml = '<div class="books-grid">';
             if (bookTopics.length === 0) {
                 chaptersHtml += '<p class="text-gray-500 text-center py-4 col-span-full">No chapters available for this book yet.</p>';
             } else {
-                bookTopics.forEach((topic, idx) => {
+                // Sort topics by chapter number
+                const sortedTopics = [...bookTopics].sort((a, b) => (a.chapter_number || 0) - (b.chapter_number || 0));
+                sortedTopics.forEach((topic, idx) => {
                     const chapterDisplay = topic.chapter_number ? `Ch ${topic.chapter_number}: ` : '';
+                    const mcqCount = questionCountByTopic[topic.id] || 0;
                     chaptersHtml += `
                         <div class="book-list-item" onclick="window.location.href='/quiz'">
                             <div class="book-info">
                                 <div class="book-number">${idx + 1}</div>
                                 <div>
                                     <div class="book-title">${chapterDisplay}${topic.name}</div>
+                                    <div class="book-author">${mcqCount} MCQs</div>
                                 </div>
                             </div>
                             <i class="fas fa-chevron-right text-gray-400 text-sm"></i>
@@ -2549,16 +2564,17 @@ async function generateSEOPages() {
                 content: html,
                 book: book.title,
                 chapters: bookTopics.length,
+                questions: totalQuestionsForBook,
                 slug: slug
             });
             
-            // Add to book list with individual download button
+            // Add to book list
             bookListHtml += `
                 <div class="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-200 hover:border-purple-300 transition">
                     <div class="flex items-center gap-3">
                         <span class="font-medium text-gray-800">${escapeHtml(book.title)}</span>
                         ${book.author ? `<span class="text-gray-500 text-sm">by ${escapeHtml(book.author)}</span>` : ''}
-                        <span class="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full">${bookTopics.length} chapters</span>
+                        <span class="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full">${bookTopics.length} chapters, ${totalQuestionsForBook} MCQs</span>
                     </div>
                     <button onclick="downloadSingleSEOPage('${slug}')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm transition flex items-center gap-1">
                         <i class="fas fa-download"></i> Download
@@ -2572,7 +2588,7 @@ async function generateSEOPages() {
             statusEl.textContent = `📄 Generated ${seoGeneratedCount}/${seoTotalBooks}: ${book.title}`;
             countEl.textContent = `${seoGeneratedCount} pages`;
             
-            logContent.innerHTML += `<div>✅ ${seoGeneratedCount}/${seoTotalBooks}: ${slug}.html (${bookTopics.length} chapters)</div>`;
+            logContent.innerHTML += `<div>✅ ${seoGeneratedCount}/${seoTotalBooks}: ${slug}.html (${bookTopics.length} chapters, ${totalQuestionsForBook} MCQs)</div>`;
             logEl.scrollTop = logEl.scrollHeight;
         });
         
@@ -2583,7 +2599,6 @@ async function generateSEOPages() {
         statusEl.textContent = `🎉 All ${seoTotalBooks} pages generated!`;
         countEl.textContent = `${seoTotalBooks} pages`;
         
-        // Show result
         resultEl.classList.remove('hidden');
         downloadAllBtn.classList.remove('hidden');
         
