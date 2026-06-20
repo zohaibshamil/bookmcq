@@ -1,14 +1,12 @@
 import Head from 'next/head'
 
 export async function getStaticProps() {
-  // This runs on the server at build time - Google crawls this data!
   const supabaseUrl = 'https://wnsuuazwcxmuwqyphvse.supabase.co'
   const supabaseKey = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C'
   
   const { createClient } = await import('@supabase/supabase-js')
   const supabase = createClient(supabaseUrl, supabaseKey)
   
-  // Fetch all data for SEO
   const { count: booksCount } = await supabase
     .from('books')
     .select('*', { count: 'exact', head: true })
@@ -34,7 +32,6 @@ export async function getStaticProps() {
   
   const uniqueCategories = [...new Set((allBooks || []).map(b => b.category).filter(Boolean))]
 
-  // News items for ticker
   const sevenDaysAgo = new Date()
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
 
@@ -131,18 +128,20 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
         <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;600;700&display=swap" rel="stylesheet" />
       </Head>
 
-      <style>{`
-        /* ===== ALL CSS FROM ORIGINAL HTML ===== */
+      {/* 
+        ============================================
+        IMPORTANT FIX: ALL CSS MUST BE IN style JSX
+        ============================================
+      */}
+      <style jsx global>{`
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
         .disable-select { user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; }
         .disable-select img, .disable-select video { pointer-events: none; }
         
-        /* Card Styles */
         .quiz-card { backdrop-filter: blur(10px); background: rgba(255,255,255,0.95); transition: transform 0.3s ease, box-shadow 0.3s ease; border-radius: 1.5rem; overflow: hidden; }
         .quiz-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
         
-        /* Navigation */
         .nav-link { position: relative; transition: all 0.3s ease; }
         .nav-link::after { content: ''; position: absolute; bottom: -5px; left: 0; width: 0; height: 2px; background: white; transition: width 0.3s ease; }
         .nav-link:hover::after, .nav-link.active::after { width: 100%; }
@@ -155,12 +154,10 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
         .navbar-scrolled .text-white\\/60 { color: #718096 !important; }
         .navbar-scrolled i { color: #667eea !important; }
         
-        /* Mobile menu */
         .mobile-menu-btn { display: none; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
         @media (max-width: 768px) { .desktop-menu { display: none !important; } .mobile-menu-btn { display: block; } }
         @media (min-width: 769px) { .mobile-menu-btn { display: none; } #mobileDropdown { display: none !important; } }
         
-        /* Stats Cards */
         .stats-card { background: linear-gradient(135deg, #c7d2fe 0%, #ddd6fe 100%); transition: all 0.3s ease; cursor: pointer; position: relative; overflow: hidden; color: #4c1d95; }
         .stats-card:nth-child(2) { background: linear-gradient(135deg, #bfdbfe 0%, #c7d2fe 100%); }
         .stats-card:nth-child(3) { background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); }
@@ -172,15 +169,12 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
         .stats-card p { color: #5b21b6; }
         .stats-card .text-xs { color: #6d28d9; }
         
-        /* About preview */
         .about-preview { background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%); }
         
-        /* Category buttons */
         .category-filter-btn { transition: all 0.2s ease; }
         .category-filter-btn:hover { background-color: #7c3aed; color: white; transform: translateY(-2px); }
         .category-filter-btn.active { background-color: #7c3aed; color: white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
         
-        /* Books Grid */
         .books-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
         .book-list-item { transition: all 0.2s ease; cursor: pointer; display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: white; border-radius: 12px; border: 1px solid #f3e8ff; }
         .book-list-item:hover { background-color: #f3e8ff; transform: translateX(5px); border-color: #d8b4fe; }
@@ -190,7 +184,6 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
         .book-author { font-size: 11px; color: #6b7280; }
         .book-category { font-size: 10px; color: #8b5cf6; background: #f3e8ff; padding: 2px 8px; border-radius: 20px; display: inline-block; margin-top: 4px; }
         
-        /* Exam Cards */
         .exam-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
         .exam-card { border-radius: 1rem; padding: 1.5rem; transition: all 0.3s ease; position: relative; overflow: hidden; color: #1f2937; background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #f3e8ff; }
         .exam-card:nth-child(1) { border-top: 4px solid #3b82f6; background: linear-gradient(135deg, #fff 0%, #eff6ff 100%); }
@@ -214,7 +207,6 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
         .exam-books { font-size: 0.7rem; color: #8b5cf6; border-top: 1px solid #f3e8ff; padding-top: 10px; margin-top: 6px; }
         @media (max-width: 640px) { .exam-grid { grid-template-columns: 1fr; gap: 14px; } .exam-card { padding: 1.25rem; } }
         
-        /* News Ticker */
         .news-ticker-container { background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%); border-radius: 12px; overflow: hidden; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .news-ticker { display: flex; align-items: center; position: relative; background: inherit; }
         .news-ticker-label { background: rgba(0,0,0,0.2); padding: 10px 18px; border-radius: 10px 0 0 10px; font-weight: bold; color: white; display: flex; align-items: center; gap: 8px; white-space: nowrap; z-index: 2; backdrop-filter: blur(4px); }
@@ -232,14 +224,11 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
         .close-news-btn:hover { background: rgba(0,0,0,0.3); }
         @media (max-width: 640px) { .news-ticker-label { padding: 8px 12px; font-size: 0.8rem; } .ticker-item { font-size: 0.75rem; padding: 0 20px; } .ticker-wrapper { height: 44px; } }
         
-        /* Missing Book */
         .missing-book-card { background: linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%); border: 2px solid #f59e0b; transition: all 0.3s ease; }
         .missing-book-card:hover { transform: scale(1.02); box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.2); }
         
-        /* Toast */
         .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; background-color: #1f2937; color: white; padding: 12px 24px; border-radius: 8px; font-size: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         
-        /* AI Chat */
         .ai-chat-btn { position: fixed; bottom: 30px; right: 30px; z-index: 1000; }
         .ai-chat-window { position: fixed; bottom: 100px; right: 30px; width: 350px; max-width: calc(100vw - 60px); height: 500px; background: white; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); z-index: 1001; display: flex; flex-direction: column; overflow: hidden; animation: slideUp 0.3s ease; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -256,10 +245,8 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
         .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
         @keyframes typing { 0%, 60%, 100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-10px); opacity: 1; } }
         
-        /* Page link */
         .page-link { cursor: pointer; }
         
-        /* Category cards */
         .category-card { cursor: pointer; transition: all 0.3s ease; }
         .category-card:hover { transform: translateY(-5px); }
         .category-card.active { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
@@ -282,7 +269,6 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
 
       <div className="max-w-6xl mx-auto px-4 disable-select" id="appRoot">
         
-        <!-- Navigation Bar -->
         <nav className="bg-white/10 backdrop-blur-lg rounded-full px-4 md:px-6 py-3 mb-8 sticky top-4 z-50 shadow-lg" id="mainNav">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
@@ -303,7 +289,6 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
           </div>
         </nav>
         
-        <!-- Mobile Dropdown -->
         <div id="mobileDropdown" className="hidden bg-white rounded-xl shadow-xl w-full mb-4 py-2 z-50" style={{ display: 'none' }}>
           <a href="/" className="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition">🏠 Home</a>
           <a href="/quiz" className="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center">📝 Quiz <span className="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span></a>
@@ -312,7 +297,6 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
           <a href="/privacy" className="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition">🔒 Privacy</a>
         </div>
 
-        <!-- News Ticker -->
         <div id="newsTickerContainer" className={`news-ticker-container ${initialNewsItems.length === 0 ? 'hidden' : ''}`}>
           <div className="news-ticker">
             <div className="news-ticker-label">
@@ -339,7 +323,6 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
           </div>
         </div>
 
-        <!-- Home Page -->
         <div id="homePage" className="quiz-card rounded-2xl p-6 md:p-8 shadow-xl">
           <div className="flex flex-col items-center">
             <div className="bg-gradient-to-r from-purple-100 to-indigo-100 rounded-full p-4 mb-6">
@@ -352,7 +335,6 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
               Master any subject with our difficulty-based MCQ system. Everything you need is right here.
             </p>
             
-            <!-- Stats Cards -->
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 md:gap-8 w-full mt-2 mb-8">
               <div id="categoryBooks" className="stats-card rounded-2xl p-5 md:p-7 text-center cursor-pointer shadow-xl">
                 <i className="fas fa-book text-4xl md:text-5xl mb-3 opacity-80"></i>
@@ -374,7 +356,6 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
               </div>
             </div>
             
-            <!-- About Section -->
             <div className="about-preview rounded-2xl p-6 mb-8 w-full text-left">
               <div className="flex items-center gap-3 mb-4">
                 <i className="fas fa-book-open text-2xl text-purple-600"></i>
@@ -407,7 +388,6 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
                 </p>
               </div>
               
-              <!-- Categories Section -->
               <div className="mt-6 pt-4 border-t border-purple-200">
                 <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
                   <i className="fas fa-tags text-purple-600"></i> Browse by Category
@@ -422,7 +402,7 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
                 <div id="booksByCategory" className="bg-white/50 rounded-xl p-4 max-h-80 overflow-y-auto">
                   <div className="books-grid">
                     {initialBooks.map((book, index) => (
-                      <div key={book.id} className="book-list-item" onclick="window.location.href='/quiz'">
+                      <div key={book.id} className="book-list-item" onClick={() => window.location.href = '/quiz'}>
                         <div className="book-info">
                           <div className="book-number">{index + 1}</div>
                           <div>
@@ -440,7 +420,6 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
               </div>
             </div>
             
-            <!-- Exam Preparation Section -->
             <div className="w-full mt-4 mb-10">
               <div className="text-center mb-6">
                 <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">Everything for Your Exam Preparation</h2>
@@ -505,13 +484,11 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
           </div>
         </div>
 
-        <!-- Footer -->
         <footer className="mt-12 text-center text-white/60 text-xs md:text-sm py-6">
           <p>&copy; 2025 BookMCQ. All rights reserved. | Master Every Chapter | One Paper MCQ | Govt & Private Job Preparation</p>
         </footer>
       </div>
 
-      <!-- AI Chat -->
       <div className="ai-chat-btn">
         <button id="aiChatBtn" className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 rounded-full shadow-xl hover:scale-105 transition">
           <i className="fas fa-robot text-xl"></i>
@@ -546,10 +523,9 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
       <script dangerouslySetInnerHTML={{
         __html: `
           // ============================================
-          // BOOKMCQ - COMPLETE JAVASCRIPT
+          // COMPLETE JAVASCRIPT - SAME AS HTML
           // ============================================
 
-          // Security Manager
           class SecurityManager {
             constructor() {
               this.#initSecurity();
@@ -577,7 +553,6 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
             }
           }
 
-          // Cache Manager
           class CacheManager {
             #cachePrefix = 'bookmcq_';
             #ttl = 3600000;
@@ -599,7 +574,6 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
             remove(key) { localStorage.removeItem(this.#cachePrefix + key); }
           }
 
-          // Supabase Service
           class SupabaseService {
             #supabase;
             #cache;
@@ -651,7 +625,6 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
             }
           }
 
-          // AI Chat Manager
           class AIChatManager {
             #supabaseService;
             constructor(supabaseService) {
@@ -680,7 +653,6 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
             }
           }
 
-          // Category Books Display Manager
           class CategoryBooksManager {
             #supabaseService;
             #booksData = [];
@@ -789,7 +761,6 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
             }
           }
 
-          // Mobile Menu
           function initMobileMenu() {
             const mobileBtn = document.getElementById('mobileMenuBtn');
             const dropdown = document.getElementById('mobileDropdown');
@@ -821,7 +792,6 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
             }
           }
 
-          // Navbar scroll
           function initNavbarScroll() {
             const navbar = document.getElementById('mainNav');
             if (!navbar) return;
@@ -834,7 +804,6 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
             });
           }
 
-          // Category filter handler
           async function initCategoryFilters(supabaseService) {
             const categoryBooksManager = new CategoryBooksManager(supabaseService);
             await categoryBooksManager.loadBooks();
@@ -868,7 +837,6 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
             }, 100);
           }
 
-          // Stats Card Click Handlers
           function setupStatsCardHandlers() {
             const booksCard = document.getElementById('categoryBooks');
             if (booksCard) {
@@ -892,7 +860,6 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
             }
           }
 
-          // Dynamic SEO
           async function updateDynamicSEO(supabaseService) {
             try {
               const subjects = await supabaseService.getSubjects();
@@ -908,7 +875,6 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
             }
           }
 
-          // AI Chat Setup
           async function setupAIChat(supabaseService) {
             const chatManager = new AIChatManager(supabaseService);
             const chatBtn = document.getElementById('aiChatBtn');
@@ -955,7 +921,6 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
             chatInput.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
           }
 
-          // Toast
           function showToast(message, isError = false) {
             const toast = document.getElementById('toast');
             toast.textContent = message;
@@ -964,7 +929,6 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
             setTimeout(() => toast.classList.add('hidden'), 3000);
           }
 
-          // News Ticker
           class NewsTicker {
             constructor(supabaseClient) {
               this.supabase = supabaseClient;
@@ -1205,11 +1169,9 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
             }
           }
 
-          // Initialize Everything
           const security = new SecurityManager();
           const supabaseService = new SupabaseService();
           
-          // Initialize news ticker
           async function initNewsTicker() {
             try {
               console.log('initNewsTicker called');
@@ -1228,7 +1190,6 @@ export default function Home({ stats, categories, books: initialBooks, subjects,
             }
           }
           
-          // Start everything
           initNavbarScroll();
           initCategoryFilters(supabaseService);
           setupStatsCardHandlers();
