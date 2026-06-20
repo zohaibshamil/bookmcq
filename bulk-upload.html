@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="robots" content="noindex, nofollow">
+<link rel="canonical" href="https://bookmcq.com/bulk-upload">
+    <title>Bulk Upload - BookMCQ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <!-- MathJax for rendering mathematical equations -->
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async></script>
+    
+    <style>
+        body { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); min-height: 100vh; }
+        .upload-card { background: rgba(255,255,255,0.95); border-radius: 1rem; }
+        .preview-table { overflow-x: auto; }
+        .preview-table table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .preview-table th, .preview-table td { border: 1px solid #e2e8f0; padding: 8px; text-align: left; }
+        .preview-table th { background: #f1f5f9; font-weight: 600; }
+        .upload-zone { border: 2px dashed #cbd5e1; transition: all 0.3s; cursor: pointer; background: #faf5ff; }
+        .upload-zone:hover { border-color: #8b5cf6; background-color: #f3e8ff; }
+        .upload-zone.drag-over { border-color: #8b5cf6; background-color: #f3e8ff; }
+        .step-circle { transition: all 0.2s ease; }
+        .step-card:hover .step-circle { transform: scale(1.1); }
+        
+        /* Math preview styles */
+        .math-preview {
+            background: #f8f9fa;
+            border-left: 4px solid #8b5cf6;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .math-preview-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        .math-rendered {
+            line-height: 1.6;
+        }
+        .math-rendered mjx-container {
+            display: inline-block;
+            margin: 0 2px;
+        }
+        
+        /* Progress bar styles */
+        .progress-container {
+            background: #e5e7eb;
+            border-radius: 10px;
+            height: 20px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+        .progress-bar-fill {
+            background: linear-gradient(90deg, #10b981, #059669);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-success { background: #d1fae5; color: #065f46; }
+        .status-error { background: #fee2e2; color: #991b1b; }
+        .status-warning { background: #fed7aa; color: #92400e; }
+        .status-info { background: #dbeafe; color: #1e40af; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+<div class="max-w-4xl mx-auto">
+    
+    <!-- Header -->
+    <div class="text-center mb-8">
+        <div class="inline-flex items-center gap-2 bg-white/20 backdrop-blur rounded-full px-6 py-2 mb-4">
+            <i class="fas fa-cloud-upload-alt text-white"></i>
+            <span class="text-white font-semibold">BookMCQ Bulk Upload</span>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold text-white">📤 Bulk Upload Questions</h1>
+        <p class="text-white/70 mt-2">Upload hundreds of MCQs at once using CSV or Excel files</p>
+        <p class="text-white/50 text-sm mt-1">Supports LaTeX math: \( \sqrt{x} \) or $$ \frac{a}{b} $$</p>
+    </div>
+
+    <!-- Main Card -->
+    <div class="upload-card p-6 md:p-8 shadow-xl">
+        
+        <!-- Back Link -->
+        <div class="mb-6">
+            <a href="admin.html" class="text-purple-600 hover:text-purple-800 inline-flex items-center gap-2 transition">
+                <i class="fas fa-arrow-left"></i> Back to Admin Panel
+            </a>
+        </div>
+
+        <!-- Step 1: Select Book - Modern Card -->
+        <div class="step-card bg-gradient-to-r from-blue-50 to-indigo-50 p-5 rounded-2xl mb-6 border border-blue-100 transition hover:shadow-md">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="step-circle w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-md">1</div>
+                <h3 class="font-bold text-xl text-gray-800">Select Book</h3>
+                <div class="flex-1"></div>
+                <i class="fas fa-book text-blue-400 text-2xl"></i>
+            </div>
+            <select id="bookSelect" class="w-full p-3 border-2 border-blue-200 rounded-xl bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition">
+                <option>Loading books...</option>
+            </select>
+        </div>
+
+        <!-- Step 2: Select Topic - Modern Card -->
+        <div class="step-card bg-gradient-to-r from-green-50 to-emerald-50 p-5 rounded-2xl mb-6 border border-green-100 transition hover:shadow-md">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="step-circle w-10 h-10 bg-green-600 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-md">2</div>
+                <h3 class="font-bold text-xl text-gray-800">Select Topic</h3>
+                <div class="flex-1"></div>
+                <i class="fas fa-tags text-green-400 text-2xl"></i>
+            </div>
+            <select id="topicSelect" class="w-full p-3 border-2 border-green-200 rounded-xl bg-white focus:border-green-500 focus:ring-2 focus:ring-green-200 transition">
+                <option>Select book first</option>
+            </select>
+        </div>
+
+        <!-- Step 3: Download Template - Modern Card -->
+        <div class="step-card bg-gradient-to-r from-yellow-50 to-amber-50 p-5 rounded-2xl mb-6 border border-yellow-100 transition hover:shadow-md">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="step-circle w-10 h-10 bg-yellow-600 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-md">3</div>
+                <h3 class="font-bold text-xl text-gray-800">Download CSV Template</h3>
+                <div class="flex-1"></div>
+                <i class="fas fa-download text-yellow-500 text-2xl"></i>
+            </div>
+            <p class="text-sm text-gray-600 mb-3">Download the template, fill with your questions, then upload back.</p>
+            <p class="text-xs text-purple-600 mb-3">💡 Use LaTeX for math: \( \sqrt{x} \), \( \frac{a}{b} \), \( \lim_{x \to 0} \), etc.</p>
+            <p class="text-xs text-blue-600 mb-3">📌 <strong>Important:</strong> For correct_answer, use A, B, C, or D (not numbers). Example: A, B, C, or D</p>
+            <button id="downloadBtn" class="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded-xl inline-flex items-center gap-2 transition transform hover:scale-105 shadow-md">
+                <i class="fas fa-download"></i> Download CSV Template
+            </button>
+        </div>
+
+        <!-- Step 4: Upload File - Modern Upload Zone -->
+        <div class="step-card bg-gradient-to-r from-purple-50 to-pink-50 p-5 rounded-2xl mb-6 border border-purple-100 transition hover:shadow-md">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="step-circle w-10 h-10 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-md">4</div>
+                <h3 class="font-bold text-xl text-gray-800">Upload CSV/Excel File</h3>
+                <div class="flex-1"></div>
+                <i class="fas fa-cloud-upload-alt text-purple-400 text-2xl"></i>
+            </div>
+            
+            <!-- Modern Upload Zone -->
+            <div id="uploadZone" class="upload-zone rounded-xl p-10 text-center transition">
+                <i class="fas fa-cloud-upload-alt text-5xl text-purple-400 mb-4"></i>
+                <p class="text-gray-600 font-medium">Click or drag & drop your file here</p>
+                <p class="text-gray-400 text-sm mt-1">Supports .csv, .xlsx, .xls</p>
+                <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" class="hidden">
+                <button id="selectFileBtn" class="mt-4 bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg inline-flex items-center gap-2 transition">
+                    <i class="fas fa-folder-open"></i> Browse Files
+                </button>
+            </div>
+            
+            <!-- Progress Indicator Section -->
+            <div id="progressSection" style="display: none;" class="mt-4">
+                <div class="bg-white rounded-xl p-4 shadow-sm">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm font-semibold text-gray-700">
+                            <i class="fas fa-spinner fa-spin mr-2"></i>Uploading Questions...
+                        </span>
+                        <span id="progressPercent" class="text-sm font-bold text-green-600">0%</span>
+                    </div>
+                    <div class="progress-container">
+                        <div id="progressFill" class="progress-bar-fill"></div>
+                    </div>
+                    <div class="flex justify-between text-xs text-gray-500 mt-2">
+                        <span id="uploadedCount">0</span>
+                        <span id="totalCount">0</span>
+                    </div>
+                    <div id="statusMessages" class="mt-3 max-h-40 overflow-y-auto text-xs space-y-1">
+                        <!-- Status messages will appear here -->
+                    </div>
+                </div>
+            </div>
+            
+            <button id="uploadBtn" style="display: none;" class="mt-4 w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold py-3 rounded-xl inline-flex items-center justify-center gap-2 transition transform hover:scale-[1.02] shadow-lg">
+                <i class="fas fa-upload"></i> Upload to Database
+            </button>
+        </div>
+        
+        <!-- Preview Section -->
+        <div id="previewDiv" style="margin-top: 15px; display: none;"></div>
+        
+        <!-- Math Preview Section -->
+        <div id="mathPreviewDiv" class="math-preview hidden mt-4">
+            <div class="math-preview-label">📐 Math Preview (First question):</div>
+            <div id="mathPreviewContent" class="math-rendered"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ============================================
+    // 1. SECURE KEY VERIFICATION (No URL Parameter)
+    // ============================================
+    const SECRET_KEY = 'BookMCQ_Admin_Secure_Key_2024';
+
+    function verifyAccess() {
+        const storedKey = sessionStorage.getItem('bookmcq_bulk_access');
+        
+        if (storedKey === SECRET_KEY) {
+            sessionStorage.removeItem('bookmcq_bulk_access');
+            return true;
+        } else {
+            window.location.href = 'admin.html';
+            return false;
+        }
+    }
+
+    if (!verifyAccess()) {
+        throw new Error("Access Denied");
+    }
+
+    // ============================================
+    // 2. LOGGING FUNCTION (Kept for console, removed from UI)
+    // ============================================
+    function addLog(msg, type = 'info') {
+        console.log(`[${new Date().toLocaleTimeString()}] ${msg}`);
+    }
+    
+    addLog('Script started', 'info');
+    addLog('✅ Key verified', 'success');
+    
+    // ============================================
+    // 3. SAFE STRING HELPER
+    // ============================================
+    function safeString(value) {
+        if (value === null || value === undefined) return '';
+        return String(value);
+    }
+    
+    // ============================================
+    // 4. CONVERT LETTER ANSWER TO NUMBER
+    // ============================================
+    function convertAnswerToNumber(answer) {
+        const str = safeString(answer).toUpperCase().trim();
+        
+        // Handle letter inputs (A, B, C, D)
+        if (str === 'A') return 0;
+        if (str === 'B') return 1;
+        if (str === 'C') return 2;
+        if (str === 'D') return 3;
+        
+        // Handle number inputs (0,1,2,3) for backward compatibility
+        if (str === '0') return 0;
+        if (str === '1') return 1;
+        if (str === '2') return 2;
+        if (str === '3') return 3;
+        
+        // Default to 0 if invalid
+        console.warn(`Invalid correct_answer value: "${answer}", defaulting to A (0)`);
+        return 0;
+    }
+    
+    function safeProcessMathContent(text) {
+        const str = safeString(text);
+        if (str.includes('\\(') || str.includes('\\[') || str.includes('$$')) {
+            return str;
+        }
+        return str;
+    }
+    
+    // Function to render math in element
+    async function renderMathInElement(element) {
+        if (window.MathJax && element) {
+            try {
+                await MathJax.typesetPromise([element]);
+            } catch(e) {
+                console.log('MathJax error:', e);
+            }
+        }
+    }
+    
+    // Function to update progress UI
+    function updateProgress(current, total, statusMessage) {
+        const percent = Math.round((current / total) * 100);
+        const progressFill = document.getElementById('progressFill');
+        const progressPercent = document.getElementById('progressPercent');
+        const uploadedCount = document.getElementById('uploadedCount');
+        const totalCount = document.getElementById('totalCount');
+        const statusMessages = document.getElementById('statusMessages');
+        
+        if (progressFill) progressFill.style.width = `${percent}%`;
+        if (progressPercent) progressPercent.textContent = `${percent}%`;
+        if (uploadedCount) uploadedCount.textContent = current;
+        if (totalCount) totalCount.textContent = total;
+        
+        if (statusMessage && statusMessages) {
+            const timestamp = new Date().toLocaleTimeString();
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'text-gray-600';
+            messageDiv.innerHTML = `[${timestamp}] ${statusMessage}`;
+            statusMessages.appendChild(messageDiv);
+            statusMessages.scrollTop = statusMessages.scrollHeight;
+        }
+    }
+    
+    // ============================================
+    // 5. SUPABASE & CORE LOGIC
+    // ============================================
+    function checkLibraries() {
+        if (typeof window.supabase !== 'undefined') {
+            addLog('✅ Supabase detected', 'success');
+            return true;
+        }
+        addLog('⏳ Waiting for Supabase...', 'info');
+        return false;
+    }
+    
+    function init() {
+        if (!checkLibraries()) {
+            setTimeout(init, 100);
+            return;
+        }
+        
+        const SUPABASE_URL = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
+        
+        addLog('Creating Supabase client...', 'info');
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        addLog('✅ Supabase client ready', 'success');
+        
+        let currentQuestions = [];
+        
+        async function loadBooks() {
+            addLog('Fetching books from database...', 'info');
+            try {
+                const { data, error } = await supabase.from('books').select('id, title').order('title');
+                if (error) throw error;
+                
+                addLog(`✅ Found ${data.length} books`, 'success');
+                const select = document.getElementById('bookSelect');
+                select.innerHTML = '<option value="">-- Select a Book --</option>';
+                data.forEach(book => {
+                    select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+                });
+            } catch(e) {
+                addLog(`❌ Error: ${e.message}`, 'error');
+            }
+        }
+        
+        async function loadTopics() {
+            const bookId = document.getElementById('bookSelect').value;
+            if (!bookId) {
+                document.getElementById('topicSelect').innerHTML = '<option>Select book first</option>';
+                return;
+            }
+            
+            addLog(`Loading topics for book ${bookId}...`, 'info');
+            try {
+                const { data, error } = await supabase.from('topics')
+                    .select('id, name, chapter_number')
+                    .eq('book_id', parseInt(bookId))
+                    .order('chapter_number');
+                
+                if (error) throw error;
+                
+                addLog(`✅ Found ${data.length} topics`, 'success');
+                const select = document.getElementById('topicSelect');
+                select.innerHTML = '<option value="">-- Select a Topic --</option>';
+                data.forEach(topic => {
+                    const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
+                    select.innerHTML += `<option value="${topic.id}">${escapeHtml(display)}</option>`;
+                });
+            } catch(e) {
+                addLog(`❌ Error: ${e.message}`, 'error');
+            }
+        }
+        
+        function downloadTemplate() {
+            addLog('Generating CSV template...', 'info');
+            const headers = ['question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'difficulty', 'explanation'];
+            // Now using letter 'C' instead of number 2 for correct_answer
+            const example = ['What does \( \text{typeof null} \) return?', 'null', 'undefined', 'object', 'number', 'C', 'easy', '\( \text{typeof null} \) returns "object" due to a historical bug in JavaScript'];
+            const csv = [headers.join(','), example.map(cell => `"${safeString(cell).replace(/"/g, '""')}"`).join(',')].join('\n');
+            
+            const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'bookmcq_template.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+            addLog('✅ Template downloaded', 'success');
+        }
+        
+        function processFile(file) {
+            addLog(`Processing: ${file.name}`, 'info');
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(sheet);
+                    
+                    addLog(`✅ Loaded ${rows.length} questions`, 'success');
+                    if (rows.length === 0) return;
+                    
+                    // Safe process each row and convert correct_answer from letter to number
+                    currentQuestions = rows.map(row => {
+                        const processed = {};
+                        Object.keys(row).forEach(key => {
+                            processed[key] = safeString(row[key]);
+                        });
+                        // Convert the correct_answer from letter (A,B,C,D) to number (0,1,2,3)
+                        const originalAnswer = processed.correct_answer;
+                        processed.correct_answer_numeric = convertAnswerToNumber(originalAnswer);
+                        if (originalAnswer !== processed.correct_answer_numeric.toString() && !['0','1','2','3'].includes(originalAnswer)) {
+                            addLog(`⚠️ Converted correct_answer from "${originalAnswer}" to "${processed.correct_answer_numeric}" (${String.fromCharCode(65+processed.correct_answer_numeric)})`, 'warning');
+                        }
+                        return processed;
+                    });
+                    
+                    const previewDiv = document.getElementById('previewDiv');
+                    const uploadBtn = document.getElementById('uploadBtn');
+                    const mathPreviewDiv = document.getElementById('mathPreviewDiv');
+                    const mathPreviewContent = document.getElementById('mathPreviewContent');
+                    
+                    let html = '<h3 class="font-bold text-gray-700 mb-2">📋 Preview (first 3 rows):</h3>';
+                    html += '<div class="preview-table"><table>';
+                    const headers = Object.keys(currentQuestions[0]).filter(h => h !== 'correct_answer_numeric');
+                    html += '<thead><tr style="background:#f0fdf4;">' + headers.map(h => `<th style="padding:8px; border:1px solid #d1d5db; text-align:left; background:#dcfce7;">${escapeHtml(h)}</th>`).join('') + '</thead><tbody>';
+                    for (let i = 0; i < Math.min(3, currentQuestions.length); i++) {
+                        html += '<tr>' + headers.map(h => {
+                            let value = safeString(currentQuestions[i][h]);
+                            if (h === 'correct_answer') {
+                                // Show the letter version in preview
+                                const numVal = currentQuestions[i].correct_answer_numeric;
+                                value = String.fromCharCode(65 + numVal);
+                            }
+                            return `<td style="padding:8px; border:1px solid #d1d5db;">${escapeHtml(value.substring(0, 50))}</td>`;
+                        }).join('') + '</tr>';
+                    }
+                    html += '</tbody></table></div>';
+                    html += `<p class="text-green-600 text-sm mt-2"><i class="fas fa-check-circle"></i> ✅ ${currentQuestions.length} questions ready to upload</p>`;
+                    
+                    // Show conversion warning if any answers were converted
+                    const convertedCount = currentQuestions.filter(q => {
+                        const orig = safeString(q.correct_answer);
+                        return !['0','1','2','3','A','B','C','D','a','b','c','d'].includes(orig) || (orig.length > 1);
+                    }).length;
+                    if (convertedCount > 0) {
+                        html += `<p class="text-yellow-600 text-sm mt-1"><i class="fas fa-exclamation-triangle"></i> ⚠️ ${convertedCount} question(s) had invalid correct_answer values and were fixed to defaults.</p>`;
+                    }
+                    
+                    previewDiv.innerHTML = html;
+                    previewDiv.style.display = 'block';
+                    uploadBtn.style.display = 'inline-flex';
+                    
+                    // Show math preview for first question
+                    if (currentQuestions.length > 0) {
+                        const firstQuestion = currentQuestions[0];
+                        const questionText = safeString(firstQuestion.question_text);
+                        const processedQuestion = safeProcessMathContent(questionText);
+                        mathPreviewContent.innerHTML = `
+                            <div class="mb-2"><strong>Question:</strong> <span class="math-content">${escapeHtml(processedQuestion)}</span></div>
+                            <div class="text-sm text-gray-500 mt-2">Correct Answer: ${String.fromCharCode(65 + firstQuestion.correct_answer_numeric)}</div>
+                        `;
+                        mathPreviewDiv.classList.remove('hidden');
+                        renderMathInElement(mathPreviewContent);
+                    } else {
+                        mathPreviewDiv.classList.add('hidden');
+                    }
+                    
+                } catch(e) {
+                    addLog(`❌ Parse error: ${e.message}`, 'error');
+                    alert('Error parsing file: ' + e.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+        
+        async function uploadToDatabase() {
+            const bookId = document.getElementById('bookSelect').value;
+            const topicId = document.getElementById('topicSelect').value;
+            
+            if (!bookId || !topicId) {
+                addLog('❌ Please select both a book and a topic', 'error');
+                alert('Please select both a book and a topic');
+                return;
+            }
+            
+            if (!currentQuestions.length) {
+                addLog('❌ No questions to upload', 'error');
+                alert('No questions to upload. Please select a file first.');
+                return;
+            }
+            
+            // Show progress section
+            const progressSection = document.getElementById('progressSection');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const previewDiv = document.getElementById('previewDiv');
+            
+            progressSection.style.display = 'block';
+            uploadBtn.style.display = 'none';
+            previewDiv.style.display = 'none';
+            
+            // Clear previous status messages
+            const statusMessages = document.getElementById('statusMessages');
+            if (statusMessages) statusMessages.innerHTML = '';
+            
+            const total = currentQuestions.length;
+            let success = 0;
+            let failed = 0;
+            const failedIndices = [];
+            
+            addLog(`📤 Uploading ${total} questions...`, 'info');
+            updateProgress(0, total, 'Starting upload...');
+            
+            // Process in batches of 5 to avoid rate limiting
+            const BATCH_SIZE = 5;
+            const batches = [];
+            for (let i = 0; i < total; i += BATCH_SIZE) {
+                batches.push(currentQuestions.slice(i, i + BATCH_SIZE));
+            }
+            
+            let processedCount = 0;
+            
+            for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+                const batch = batches[batchIndex];
+                const batchStart = batchIndex * BATCH_SIZE + 1;
+                const batchEnd = Math.min(batchStart + batch.length - 1, total);
+                
+                updateProgress(processedCount, total, `Processing batch ${batchIndex + 1}/${batches.length} (questions ${batchStart}-${batchEnd})...`);
+                
+                // Process each question in the batch sequentially
+                for (let i = 0; i < batch.length; i++) {
+                    const q = batch[i];
+                    const globalIndex = batchIndex * BATCH_SIZE + i;
+                    
+                    try {
+                        updateProgress(processedCount, total, `Uploading question ${globalIndex + 1}/${total}...`);
+                        
+                        // Use the numeric value we already converted
+                        const correctAnswerNumeric = q.correct_answer_numeric !== undefined ? q.correct_answer_numeric : convertAnswerToNumber(q.correct_answer);
+                        
+                        const { data, error } = await supabase.from('questions').insert({
+                            topic_id: parseInt(topicId),
+                            question_text: safeString(q.question_text),
+                            difficulty: safeString(q.difficulty) || 'medium',
+                            correct_answer: correctAnswerNumeric,
+                            explanation: safeString(q.explanation) || ''
+                        }).select();
+                        
+                        if (error) throw error;
+                        
+                        const options = [
+                            safeString(q.option_a),
+                            safeString(q.option_b),
+                            safeString(q.option_c),
+                            safeString(q.option_d)
+                        ];
+                        for (let j = 0; j < options.length; j++) {
+                            await supabase.from('options').insert({
+                                question_id: data[0].id,
+                                option_text: options[j],
+                                option_index: j
+                            });
+                        }
+                        success++;
+                        processedCount++;
+                        updateProgress(processedCount, total, `✅ Question ${globalIndex + 1}/${total} uploaded successfully (Answer: ${String.fromCharCode(65 + correctAnswerNumeric)})`);
+                        addLog(`✅ ${globalIndex + 1}/${total} uploaded`, 'success');
+                        
+                    } catch(e) {
+                        failed++;
+                        processedCount++;
+                        failedIndices.push(globalIndex + 1);
+                        updateProgress(processedCount, total, `❌ Question ${globalIndex + 1}/${total} failed: ${e.message.substring(0, 100)}`);
+                        addLog(`❌ ${globalIndex + 1}/${total} failed: ${e.message}`, 'error');
+                    }
+                    
+                    // Small delay between questions to avoid rate limiting
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                
+                // Delay between batches
+                if (batchIndex < batches.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+            }
+            
+            // Final summary
+            const finalMessage = `📊 Upload Complete! Success: ${success}, Failed: ${failed}`;
+            updateProgress(success, total, finalMessage);
+            addLog(`📊 Complete: ${success} uploaded, ${failed} failed`, success > 0 ? 'success' : 'error');
+            
+            if (failedIndices.length > 0) {
+                updateProgress(success, total, `⚠️ Failed question numbers: ${failedIndices.join(', ')}`);
+            }
+            
+            alert(`Upload complete!\n✅ Success: ${success} questions added\n❌ Failed: ${failed} questions\n\n${failedIndices.length > 0 ? `Failed question numbers: ${failedIndices.join(', ')}` : 'All questions uploaded successfully!'}`);
+            
+            if (success > 0) {
+                document.getElementById('previewDiv').style.display = 'none';
+                document.getElementById('uploadBtn').style.display = 'none';
+                document.getElementById('mathPreviewDiv').classList.add('hidden');
+                document.getElementById('fileInput').value = '';
+                currentQuestions = [];
+            }
+            
+            // Hide progress section after 3 seconds
+            setTimeout(() => {
+                progressSection.style.display = 'none';
+            }, 3000);
+        }
+        
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
+        }
+        
+        // Setup file upload zone
+        function setupUploadZone() {
+            const uploadZone = document.getElementById('uploadZone');
+            const fileInput = document.getElementById('fileInput');
+            const selectFileBtn = document.getElementById('selectFileBtn');
+            
+            if (uploadZone) {
+                uploadZone.addEventListener('click', () => fileInput.click());
+                uploadZone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadZone.classList.add('drag-over');
+                });
+                uploadZone.addEventListener('dragleave', () => {
+                    uploadZone.classList.remove('drag-over');
+                });
+                uploadZone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadZone.classList.remove('drag-over');
+                    if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
+                });
+            }
+            if (selectFileBtn) {
+                selectFileBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    fileInput.click();
+                });
+            }
+            if (fileInput) {
+                fileInput.addEventListener('change', e => {
+                    if (e.target.files && e.target.files[0]) processFile(e.target.files[0]);
+                });
+            }
+        }
+        
+        document.getElementById('bookSelect').addEventListener('change', loadTopics);
+        document.getElementById('downloadBtn').addEventListener('click', downloadTemplate);
+        document.getElementById('uploadBtn').addEventListener('click', uploadToDatabase);
+        
+        setupUploadZone();
+        loadBooks();
+    }
+    
+    addLog('Checking for Supabase library...', 'info');
+    setTimeout(init, 100);
+</script>
+</body>
+</html>
