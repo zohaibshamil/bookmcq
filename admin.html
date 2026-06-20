@@ -2322,6 +2322,52 @@ let seoGeneratedFiles = [];
 let seoTotalBooks = 0;
 let seoGeneratedCount = 0;
 let seoBooksData = [];
+let cachedTemplate = null;
+
+async function fetchTemplate() {
+    // First try to get template from server
+    try {
+        const response = await fetch('template.html');
+        if (response.ok) {
+            cachedTemplate = await response.text();
+            return cachedTemplate;
+        }
+    } catch(e) {
+        console.log('Could not fetch template.html, using fallback');
+    }
+    
+    // Fallback: try to get from current page but clean it
+    // This removes admin-specific elements
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = document.documentElement.outerHTML;
+    
+    // Remove admin dashboard elements
+    const adminDashboard = tempDiv.querySelector('#adminDashboard');
+    if (adminDashboard) adminDashboard.remove();
+    
+    const loginScreen = tempDiv.querySelector('#loginScreen');
+    if (loginScreen) loginScreen.remove();
+    
+    const modals = tempDiv.querySelectorAll('.modal');
+    modals.forEach(el => el.remove());
+    
+    const toast = tempDiv.querySelector('#toast');
+    if (toast) toast.remove();
+    
+    // Remove script tags that are admin-specific
+    const scripts = tempDiv.querySelectorAll('script');
+    scripts.forEach(el => {
+        if (el.textContent.includes('admin') || 
+            el.textContent.includes('SUPABASE') ||
+            el.textContent.includes('login') ||
+            el.textContent.includes('logout')) {
+            el.remove();
+        }
+    });
+    
+    cachedTemplate = tempDiv.innerHTML;
+    return cachedTemplate;
+}
 
 async function generateSEOPages() {
     const statusEl = document.getElementById('seoStatus');
@@ -2348,9 +2394,10 @@ async function generateSEOPages() {
     
     try {
         // Fetch all data
-        const [booksRes, topicsRes] = await Promise.all([
+        const [booksRes, topicsRes, template] = await Promise.all([
             _supabase.from('books').select('*').order('title'),
             _supabase.from('topics').select('*, books(title)').order('name'),
+            fetchTemplate()
         ]);
         
         const books = booksRes.data || [];
@@ -2370,8 +2417,6 @@ async function generateSEOPages() {
             return;
         }
         
-        // Get current page HTML as template
-        const template = document.documentElement.outerHTML;
         logContent.innerHTML += '<div>📄 Generating pages...</div>';
         
         // Build book list with download buttons
@@ -2384,46 +2429,118 @@ async function generateSEOPages() {
             
             let html = template;
             
-            // Update title
+            // ===== UPDATE SEO META TAGS =====
+            // Title
             html = html.replace(
                 /<title>.*?<\/title>/,
                 `<title>${book.title} MCQs - Practice Questions for ${book.title} | BookMCQ</title>`
             );
             
-            // Update description
+            // Description
             html = html.replace(
                 /<meta name="description" content=".*?">/,
-                `<meta name="description" content="Practice ${book.title} MCQs with chapter-wise questions. ${bookTopics.length} chapters available. Perfect for exam preparation.">`
+                `<meta name="description" content="Practice ${book.title} MCQs with chapter-wise questions. ${bookTopics.length} chapters and practice questions available for ${book.title}. Perfect for exam preparation.">`
             );
             
-            // Update canonical
+            // Keywords
+            html = html.replace(
+                /<meta name="keywords" content=".*?">/,
+                `<meta name="keywords" content="${book.title} MCQs, ${book.title} questions, ${book.title} practice, ${book.title} exam preparation, ${book.category} MCQs">`
+            );
+            
+            // Canonical URL
             html = html.replace(
                 /<link rel="canonical" href=".*?">/,
                 `<link rel="canonical" href="https://bookmcq.com/books/${slug}.html">`
             );
             
-            // Update OG title
+            // OG Title
             html = html.replace(
                 /<meta property="og:title" content=".*?">/,
                 `<meta property="og:title" content="${book.title} MCQs - Practice Questions | BookMCQ">`
             );
             
-            // Update H1
+            // OG Description
+            html = html.replace(
+                /<meta property="og:description" content=".*?">/,
+                `<meta property="og:description" content="Practice ${book.title} MCQs with chapter-wise questions. ${bookTopics.length} chapters available for ${book.title}. Perfect for exam preparation.">`
+            );
+            
+            // ===== UPDATE PAGE CONTENT =====
+            // H1 heading
             html = html.replace(
                 /<h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">.*?<\/h1>/,
                 `<h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">${book.title} | Practice MCQs</h1>`
             );
             
-            // Update subtitle
+            // Subtitle
             html = html.replace(
                 /<p class="text-gray-600 text-base md:text-lg max-w-2xl mx-auto mb-8 text-center">.*?<\/p>/,
-                `<p class="text-gray-600 text-base md:text-lg max-w-2xl mx-auto mb-8 text-center">Practice chapter-wise MCQs from "${book.title}"${book.author ? ` by ${book.author}` : ''}. ${bookTopics.length} chapters available.</p>`
+                `<p class="text-gray-600 text-base md:text-lg max-w-2xl mx-auto mb-8 text-center">Practice chapter-wise MCQs from "${book.title}"${book.author ? ` by ${book.author}` : ''}. ${bookTopics.length} chapters available with practice questions.</p>`
             );
             
-            // Update stats
+            // Stats - Chapters count
             html = html.replace(
                 /<div class="stats-number" id="statBooks">Loading...<\/div>/,
-                `<div class="stats-number" id="statBooks">${bookTopics.length}</div>`
+                `<div class="stats-number">${bookTopics.length}</div>`
+            );
+            
+            // Stats - Questions count (count questions for this book)
+            let totalQuestions = 0;
+            // We'll count questions for this book from the topics
+            // The actual count will be shown as "Practice Questions"
+            // Let's keep it as total number of topics for now
+            
+            // About content
+            const aboutHtml = `
+                <p>Welcome to the <strong>${book.title}</strong> MCQ practice page. This page contains <strong>${bookTopics.length} chapters</strong> from "${book.title}"${book.author ? ` by ${book.author}` : ''}.</p>
+                <p>Practice chapter-wise MCQs to master ${book.title} for your exams. Each question comes with detailed explanations to help you understand the concepts better.</p>
+                ${book.category ? `<p><strong>Category:</strong> ${book.category}</p>` : ''}
+                <p class="mt-2">Start practicing now to improve your knowledge and score well in your exams!</p>
+            `;
+            html = html.replace(
+                /<div id="aboutContent".*?>.*?<\/div>/s,
+                `<div id="aboutContent" style="text-align: justify; max-width: 800px; margin: 0 auto; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6;">${aboutHtml}</div>`
+            );
+            
+            // Section title
+            html = html.replace(
+                /<h3 class="font-bold text-gray-800" id="sectionTitle">.*?<\/h3>/,
+                `<h3 class="font-bold text-gray-800" id="sectionTitle">📖 Chapters in "${book.title}"</h3>`
+            );
+            
+            // Category filters - Remove the filter buttons, show only chapters
+            html = html.replace(
+                /<div id="categoryFilters" class="flex flex-wrap gap-2 mb-4">.*?<\/div>/s,
+                `<div id="categoryFilters" class="flex flex-wrap gap-2 mb-4"><span class="text-sm text-gray-500">${bookTopics.length} chapters available</span></div>`
+            );
+            
+            // Books grid - Show chapters instead of books
+            let chaptersHtml = '<div class="books-grid">';
+            if (bookTopics.length === 0) {
+                chaptersHtml += '<p class="text-gray-500 text-center py-4 col-span-full">No chapters available for this book yet.</p>';
+            } else {
+                bookTopics.forEach((topic, idx) => {
+                    const chapterDisplay = topic.chapter_number ? `Ch ${topic.chapter_number}: ` : '';
+                    chaptersHtml += `
+                        <div class="book-list-item" onclick="window.location.href='/quiz'">
+                            <div class="book-info">
+                                <div class="book-number">${idx + 1}</div>
+                                <div>
+                                    <div class="book-title">${chapterDisplay}${topic.name}</div>
+                                </div>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400 text-sm"></i>
+                        </div>
+                    `;
+                });
+            }
+            chaptersHtml += '</div>';
+            chaptersHtml += '<p class="text-xs text-gray-400 mt-4 text-center">Click on any chapter to start practicing</p>';
+            
+            html = html.replace(
+                /<div id="booksByCategory" class="bg-white\/50 rounded-xl p-4 max-h-80 overflow-y-auto">.*?<\/div>/s,
+                `<div id="booksByCategory" class="bg-white/50 rounded-xl p-4 max-h-80 overflow-y-auto">${chaptersHtml}</div>`
             );
             
             // Store file
