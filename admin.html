@@ -542,10 +542,18 @@
             </div>
         </div>
         
-        <div class="bg-gray-50 p-6 rounded-lg max-w-2xl mx-auto">
-            <div class="flex items-center gap-4 mb-4">
-                <button id="generateSEOPagesBtn" class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-3 rounded-lg font-bold hover:opacity-90 transition flex items-center gap-2">
-                    <i class="fas fa-rocket"></i> Generate SEO Pages
+        <div class="bg-gray-50 p-6 rounded-lg max-w-4xl mx-auto">
+            <!-- Book List with Individual Download Buttons -->
+            <div class="mb-4 text-left">
+                <h3 class="font-bold text-gray-700 mb-3">📚 Your Books:</h3>
+                <div id="seoBookList" class="space-y-2 max-h-64 overflow-y-auto">
+                    <div class="text-gray-500 text-sm">Loading books...</div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-4 mb-4 border-t pt-4">
+                <button id="generateSEOPagesBtn" class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-lg font-bold hover:opacity-90 transition flex items-center gap-2">
+                    <i class="fas fa-sync-alt"></i> Refresh All Books
                 </button>
                 <button id="downloadAllSEOBtn" class="bg-green-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-700 transition flex items-center gap-2 hidden">
                     <i class="fas fa-download"></i> Download All
@@ -569,7 +577,7 @@
             <div id="seoResult" class="mt-4 hidden">
                 <div class="bg-green-50 border border-green-300 p-4 rounded-lg">
                     <p class="text-green-800 font-semibold"><i class="fas fa-check-circle text-green-600"></i> Pages generated successfully!</p>
-                    <p class="text-sm text-gray-600 mt-1">Download the files and upload them to your server in a <code>/books/</code> folder.</p>
+                    <p class="text-sm text-gray-600 mt-1">Click the download button next to each book to save individual pages.</p>
                 </div>
             </div>
         </div>
@@ -2309,10 +2317,11 @@ function showTab(tabName) {
             }
         }
     }
-    // ============ SEO PAGE GENERATION ============
+// ============ SEO PAGE GENERATION ============
 let seoGeneratedFiles = [];
 let seoTotalBooks = 0;
 let seoGeneratedCount = 0;
+let seoBooksData = [];
 
 async function generateSEOPages() {
     const statusEl = document.getElementById('seoStatus');
@@ -2321,18 +2330,21 @@ async function generateSEOPages() {
     const logEl = document.getElementById('seoLog');
     const logContent = document.getElementById('seoLogContent');
     const resultEl = document.getElementById('seoResult');
-    const downloadBtn = document.getElementById('downloadAllSEOBtn');
+    const downloadAllBtn = document.getElementById('downloadAllSEOBtn');
+    const bookListEl = document.getElementById('seoBookList');
     
     seoGeneratedFiles = [];
     seoGeneratedCount = 0;
+    seoBooksData = [];
     logEl.classList.remove('hidden');
     logContent.innerHTML = '';
     resultEl.classList.add('hidden');
-    downloadBtn.classList.add('hidden');
+    downloadAllBtn.classList.add('hidden');
     
     statusEl.textContent = '📦 Fetching data from database...';
     progressBar.style.width = '10%';
     logContent.innerHTML += '<div>📦 Fetching books, topics, and questions...</div>';
+    bookListEl.innerHTML = '<div class="text-gray-500 text-sm">Loading books...</div>';
     
     try {
         // Fetch all data
@@ -2343,6 +2355,7 @@ async function generateSEOPages() {
         
         const books = booksRes.data || [];
         const topics = topicsRes.data || [];
+        seoBooksData = books;
         
         seoTotalBooks = books.length;
         statusEl.textContent = `📚 Found ${books.length} books`;
@@ -2353,12 +2366,16 @@ async function generateSEOPages() {
         if (books.length === 0) {
             statusEl.textContent = '⚠️ No books found to generate pages';
             logContent.innerHTML += '<div class="text-red-500">⚠️ No books found in database.</div>';
+            bookListEl.innerHTML = '<div class="text-gray-500 text-sm">No books available</div>';
             return;
         }
         
         // Get current page HTML as template
         const template = document.documentElement.outerHTML;
         logContent.innerHTML += '<div>📄 Generating pages...</div>';
+        
+        // Build book list with download buttons
+        let bookListHtml = '';
         
         // Generate page for each book
         books.forEach((book, index) => {
@@ -2409,25 +2426,41 @@ async function generateSEOPages() {
                 `<div class="stats-number" id="statBooks">${bookTopics.length}</div>`
             );
             
-            // Count total questions for this book
-            let totalMcqs = 0;
-            // Store for later
+            // Store file
             seoGeneratedFiles.push({
                 name: `${slug}.html`,
                 content: html,
                 book: book.title,
-                chapters: bookTopics.length
+                chapters: bookTopics.length,
+                slug: slug
             });
+            
+            // Add to book list with individual download button
+            bookListHtml += `
+                <div class="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-200 hover:border-purple-300 transition">
+                    <div class="flex items-center gap-3">
+                        <span class="font-medium text-gray-800">${escapeHtml(book.title)}</span>
+                        ${book.author ? `<span class="text-gray-500 text-sm">by ${escapeHtml(book.author)}</span>` : ''}
+                        <span class="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full">${bookTopics.length} chapters</span>
+                    </div>
+                    <button onclick="downloadSingleSEOPage('${slug}')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm transition flex items-center gap-1">
+                        <i class="fas fa-download"></i> Download
+                    </button>
+                </div>
+            `;
             
             seoGeneratedCount++;
             const progress = 20 + ((seoGeneratedCount / seoTotalBooks) * 70);
             progressBar.style.width = `${progress}%`;
-            statusEl.textContent = `📄 Generating ${seoGeneratedCount}/${seoTotalBooks}: ${book.title}`;
+            statusEl.textContent = `📄 Generated ${seoGeneratedCount}/${seoTotalBooks}: ${book.title}`;
             countEl.textContent = `${seoGeneratedCount} pages`;
             
             logContent.innerHTML += `<div>✅ ${seoGeneratedCount}/${seoTotalBooks}: ${slug}.html (${bookTopics.length} chapters)</div>`;
             logEl.scrollTop = logEl.scrollHeight;
         });
+        
+        // Update book list
+        bookListEl.innerHTML = bookListHtml;
         
         progressBar.style.width = '95%';
         statusEl.textContent = `🎉 All ${seoTotalBooks} pages generated!`;
@@ -2435,10 +2468,10 @@ async function generateSEOPages() {
         
         // Show result
         resultEl.classList.remove('hidden');
-        downloadBtn.classList.remove('hidden');
+        downloadAllBtn.classList.remove('hidden');
         
         logContent.innerHTML += `<div class="text-green-600 font-bold">🎉 Successfully generated ${seoTotalBooks} SEO pages!</div>`;
-        logContent.innerHTML += `<div class="text-blue-600">📥 Click "Download All" to save all pages.</div>`;
+        logContent.innerHTML += `<div class="text-blue-600">📥 Click "Download" next to each book to save individual pages.</div>`;
         logEl.scrollTop = logEl.scrollHeight;
         
         progressBar.style.width = '100%';
@@ -2447,9 +2480,32 @@ async function generateSEOPages() {
         console.error('SEO Generation Error:', error);
         statusEl.textContent = '❌ Error: ' + error.message;
         logContent.innerHTML += `<div class="text-red-500">❌ Error: ${error.message}</div>`;
+        document.getElementById('seoBookList').innerHTML = `<div class="text-red-500 text-sm">Error: ${error.message}</div>`;
     }
 }
 
+// Download individual SEO page
+function downloadSingleSEOPage(slug) {
+    const file = seoGeneratedFiles.find(f => f.slug === slug);
+    if (!file) {
+        showToast('File not found. Please regenerate pages.', true);
+        return;
+    }
+    
+    const blob = new Blob([file.content], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showToast(`✅ Downloaded: ${file.name}`);
+}
+
+// Download all SEO pages
 function downloadAllSEOPages() {
     if (seoGeneratedFiles.length === 0) {
         showToast('No files to download. Generate pages first.', true);
@@ -2458,7 +2514,6 @@ function downloadAllSEOPages() {
     
     showToast(`📥 Downloading ${seoGeneratedFiles.length} files...`);
     
-    // Create a zip-like download by downloading one by one
     seoGeneratedFiles.forEach((file, index) => {
         setTimeout(() => {
             const blob = new Blob([file.content], { type: 'text/html' });
@@ -2481,7 +2536,6 @@ function downloadAllSEOPages() {
 // Function to open SEO tab and auto-generate
 async function openSEOTab() {
     showTab('seo');
-    // Auto-generate when tab opens
     setTimeout(() => {
         generateSEOPages();
     }, 500);
