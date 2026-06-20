@@ -242,7 +242,19 @@
         if (value === null || value === undefined) return '';
         return String(value);
     }
-    
+        // ============================================
+    // 3. A. NORMALIZE DIFFICULTY TO LOWERCASE
+    // ============================================
+    function normalizeDifficulty(value) {
+        const str = safeString(value).toLowerCase().trim();
+        // Valid difficulties: easy, medium, hard
+        if (str === 'easy' || str === 'medium' || str === 'hard') {
+            return str;
+        }
+        // Default to 'medium' if invalid
+        console.warn(`Invalid difficulty value: "${value}", defaulting to "medium"`);
+        return 'medium';
+    }
     // ============================================
     // 4. CONVERT LETTER ANSWER TO NUMBER
     // ============================================
@@ -412,19 +424,26 @@
                     if (rows.length === 0) return;
                     
                     // Safe process each row and convert correct_answer from letter to number
-                    currentQuestions = rows.map(row => {
-                        const processed = {};
-                        Object.keys(row).forEach(key => {
-                            processed[key] = safeString(row[key]);
-                        });
-                        // Convert the correct_answer from letter (A,B,C,D) to number (0,1,2,3)
-                        const originalAnswer = processed.correct_answer;
-                        processed.correct_answer_numeric = convertAnswerToNumber(originalAnswer);
-                        if (originalAnswer !== processed.correct_answer_numeric.toString() && !['0','1','2','3'].includes(originalAnswer)) {
-                            addLog(`⚠️ Converted correct_answer from "${originalAnswer}" to "${processed.correct_answer_numeric}" (${String.fromCharCode(65+processed.correct_answer_numeric)})`, 'warning');
-                        }
-                        return processed;
-                    });
+// Safe process each row and convert correct_answer from letter to number
+currentQuestions = rows.map(row => {
+    const processed = {};
+    Object.keys(row).forEach(key => {
+        processed[key] = safeString(row[key]);
+    });
+    // Convert the correct_answer from letter (A,B,C,D) to number (0,1,2,3)
+    const originalAnswer = processed.correct_answer;
+    processed.correct_answer_numeric = convertAnswerToNumber(originalAnswer);
+    if (originalAnswer !== processed.correct_answer_numeric.toString() && !['0','1','2','3'].includes(originalAnswer)) {
+        addLog(`⚠️ Converted correct_answer from "${originalAnswer}" to "${processed.correct_answer_numeric}" (${String.fromCharCode(65+processed.correct_answer_numeric)})`, 'warning');
+    }
+    // Normalize difficulty to lowercase
+    const originalDifficulty = processed.difficulty;
+    processed.difficulty = normalizeDifficulty(originalDifficulty);
+    if (originalDifficulty !== processed.difficulty) {
+        addLog(`⚠️ Converted difficulty from "${originalDifficulty}" to "${processed.difficulty}"`, 'warning');
+    }
+    return processed;
+});
                     
                     const previewDiv = document.getElementById('previewDiv');
                     const uploadBtn = document.getElementById('uploadBtn');
@@ -552,7 +571,7 @@
                         const { data, error } = await supabase.from('questions').insert({
                             topic_id: parseInt(topicId),
                             question_text: safeString(q.question_text),
-                            difficulty: safeString(q.difficulty) || 'medium',
+                            difficulty: normalizeDifficulty(q.difficulty),
                             correct_answer: correctAnswerNumeric,
                             explanation: safeString(q.explanation) || ''
                         }).select();
