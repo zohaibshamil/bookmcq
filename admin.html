@@ -2317,55 +2317,6 @@ function showTab(tabName) {
             }
         }
     }
-// ============ SEO PAGE GENERATION ============
-let seoGeneratedFiles = [];
-let seoTotalBooks = 0;
-let seoGeneratedCount = 0;
-let seoBooksData = [];
-let cachedTemplate = null;
-
-async function fetchTemplate() {
-    // First try to get template from server
-    try {
-        const response = await fetch('template.html');
-        if (response.ok) {
-            cachedTemplate = await response.text();
-            return cachedTemplate;
-        }
-    } catch(e) {
-        console.log('Could not fetch template.html, using fallback');
-    }
-    
-    // Fallback: try to get from current page but clean it
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = document.documentElement.outerHTML;
-    
-    const adminDashboard = tempDiv.querySelector('#adminDashboard');
-    if (adminDashboard) adminDashboard.remove();
-    
-    const loginScreen = tempDiv.querySelector('#loginScreen');
-    if (loginScreen) loginScreen.remove();
-    
-    const modals = tempDiv.querySelectorAll('.modal');
-    modals.forEach(el => el.remove());
-    
-    const toast = tempDiv.querySelector('#toast');
-    if (toast) toast.remove();
-    
-    const scripts = tempDiv.querySelectorAll('script');
-    scripts.forEach(el => {
-        if (el.textContent.includes('admin') || 
-            el.textContent.includes('SUPABASE') ||
-            el.textContent.includes('login') ||
-            el.textContent.includes('logout')) {
-            el.remove();
-        }
-    });
-    
-    cachedTemplate = tempDiv.innerHTML;
-    return cachedTemplate;
-}
-
 async function generateSEOPages() {
     const statusEl = document.getElementById('seoStatus');
     const countEl = document.getElementById('seoCount');
@@ -2390,11 +2341,11 @@ async function generateSEOPages() {
     bookListEl.innerHTML = '<div class="text-gray-500 text-sm">Loading books...</div>';
     
     try {
-        // ============ FIX: ADD questionsRes ============
+        // ============ FIX: ADD .limit(100000) to fetch ALL questions ============
         const [booksRes, topicsRes, questionsRes, template] = await Promise.all([
             _supabase.from('books').select('*').order('title'),
             _supabase.from('topics').select('*, books(title)').order('name'),
-            _supabase.from('questions').select('id, topic_id'),
+            _supabase.from('questions').select('id, topic_id').limit(100000), // FETCH ALL QUESTIONS
             fetchTemplate()
         ]);
         
@@ -2410,13 +2361,23 @@ async function generateSEOPages() {
             }
         });
         
+        // ============ DEBUG: Log counts to console ============
+        console.log('📊 Total questions fetched:', questions.length);
+        console.log('📊 Question counts per topic:');
+        Object.keys(questionCountByTopic).forEach(topicId => {
+            const topic = topics.find(t => t.id === parseInt(topicId));
+            if (topic) {
+                console.log(`  - ${topic.name}: ${questionCountByTopic[topicId]} MCQs`);
+            }
+        });
+        
         seoBooksData = books;
         
         seoTotalBooks = books.length;
         statusEl.textContent = `📚 Found ${books.length} books`;
         countEl.textContent = `${books.length} pages`;
         progressBar.style.width = '20%';
-        logContent.innerHTML += `<div>📚 Found ${books.length} books, ${topics.length} topics, ${questions.length} questions</div>`;
+        logContent.innerHTML += `<div>📚 Found ${books.length} books, ${topics.length} topics, ${questions.length} total questions</div>`;
         
         if (books.length === 0) {
             statusEl.textContent = '⚠️ No books found to generate pages';
@@ -2438,6 +2399,9 @@ async function generateSEOPages() {
             bookTopics.forEach(topic => {
                 totalQuestionsForBook += questionCountByTopic[topic.id] || 0;
             });
+            
+            // ============ DEBUG: Log per book ============
+            console.log(`📊 ${book.title}: ${bookTopics.length} chapters, ${totalQuestionsForBook} MCQs`);
             
             let html = template;
             
@@ -2525,24 +2489,23 @@ async function generateSEOPages() {
                 chaptersHtml += '<p class="text-gray-500 text-center py-4 col-span-full">No chapters available for this book yet.</p>';
             } else {
                 // Sort topics by chapter number
-// Sort topics by chapter number
-const sortedTopics = [...bookTopics].sort((a, b) => (a.chapter_number || 0) - (b.chapter_number || 0));
-sortedTopics.forEach((topic, idx) => {
-    const chapterDisplay = topic.chapter_number ? `Ch ${topic.chapter_number}: ` : '';
-    const mcqCount = questionCountByTopic[topic.id] || 0;
-    chaptersHtml += `
-        <div class="book-list-item" onclick="window.location.href='/quiz'">
-            <div class="book-info">
-                <div class="book-number">${idx + 1}</div>
-                <div>
-                    <div class="book-title">${chapterDisplay}${topic.name}</div>
-                    <div class="book-author">${mcqCount} MCQs</div>
-                </div>
-            </div>
-            <i class="fas fa-chevron-right text-gray-400 text-sm"></i>
-        </div>
-    `;
-});
+                const sortedTopics = [...bookTopics].sort((a, b) => (a.chapter_number || 0) - (b.chapter_number || 0));
+                sortedTopics.forEach((topic, idx) => {
+                    const chapterDisplay = topic.chapter_number ? `Ch ${topic.chapter_number}: ` : '';
+                    const mcqCount = questionCountByTopic[topic.id] || 0;
+                    chaptersHtml += `
+                        <div class="book-list-item" onclick="window.location.href='/quiz'">
+                            <div class="book-info">
+                                <div class="book-number">${idx + 1}</div>
+                                <div>
+                                    <div class="book-title">${chapterDisplay}${topic.name}</div>
+                                    <div class="book-author">${mcqCount} MCQs</div>
+                                </div>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400 text-sm"></i>
+                        </div>
+                    `;
+                });
             }
             chaptersHtml += '</div>';
             chaptersHtml += '<p class="text-xs text-gray-400 mt-4 text-center">Click on any chapter to start practicing</p>';
