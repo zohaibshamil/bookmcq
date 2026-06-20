@@ -2337,11 +2337,9 @@ async function fetchTemplate() {
     }
     
     // Fallback: try to get from current page but clean it
-    // This removes admin-specific elements
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = document.documentElement.outerHTML;
     
-    // Remove admin dashboard elements
     const adminDashboard = tempDiv.querySelector('#adminDashboard');
     if (adminDashboard) adminDashboard.remove();
     
@@ -2354,7 +2352,6 @@ async function fetchTemplate() {
     const toast = tempDiv.querySelector('#toast');
     if (toast) toast.remove();
     
-    // Remove script tags that are admin-specific
     const scripts = tempDiv.querySelectorAll('script');
     scripts.forEach(el => {
         if (el.textContent.includes('admin') || 
@@ -2393,19 +2390,19 @@ async function generateSEOPages() {
     bookListEl.innerHTML = '<div class="text-gray-500 text-sm">Loading books...</div>';
     
     try {
-        // ============ FIX 1: ADD questionsRes ============
-        const [booksRes, topicsRes, questionsRes] = await Promise.all([
+        // ============ FIX: ADD questionsRes ============
+        const [booksRes, topicsRes, questionsRes, template] = await Promise.all([
             _supabase.from('books').select('*').order('title'),
             _supabase.from('topics').select('*, books(title)').order('name'),
             _supabase.from('questions').select('id, topic_id'),
+            fetchTemplate()
         ]);
         
-        // ============ FIX 2: ADD questionCountByTopic ============
         const books = booksRes.data || [];
         const topics = topicsRes.data || [];
         const questions = questionsRes.data || [];
         
-        // Count questions per topic
+        // ============ FIX: Count questions per topic ============
         const questionCountByTopic = {};
         questions.forEach(q => {
             if (q.topic_id) {
@@ -2428,19 +2425,15 @@ async function generateSEOPages() {
             return;
         }
         
-        // Get current page HTML as template
-        const template = document.documentElement.outerHTML;
         logContent.innerHTML += '<div>📄 Generating pages...</div>';
         
-        // Build book list with download buttons
         let bookListHtml = '';
         
-        // Generate page for each book
         books.forEach((book, index) => {
             const bookTopics = topics.filter(t => t.book_id === book.id);
             const slug = book.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
             
-            // ============ FIX 3: Count questions for this book ============
+            // ============ FIX: Count total questions for this book ============
             let totalQuestionsForBook = 0;
             bookTopics.forEach(topic => {
                 totalQuestionsForBook += questionCountByTopic[topic.id] || 0;
@@ -2496,7 +2489,7 @@ async function generateSEOPages() {
                 `<div class="stats-number">${bookTopics.length}</div>`
             );
             
-            // ============ FIX 4: Stats - Questions count ============
+            // ============ FIX: Stats - Questions count ============
             html = html.replace(
                 /<div class="stats-number" id="statMcqs">Loading...<\/div>/,
                 `<div class="stats-number">${totalQuestionsForBook}</div>`
@@ -2520,13 +2513,13 @@ async function generateSEOPages() {
                 `<h3 class="font-bold text-gray-800" id="sectionTitle">📖 Chapters in "${book.title}"</h3>`
             );
             
-            // Category filters - show only chapters
+            // Category filters
             html = html.replace(
                 /<div id="categoryFilters" class="flex flex-wrap gap-2 mb-4">.*?<\/div>/s,
                 `<div id="categoryFilters" class="flex flex-wrap gap-2 mb-4"><span class="text-sm text-gray-500">${bookTopics.length} chapters available</span></div>`
             );
             
-            // Books grid - Show chapters with MCQ count
+            // ============ FIX: Books grid - Show chapters with MCQ count ============
             let chaptersHtml = '<div class="books-grid">';
             if (bookTopics.length === 0) {
                 chaptersHtml += '<p class="text-gray-500 text-center py-4 col-span-full">No chapters available for this book yet.</p>';
@@ -2592,7 +2585,6 @@ async function generateSEOPages() {
             logEl.scrollTop = logEl.scrollHeight;
         });
         
-        // Update book list
         bookListEl.innerHTML = bookListHtml;
         
         progressBar.style.width = '95%';
