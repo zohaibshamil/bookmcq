@@ -1190,12 +1190,12 @@
         <p class="text-sm md:text-base mt-2 font-semibold">Practice Questions</p>
         <p class="text-xs mt-1 opacity-70">Start quiz now →</p>
     </div>
-    <div id="categoryProgress" class="stats-card rounded-2xl p-5 md:p-7 text-center cursor-pointer shadow-xl" onclick="openCountriesModal()">
-        <i class="fas fa-globe-americas text-4xl md:text-5xl mb-3 opacity-80"></i>
-        <div class="stats-number">25+</div>
-        <p class="text-sm md:text-base mt-2 font-semibold">Countries Served</p>
-        <p class="text-xs mt-1 opacity-70">Click to see all →</p>
-    </div>
+<div id="categoryProgress" class="stats-card rounded-2xl p-5 md:p-7 text-center cursor-pointer shadow-xl" onclick="event.stopPropagation(); openCountriesModal();">
+    <i class="fas fa-globe-americas text-4xl md:text-5xl mb-3 opacity-80"></i>
+    <div class="stats-number">25+</div>
+    <p class="text-sm md:text-base mt-2 font-semibold">Countries Served</p>
+    <p class="text-xs mt-1 opacity-70">Click to see all →</p>
+</div>
 </div>
 <!-- Region Selector -->
 <div class="w-full mb-8">
@@ -1853,30 +1853,24 @@
         }, 100);
     }
 
-    // Stats Card Click Handlers
-    function setupStatsCardHandlers() {
-        const booksCard = document.getElementById('categoryBooks');
-        if (booksCard) {
-            booksCard.addEventListener('click', () => {
-                window.location.href = '/practice';
-            });
-        }
-        
-        const mcqsCard = document.getElementById('categoryMcqs');
-        if (mcqsCard) {
-            mcqsCard.addEventListener('click', () => {
-                window.location.href = '/quiz';
-            });
-        }
-        
-        const progressCard = document.getElementById('categoryProgress');
-        if (progressCard) {
-            progressCard.addEventListener('click', () => {
-                window.location.href = '/quiz';
-            });
-        }
+// Stats Card Click Handlers
+function setupStatsCardHandlers() {
+    const booksCard = document.getElementById('categoryBooks');
+    if (booksCard) {
+        booksCard.addEventListener('click', () => {
+            window.location.href = '/practice';
+        });
     }
-
+    
+    const mcqsCard = document.getElementById('categoryMcqs');
+    if (mcqsCard) {
+        mcqsCard.addEventListener('click', () => {
+            window.location.href = '/quiz';
+        });
+    }
+    
+    // REMOVED: progressCard handler - now handled by inline onclick
+}
     // Dynamic SEO
     async function updateDynamicSEO(supabaseService) {
         try {
