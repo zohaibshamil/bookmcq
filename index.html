@@ -978,6 +978,115 @@
 .about-region-card:hover {
     box-shadow: 0 8px 25px -8px rgba(0,0,0,0.15) !important;
 }
+
+        /* ========== COUNTRIES POPUP MODAL ========== */
+.countries-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 99999;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    animation: modalFadeIn 0.3s ease;
+}
+.countries-modal.active {
+    display: flex !important;
+}
+@keyframes modalFadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+.countries-modal-content {
+    background: white;
+    border-radius: 24px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.4);
+    animation: modalSlideUp 0.3s ease;
+}
+@keyframes modalSlideUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+.countries-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 24px;
+    border-bottom: 1px solid #f3e8ff;
+    background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+    border-radius: 24px 24px 0 0;
+}
+.countries-modal-header h3 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+}
+.countries-modal-header .close-modal-btn {
+    background: none;
+    border: none;
+    font-size: 1.8rem;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 0 8px;
+    transition: all 0.2s;
+    line-height: 1;
+}
+.countries-modal-header .close-modal-btn:hover {
+    color: #7c3aed;
+    transform: rotate(90deg);
+}
+.countries-modal-body {
+    padding: 20px 24px 24px;
+    overflow-y: auto;
+    max-height: calc(80vh - 80px);
+}
+.countries-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+}
+.country-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    transition: all 0.2s;
+    font-size: 0.85rem;
+    color: #374151;
+    border: 1px solid transparent;
+}
+.country-item:hover {
+    background: #f3e8ff;
+    border-color: #d8b4fe;
+}
+.country-item .flag {
+    font-size: 1.3rem;
+}
+.country-item .name {
+    font-weight: 500;
+}
+.country-item .region-tag {
+    font-size: 0.55rem;
+    background: #f3e8ff;
+    color: #7c3aed;
+    padding: 1px 8px;
+    border-radius: 10px;
+    margin-left: auto;
+}
+</style>
+        
     </style>
 </head>
 <body class="disable-select">
@@ -1360,7 +1469,18 @@
         <p>&copy; 2025 BookMCQ. All rights reserved. | 🌍 Global MCQ Platform | Exams Worldwide</p>
     </footer>
 </div>
-
+<!-- ===== COUNTRIES POPUP MODAL ===== -->
+<div id="countriesModal" class="countries-modal">
+    <div class="countries-modal-content">
+        <div class="countries-modal-header">
+            <h3>🌍 Countries We Serve (25+)</h3>
+            <button class="close-modal-btn" id="closeCountriesModal">&times;</button>
+        </div>
+        <div class="countries-modal-body" id="countriesList">
+            <!-- Dynamically populated -->
+        </div>
+    </div>
+</div>
 <!-- ===== AI CHAT ===== -->
 <div class="ai-chat-btn">
     <button id="aiChatBtn" class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 rounded-full shadow-xl hover:scale-105 transition">
@@ -2112,6 +2232,98 @@
     initNewsTicker();
     
     console.log('🌍 BookMCQ Global Platform initialized successfully!');
+
+    // ========== COUNTRIES MODAL ==========
+const countriesData = [
+    // South Asia
+    { name: 'Pakistan', flag: '🇵🇰', region: 'South Asia' },
+    { name: 'India', flag: '🇮🇳', region: 'South Asia' },
+    { name: 'Bangladesh', flag: '🇧🇩', region: 'South Asia' },
+    { name: 'Sri Lanka', flag: '🇱🇰', region: 'South Asia' },
+    { name: 'Nepal', flag: '🇳🇵', region: 'South Asia' },
+    // North America
+    { name: 'United States', flag: '🇺🇸', region: 'North America' },
+    { name: 'Canada', flag: '🇨🇦', region: 'North America' },
+    // Europe
+    { name: 'United Kingdom', flag: '🇬🇧', region: 'Europe' },
+    { name: 'Germany', flag: '🇩🇪', region: 'Europe' },
+    { name: 'France', flag: '🇫🇷', region: 'Europe' },
+    { name: 'Poland', flag: '🇵🇱', region: 'Europe' },
+    { name: 'Spain', flag: '🇪🇸', region: 'Europe' },
+    { name: 'Italy', flag: '🇮🇹', region: 'Europe' },
+    { name: 'Netherlands', flag: '🇳🇱', region: 'Europe' },
+    { name: 'Sweden', flag: '🇸🇪', region: 'Europe' },
+    { name: 'Norway', flag: '🇳🇴', region: 'Europe' },
+    { name: 'Denmark', flag: '🇩🇰', region: 'Europe' },
+    { name: 'Finland', flag: '🇫🇮', region: 'Europe' },
+    { name: 'Switzerland', flag: '🇨🇭', region: 'Europe' },
+    // Gulf / MENA
+    { name: 'UAE', flag: '🇦🇪', region: 'Gulf' },
+    { name: 'Saudi Arabia', flag: '🇸🇦', region: 'Gulf' },
+    { name: 'Qatar', flag: '🇶🇦', region: 'Gulf' },
+    { name: 'Kuwait', flag: '🇰🇼', region: 'Gulf' },
+    { name: 'Bahrain', flag: '🇧🇭', region: 'Gulf' },
+    { name: 'Oman', flag: '🇴🇲', region: 'Gulf' },
+    // Asia Pacific
+    { name: 'Australia', flag: '🇦🇺', region: 'Asia Pacific' },
+    { name: 'Singapore', flag: '🇸🇬', region: 'Asia Pacific' },
+    { name: 'Malaysia', flag: '🇲🇾', region: 'Asia Pacific' },
+    { name: 'Philippines', flag: '🇵🇭', region: 'Asia Pacific' },
+    { name: 'Japan', flag: '🇯🇵', region: 'Asia Pacific' },
+    { name: 'South Korea', flag: '🇰🇷', region: 'Asia Pacific' },
+    // Africa
+    { name: 'Nigeria', flag: '🇳🇬', region: 'Africa' },
+    { name: 'South Africa', flag: '🇿🇦', region: 'Africa' },
+];
+
+function openCountriesModal() {
+    const modal = document.getElementById('countriesModal');
+    const container = document.getElementById('countriesList');
+    
+    // Sort countries by region then name
+    const sorted = [...countriesData].sort((a, b) => {
+        if (a.region !== b.region) return a.region.localeCompare(b.region);
+        return a.name.localeCompare(b.name);
+    });
+    
+    container.innerHTML = `
+        <div class="countries-grid">
+            ${sorted.map(c => `
+                <div class="country-item">
+                    <span class="flag">${c.flag}</span>
+                    <span class="name">${c.name}</span>
+                    <span class="region-tag">${c.region}</span>
+                </div>
+            `).join('')}
+        </div>
+        <p style="text-align: center; font-size: 0.7rem; color: #9ca3af; margin-top: 12px;">
+            ${countriesData.length} countries and growing!
+        </p>
+    `;
+    
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeCountriesModal() {
+    const modal = document.getElementById('countriesModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+// Close modal on backdrop click
+document.getElementById('countriesModal').addEventListener('click', function(e) {
+    if (e.target === this) closeCountriesModal();
+});
+
+// Close modal on close button
+document.getElementById('closeCountriesModal').addEventListener('click', closeCountriesModal);
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeCountriesModal();
+});
+    
 </script>
 </body>
 </html>
