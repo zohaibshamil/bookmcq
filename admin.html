@@ -731,6 +731,15 @@
             return m;
         });
     }
+    function createSlug(text) {
+    return text
+        .toLowerCase()
+        .trim()
+        .replace(/&/g, 'and')
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-');
+}
 
     // ============ MATH FUNCTIONS ============
     function toggleMathHelp() {
@@ -1406,7 +1415,16 @@
             return;
         }
         
-        const { error } = await _supabase.from('books').insert([{ category, title, author }]);
+        const slug = createSlug(title);
+
+const { error } = await _supabase.from('books').insert([
+    {
+        category,
+        title,
+        author,
+        slug
+    }
+]);
         if (error) {
             showToast('Error: ' + error.message, true);
         } else {
@@ -1445,7 +1463,17 @@
             return;
         }
         
-        const { error } = await _supabase.from('books').update({ category, title, author }).eq('id', id);
+        const slug = createSlug(title);
+
+const { error } = await _supabase
+    .from('books')
+    .update({
+        category,
+        title,
+        author,
+        slug
+    })
+    .eq('id', id);
         if (error) {
             showToast('Error: ' + error.message, true);
         } else {
@@ -1545,11 +1573,14 @@
             return;
         }
         
-        const topicData = { 
-            book_id: parseInt(bookId), 
-            name: name,
-            chapter_number: chapterNumber ? parseInt(chapterNumber) : null
-        };
+            const topicData = {
+    book_id: parseInt(bookId),
+    name: name,
+    slug: createSlug(name),
+    chapter_number: chapterNumber
+        ? parseInt(chapterNumber)
+        : null
+};
         
         const { error } = await _supabase.from('topics').insert([topicData]);
         if (error) {
@@ -1592,10 +1623,17 @@
             return;
         }
         
-        const { error } = await _supabase.from('topics').update({ 
-            name: name,
-            chapter_number: chapterNumber ? parseInt(chapterNumber) : null
-        }).eq('id', id);
+        const { error } = await _supabase
+    .from('topics')
+    .update({
+        name,
+        slug: createSlug(name),
+        chapter_number: chapterNumber
+            ? parseInt(chapterNumber)
+            : null,
+        book_id: parseInt(bookId)
+    })
+    .eq('id', id);
         
         if (error) {
             showToast('Error: ' + error.message, true);
