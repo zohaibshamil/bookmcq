@@ -2636,7 +2636,8 @@ async function generateSEOPages() {
                     const chapterDisplay = topic.chapter_number ? `Ch ${topic.chapter_number}: ` : '';
                     const mcqCount = questionCountByTopic[topic.id] || 0;
                     chaptersHtml += `
-                        <div class="book-list-item" onclick="window.location.href='/quiz'">
+    <div class="book-list-item"
+         onclick="window.location.href='/quiz?topic=${topic.id}'">
                             <div class="book-info">
                                 <div class="book-number">${idx + 1}</div>
                                 <div>
@@ -2770,7 +2771,51 @@ async function openSEOTab() {
         generateSEOPages();
     }, 500);
 }
+async function loadTopicFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const topicId = params.get('topic');
 
+    if (!topicId) return;
+
+    try {
+        const { data: topic } = await _supabase
+            .from('topics')
+            .select('id, name, book_id')
+            .eq('id', topicId)
+            .single();
+
+        if (!topic) return;
+
+        selectedBookId = topic.book_id;
+
+        await loadTopics();
+
+        document.title = `${topic.name} MCQ Quiz | BookMCQ`;
+
+        document.getElementById('bookSelectedText').textContent =
+            'Loading topic...';
+
+        setTimeout(() => {
+            const checkbox = document.querySelector(
+                `input[value^="${topic.name}|"]`
+            );
+
+            if (checkbox) {
+                checkbox.checked = true;
+
+                const topicSelectedText =
+                    document.getElementById('topicSelectedText');
+
+                if (topicSelectedText) {
+                    topicSelectedText.textContent = topic.name;
+                }
+            }
+        }, 500);
+
+    } catch (err) {
+        console.error('Topic URL load failed:', err);
+    }
+}
     function setupEventListeners() {
         document.getElementById('loginBtn').addEventListener('click', handleLogin);
         document.getElementById('signupBtn').addEventListener('click', handleSignup);
