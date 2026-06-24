@@ -2423,7 +2423,7 @@
         `).join('');
     }
 
-    // ============ SITEMAP GENERATOR ============
+    // ============ SITEMAP GENERATOR - FIXED ============
     async function generateSitemap() {
         const statusEl = document.getElementById('sitemapStatus');
         const countEl = document.getElementById('sitemapCount');
@@ -2456,7 +2456,7 @@
             
             if (booksError) throw booksError;
             
-            // Fetch topics with their book slugs - ORDER BY book_id and chapter_number
+            // Fetch topics with their book slugs
             const { data: topics, error: topicsError } = await _supabase
                 .from('topics')
                 .select('id, name, slug, book_id, chapter_number, created_at, books(title, slug)')
@@ -2503,21 +2503,25 @@
                 }
             });
             
-            // Add book main pages (sorted by book title)
+            // ============================================================
+            // FIXED: Book main page URL - /books/[book-slug]/index.html
+            // NOT /books/[book-slug].html
+            // ============================================================
             const sortedBooks = [...books].sort((a, b) => a.title.localeCompare(b.title));
             sortedBooks.forEach(book => {
                 const slug = book.slug || createSlug(book.title);
                 urls.push({
-                    loc: `https://www.bookmcq.com/books/${slug}.html`,
+                    loc: `https://www.bookmcq.com/books/${slug}/index.html`,
                     priority: '0.9',
                     changefreq: 'weekly',
                     lastmod: book.created_at ? new Date(book.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
                     bookTitle: book.title,
-                    isBook: true
+                    isBook: true,
+                    isIndex: true
                 });
             });
             
-            // Add topic/chapter pages - grouped by book and sorted by chapter number
+            // Add topic/chapter pages - /books/[book-slug]/[chapter-slug].html
             const sortedBookSlugs = Object.keys(topicsByBook).sort();
             sortedBookSlugs.forEach(bookSlug => {
                 const bookTopics = topicsByBook[bookSlug];
@@ -2548,7 +2552,9 @@
             document.getElementById('sitemapTopicCount').textContent = topics.length;
             document.getElementById('sitemapTotalCount').textContent = urls.length;
             
-            // Build XML with grouped comments
+            // ============================================================
+            // Build XML with CORRECT URLs
+            // ============================================================
             let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
@@ -2557,7 +2563,7 @@
             // Add static pages
             staticPages.forEach(page => {
                 xml += `  <url>
-    <loc>${`https://www.bookmcq.com${page.url}`}</loc>
+    <loc>https://www.bookmcq.com${page.url}</loc>
     <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
     <changefreq>${page.changefreq}</changefreq>
     <priority>${page.priority}</priority>
@@ -2567,7 +2573,7 @@
             xml += `
   <!-- ================= BOOKS ================= -->\n`;
             
-            // Add book main pages with comments
+            // Add book main pages with CORRECT URL: /books/[slug]/index.html
             sortedBooks.forEach(book => {
                 const slug = book.slug || createSlug(book.title);
                 const bookTitle = book.title;
@@ -2576,7 +2582,7 @@
                 xml += `
   <!-- ${bookTitle} -->
   <url>
-    <loc>https://www.bookmcq.com/books/${slug}.html</loc>
+    <loc>https://www.bookmcq.com/books/${slug}/index.html</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
@@ -2597,7 +2603,6 @@
                     
                     bookTopics.forEach(topic => {
                         if (topic.slug) {
-                            const topicLastmod = topic.created_at ? new Date(topic.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
                             xml += `  <url><loc>https://www.bookmcq.com/books/${slug}/${topic.slug}.html</loc></url>\n`;
                         }
                     });
