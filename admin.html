@@ -3087,12 +3087,34 @@
     }
 
     // ============================================================
+    // DOWNLOAD SINGLE FILE
+    // ============================================================
+    function downloadSingleFile(fileName) {
+        var file = seoGeneratedFiles.find(function(f) { return f.name === fileName; });
+        if (!file) {
+            showToast('File not found. Please regenerate pages.', true);
+            return;
+        }
+        
+        var blob = new Blob([file.content], { type: 'text/html' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = file.name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('✅ Downloaded: ' + file.name);
+    }
+
+    // ============================================================
     // DOWNLOAD SINGLE BOOK (all pages in folder)
     // ============================================================
     function downloadSingleSEOPage(bookSlug) {
         // Find ALL files that belong to this book (both index and chapters)
         var files = seoGeneratedFiles.filter(function(f) {
-            return f.slug === bookSlug;
+            return f.bookSlug === bookSlug;
         });
         
         if (files.length === 0) {
@@ -3244,8 +3266,9 @@
                     book: book.title,
                     chapters: bookTopics.length,
                     questions: totalQuestionsForBook,
-                    slug: bookSlug,
-                    isBook: true
+                    bookSlug: bookSlug,
+                    isBook: true,
+                    displayName: '📖 ' + book.title + ' (Index)'
                 });
                 
                 // ============================================================
@@ -3254,6 +3277,7 @@
                 bookTopics.forEach(function(topic) {
                     var topicSlug = topic.slug || createSlug(topic.name);
                     var stats = questionStats[topic.id] || { total: 0, easy: 0, medium: 0, hard: 0 };
+                    var chapterDisplay = topic.chapter_number ? topic.chapter_number + '. ' : '';
                     
                     var chapterHtml = generateChapterPage(book, topic, stats);
                     seoGeneratedFiles.push({
@@ -3261,13 +3285,21 @@
                         content: chapterHtml,
                         book: book.title,
                         chapter: topic.name,
-                        slug: bookSlug,  // Keep bookSlug so all files for a book can be found together
+                        bookSlug: bookSlug,
                         isChapter: true,
-                        stats: stats
+                        stats: stats,
+                        displayName: '📄 ' + chapterDisplay + topic.name + ' (' + stats.total + ' MCQs)'
                     });
                 });
                 
-                // Add to book list for download buttons
+                // Build dropdown options for this book
+                var bookFiles = seoGeneratedFiles.filter(function(f) { return f.bookSlug === bookSlug; });
+                var dropdownOptions = '';
+                bookFiles.forEach(function(f) {
+                    dropdownOptions += '<option value="' + f.name + '">' + f.displayName + '</option>';
+                });
+                
+                // Add to book list with dropdown
                 bookListHtml += `
                     <div class="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-200 hover:border-purple-300 transition">
                         <div class="flex items-center gap-3">
@@ -3275,9 +3307,17 @@
                             ${book.author ? `<span class="text-gray-500 text-sm">by ${escapeHtml(book.author)}</span>` : ''}
                             <span class="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full">${bookTopics.length} chapters, ${totalQuestionsForBook} MCQs</span>
                         </div>
-                        <button onclick="downloadSingleSEOPage('${bookSlug}')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm transition flex items-center gap-1">
-                            <i class="fas fa-download"></i> Download All (${bookTopics.length + 1} pages)
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <select id="fileSelect_${bookSlug}" class="p-2 border rounded-lg text-sm bg-white max-w-[200px]">
+                                ${dropdownOptions}
+                            </select>
+                            <button onclick="downloadSelectedFile('${bookSlug}')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm transition flex items-center gap-1">
+                                <i class="fas fa-download"></i> Download
+                            </button>
+                            <button onclick="downloadSingleSEOPage('${bookSlug}')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition flex items-center gap-1">
+                                <i class="fas fa-folder-open"></i> All (${bookFiles.length})
+                            </button>
+                        </div>
                     </div>
                 `;
                 
@@ -3301,7 +3341,7 @@
             downloadAllBtn.classList.remove('hidden');
             
             logContent.innerHTML += '<div class="text-green-600 font-bold">🎉 Successfully generated ' + seoGeneratedFiles.length + ' SEO pages!</div>';
-            logContent.innerHTML += '<div class="text-blue-600">📥 Click "Download All" next to each book to save all pages (index + chapters).</div>';
+            logContent.innerHTML += '<div class="text-blue-600">📥 Select a file from dropdown or click "All" to download all pages for a book.</div>';
             logEl.scrollTop = logEl.scrollHeight;
             
             progressBar.style.width = '100%';
@@ -3312,6 +3352,25 @@
             logContent.innerHTML += '<div class="text-red-500">❌ Error: ' + error.message + '</div>';
             document.getElementById('seoBookList').innerHTML = '<div class="text-red-500 text-sm">Error: ' + error.message + '</div>';
         }
+    }
+
+    // ============================================================
+    // DOWNLOAD SELECTED FILE FROM DROPDOWN
+    // ============================================================
+    function downloadSelectedFile(bookSlug) {
+        var select = document.getElementById('fileSelect_' + bookSlug);
+        if (!select) {
+            showToast('Dropdown not found', true);
+            return;
+        }
+        
+        var fileName = select.value;
+        if (!fileName) {
+            showToast('Please select a file', true);
+            return;
+        }
+        
+        downloadSingleFile(fileName);
     }
 
     // ============================================================
