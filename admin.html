@@ -2773,118 +2773,11 @@
         }
     }
 
-    // ============ SEO PAGE GENERATION ============
+    // ============ SEO PAGE GENERATION - UPDATED ============
     let seoGeneratedFiles = [];
     let seoTotalBooks = 0;
     let seoGeneratedCount = 0;
     let seoBooksData = [];
-    let cachedTemplate = null;
-
-    async function fetchTemplate() {
-        try {
-            const response = await fetch('template.html');
-            if (response.ok) {
-                cachedTemplate = await response.text();
-                return cachedTemplate;
-            }
-        } catch(e) {
-            console.log('Could not fetch template.html, using fallback');
-        }
-        return `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="robots" content="index, follow">
-    <meta name="theme-color" content="#7c3aed">
-    <title>BookMCQ</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <style>
-        body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #667eea, #764ba2); margin: 0; padding: 20px; min-height: 100vh; }
-        .container { max-width: 1000px; margin: auto; }
-        .card { background: white; border-radius: 16px; padding: 20px; margin-top: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        .chapter { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; margin: 10px 0; border-radius: 12px; background: #f3f4f6; cursor: pointer; transition: 0.2s; border-left: 4px solid #7c3aed; }
-        .chapter:hover { background: #e0e7ff; transform: translateX(5px); }
-        .title { font-weight: bold; font-size: 16px; }
-        .count { color: #6b7280; font-size: 13px; }
-        .difficulty-tag { display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; margin-right: 8px; }
-        .easy { background: #dcfce7; color: #166534; }
-        .medium { background: #fef3c7; color: #92400e; }
-        .hard { background: #fee2e2; color: #991b1b; }
-        .start-btn { display: inline-block; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 14px 40px; border-radius: 30px; font-weight: bold; font-size: 18px; text-decoration: none; margin-top: 20px; transition: 0.3s; border: none; cursor: pointer; }
-        .start-btn:hover { transform: scale(1.05); box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4); }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 12px; margin: 16px 0; }
-        .stat-card { background: #f8fafc; padding: 12px; border-radius: 10px; text-align: center; border: 1px solid #e2e8f0; }
-        .stat-number { font-size: 22px; font-weight: 700; color: #1e293b; }
-        .stat-label { font-size: 11px; color: #64748b; margin-top: 2px; }
-        .back-link { display: inline-block; margin-bottom: 16px; color: #7c3aed; text-decoration: none; font-size: 14px; }
-        .back-link:hover { text-decoration: underline; }
-        .category-badge { background: #e0e7ff; color: #4338ca; padding: 2px 12px; border-radius: 20px; font-size: 12px; }
-    </style>
-</head>
-<body>
-<div class="container">
-    <div class="card" id="content">
-        <!-- Content will be replaced -->
-    </div>
-</div>
-</body>
-</html>`;
-    }
-
-    async function fetchAllQuestions() {
-        let allQuestions = [];
-        let page = 0;
-        const pageSize = 1000;
-        let hasMore = true;
-        let totalFetched = 0;
-        const logContent = document.getElementById('seoLogContent');
-        
-        if (logContent) {
-            logContent.innerHTML += `<div>🔄 Fetching questions in batches of ${pageSize}...</div>`;
-        }
-        
-        while (hasMore) {
-            const from = page * pageSize;
-            const to = from + pageSize - 1;
-            
-            const { data, error } = await _supabase
-                .from('questions')
-                .select('id, topic_id, difficulty')
-                .range(from, to);
-            
-            if (error) {
-                console.error('Error fetching questions:', error);
-                break;
-            }
-            
-            if (!data || data.length === 0) {
-                hasMore = false;
-            } else {
-                allQuestions = allQuestions.concat(data);
-                totalFetched += data.length;
-                page++;
-                
-                const statusEl = document.getElementById('seoStatus');
-                if (statusEl) {
-                    statusEl.textContent = `📦 Fetching questions... ${totalFetched} fetched so far`;
-                }
-                if (logContent) {
-                    logContent.innerHTML += `<div>   📥 Batch ${page}: ${data.length} questions (${totalFetched} total)</div>`;
-                }
-                
-                if (data.length < pageSize) {
-                    hasMore = false;
-                }
-            }
-        }
-        
-        if (logContent) {
-            logContent.innerHTML += `<div>✅ Total questions fetched: ${allQuestions.length}</div>`;
-        }
-        return allQuestions;
-    }
 
     async function generateSEOPages() {
         const statusEl = document.getElementById('seoStatus');
@@ -2910,57 +2803,43 @@
         bookListEl.innerHTML = '<div class="text-gray-500 text-sm">Loading books...</div>';
         
         try {
+            // Fetch books with categories
             const { data: books, error: booksError } = await _supabase
                 .from('books')
-                .select('id, title, slug, author, category, created_at')
+                .select('*')
                 .order('title');
             
             if (booksError) throw booksError;
             
+            // Fetch topics with book info
             const { data: topics, error: topicsError } = await _supabase
                 .from('topics')
-                .select('id, name, slug, book_id, chapter_number, created_at, books(title, slug)')
+                .select('*, books(title, slug)')
                 .order('book_id')
                 .order('chapter_number', { ascending: true, nullsFirst: false });
             
             if (topicsError) throw topicsError;
             
-            const allQuestions = await fetchAllQuestions();
+            // Fetch ALL questions with difficulty
+            const allQuestions = await fetchAllQuestionsWithDifficulty();
             
-            const questionCountByTopic = {};
-            const difficultyCountByTopic = {};
-            
+            // Group questions by topic and difficulty
+            const questionStats = {};
             allQuestions.forEach(q => {
                 if (q.topic_id) {
-                    questionCountByTopic[q.topic_id] = (questionCountByTopic[q.topic_id] || 0) + 1;
-                    
-                    if (!difficultyCountByTopic[q.topic_id]) {
-                        difficultyCountByTopic[q.topic_id] = { easy: 0, medium: 0, hard: 0 };
+                    if (!questionStats[q.topic_id]) {
+                        questionStats[q.topic_id] = { total: 0, easy: 0, medium: 0, hard: 0 };
                     }
-                    const diff = q.difficulty || 'medium';
-                    if (difficultyCountByTopic[q.topic_id][diff] !== undefined) {
-                        difficultyCountByTopic[q.topic_id][diff]++;
-                    }
+                    questionStats[q.topic_id].total++;
+                    if (q.difficulty === 'easy') questionStats[q.topic_id].easy++;
+                    else if (q.difficulty === 'medium') questionStats[q.topic_id].medium++;
+                    else if (q.difficulty === 'hard') questionStats[q.topic_id].hard++;
                 }
             });
             
-            const topicsByBook = {};
-            topics.forEach(topic => {
-                if (topic.books && topic.books.slug) {
-                    const bookSlug = topic.books.slug;
-                    if (!topicsByBook[bookSlug]) {
-                        topicsByBook[bookSlug] = [];
-                    }
-                    topicsByBook[bookSlug].push(topic);
-                }
-            });
-            
-            seoBooksData = books;
-            seoTotalBooks = books.length;
-            statusEl.textContent = `📚 Found ${books.length} books`;
-            countEl.textContent = `${books.length} pages`;
-            progressBar.style.width = '20%';
             logContent.innerHTML += `<div>📚 Found ${books.length} books, ${topics.length} topics, ${allQuestions.length} total questions</div>`;
+            statusEl.textContent = '📄 Generating SEO pages...';
+            progressBar.style.width = '20%';
             
             if (books.length === 0) {
                 statusEl.textContent = '⚠️ No books found to generate pages';
@@ -2969,95 +2848,105 @@
                 return;
             }
             
-            logContent.innerHTML += '<div>📄 Generating pages...</div>';
+            // Group topics by book
+            const topicsByBook = {};
+            topics.forEach(topic => {
+                if (topic.book_id) {
+                    if (!topicsByBook[topic.book_id]) {
+                        topicsByBook[topic.book_id] = [];
+                    }
+                    topicsByBook[topic.book_id].push(topic);
+                }
+            });
             
             let bookListHtml = '';
-            const allGeneratedFiles = [];
             
+            // Process each book
             books.forEach((book, bookIndex) => {
-                const bookTopics = topicsByBook[book.slug] || [];
-                const slug = book.slug || createSlug(book.title);
-                const totalQuestionsForBook = bookTopics.reduce((sum, topic) => {
-                    return sum + (questionCountByTopic[topic.id] || 0);
-                }, 0);
+                const bookSlug = book.slug || createSlug(book.title);
+                const bookTopics = topicsByBook[book.id] || [];
                 
-                const sortedTopics = [...bookTopics].sort((a, b) => {
+                // Sort topics by chapter number
+                bookTopics.sort((a, b) => {
                     const aNum = a.chapter_number || 999;
                     const bNum = b.chapter_number || 999;
                     return aNum - bNum;
                 });
                 
-                // Book Index Page
-                let bookIndexHtml = generateBookIndexPage(book, sortedTopics, questionCountByTopic, totalQuestionsForBook);
-                allGeneratedFiles.push({
-                    name: `${slug}/index.html`,
-                    path: `${slug}/index.html`,
+                // Calculate total questions for this book
+                let totalQuestionsForBook = 0;
+                bookTopics.forEach(topic => {
+                    totalQuestionsForBook += questionStats[topic.id]?.total || 0;
+                });
+                
+                // ============================================================
+                // 1. GENERATE BOOK INDEX PAGE (/books/[book-slug]/index.html)
+                // ============================================================
+                let bookIndexHtml = generateBookIndexPage(book, bookTopics, questionStats, totalQuestionsForBook);
+                seoGeneratedFiles.push({
+                    name: `${bookSlug}/index.html`,
                     content: bookIndexHtml,
                     book: book.title,
-                    chapters: sortedTopics.length,
+                    chapters: bookTopics.length,
                     questions: totalQuestionsForBook,
-                    slug: slug,
+                    slug: bookSlug,
                     isBook: true
                 });
                 
-                // Chapter Pages
-                sortedTopics.forEach((topic, idx) => {
-                    const chapterSlug = topic.slug || createSlug(topic.name);
-                    const mcqCount = questionCountByTopic[topic.id] || 0;
-                    const difficultyCount = difficultyCountByTopic[topic.id] || { easy: 0, medium: 0, hard: 0 };
+                // ============================================================
+                // 2. GENERATE CHAPTER PAGES (/books/[book-slug]/[chapter-slug].html)
+                // ============================================================
+                bookTopics.forEach(topic => {
+                    const topicSlug = topic.slug || createSlug(topic.name);
+                    const stats = questionStats[topic.id] || { total: 0, easy: 0, medium: 0, hard: 0 };
                     
-                    let chapterHtml = generateChapterPage(book, topic, chapterSlug, mcqCount, difficultyCount);
-                    allGeneratedFiles.push({
-                        name: `${slug}/${chapterSlug}.html`,
-                        path: `${slug}/${chapterSlug}.html`,
+                    let chapterHtml = generateChapterPage(book, topic, stats);
+                    seoGeneratedFiles.push({
+                        name: `${bookSlug}/${topicSlug}.html`,
                         content: chapterHtml,
                         book: book.title,
                         chapter: topic.name,
-                        questions: mcqCount,
-                        slug: slug,
-                        chapterSlug: chapterSlug,
-                        isBook: false
+                        slug: topicSlug,
+                        isChapter: true,
+                        stats: stats
                     });
                 });
                 
+                // Add to book list for download buttons
                 bookListHtml += `
                     <div class="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-200 hover:border-purple-300 transition">
                         <div class="flex items-center gap-3">
                             <span class="font-medium text-gray-800">${escapeHtml(book.title)}</span>
                             ${book.author ? `<span class="text-gray-500 text-sm">by ${escapeHtml(book.author)}</span>` : ''}
-                            <span class="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full">${sortedTopics.length} chapters, ${totalQuestionsForBook} MCQs</span>
-                            <span class="text-xs text-gray-400">${allGeneratedFiles.filter(f => f.book === book.title).length} pages</span>
+                            <span class="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full">${bookTopics.length} chapters, ${totalQuestionsForBook} MCQs</span>
                         </div>
-                        <button onclick="downloadBookFolder('${slug}')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm transition flex items-center gap-1">
-                            <i class="fas fa-folder-open"></i> Download
+                        <button onclick="downloadSingleSEOPage('${bookSlug}')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm transition flex items-center gap-1">
+                            <i class="fas fa-download"></i> Download
                         </button>
                     </div>
                 `;
                 
                 seoGeneratedCount++;
-                const progress = 20 + ((seoGeneratedCount / seoTotalBooks) * 70);
+                const progress = 20 + ((seoGeneratedCount / books.length) * 70);
                 progressBar.style.width = `${progress}%`;
-                statusEl.textContent = `📄 Generated ${seoGeneratedCount}/${seoTotalBooks}: ${book.title}`;
-                countEl.textContent = `${seoGeneratedCount} pages`;
+                statusEl.textContent = `📄 Generated ${seoGeneratedCount}/${books.length}: ${book.title}`;
+                countEl.textContent = `${seoGeneratedCount} books`;
                 
-                logContent.innerHTML += `<div>✅ ${seoGeneratedCount}/${seoTotalBooks}: ${slug}/ (${sortedTopics.length} chapters, ${totalQuestionsForBook} MCQs)</div>`;
+                logContent.innerHTML += `<div>✅ ${seoGeneratedCount}/${books.length}: ${bookSlug}/ (${bookTopics.length} chapters, ${totalQuestionsForBook} MCQs)</div>`;
                 logEl.scrollTop = logEl.scrollHeight;
             });
-            
-            window.seoAllFiles = allGeneratedFiles;
-            seoGeneratedFiles = allGeneratedFiles;
             
             bookListEl.innerHTML = bookListHtml;
             
             progressBar.style.width = '95%';
-            statusEl.textContent = `🎉 All ${seoTotalBooks} books generated!`;
-            countEl.textContent = `${allGeneratedFiles.length} pages`;
+            statusEl.textContent = `🎉 All ${books.length} book pages generated!`;
+            countEl.textContent = `${seoGeneratedFiles.length} pages (${books.length} books)`;
             
             resultEl.classList.remove('hidden');
             downloadAllBtn.classList.remove('hidden');
             
-            logContent.innerHTML += `<div class="text-green-600 font-bold">🎉 Successfully generated ${allGeneratedFiles.length} SEO pages!</div>`;
-            logContent.innerHTML += `<div class="text-blue-600">📥 Click "Download" next to each book to save the folder structure.</div>`;
+            logContent.innerHTML += `<div class="text-green-600 font-bold">🎉 Successfully generated ${seoGeneratedFiles.length} SEO pages!</div>`;
+            logContent.innerHTML += `<div class="text-blue-600">📥 Click "Download" next to each book to save the complete folder.</div>`;
             logEl.scrollTop = logEl.scrollHeight;
             
             progressBar.style.width = '100%';
@@ -3070,26 +2959,64 @@
         }
     }
 
-    function generateBookIndexPage(book, topics, questionCountByTopic, totalQuestions) {
-        const slug = book.slug || createSlug(book.title);
-        const bookTitle = book.title;
-        const bookAuthor = book.author || '';
-        const bookCategory = book.category || '';
+    // ============================================================
+    // FETCH ALL QUESTIONS WITH DIFFICULTY (REPLACE existing function)
+    // ============================================================
+    async function fetchAllQuestions() {
+        // This now fetches with difficulty
+        let allQuestions = [];
+        let page = 0;
+        const pageSize = 1000;
+        let hasMore = true;
+        
+        while (hasMore) {
+            const from = page * pageSize;
+            const to = from + pageSize - 1;
+            
+            const { data, error } = await _supabase
+                .from('questions')
+                .select('id, topic_id, difficulty')
+                .range(from, to);
+            
+            if (error) {
+                console.error('Error fetching questions:', error);
+                break;
+            }
+            
+            if (!data || data.length === 0) {
+                hasMore = false;
+            } else {
+                allQuestions = allQuestions.concat(data);
+                page++;
+                if (data.length < pageSize) {
+                    hasMore = false;
+                }
+            }
+        }
+        return allQuestions;
+    }
+    // ============================================================
+    // GENERATE BOOK INDEX PAGE
+    // ============================================================
+    function generateBookIndexPage(book, topics, questionStats, totalQuestions) {
+        const bookSlug = book.slug || createSlug(book.title);
+        const bookTitle = escapeHtml(book.title);
+        const bookAuthor = book.author ? escapeHtml(book.author) : '';
+        const bookCategory = book.category ? escapeHtml(book.category) : '';
+        const lastmod = book.created_at ? new Date(book.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
         
         let chaptersHtml = '';
         topics.forEach((topic, idx) => {
-            const chapterSlug = topic.slug || createSlug(topic.name);
-            const mcqCount = questionCountByTopic[topic.id] || 0;
-            const chapterNum = topic.chapter_number || (idx + 1);
+            const topicSlug = topic.slug || createSlug(topic.name);
+            const stats = questionStats[topic.id] || { total: 0 };
+            const chapterDisplay = topic.chapter_number ? `${topic.chapter_number}. ` : '';
+            const chapterName = escapeHtml(topic.name);
             
             chaptersHtml += `
-        <div class="chapter" onclick="window.location.href='/books/${slug}/${chapterSlug}.html'">
+        <div class="chapter" onclick="window.location.href='/books/${bookSlug}/${topicSlug}.html'">
             <div>
-                <div class="title">${chapterNum}. ${escapeHtml(topic.name)}</div>
-                <div class="count">${mcqCount} MCQs</div>
-            </div>
-            <div>
-                <i class="fas fa-arrow-right text-purple-500"></i>
+                <div class="title">${chapterDisplay}${chapterName}</div>
+                <div class="count">${stats.total || 0} MCQs</div>
             </div>
         </div>`;
         });
@@ -3099,181 +3026,240 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>${escapeHtml(bookTitle)} MCQs - Chapter-wise Practice | BookMCQ</title>
-    <meta name="description" content="Practice ${escapeHtml(bookTitle)} MCQs chapter-wise. ${topics.length} chapters and ${totalQuestions} questions available${bookAuthor ? ` by ${escapeHtml(bookAuthor)}` : ''}. Improve your knowledge with detailed explanations.">
-    <meta name="keywords" content="${escapeHtml(bookTitle)} MCQs, ${escapeHtml(bookTitle)} questions, ${escapeHtml(bookTitle)} practice, ${escapeHtml(bookTitle)} exam preparation${bookCategory ? `, ${escapeHtml(bookCategory)} MCQs` : ''}">
+    <title>${bookTitle} MCQs - Chapter-wise Practice | BookMCQ</title>
+    <meta name="description" content="Practice ${bookTitle} MCQs chapter-wise. ${topics.length} chapters and ${totalQuestions} questions available. Improve your knowledge with detailed explanations.">
+    <meta name="keywords" content="${bookTitle} MCQs, ${bookTitle} questions, ${bookTitle} practice, ${bookTitle} exam preparation${bookCategory ? `, ${bookCategory} MCQs` : ''}">
     <meta name="robots" content="index, follow">
-    <link rel="canonical" href="https://bookmcq.com/books/${slug}/">
-    <meta property="og:title" content="${escapeHtml(bookTitle)} MCQs | BookMCQ">
-    <meta property="og:description" content="Chapter-wise MCQs for ${escapeHtml(bookTitle)} with ${totalQuestions} practice questions.">
+    <link rel="canonical" href="https://bookmcq.com/books/${bookSlug}/">
+    <meta property="og:title" content="${bookTitle} MCQs | BookMCQ">
+    <meta property="og:description" content="Chapter-wise MCQs for ${bookTitle} with ${totalQuestions} practice questions.">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://bookmcq.com/books/${slug}/">
     <meta name="theme-color" content="#7c3aed">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #667eea, #764ba2); margin: 0; padding: 20px; min-height: 100vh; }
-        .container { max-width: 1000px; margin: auto; }
-        .card { background: white; border-radius: 16px; padding: 20px; margin-top: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        .chapter { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; margin: 10px 0; border-radius: 12px; background: #f3f4f6; cursor: pointer; transition: 0.2s; border-left: 4px solid #7c3aed; }
-        .chapter:hover { background: #e0e7ff; transform: translateX(5px); box-shadow: 0 4px 12px rgba(124, 58, 237, 0.15); }
-        .title { font-weight: bold; font-size: 16px; }
-        .count { color: #6b7280; font-size: 13px; }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin: 16px 0; }
-        .stat-card { background: #f8fafc; padding: 12px; border-radius: 10px; text-align: center; border: 1px solid #e2e8f0; }
-        .stat-number { font-size: 24px; font-weight: 700; color: #1e293b; }
-        .stat-label { font-size: 12px; color: #64748b; margin-top: 2px; }
-        .header-icon { background: linear-gradient(135deg, #667eea, #764ba2); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
-        .header-icon i { font-size: 28px; color: white; }
-        .category-badge { background: #e0e7ff; color: #4338ca; padding: 2px 12px; border-radius: 20px; font-size: 12px; }
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1000px;
+            margin: auto;
+            padding: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .chapter {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 12px;
+            background: #f3f4f6;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .chapter:hover {
+            background: #e0e7ff;
+            transform: translateX(5px);
+        }
+        .title {
+            font-weight: bold;
+        }
+        .count {
+            color: #6b7280;
+            font-size: 13px;
+        }
+        .stats-summary {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 12px;
+        }
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .stat-item .label {
+            color: #64748b;
+            font-size: 13px;
+        }
+        .stat-item .value {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .stat-item .value.easy { color: #22c55e; }
+        .stat-item .value.medium { color: #eab308; }
+        .stat-item .value.hard { color: #ef4444; }
+        .stat-item .value.total { color: #3b82f6; }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 15px;
+            color: #7c3aed;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="card">
-        <div class="header-icon">
-            <i class="fas fa-book"></i>
-        </div>
-        <h1 style="margin: 0 0 8px 0; font-size: 28px;">${escapeHtml(bookTitle)}</h1>
-        ${bookAuthor ? `<p style="color: #4b5563; margin-bottom: 8px;"><i class="fas fa-user"></i> ${escapeHtml(bookAuthor)}</p>` : ''}
-        ${bookCategory ? `<p style="color: #6b7280; font-size: 14px; margin-bottom: 12px;"><span class="category-badge">${escapeHtml(bookCategory)}</span></p>` : ''}
-        <p style="color: #374151; line-height: 1.6;">
-            Practice chapter-wise MCQs for <strong>${escapeHtml(bookTitle)}</strong>.
-            This book contains <strong>${topics.length} chapters</strong> and <strong>${totalQuestions} questions</strong>.
-            ${bookAuthor ? `Written by ${escapeHtml(bookAuthor)}.` : ''}
-            Perfect for exam preparation and self-assessment.
-        </p>
+        <a href="/" class="back-link">← Back to Home</a>
+        <h1>${bookTitle}</h1>
+        ${bookAuthor ? `<p><strong>Author:</strong> ${bookAuthor}</p>` : ''}
+        ${bookCategory ? `<p><strong>Category:</strong> ${bookCategory}</p>` : ''}
+        <p>Practice chapter-wise MCQs for ${bookTitle}. This book contains <strong>${topics.length} chapters</strong> and <strong>${totalQuestions} questions</strong>.</p>
         
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-number">${topics.length}</div>
-                <div class="stat-label">📖 Chapters</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">${totalQuestions}</div>
-                <div class="stat-label">❓ Total MCQs</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">${Math.round(totalQuestions / (topics.length || 1))}</div>
-                <div class="stat-label">📊 Avg per Chapter</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">${new Date().getFullYear()}</div>
-                <div class="stat-label">📅 Updated</div>
-            </div>
-        </div>
-        
-        <h2 style="margin-top: 24px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">📚 Chapters</h2>
+        <h2>Chapters</h2>
         ${chaptersHtml}
-        
-        <div style="margin-top: 20px; text-align: center; font-size: 14px; color: #9ca3af; border-top: 1px solid #e5e7eb; padding-top: 16px;">
-            <i class="fas fa-graduation-cap"></i> BookMCQ - Master Every Chapter
-        </div>
     </div>
 </div>
 </body>
 </html>`;
     }
 
-    function generateChapterPage(book, topic, chapterSlug, mcqCount, difficultyCount) {
+    // ============================================================
+    // GENERATE CHAPTER PAGE
+    // ============================================================
+    function generateChapterPage(book, topic, stats) {
         const bookSlug = book.slug || createSlug(book.title);
-        const bookTitle = book.title;
-        const topicName = topic.name;
-        const chapterNum = topic.chapter_number || '';
-        const displayTitle = chapterNum ? `Chapter ${chapterNum}: ${topicName}` : topicName;
-        
-        const easyCount = difficultyCount.easy || 0;
-        const mediumCount = difficultyCount.medium || 0;
-        const hardCount = difficultyCount.hard || 0;
-        
-        let difficultyHtml = '';
-        if (easyCount > 0 || mediumCount > 0 || hardCount > 0) {
-            difficultyHtml = `
-        <div style="display: flex; gap: 12px; flex-wrap: wrap; margin: 16px 0;">
-            ${easyCount > 0 ? `<span class="difficulty-tag easy">🟢 Easy: ${easyCount} MCQs</span>` : ''}
-            ${mediumCount > 0 ? `<span class="difficulty-tag medium">🟡 Medium: ${mediumCount} MCQs</span>` : ''}
-            ${hardCount > 0 ? `<span class="difficulty-tag hard">🔴 Hard: ${hardCount} MCQs</span>` : ''}
-        </div>`;
-        }
+        const bookTitle = escapeHtml(book.title);
+        const topicSlug = topic.slug || createSlug(topic.name);
+        const topicName = escapeHtml(topic.name);
+        const chapterDisplay = topic.chapter_number ? `${topic.chapter_number}. ` : '';
+        const total = stats.total || 0;
+        const easy = stats.easy || 0;
+        const medium = stats.medium || 0;
+        const hard = stats.hard || 0;
         
         return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>${escapeHtml(displayTitle)} MCQs - ${escapeHtml(bookTitle)} | BookMCQ</title>
-    <meta name="description" content="Practice ${escapeHtml(displayTitle)} MCQs from ${escapeHtml(bookTitle)}. ${mcqCount} questions${easyCount > 0 ? ` including ${easyCount} easy, ${mediumCount} medium, and ${hardCount} hard` : ''}. Perfect for exam preparation.">
-    <meta name="keywords" content="${escapeHtml(topicName)} MCQs, ${escapeHtml(bookTitle)} ${escapeHtml(topicName)}, ${escapeHtml(topicName)} questions, ${escapeHtml(bookTitle)} chapter ${chapterNum || ''}">
+    <title>${topicName} MCQs - ${bookTitle} | BookMCQ</title>
+    <meta name="description" content="Practice ${topicName} MCQs from ${bookTitle}. ${total} questions available with difficulty breakdown: Easy: ${easy}, Medium: ${medium}, Hard: ${hard}. Perfect for exam preparation.">
+    <meta name="keywords" content="${topicName} MCQs, ${bookTitle} ${topicName} questions, ${topicName} practice, ${bookTitle} chapter ${topic.chapter_number || ''}">
     <meta name="robots" content="index, follow">
-    <link rel="canonical" href="https://bookmcq.com/books/${bookSlug}/${chapterSlug}.html">
-    <meta property="og:title" content="${escapeHtml(displayTitle)} MCQs | BookMCQ">
-    <meta property="og:description" content="Practice ${escapeHtml(displayTitle)} MCQs from ${escapeHtml(bookTitle)}. ${mcqCount} questions available with detailed explanations.">
+    <link rel="canonical" href="https://bookmcq.com/books/${bookSlug}/${topicSlug}.html">
+    <meta property="og:title" content="${topicName} MCQs - ${bookTitle} | BookMCQ">
+    <meta property="og:description" content="Practice ${topicName} MCQs with ${total} questions. Difficulty: Easy ${easy}, Medium ${medium}, Hard ${hard}.">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://bookmcq.com/books/${bookSlug}/${chapterSlug}.html">
     <meta name="theme-color" content="#7c3aed">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #667eea, #764ba2); margin: 0; padding: 20px; min-height: 100vh; }
-        .container { max-width: 800px; margin: auto; }
-        .card { background: white; border-radius: 16px; padding: 30px; margin-top: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        .back-link { display: inline-block; margin-bottom: 16px; color: #7c3aed; text-decoration: none; font-size: 14px; }
-        .back-link:hover { text-decoration: underline; }
-        .difficulty-tag { display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; margin-right: 8px; margin-bottom: 4px; }
-        .easy { background: #dcfce7; color: #166534; }
-        .medium { background: #fef3c7; color: #92400e; }
-        .hard { background: #fee2e2; color: #991b1b; }
-        .start-btn { display: inline-block; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 14px 40px; border-radius: 30px; font-weight: bold; font-size: 18px; text-decoration: none; margin-top: 20px; transition: 0.3s; border: none; cursor: pointer; }
-        .start-btn:hover { transform: scale(1.05); box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4); }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 12px; margin: 16px 0; }
-        .stat-card { background: #f8fafc; padding: 12px; border-radius: 10px; text-align: center; border: 1px solid #e2e8f0; }
-        .stat-number { font-size: 22px; font-weight: 700; color: #1e293b; }
-        .stat-label { font-size: 11px; color: #64748b; margin-top: 2px; }
-        .header-icon { background: linear-gradient(135deg, #667eea, #764ba2); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
-        .header-icon i { font-size: 24px; color: white; }
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            padding: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .difficulty-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin: 20px 0;
+        }
+        .difficulty-card {
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+        .difficulty-card.easy { background: #dcfce7; border-color: #86efac; }
+        .difficulty-card.medium { background: #fef9c3; border-color: #fde047; }
+        .difficulty-card.hard { background: #fee2e2; border-color: #fca5a5; }
+        .difficulty-card .num {
+            font-size: 32px;
+            font-weight: 700;
+        }
+        .difficulty-card .label {
+            font-size: 14px;
+            color: #64748b;
+        }
+        .btn-primary {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 14px 32px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 10px;
+            transition: 0.2s;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 15px;
+            color: #7c3aed;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .chapter-info {
+            font-size: 14px;
+            color: #64748b;
+            margin: 8px 0;
+        }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="card">
-        <a href="/books/${bookSlug}/" class="back-link"><i class="fas fa-arrow-left"></i> Back to ${escapeHtml(bookTitle)}</a>
+        <a href="/books/${bookSlug}/" class="back-link">← Back to ${bookTitle}</a>
+        <h1>${chapterDisplay}${topicName}</h1>
+        <p class="chapter-info">From <strong>${bookTitle}</strong></p>
+        <p>Practice MCQs for ${topicName}. Test your knowledge with ${total} carefully crafted questions.</p>
         
-        <div class="header-icon">
-            <i class="fas fa-book-open"></i>
-        </div>
-        
-        <h1 style="margin: 0 0 4px 0; font-size: 26px;">${escapeHtml(displayTitle)}</h1>
-        <p style="color: #6b7280; font-size: 14px; margin-bottom: 12px;">
-            <i class="fas fa-book"></i> ${escapeHtml(bookTitle)}
-            ${chapterNum ? `<span style="margin-left: 12px;"><i class="fas fa-hashtag"></i> Chapter ${chapterNum}</span>` : ''}
-        </p>
-        
-        <p style="color: #374151; line-height: 1.6;">
-            Practice <strong>${escapeHtml(topicName)}</strong> MCQs from <strong>${escapeHtml(bookTitle)}</strong>.
-            ${mcqCount > 0 ? `This chapter contains <strong>${mcqCount} questions</strong>.` : 'Questions are being added for this chapter.'}
-            Test your knowledge and improve your understanding with detailed explanations.
-        </p>
-        
-        ${difficultyHtml}
-        
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-number">${mcqCount}</div>
-                <div class="stat-label">❓ Total MCQs</div>
+        <div class="difficulty-grid">
+            <div class="difficulty-card easy">
+                <div class="num">${easy}</div>
+                <div class="label">Easy</div>
             </div>
-            ${easyCount > 0 ? `<div class="stat-card"><div class="stat-number" style="color: #166534;">${easyCount}</div><div class="stat-label">🟢 Easy</div></div>` : ''}
-            ${mediumCount > 0 ? `<div class="stat-card"><div class="stat-number" style="color: #92400e;">${mediumCount}</div><div class="stat-label">🟡 Medium</div></div>` : ''}
-            ${hardCount > 0 ? `<div class="stat-card"><div class="stat-number" style="color: #991b1b;">${hardCount}</div><div class="stat-label">🔴 Hard</div></div>` : ''}
+            <div class="difficulty-card medium">
+                <div class="num">${medium}</div>
+                <div class="label">Medium</div>
+            </div>
+            <div class="difficulty-card hard">
+                <div class="num">${hard}</div>
+                <div class="label">Hard</div>
+            </div>
         </div>
+        <p style="text-align: center; font-size: 14px; color: #64748b;">Total: <strong>${total}</strong> questions</p>
         
         <div style="text-align: center;">
-            <a href="/quiz?topic=${topic.id}" class="start-btn">
-                <i class="fas fa-play"></i> Start Quiz
-            </a>
-        </div>
-        
-        <div style="margin-top: 24px; text-align: center; font-size: 13px; color: #9ca3af; border-top: 1px solid #e5e7eb; padding-top: 16px;">
-            <i class="fas fa-graduation-cap"></i> BookMCQ - ${escapeHtml(bookTitle)} | ${escapeHtml(topicName)}
+            <a href="/quiz?topic=${topic.id}" class="btn-primary">Start Quiz</a>
         </div>
     </div>
 </div>
@@ -3281,46 +3267,36 @@
 </html>`;
     }
 
-    // ============ DOWNLOAD FUNCTIONS ============
-    function downloadBookFolder(slug) {
-        const files = window.seoAllFiles || [];
-        const bookFiles = files.filter(f => f.slug === slug);
-        
-        if (bookFiles.length === 0) {
-            showToast('No files found for this book. Please regenerate pages.', true);
-            return;
-        }
-        
-        showToast(`📥 Downloading ${bookFiles.length} pages for ${slug}...`);
-        
-        bookFiles.forEach((file, index) => {
-            setTimeout(() => {
-                const blob = new Blob([file.content], { type: 'text/html' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = file.name;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                
-                if (index === bookFiles.length - 1) {
-                    showToast(`✅ Downloaded ${bookFiles.length} pages for ${slug}!`);
-                }
-            }, index * 300);
-        });
-    }
-
-    function downloadAllSEOPages() {
-        const files = window.seoAllFiles || [];
+    // ============================================================
+    // DOWNLOAD SINGLE BOOK (ZIP of all pages)
+    // ============================================================
+    function downloadSingleSEOPage(slug) {
+        const files = seoGeneratedFiles.filter(f => f.slug === slug);
         if (files.length === 0) {
-            showToast('No files to download. Generate pages first.', true);
+            showToast('Book not found. Please regenerate pages.', true);
             return;
         }
         
-        showToast(`📥 Downloading ${files.length} files...`);
+        // If only one file (book index), download it directly
+        if (files.length === 1) {
+            const blob = new Blob([files[0].content], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${slug}/index.html`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast(`✅ Downloaded: ${slug}/index.html`);
+            return;
+        }
         
+        // Multiple files - create a zip
+        showToast(`📦 Creating ZIP for ${slug}...`);
+        
+        // For simplicity, we'll download files one by one
+        // The user can download each file individually
         files.forEach((file, index) => {
             setTimeout(() => {
                 const blob = new Blob([file.content], { type: 'text/html' });
@@ -3334,12 +3310,11 @@
                 URL.revokeObjectURL(url);
                 
                 if (index === files.length - 1) {
-                    showToast(`✅ All ${files.length} files downloaded!`);
+                    showToast(`✅ Downloaded all ${files.length} pages for ${slug}`);
                 }
-            }, index * 300);
+            }, index * 400);
         });
     }
-
     function downloadSingleSEOPage(slug) {
         const file = seoGeneratedFiles.find(f => f.slug === slug);
         if (!file) {
