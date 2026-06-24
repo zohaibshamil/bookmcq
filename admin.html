@@ -2423,6 +2423,7 @@
     }
 
     // ============ SITEMAP GENERATOR ============
+    // ============ SITEMAP GENERATOR ============
     async function generateSitemap() {
         const statusEl = document.getElementById('sitemapStatus');
         const countEl = document.getElementById('sitemapCount');
@@ -2455,10 +2456,10 @@
             
             if (booksError) throw booksError;
             
-            // Fetch topics
+            // Fetch topics with their book slugs
             const { data: topics, error: topicsError } = await _supabase
                 .from('topics')
-                .select('id, name, slug, book_id, created_at')
+                .select('id, name, slug, book_id, created_at, books(title, slug)')
                 .order('name');
             
             if (topicsError) throw topicsError;
@@ -2470,10 +2471,10 @@
             // Static pages
             const staticPages = [
                 { url: '/', priority: '1.0', changefreq: 'daily' },
-                { url: '/quiz', priority: '0.9', changefreq: 'daily' },
-                { url: '/practice', priority: '0.8', changefreq: 'weekly' },
+                { url: '/quiz', priority: '0.9', changefreq: 'weekly' },
+                { url: '/practice', priority: '0.9', changefreq: 'weekly' },
                 { url: '/contact', priority: '0.6', changefreq: 'monthly' },
-                { url: '/privacy', priority: '0.5', changefreq: 'monthly' }
+                { url: '/privacy', priority: '0.5', changefreq: 'yearly' }
             ];
             
             // Build sitemap URLs
@@ -2482,30 +2483,32 @@
             // Add static pages
             staticPages.forEach(page => {
                 urls.push({
-                    loc: `https://bookmcq.com${page.url}`,
+                    loc: `https://www.bookmcq.com${page.url}`,
                     priority: page.priority,
                     changefreq: page.changefreq,
                     lastmod: new Date().toISOString().split('T')[0]
                 });
             });
             
-            // Add book pages
+            // Add book main pages
             books.forEach(book => {
                 const slug = book.slug || createSlug(book.title);
                 urls.push({
-                    loc: `https://bookmcq.com/books/${slug}.html`,
-                    priority: '0.8',
+                    loc: `https://www.bookmcq.com/books/${slug}.html`,
+                    priority: '0.9',
                     changefreq: 'weekly',
                     lastmod: book.created_at ? new Date(book.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
                 });
             });
             
-            // Add topic pages (only if they have a valid slug)
+            // Add topic/chapter pages - NEW STRUCTURE: /books/[book-slug]/[chapter-slug].html
             topics.forEach(topic => {
-                if (topic.slug) {
+                if (topic.slug && topic.books && topic.books.slug) {
+                    const bookSlug = topic.books.slug;
+                    const topicSlug = topic.slug;
                     urls.push({
-                        loc: `https://bookmcq.com/topics/${topic.slug}.html`,
-                        priority: '0.7',
+                        loc: `https://www.bookmcq.com/books/${bookSlug}/${topicSlug}.html`,
+                        priority: '0.8',
                         changefreq: 'weekly',
                         lastmod: topic.created_at ? new Date(topic.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
                     });
@@ -2523,9 +2526,9 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls.map(url => `  <url>
     <loc>${url.loc}</loc>
-    <priority>${url.priority}</priority>
-    <changefreq>${url.changefreq}</changefreq>
     <lastmod>${url.lastmod}</lastmod>
+    <changefreq>${url.changefreq}</changefreq>
+    <priority>${url.priority}</priority>
   </url>`).join('\n')}
 </urlset>`;
             
@@ -2545,7 +2548,7 @@ ${urls.map(url => `  <url>
             statusEl.textContent = '✅ Sitemap generated!';
             countEl.textContent = `${urls.length} URLs`;
             logContent.innerHTML += `<div class="text-green-600">✅ Sitemap generated with ${urls.length} URLs</div>`;
-            logContent.innerHTML += `<div>📊 ${staticPages.length} static, ${books.length} books, ${topics.length} topics</div>`;
+            logContent.innerHTML += `<div>📊 ${staticPages.length} static, ${books.length} books, ${topics.length} chapters</div>`;
             
             resultEl.classList.remove('hidden');
             downloadBtn.classList.remove('hidden');
