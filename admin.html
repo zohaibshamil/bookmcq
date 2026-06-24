@@ -3152,7 +3152,7 @@
     }
 
     // ============================================================
-    // GENERATE ALL SEO PAGES - MAIN FUNCTION
+    // GENERATE ALL SEO PAGES - MAIN FUNCTION (FIXED)
     // ============================================================
     async function generateSEOPages() {
         const statusEl = document.getElementById('seoStatus');
@@ -3269,7 +3269,7 @@
                     questions: totalQuestionsForBook,
                     bookSlug: bookSlug,
                     isBook: true,
-                    displayName: '📖 ' + book.title + ' (Index)'
+                    displayName: 'Index'
                 });
                 
                 // ============================================================
@@ -3289,54 +3289,78 @@
                         bookSlug: bookSlug,
                         isChapter: true,
                         stats: stats,
-                        displayName: '📄 ' + chapterDisplay + topic.name + ' (' + stats.total + ' MCQs)'
+                        displayName: chapterDisplay + topic.name + ' (' + stats.total + ' MCQs)'
                     });
                 });
-                
-                // Build dropdown options for this book
+            });
+            
+            // ============================================================
+            // BUILD BOOK LIST WITH DROPDOWNS (AFTER all files are generated)
+            // ============================================================
+            var bookListHtml = '';
+            
+            // Get unique book slugs
+            var uniqueBookSlugs = [];
+            seoGeneratedFiles.forEach(function(f) {
+                if (uniqueBookSlugs.indexOf(f.bookSlug) === -1) {
+                    uniqueBookSlugs.push(f.bookSlug);
+                }
+            });
+            
+            uniqueBookSlugs.forEach(function(bookSlug) {
+                // Get all files for this book
                 var bookFiles = seoGeneratedFiles.filter(function(f) { return f.bookSlug === bookSlug; });
-                var dropdownOptions = '';
+                if (bookFiles.length === 0) return;
+                
+                // Get book info from first file
+                var firstFile = bookFiles[0];
+                var bookTitle = firstFile.book;
+                var totalChapters = bookFiles.filter(function(f) { return f.isChapter; }).length;
+                var totalQuestions = 0;
                 bookFiles.forEach(function(f) {
-                    dropdownOptions += '<option value="' + f.name + '">' + f.displayName + '</option>';
+                    if (f.questions) totalQuestions = f.questions;
                 });
                 
-                // Add to book list with dropdown
+                // Build dropdown options
+                var dropdownOptions = '';
+                // Sort files: index first, then chapters
+                bookFiles.sort(function(a, b) {
+                    if (a.isBook) return -1;
+                    if (b.isBook) return 1;
+                    return a.displayName.localeCompare(b.displayName);
+                });
+                
+                bookFiles.forEach(function(f) {
+                    var label = f.isBook ? '📖 Index' : '📄 ' + f.displayName;
+                    dropdownOptions += '<option value="' + f.name + '">' + label + '</option>';
+                });
+                
                 bookListHtml += `
                     <div class="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-200 hover:border-purple-300 transition">
                         <div class="flex items-center gap-3">
-                            <span class="font-medium text-gray-800">${escapeHtml(book.title)}</span>
-                            ${book.author ? `<span class="text-gray-500 text-sm">by ${escapeHtml(book.author)}</span>` : ''}
-                            <span class="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full">${bookTopics.length} chapters, ${totalQuestionsForBook} MCQs</span>
+                            <span class="font-medium text-gray-800">${escapeHtml(bookTitle)}</span>
+                            <span class="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full">${totalChapters} chapters, ${totalQuestions} MCQs</span>
                         </div>
                         <div class="flex items-center gap-2">
-                            <select id="fileSelect_${bookSlug}" class="p-2 border rounded-lg text-sm bg-white max-w-[200px]">
+                            <select id="fileSelect_${bookSlug}" class="p-2 border rounded-lg text-sm bg-white max-w-[220px]">
                                 ${dropdownOptions}
                             </select>
-                            <button onclick="downloadSelectedFile('${bookSlug}')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm transition flex items-center gap-1">
+                            <button onclick="downloadSelectedFile('${bookSlug}')" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm transition flex items-center gap-1">
                                 <i class="fas fa-download"></i> Download
                             </button>
-                            <button onclick="downloadSingleSEOPage('${bookSlug}')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition flex items-center gap-1">
+                            <button onclick="downloadSingleSEOPage('${bookSlug}')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm transition flex items-center gap-1">
                                 <i class="fas fa-folder-open"></i> All (${bookFiles.length})
                             </button>
                         </div>
                     </div>
                 `;
-                
-                seoGeneratedCount++;
-                var progress = 20 + ((seoGeneratedCount / books.length) * 70);
-                progressBar.style.width = progress + '%';
-                statusEl.textContent = '📄 Generated ' + seoGeneratedCount + '/' + books.length + ': ' + book.title;
-                countEl.textContent = seoGeneratedCount + ' books';
-                
-                logContent.innerHTML += '<div>✅ ' + seoGeneratedCount + '/' + books.length + ': ' + bookSlug + '/ (' + bookTopics.length + ' chapters, ' + totalQuestionsForBook + ' MCQs)</div>';
-                logEl.scrollTop = logEl.scrollHeight;
             });
             
             bookListEl.innerHTML = bookListHtml;
             
             progressBar.style.width = '95%';
-            statusEl.textContent = '🎉 All ' + books.length + ' book pages generated!';
-            countEl.textContent = seoGeneratedFiles.length + ' pages (' + books.length + ' books)';
+            statusEl.textContent = '🎉 All ' + uniqueBookSlugs.length + ' book pages generated!';
+            countEl.textContent = seoGeneratedFiles.length + ' pages (' + uniqueBookSlugs.length + ' books)';
             
             resultEl.classList.remove('hidden');
             downloadAllBtn.classList.remove('hidden');
@@ -3354,7 +3378,6 @@
             document.getElementById('seoBookList').innerHTML = '<div class="text-red-500 text-sm">Error: ' + error.message + '</div>';
         }
     }
-
     // ============================================================
     // DOWNLOAD SELECTED FILE FROM DROPDOWN
     // ============================================================
