@@ -3164,6 +3164,7 @@
         const downloadAllBtn = document.getElementById('downloadAllSEOBtn');
         const bookListEl = document.getElementById('seoBookList');
         
+        // Clear previous data
         seoGeneratedFiles = [];
         seoGeneratedCount = 0;
         seoBooksData = [];
@@ -3234,10 +3235,11 @@
                 }
             });
             
-            var bookListHtml = '';
+            // Store all generated files in a temporary array first
+            var tempFiles = [];
             
             // Process each book
-            books.forEach(function(book, bookIndex) {
+            books.forEach(function(book) {
                 var bookSlug = book.slug || createSlug(book.title);
                 var bookTopics = topicsByBook[book.id] || [];
                 
@@ -3261,15 +3263,15 @@
                 // 1. GENERATE BOOK INDEX PAGE (/books/[book-slug]/index.html)
                 // ============================================================
                 var bookIndexHtml = generateBookIndexPage(book, bookTopics, questionStats, totalQuestionsForBook);
-                seoGeneratedFiles.push({
+                tempFiles.push({
                     name: bookSlug + '/index.html',
                     content: bookIndexHtml,
                     book: book.title,
+                    bookSlug: bookSlug,
                     chapters: bookTopics.length,
                     questions: totalQuestionsForBook,
-                    bookSlug: bookSlug,
                     isBook: true,
-                    displayName: 'Index'
+                    displayName: '📖 Index'
                 });
                 
                 // ============================================================
@@ -3281,25 +3283,29 @@
                     var chapterDisplay = topic.chapter_number ? topic.chapter_number + '. ' : '';
                     
                     var chapterHtml = generateChapterPage(book, topic, stats);
-                    seoGeneratedFiles.push({
+                    tempFiles.push({
                         name: bookSlug + '/' + topicSlug + '.html',
                         content: chapterHtml,
                         book: book.title,
-                        chapter: topic.name,
                         bookSlug: bookSlug,
-                        isChapter: true,
+                        chapter: topic.name,
+                        chapterNumber: topic.chapter_number,
                         stats: stats,
-                        displayName: chapterDisplay + topic.name + ' (' + stats.total + ' MCQs)'
+                        isBook: false,
+                        displayName: '📄 ' + chapterDisplay + topic.name + ' (' + stats.total + ' MCQs)'
                     });
                 });
             });
             
+            // Now assign to global variable
+            seoGeneratedFiles = tempFiles;
+            
             // ============================================================
-            // BUILD BOOK LIST WITH DROPDOWNS (AFTER all files are generated)
+            // BUILD BOOK LIST WITH DROPDOWNS
             // ============================================================
             var bookListHtml = '';
             
-            // Get unique book slugs
+            // Get unique book slugs from the generated files
             var uniqueBookSlugs = [];
             seoGeneratedFiles.forEach(function(f) {
                 if (uniqueBookSlugs.indexOf(f.bookSlug) === -1) {
@@ -3307,31 +3313,43 @@
                 }
             });
             
+            // Also track which books we've already processed to avoid duplicates
+            var processedBooks = {};
+            
             uniqueBookSlugs.forEach(function(bookSlug) {
                 // Get all files for this book
-                var bookFiles = seoGeneratedFiles.filter(function(f) { return f.bookSlug === bookSlug; });
-                if (bookFiles.length === 0) return;
+                var bookFiles = seoGeneratedFiles.filter(function(f) { 
+                    return f.bookSlug === bookSlug; 
+                });
+                
+                if (bookFiles.length === 0 || processedBooks[bookSlug]) return;
+                processedBooks[bookSlug] = true;
                 
                 // Get book info from first file
                 var firstFile = bookFiles[0];
                 var bookTitle = firstFile.book;
-                var totalChapters = bookFiles.filter(function(f) { return f.isChapter; }).length;
+                
+                // Count chapters (only files where isBook is false)
+                var totalChapters = bookFiles.filter(function(f) { 
+                    return f.isBook === false; 
+                }).length;
+                
+                // Get total questions
                 var totalQuestions = 0;
                 bookFiles.forEach(function(f) {
                     if (f.questions) totalQuestions = f.questions;
                 });
                 
-                // Build dropdown options
-                var dropdownOptions = '';
-                // Sort files: index first, then chapters
+                // Build dropdown options - sort: index first, then chapters by chapter number
                 bookFiles.sort(function(a, b) {
                     if (a.isBook) return -1;
                     if (b.isBook) return 1;
-                    return a.displayName.localeCompare(b.displayName);
+                    return (a.chapterNumber || 999) - (b.chapterNumber || 999);
                 });
                 
+                var dropdownOptions = '';
                 bookFiles.forEach(function(f) {
-                    var label = f.isBook ? '📖 Index' : '📄 ' + f.displayName;
+                    var label = f.displayName;
                     dropdownOptions += '<option value="' + f.name + '">' + label + '</option>';
                 });
                 
