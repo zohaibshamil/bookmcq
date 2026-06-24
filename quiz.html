@@ -1813,16 +1813,61 @@
         const navbar = document.querySelector('nav.bg-white\\/10');
         if (navbar) { window.addEventListener('scroll', () => { if (window.scrollY > 50) navbar.classList.add('navbar-scrolled'); else navbar.classList.remove('navbar-scrolled'); }); }
     }
+async function loadTopicFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const topicId = params.get('topic');
 
-    // Initialize everything
-    loadBooks();
+    if (!topicId) return;
+
+    try {
+        const { data: topic, error } = await _supabase
+            .from('topics')
+            .select('id, name, book_id')
+            .eq('id', topicId)
+            .single();
+
+        if (error || !topic) return;
+
+        // Store selected book
+        selectedBookId = topic.book_id;
+
+        // Load topics for this book
+        await loadTopics();
+
+        // Auto-select topic checkbox
+        setTimeout(() => {
+            const topicCheckbox = document.querySelector(
+                `input[data-topic-id="${topic.id}"]`
+            );
+
+            if (topicCheckbox) {
+                topicCheckbox.checked = true;
+            }
+        }, 300);
+
+        // SEO title
+        document.title = `${topic.name} MCQ Quiz | BookMCQ`;
+
+        console.log('Loaded topic from URL:', topic.name);
+
+    } catch (err) {
+        console.error('loadTopicFromUrl failed:', err);
+    }
+}
+// Initialize everything
+(async () => {
+    await loadBooks();
+    await loadTopicFromUrl();
+
     initNavbarScroll();
     initMobileMenu();
     initTabSwitchDetection();
     initDifficultyMultiSelect();
     initQuestionCountSelector();
     initDropdowns();
+
     console.log('Quiz page initialized - with fair distribution algorithm');
+})();
 </script>
 </body>
 </html>
