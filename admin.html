@@ -118,6 +118,54 @@
             margin-top: 10px;
             font-size: 13px;
         }
+        
+        /* Sitemap Generator Styles */
+        .sitemap-url-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 12px;
+            background: #f8fafc;
+            border-radius: 6px;
+            font-size: 12px;
+            border-left: 3px solid #22c55e;
+            margin-bottom: 4px;
+        }
+        .sitemap-url-item .url-path {
+            color: #1e293b;
+            font-weight: 500;
+        }
+        .sitemap-url-item .url-priority {
+            color: #64748b;
+            font-size: 11px;
+        }
+        .sitemap-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin: 16px 0;
+        }
+        .sitemap-stat-card {
+            background: white;
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+        .sitemap-stat-card .stat-number {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+        .sitemap-stat-card .stat-label {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 2px;
+        }
+        @media (max-width: 640px) {
+            .sitemap-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -186,6 +234,7 @@
                 <button id="tabAdminsBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">👑 Admins</button>
                 <button id="tabMessagesBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">📬 Messages</button>
                 <button id="tabSeoBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">🤖 SEO Pages</button>
+                <button id="tabSitemapBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">🗺️ Sitemap</button>
             </div>
 
             <!-- Books Tab -->
@@ -517,6 +566,7 @@
         </div>
     </div>
 </div>
+
 <!-- SEO Pages Generation Tab -->
 <div id="seoTab" class="hidden">
     <div class="text-center py-8">
@@ -583,6 +633,102 @@
         </div>
     </div>
 </div>
+
+<!-- Sitemap Generation Tab -->
+<div id="sitemapTab" class="hidden">
+    <div class="text-center py-8">
+        <i class="fas fa-sitemap text-6xl text-green-500 mb-4"></i>
+        <h2 class="text-2xl font-bold mb-3">🗺️ Generate Sitemap.xml</h2>
+        <p class="text-gray-600 mb-6">Generate a sitemap.xml file automatically from your books and topics.</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto text-left mb-6">
+            <div class="bg-blue-50 p-4 rounded-lg">
+                <div class="text-2xl mb-2">🏠</div>
+                <h3 class="font-bold">Static Pages</h3>
+                <p class="text-sm text-gray-600">Home, Quiz, Practice, Contact and Privacy pages.</p>
+            </div>
+            <div class="bg-purple-50 p-4 rounded-lg">
+                <div class="text-2xl mb-2">📚</div>
+                <h3 class="font-bold">Books</h3>
+                <p class="text-sm text-gray-600">Automatically includes all book pages.</p>
+            </div>
+            <div class="bg-green-50 p-4 rounded-lg">
+                <div class="text-2xl mb-2">📖</div>
+                <h3 class="font-bold">Topics</h3>
+                <p class="text-sm text-gray-600">Automatically includes all topic pages.</p>
+            </div>
+        </div>
+
+        <div class="bg-gray-50 p-6 rounded-lg max-w-4xl mx-auto">
+            <!-- Stats -->
+            <div class="sitemap-stats" id="sitemapStats">
+                <div class="sitemap-stat-card">
+                    <div class="stat-number" id="sitemapStaticCount">0</div>
+                    <div class="stat-label">Static Pages</div>
+                </div>
+                <div class="sitemap-stat-card">
+                    <div class="stat-number" id="sitemapBookCount">0</div>
+                    <div class="stat-label">Books</div>
+                </div>
+                <div class="sitemap-stat-card">
+                    <div class="stat-number" id="sitemapTopicCount">0</div>
+                    <div class="stat-label">Topics</div>
+                </div>
+                <div class="sitemap-stat-card">
+                    <div class="stat-number" id="sitemapTotalCount">0</div>
+                    <div class="stat-label">Total URLs</div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4 mb-4">
+                <button id="generateSitemapBtn" class="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-lg font-bold hover:opacity-90 transition flex items-center gap-2">
+                    <i class="fas fa-sitemap"></i> Generate Sitemap
+                </button>
+                <button id="downloadSitemapBtn" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition flex items-center gap-2 hidden">
+                    <i class="fas fa-download"></i> Download sitemap.xml
+                </button>
+                <button id="viewSitemapUrlsBtn" class="bg-purple-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-purple-700 transition flex items-center gap-2 hidden">
+                    <i class="fas fa-list"></i> View URLs
+                </button>
+            </div>
+
+            <div id="sitemapProgress" class="mt-4">
+                <div class="flex justify-between text-sm text-gray-600 mb-1">
+                    <span id="sitemapStatus">Ready to generate</span>
+                    <span id="sitemapCount">0 URLs</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div id="sitemapProgressBar" class="bg-green-600 h-2 rounded-full transition-all" style="width:0%"></div>
+                </div>
+            </div>
+
+            <div id="sitemapLog" class="mt-4 max-h-60 overflow-y-auto bg-gray-100 rounded-lg p-3 text-xs font-mono hidden">
+                <div id="sitemapLogContent"></div>
+            </div>
+
+            <div id="sitemapResult" class="mt-4 hidden">
+                <div class="bg-green-50 border border-green-300 p-4 rounded-lg">
+                    <p class="text-green-800 font-semibold"><i class="fas fa-check-circle text-green-600"></i> Sitemap generated successfully!</p>
+                    <p class="text-sm text-gray-600 mt-1">Download sitemap.xml and replace your existing file in GitHub.</p>
+                </div>
+            </div>
+
+            <!-- URL Preview -->
+            <div id="sitemapUrlPreview" class="mt-4 hidden">
+                <div class="bg-white border border-gray-200 rounded-lg p-4">
+                    <div class="flex justify-between items-center mb-3">
+                        <h4 class="font-bold text-gray-700">📋 Generated URLs</h4>
+                        <button id="closeUrlPreviewBtn" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div id="sitemapUrlList" class="max-h-64 overflow-y-auto"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Edit Modals -->
 <div id="editBookModal" class="hidden modal">
     <div class="modal-content p-6">
@@ -680,6 +826,9 @@
     let bulkDeleteDifficulty = '';
     let bulkDeleteCount = 0;
     
+    // Sitemap variables
+    let sitemapData = null;
+    
     // ============ SESSION TIMEOUT ============
     let sessionTimeout;
     const SESSION_DURATION = 10 * 60 * 1000;
@@ -732,14 +881,14 @@
         });
     }
     function createSlug(text) {
-    return text
-        .toLowerCase()
-        .trim()
-        .replace(/&/g, 'and')
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-');
-}
+        return text
+            .toLowerCase()
+            .trim()
+            .replace(/&/g, 'and')
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-');
+    }
 
     // ============ MATH FUNCTIONS ============
     function toggleMathHelp() {
@@ -1416,15 +1565,14 @@
         }
         
         const slug = createSlug(title);
-
-const { error } = await _supabase.from('books').insert([
-    {
-        category,
-        title,
-        author,
-        slug
-    }
-]);
+        const { error } = await _supabase.from('books').insert([
+            {
+                category,
+                title,
+                author,
+                slug
+            }
+        ]);
         if (error) {
             showToast('Error: ' + error.message, true);
         } else {
@@ -1464,16 +1612,15 @@ const { error } = await _supabase.from('books').insert([
         }
         
         const slug = createSlug(title);
-
-const { error } = await _supabase
-    .from('books')
-    .update({
-        category,
-        title,
-        author,
-        slug
-    })
-    .eq('id', id);
+        const { error } = await _supabase
+            .from('books')
+            .update({
+                category,
+                title,
+                author,
+                slug
+            })
+            .eq('id', id);
         if (error) {
             showToast('Error: ' + error.message, true);
         } else {
@@ -1573,14 +1720,12 @@ const { error } = await _supabase
             return;
         }
         
-            const topicData = {
-    book_id: parseInt(bookId),
-    name: name,
-    slug: createSlug(name),
-    chapter_number: chapterNumber
-        ? parseInt(chapterNumber)
-        : null
-};
+        const topicData = {
+            book_id: parseInt(bookId),
+            name: name,
+            slug: createSlug(name),
+            chapter_number: chapterNumber ? parseInt(chapterNumber) : null
+        };
         
         const { error } = await _supabase.from('topics').insert([topicData]);
         if (error) {
@@ -1624,16 +1769,14 @@ const { error } = await _supabase
         }
         
         const { error } = await _supabase
-    .from('topics')
-    .update({
-        name,
-        slug: createSlug(name),
-        chapter_number: chapterNumber
-            ? parseInt(chapterNumber)
-            : null,
-        book_id: parseInt(bookId)
-    })
-    .eq('id', id);
+            .from('topics')
+            .update({
+                name,
+                slug: createSlug(name),
+                chapter_number: chapterNumber ? parseInt(chapterNumber) : null,
+                book_id: parseInt(bookId)
+            })
+            .eq('id', id);
         
         if (error) {
             showToast('Error: ' + error.message, true);
@@ -2279,46 +2422,244 @@ const { error } = await _supabase
         `).join('');
     }
 
-function showTab(tabName) {
-    if (tabName === 'bulkupload') {
-        window.openBulkUploadWithSession();
-        return;
-    }
-    
-    document.getElementById('booksTab').classList.add('hidden');
-    document.getElementById('topicsTab').classList.add('hidden');
-    document.getElementById('questionsTab').classList.add('hidden');
-    document.getElementById('categoriesTab').classList.add('hidden');
-    document.getElementById('bulkUploadTab').classList.add('hidden');
-    document.getElementById('adminsTab').classList.add('hidden');
-    document.getElementById('messagesTab').classList.add('hidden');
-    document.getElementById('seoTab').classList.add('hidden');
-    document.getElementById(`${tabName}Tab`).classList.remove('hidden');
-    
-    const buttons = ['Books', 'Topics', 'Questions', 'Categories', 'BulkUpload', 'Admins', 'Messages', 'Seo'];
-    buttons.forEach(btn => {
-        const btnElement = document.getElementById(`tab${btn}Btn`);
-        if (btnElement) {
-            if (btn.toLowerCase() === tabName.toLowerCase()) {
-                btnElement.classList.remove('bg-gray-200');
-                btnElement.classList.add('bg-purple-600', 'text-white');
-            } else {
-                btnElement.classList.remove('bg-purple-600', 'text-white');
-                btnElement.classList.add('bg-gray-200');
-            }
+    // ============ SITEMAP GENERATOR ============
+    async function generateSitemap() {
+        const statusEl = document.getElementById('sitemapStatus');
+        const countEl = document.getElementById('sitemapCount');
+        const progressBar = document.getElementById('sitemapProgressBar');
+        const logEl = document.getElementById('sitemapLog');
+        const logContent = document.getElementById('sitemapLogContent');
+        const resultEl = document.getElementById('sitemapResult');
+        const downloadBtn = document.getElementById('downloadSitemapBtn');
+        const viewUrlsBtn = document.getElementById('viewSitemapUrlsBtn');
+        const urlPreviewEl = document.getElementById('sitemapUrlPreview');
+        const urlListEl = document.getElementById('sitemapUrlList');
+        
+        logEl.classList.remove('hidden');
+        logContent.innerHTML = '';
+        resultEl.classList.add('hidden');
+        downloadBtn.classList.add('hidden');
+        viewUrlsBtn.classList.add('hidden');
+        urlPreviewEl.classList.add('hidden');
+        
+        statusEl.textContent = '📦 Fetching data...';
+        progressBar.style.width = '10%';
+        logContent.innerHTML += '<div>📦 Fetching books and topics...</div>';
+        
+        try {
+            // Fetch books
+            const { data: books, error: booksError } = await _supabase
+                .from('books')
+                .select('id, title, slug, created_at')
+                .order('title');
+            
+            if (booksError) throw booksError;
+            
+            // Fetch topics
+            const { data: topics, error: topicsError } = await _supabase
+                .from('topics')
+                .select('id, name, slug, book_id, created_at')
+                .order('name');
+            
+            if (topicsError) throw topicsError;
+            
+            logContent.innerHTML += `<div>📚 Found ${books.length} books, ${topics.length} topics</div>`;
+            statusEl.textContent = '📄 Generating sitemap URLs...';
+            progressBar.style.width = '30%';
+            
+            // Static pages
+            const staticPages = [
+                { url: '/', priority: '1.0', changefreq: 'daily' },
+                { url: '/quiz', priority: '0.9', changefreq: 'daily' },
+                { url: '/practice', priority: '0.8', changefreq: 'weekly' },
+                { url: '/contact', priority: '0.6', changefreq: 'monthly' },
+                { url: '/privacy', priority: '0.5', changefreq: 'monthly' }
+            ];
+            
+            // Build sitemap URLs
+            const urls = [];
+            
+            // Add static pages
+            staticPages.forEach(page => {
+                urls.push({
+                    loc: `https://bookmcq.com${page.url}`,
+                    priority: page.priority,
+                    changefreq: page.changefreq,
+                    lastmod: new Date().toISOString().split('T')[0]
+                });
+            });
+            
+            // Add book pages
+            books.forEach(book => {
+                const slug = book.slug || createSlug(book.title);
+                urls.push({
+                    loc: `https://bookmcq.com/books/${slug}.html`,
+                    priority: '0.8',
+                    changefreq: 'weekly',
+                    lastmod: book.created_at ? new Date(book.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+                });
+            });
+            
+            // Add topic pages (only if they have a valid slug)
+            topics.forEach(topic => {
+                if (topic.slug) {
+                    urls.push({
+                        loc: `https://bookmcq.com/topics/${topic.slug}.html`,
+                        priority: '0.7',
+                        changefreq: 'weekly',
+                        lastmod: topic.created_at ? new Date(topic.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+                    });
+                }
+            });
+            
+            // Update stats
+            document.getElementById('sitemapStaticCount').textContent = staticPages.length;
+            document.getElementById('sitemapBookCount').textContent = books.length;
+            document.getElementById('sitemapTopicCount').textContent = topics.length;
+            document.getElementById('sitemapTotalCount').textContent = urls.length;
+            
+            // Build XML
+            const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls.map(url => `  <url>
+    <loc>${url.loc}</loc>
+    <priority>${url.priority}</priority>
+    <changefreq>${url.changefreq}</changefreq>
+    <lastmod>${url.lastmod}</lastmod>
+  </url>`).join('\n')}
+</urlset>`;
+            
+            sitemapData = {
+                xml: xml,
+                urls: urls,
+                total: urls.length,
+                staticCount: staticPages.length,
+                bookCount: books.length,
+                topicCount: topics.length
+            };
+            
+            // Store URL list for preview
+            window.sitemapUrls = urls;
+            
+            progressBar.style.width = '90%';
+            statusEl.textContent = '✅ Sitemap generated!';
+            countEl.textContent = `${urls.length} URLs`;
+            logContent.innerHTML += `<div class="text-green-600">✅ Sitemap generated with ${urls.length} URLs</div>`;
+            logContent.innerHTML += `<div>📊 ${staticPages.length} static, ${books.length} books, ${topics.length} topics</div>`;
+            
+            resultEl.classList.remove('hidden');
+            downloadBtn.classList.remove('hidden');
+            viewUrlsBtn.classList.remove('hidden');
+            
+            progressBar.style.width = '100%';
+            
+        } catch (error) {
+            console.error('Sitemap Generation Error:', error);
+            statusEl.textContent = '❌ Error: ' + error.message;
+            logContent.innerHTML += `<div class="text-red-500">❌ Error: ${error.message}</div>`;
         }
-    });
+    }
     
-    if (tabName === 'questions') {
-        loadQuestions();
-        loadBulkDeleteBooks();
+    function downloadSitemap() {
+        if (!sitemapData) {
+            showToast('Please generate sitemap first', true);
+            return;
+        }
+        
+        const blob = new Blob([sitemapData.xml], { type: 'application/xml' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'sitemap.xml';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        showToast('✅ sitemap.xml downloaded!');
     }
-    if (tabName === 'categories') loadCategoriesCached();
-    if (tabName === 'messages') loadMessages();
-    if (tabName === 'seo') {
-        setTimeout(generateSEOPages, 500);
+    
+    function toggleSitemapUrlPreview() {
+        const previewEl = document.getElementById('sitemapUrlPreview');
+        const urlListEl = document.getElementById('sitemapUrlList');
+        
+        if (previewEl.classList.contains('hidden')) {
+            // Show preview
+            if (!window.sitemapUrls || window.sitemapUrls.length === 0) {
+                showToast('No URLs to display', true);
+                return;
+            }
+            
+            urlListEl.innerHTML = window.sitemapUrls.map(url => `
+                <div class="sitemap-url-item">
+                    <span class="url-path">${url.loc}</span>
+                    <span class="url-priority">Priority: ${url.priority} | ${url.changefreq}</span>
+                </div>
+            `).join('');
+            
+            previewEl.classList.remove('hidden');
+            document.getElementById('viewSitemapUrlsBtn').textContent = '🔒 Hide URLs';
+        } else {
+            previewEl.classList.add('hidden');
+            document.getElementById('viewSitemapUrlsBtn').textContent = '👁️ View URLs';
+        }
     }
-}
+    
+    function closeUrlPreview() {
+        document.getElementById('sitemapUrlPreview').classList.add('hidden');
+        document.getElementById('viewSitemapUrlsBtn').textContent = '👁️ View URLs';
+    }
+
+    // ============ TAB MANAGEMENT ============
+    function showTab(tabName) {
+        if (tabName === 'bulkupload') {
+            window.openBulkUploadWithSession();
+            return;
+        }
+        
+        document.getElementById('booksTab').classList.add('hidden');
+        document.getElementById('topicsTab').classList.add('hidden');
+        document.getElementById('questionsTab').classList.add('hidden');
+        document.getElementById('categoriesTab').classList.add('hidden');
+        document.getElementById('bulkUploadTab').classList.add('hidden');
+        document.getElementById('adminsTab').classList.add('hidden');
+        document.getElementById('messagesTab').classList.add('hidden');
+        document.getElementById('seoTab').classList.add('hidden');
+        document.getElementById('sitemapTab').classList.add('hidden');
+        document.getElementById(`${tabName}Tab`).classList.remove('hidden');
+        
+        const buttons = ['Books', 'Topics', 'Questions', 'Categories', 'BulkUpload', 'Admins', 'Messages', 'Seo', 'Sitemap'];
+        buttons.forEach(btn => {
+            const btnElement = document.getElementById(`tab${btn}Btn`);
+            if (btnElement) {
+                if (btn.toLowerCase() === tabName.toLowerCase()) {
+                    btnElement.classList.remove('bg-gray-200');
+                    btnElement.classList.add('bg-purple-600', 'text-white');
+                } else {
+                    btnElement.classList.remove('bg-purple-600', 'text-white');
+                    btnElement.classList.add('bg-gray-200');
+                }
+            }
+        });
+        
+        if (tabName === 'questions') {
+            loadQuestions();
+            loadBulkDeleteBooks();
+        }
+        if (tabName === 'categories') loadCategoriesCached();
+        if (tabName === 'messages') loadMessages();
+        if (tabName === 'seo') {
+            setTimeout(generateSEOPages, 500);
+        }
+        if (tabName === 'sitemap') {
+            // Reset stats to show zeros initially
+            document.getElementById('sitemapStaticCount').textContent = '0';
+            document.getElementById('sitemapBookCount').textContent = '0';
+            document.getElementById('sitemapTopicCount').textContent = '0';
+            document.getElementById('sitemapTotalCount').textContent = '0';
+        }
+    }
+    
     async function checkSession() {
         const { data: { session } } = await _supabase.auth.getSession();
         if (session) {
@@ -2356,466 +2697,386 @@ function showTab(tabName) {
         }
     }
 
-// ============ SEO PAGE GENERATION ============
-let seoGeneratedFiles = [];
-let seoTotalBooks = 0;
-let seoGeneratedCount = 0;
-let seoBooksData = [];
-let cachedTemplate = null;
+    // ============ SEO PAGE GENERATION ============
+    let seoGeneratedFiles = [];
+    let seoTotalBooks = 0;
+    let seoGeneratedCount = 0;
+    let seoBooksData = [];
+    let cachedTemplate = null;
 
-async function fetchTemplate() {
-    // First try to get template from server
-    try {
-        const response = await fetch('template.html');
-        if (response.ok) {
-            cachedTemplate = await response.text();
-            return cachedTemplate;
-        }
-    } catch(e) {
-        console.log('Could not fetch template.html, using fallback');
-    }
-    
-    // Fallback: try to get from current page but clean it
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = document.documentElement.outerHTML;
-    
-    const adminDashboard = tempDiv.querySelector('#adminDashboard');
-    if (adminDashboard) adminDashboard.remove();
-    
-    const loginScreen = tempDiv.querySelector('#loginScreen');
-    if (loginScreen) loginScreen.remove();
-    
-    const modals = tempDiv.querySelectorAll('.modal');
-    modals.forEach(el => el.remove());
-    
-    const toast = tempDiv.querySelector('#toast');
-    if (toast) toast.remove();
-    
-    const scripts = tempDiv.querySelectorAll('script');
-    scripts.forEach(el => {
-        if (el.textContent.includes('admin') || 
-            el.textContent.includes('SUPABASE') ||
-            el.textContent.includes('login') ||
-            el.textContent.includes('logout')) {
-            el.remove();
-        }
-    });
-    
-    cachedTemplate = tempDiv.innerHTML;
-    return cachedTemplate;
-}
-
-// ============ DYNAMIC: Fetch ALL questions with pagination ============
-async function fetchAllQuestions() {
-    let allQuestions = [];
-    let page = 0;
-    const pageSize = 1000;
-    let hasMore = true;
-    let totalFetched = 0;
-    const logContent = document.getElementById('seoLogContent');
-    
-    if (logContent) {
-        logContent.innerHTML += `<div>🔄 Fetching questions in batches of ${pageSize}...</div>`;
-    }
-    
-    while (hasMore) {
-        const from = page * pageSize;
-        const to = from + pageSize - 1;
-        
-        const { data, error } = await _supabase
-            .from('questions')
-            .select('id, topic_id')
-            .range(from, to);
-        
-        if (error) {
-            console.error('Error fetching questions:', error);
-            break;
-        }
-        
-        if (!data || data.length === 0) {
-            hasMore = false;
-        } else {
-            allQuestions = allQuestions.concat(data);
-            totalFetched += data.length;
-            page++;
-            
-            // Update progress
-            const statusEl = document.getElementById('seoStatus');
-            if (statusEl) {
-                statusEl.textContent = `📦 Fetching questions... ${totalFetched} fetched so far`;
+    async function fetchTemplate() {
+        try {
+            const response = await fetch('template.html');
+            if (response.ok) {
+                cachedTemplate = await response.text();
+                return cachedTemplate;
             }
-            if (logContent) {
-                logContent.innerHTML += `<div>   📥 Batch ${page}: ${data.length} questions (${totalFetched} total)</div>`;
+        } catch(e) {
+            console.log('Could not fetch template.html, using fallback');
+        }
+        
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = document.documentElement.outerHTML;
+        
+        const adminDashboard = tempDiv.querySelector('#adminDashboard');
+        if (adminDashboard) adminDashboard.remove();
+        
+        const loginScreen = tempDiv.querySelector('#loginScreen');
+        if (loginScreen) loginScreen.remove();
+        
+        const modals = tempDiv.querySelectorAll('.modal');
+        modals.forEach(el => el.remove());
+        
+        const toast = tempDiv.querySelector('#toast');
+        if (toast) toast.remove();
+        
+        const scripts = tempDiv.querySelectorAll('script');
+        scripts.forEach(el => {
+            if (el.textContent.includes('admin') || 
+                el.textContent.includes('SUPABASE') ||
+                el.textContent.includes('login') ||
+                el.textContent.includes('logout')) {
+                el.remove();
+            }
+        });
+        
+        cachedTemplate = tempDiv.innerHTML;
+        return cachedTemplate;
+    }
+
+    async function fetchAllQuestions() {
+        let allQuestions = [];
+        let page = 0;
+        const pageSize = 1000;
+        let hasMore = true;
+        let totalFetched = 0;
+        const logContent = document.getElementById('seoLogContent');
+        
+        if (logContent) {
+            logContent.innerHTML += `<div>🔄 Fetching questions in batches of ${pageSize}...</div>`;
+        }
+        
+        while (hasMore) {
+            const from = page * pageSize;
+            const to = from + pageSize - 1;
+            
+            const { data, error } = await _supabase
+                .from('questions')
+                .select('id, topic_id')
+                .range(from, to);
+            
+            if (error) {
+                console.error('Error fetching questions:', error);
+                break;
             }
             
-            // If we got less than pageSize, we've reached the end
-            if (data.length < pageSize) {
+            if (!data || data.length === 0) {
                 hasMore = false;
+            } else {
+                allQuestions = allQuestions.concat(data);
+                totalFetched += data.length;
+                page++;
+                
+                const statusEl = document.getElementById('seoStatus');
+                if (statusEl) {
+                    statusEl.textContent = `📦 Fetching questions... ${totalFetched} fetched so far`;
+                }
+                if (logContent) {
+                    logContent.innerHTML += `<div>   📥 Batch ${page}: ${data.length} questions (${totalFetched} total)</div>`;
+                }
+                
+                if (data.length < pageSize) {
+                    hasMore = false;
+                }
             }
         }
+        
+        if (logContent) {
+            logContent.innerHTML += `<div>✅ Total questions fetched: ${allQuestions.length}</div>`;
+        }
+        return allQuestions;
     }
-    
-    if (logContent) {
-        logContent.innerHTML += `<div>✅ Total questions fetched: ${allQuestions.length}</div>`;
-    }
-    return allQuestions;
-}
 
-async function generateSEOPages() {
-    const statusEl = document.getElementById('seoStatus');
-    const countEl = document.getElementById('seoCount');
-    const progressBar = document.getElementById('seoProgressBar');
-    const logEl = document.getElementById('seoLog');
-    const logContent = document.getElementById('seoLogContent');
-    const resultEl = document.getElementById('seoResult');
-    const downloadAllBtn = document.getElementById('downloadAllSEOBtn');
-    const bookListEl = document.getElementById('seoBookList');
-    
-    seoGeneratedFiles = [];
-    seoGeneratedCount = 0;
-    seoBooksData = [];
-    logEl.classList.remove('hidden');
-    logContent.innerHTML = '';
-    resultEl.classList.add('hidden');
-    downloadAllBtn.classList.add('hidden');
-    
-    statusEl.textContent = '📦 Fetching data from database...';
-    progressBar.style.width = '10%';
-    logContent.innerHTML += '<div>📦 Fetching books, topics, and questions...</div>';
-    bookListEl.innerHTML = '<div class="text-gray-500 text-sm">Loading books...</div>';
-    
-    try {
-        // ============ DYNAMIC: Fetch ALL questions with pagination ============
-        const [booksRes, topicsRes, questions, template] = await Promise.all([
-            _supabase.from('books').select('*').order('title'),
-            _supabase.from('topics').select('*, books(title)').order('name'),
-            fetchAllQuestions(),
-            fetchTemplate()
-        ]);
+    async function generateSEOPages() {
+        const statusEl = document.getElementById('seoStatus');
+        const countEl = document.getElementById('seoCount');
+        const progressBar = document.getElementById('seoProgressBar');
+        const logEl = document.getElementById('seoLog');
+        const logContent = document.getElementById('seoLogContent');
+        const resultEl = document.getElementById('seoResult');
+        const downloadAllBtn = document.getElementById('downloadAllSEOBtn');
+        const bookListEl = document.getElementById('seoBookList');
         
-        const books = booksRes.data || [];
-        const topics = topicsRes.data || [];
+        seoGeneratedFiles = [];
+        seoGeneratedCount = 0;
+        seoBooksData = [];
+        logEl.classList.remove('hidden');
+        logContent.innerHTML = '';
+        resultEl.classList.add('hidden');
+        downloadAllBtn.classList.add('hidden');
         
-        // ============ Count questions per topic ============
-        const questionCountByTopic = {};
-        questions.forEach(q => {
-            if (q.topic_id) {
-                questionCountByTopic[q.topic_id] = (questionCountByTopic[q.topic_id] || 0) + 1;
+        statusEl.textContent = '📦 Fetching data from database...';
+        progressBar.style.width = '10%';
+        logContent.innerHTML += '<div>📦 Fetching books, topics, and questions...</div>';
+        bookListEl.innerHTML = '<div class="text-gray-500 text-sm">Loading books...</div>';
+        
+        try {
+            const [booksRes, topicsRes, questions, template] = await Promise.all([
+                _supabase.from('books').select('*').order('title'),
+                _supabase.from('topics').select('*, books(title)').order('name'),
+                fetchAllQuestions(),
+                fetchTemplate()
+            ]);
+            
+            const books = booksRes.data || [];
+            const topics = topicsRes.data || [];
+            
+            const questionCountByTopic = {};
+            questions.forEach(q => {
+                if (q.topic_id) {
+                    questionCountByTopic[q.topic_id] = (questionCountByTopic[q.topic_id] || 0) + 1;
+                }
+            });
+            
+            seoBooksData = books;
+            seoTotalBooks = books.length;
+            statusEl.textContent = `📚 Found ${books.length} books`;
+            countEl.textContent = `${books.length} pages`;
+            progressBar.style.width = '20%';
+            logContent.innerHTML += `<div>📚 Found ${books.length} books, ${topics.length} topics, ${questions.length} total questions</div>`;
+            
+            if (books.length === 0) {
+                statusEl.textContent = '⚠️ No books found to generate pages';
+                logContent.innerHTML += '<div class="text-red-500">⚠️ No books found in database.</div>';
+                bookListEl.innerHTML = '<div class="text-gray-500 text-sm">No books available</div>';
+                return;
             }
-        });
-        
-        // ============ DEBUG: Log counts to console ============
-        console.log('📊 Total questions fetched:', questions.length);
-        console.log('📊 Question counts per topic:');
-        Object.keys(questionCountByTopic).forEach(topicId => {
-            const topic = topics.find(t => t.id === parseInt(topicId));
-            if (topic) {
-                console.log(`  - ${topic.name}: ${questionCountByTopic[topicId]} MCQs`);
-            }
-        });
-        
-        seoBooksData = books;
-        
-        seoTotalBooks = books.length;
-        statusEl.textContent = `📚 Found ${books.length} books`;
-        countEl.textContent = `${books.length} pages`;
-        progressBar.style.width = '20%';
-        logContent.innerHTML += `<div>📚 Found ${books.length} books, ${topics.length} topics, ${questions.length} total questions</div>`;
-        
-        if (books.length === 0) {
-            statusEl.textContent = '⚠️ No books found to generate pages';
-            logContent.innerHTML += '<div class="text-red-500">⚠️ No books found in database.</div>';
-            bookListEl.innerHTML = '<div class="text-gray-500 text-sm">No books available</div>';
+            
+            logContent.innerHTML += '<div>📄 Generating pages...</div>';
+            
+            let bookListHtml = '';
+            
+            books.forEach((book, index) => {
+                const bookTopics = topics.filter(t => t.book_id === book.id);
+                const slug = book.slug || createSlug(book.title);
+                
+                let totalQuestionsForBook = 0;
+                bookTopics.forEach(topic => {
+                    totalQuestionsForBook += questionCountByTopic[topic.id] || 0;
+                });
+                
+                let html = template;
+                
+                html = html.replace(
+                    /<title>.*?<\/title>/,
+                    `<title>${book.title} MCQs - Practice Questions for ${book.title} | BookMCQ</title>`
+                );
+                
+                html = html.replace(
+                    /<meta name="description" content=".*?">/,
+                    `<meta name="description" content="Practice ${book.title} MCQs with chapter-wise questions. ${bookTopics.length} chapters and ${totalQuestionsForBook} practice questions available for ${book.title}. Perfect for exam preparation.">`
+                );
+                
+                html = html.replace(
+                    /<meta name="keywords" content=".*?">/,
+                    `<meta name="keywords" content="${book.title} MCQs, ${book.title} questions, ${book.title} practice, ${book.title} exam preparation, ${book.category || ''} MCQs">`
+                );
+                
+                html = html.replace(
+                    /<link rel="canonical" href=".*?">/,
+                    `<link rel="canonical" href="https://bookmcq.com/books/${slug}.html">`
+                );
+                
+                html = html.replace(
+                    /<meta property="og:title" content=".*?">/,
+                    `<meta property="og:title" content="${book.title} MCQs - Practice Questions | BookMCQ">`
+                );
+                
+                html = html.replace(
+                    /<meta property="og:description" content=".*?">/,
+                    `<meta property="og:description" content="Practice ${book.title} MCQs with chapter-wise questions. ${bookTopics.length} chapters and ${totalQuestionsForBook} practice questions available. Perfect for exam preparation.">`
+                );
+                
+                html = html.replace(
+                    /<h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">.*?<\/h1>/,
+                    `<h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">${book.title} | Practice MCQs</h1>`
+                );
+                
+                html = html.replace(
+                    /<p class="text-gray-600 text-base md:text-lg max-w-2xl mx-auto mb-8 text-center">.*?<\/p>/,
+                    `<p class="text-gray-600 text-base md:text-lg max-w-2xl mx-auto mb-8 text-center">Practice chapter-wise MCQs from "${book.title}"${book.author ? ` by ${book.author}` : ''}. ${bookTopics.length} chapters and ${totalQuestionsForBook} practice questions available.</p>`
+                );
+                
+                html = html.replace(
+                    /<div class="stats-number" id="statBooks">Loading...<\/div>/,
+                    `<div class="stats-number">${bookTopics.length}</div>`
+                );
+                
+                html = html.replace(
+                    /<div class="stats-number" id="statMcqs">Loading...<\/div>/,
+                    `<div class="stats-number">${totalQuestionsForBook}</div>`
+                );
+                
+                const aboutHtml = `
+                    <p>Welcome to the <strong>${book.title}</strong> MCQ practice page. This page contains <strong>${bookTopics.length} chapters</strong> and <strong>${totalQuestionsForBook} practice questions</strong> from "${book.title}"${book.author ? ` by ${book.author}` : ''}.</p>
+                    <p>Practice chapter-wise MCQs to master ${book.title} for your exams. Each question comes with detailed explanations to help you understand the concepts better.</p>
+                    ${book.category ? `<p><strong>Category:</strong> ${book.category}</p>` : ''}
+                    <p class="mt-2">Start practicing now to improve your knowledge and score well in your exams!</p>
+                `;
+                html = html.replace(
+                    /<div id="aboutContent".*?>.*?<\/div>/s,
+                    `<div id="aboutContent" style="text-align: justify; max-width: 800px; margin: 0 auto; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6;">${aboutHtml}</div>`
+                );
+                
+                html = html.replace(
+                    /<h3 class="font-bold text-gray-800" id="sectionTitle">.*?<\/h3>/,
+                    `<h3 class="font-bold text-gray-800" id="sectionTitle">📖 Chapters in "${book.title}"</h3>`
+                );
+                
+                html = html.replace(
+                    /<div id="categoryFilters" class="flex flex-wrap gap-2 mb-4">.*?<\/div>/s,
+                    `<div id="categoryFilters" class="flex flex-wrap gap-2 mb-4"><span class="text-sm text-gray-500">${bookTopics.length} chapters available</span></div>`
+                );
+                
+                let chaptersHtml = '<div class="books-grid">';
+                if (bookTopics.length === 0) {
+                    chaptersHtml += '<p class="text-gray-500 text-center py-4 col-span-full">No chapters available for this book yet.</p>';
+                } else {
+                    const sortedTopics = [...bookTopics].sort((a, b) => (a.chapter_number || 0) - (b.chapter_number || 0));
+                    sortedTopics.forEach((topic, idx) => {
+                        const chapterDisplay = topic.chapter_number ? `Ch ${topic.chapter_number}: ` : '';
+                        const mcqCount = questionCountByTopic[topic.id] || 0;
+                        chaptersHtml += `
+                            <div class="book-list-item" onclick="window.location.href='/quiz?topic=${topic.id}'">
+                                <div class="book-info">
+                                    <div class="book-number">${idx + 1}</div>
+                                    <div>
+                                        <div class="book-title">${chapterDisplay}${topic.name}</div>
+                                        <div class="book-author">${mcqCount} MCQs</div>
+                                    </div>
+                                </div>
+                                <i class="fas fa-chevron-right text-gray-400 text-sm"></i>
+                            </div>
+                        `;
+                    });
+                }
+                chaptersHtml += '</div>';
+                chaptersHtml += '<p class="text-xs text-gray-400 mt-4 text-center">Click on any chapter to start practicing</p>';
+                
+                html = html.replace(
+                    /<div id="booksByCategory" class="bg-white\/50 rounded-xl p-4 max-h-80 overflow-y-auto">.*?<\/div>/s,
+                    `<div id="booksByCategory" class="bg-white/50 rounded-xl p-4 max-h-80 overflow-y-auto">${chaptersHtml}</div>`
+                );
+                
+                seoGeneratedFiles.push({
+                    name: `${slug}.html`,
+                    content: html,
+                    book: book.title,
+                    chapters: bookTopics.length,
+                    questions: totalQuestionsForBook,
+                    slug: slug
+                });
+                
+                bookListHtml += `
+                    <div class="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-200 hover:border-purple-300 transition">
+                        <div class="flex items-center gap-3">
+                            <span class="font-medium text-gray-800">${escapeHtml(book.title)}</span>
+                            ${book.author ? `<span class="text-gray-500 text-sm">by ${escapeHtml(book.author)}</span>` : ''}
+                            <span class="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full">${bookTopics.length} chapters, ${totalQuestionsForBook} MCQs</span>
+                        </div>
+                        <button onclick="downloadSingleSEOPage('${slug}')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm transition flex items-center gap-1">
+                            <i class="fas fa-download"></i> Download
+                        </button>
+                    </div>
+                `;
+                
+                seoGeneratedCount++;
+                const progress = 20 + ((seoGeneratedCount / seoTotalBooks) * 70);
+                progressBar.style.width = `${progress}%`;
+                statusEl.textContent = `📄 Generated ${seoGeneratedCount}/${seoTotalBooks}: ${book.title}`;
+                countEl.textContent = `${seoGeneratedCount} pages`;
+                
+                logContent.innerHTML += `<div>✅ ${seoGeneratedCount}/${seoTotalBooks}: ${slug}.html (${bookTopics.length} chapters, ${totalQuestionsForBook} MCQs)</div>`;
+                logEl.scrollTop = logEl.scrollHeight;
+            });
+            
+            bookListEl.innerHTML = bookListHtml;
+            
+            progressBar.style.width = '95%';
+            statusEl.textContent = `🎉 All ${seoTotalBooks} pages generated!`;
+            countEl.textContent = `${seoTotalBooks} pages`;
+            
+            resultEl.classList.remove('hidden');
+            downloadAllBtn.classList.remove('hidden');
+            
+            logContent.innerHTML += `<div class="text-green-600 font-bold">🎉 Successfully generated ${seoTotalBooks} SEO pages!</div>`;
+            logContent.innerHTML += `<div class="text-blue-600">📥 Click "Download" next to each book to save individual pages.</div>`;
+            logEl.scrollTop = logEl.scrollHeight;
+            
+            progressBar.style.width = '100%';
+            
+        } catch (error) {
+            console.error('SEO Generation Error:', error);
+            statusEl.textContent = '❌ Error: ' + error.message;
+            logContent.innerHTML += `<div class="text-red-500">❌ Error: ${error.message}</div>`;
+            document.getElementById('seoBookList').innerHTML = `<div class="text-red-500 text-sm">Error: ${error.message}</div>`;
+        }
+    }
+
+    function downloadSingleSEOPage(slug) {
+        const file = seoGeneratedFiles.find(f => f.slug === slug);
+        if (!file) {
+            showToast('File not found. Please regenerate pages.', true);
             return;
         }
         
-        logContent.innerHTML += '<div>📄 Generating pages...</div>';
+        const blob = new Blob([file.content], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = file.name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
         
-        let bookListHtml = '';
-        
-        books.forEach((book, index) => {
-            const bookTopics = topics.filter(t => t.book_id === book.id);
-            const slug = book.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-            
-            // ============ Count total questions for this book ============
-            let totalQuestionsForBook = 0;
-            bookTopics.forEach(topic => {
-                totalQuestionsForBook += questionCountByTopic[topic.id] || 0;
-            });
-            
-            console.log(`📊 ${book.title}: ${bookTopics.length} chapters, ${totalQuestionsForBook} MCQs`);
-            
-            let html = template;
-            
-            // ===== UPDATE SEO META TAGS =====
-            html = html.replace(
-                /<title>.*?<\/title>/,
-                `<title>${book.title} MCQs - Practice Questions for ${book.title} | BookMCQ</title>`
-            );
-            
-            html = html.replace(
-                /<meta name="description" content=".*?">/,
-                `<meta name="description" content="Practice ${book.title} MCQs with chapter-wise questions. ${bookTopics.length} chapters and ${totalQuestionsForBook} practice questions available for ${book.title}. Perfect for exam preparation.">`
-            );
-            
-            html = html.replace(
-                /<meta name="keywords" content=".*?">/,
-                `<meta name="keywords" content="${book.title} MCQs, ${book.title} questions, ${book.title} practice, ${book.title} exam preparation, ${book.category || ''} MCQs">`
-            );
-            
-            html = html.replace(
-                /<link rel="canonical" href=".*?">/,
-                `<link rel="canonical" href="https://bookmcq.com/books/${slug}.html">`
-            );
-            
-            html = html.replace(
-                /<meta property="og:title" content=".*?">/,
-                `<meta property="og:title" content="${book.title} MCQs - Practice Questions | BookMCQ">`
-            );
-            
-            html = html.replace(
-                /<meta property="og:description" content=".*?">/,
-                `<meta property="og:description" content="Practice ${book.title} MCQs with chapter-wise questions. ${bookTopics.length} chapters and ${totalQuestionsForBook} practice questions available. Perfect for exam preparation.">`
-            );
-            
-            // ===== UPDATE PAGE CONTENT =====
-            html = html.replace(
-                /<h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">.*?<\/h1>/,
-                `<h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">${book.title} | Practice MCQs</h1>`
-            );
-            
-            html = html.replace(
-                /<p class="text-gray-600 text-base md:text-lg max-w-2xl mx-auto mb-8 text-center">.*?<\/p>/,
-                `<p class="text-gray-600 text-base md:text-lg max-w-2xl mx-auto mb-8 text-center">Practice chapter-wise MCQs from "${book.title}"${book.author ? ` by ${book.author}` : ''}. ${bookTopics.length} chapters and ${totalQuestionsForBook} practice questions available.</p>`
-            );
-            
-            // Stats - Chapters count
-            html = html.replace(
-                /<div class="stats-number" id="statBooks">Loading...<\/div>/,
-                `<div class="stats-number">${bookTopics.length}</div>`
-            );
-            
-            // Stats - Questions count
-            html = html.replace(
-                /<div class="stats-number" id="statMcqs">Loading...<\/div>/,
-                `<div class="stats-number">${totalQuestionsForBook}</div>`
-            );
-            
-            // About content
-            const aboutHtml = `
-                <p>Welcome to the <strong>${book.title}</strong> MCQ practice page. This page contains <strong>${bookTopics.length} chapters</strong> and <strong>${totalQuestionsForBook} practice questions</strong> from "${book.title}"${book.author ? ` by ${book.author}` : ''}.</p>
-                <p>Practice chapter-wise MCQs to master ${book.title} for your exams. Each question comes with detailed explanations to help you understand the concepts better.</p>
-                ${book.category ? `<p><strong>Category:</strong> ${book.category}</p>` : ''}
-                <p class="mt-2">Start practicing now to improve your knowledge and score well in your exams!</p>
-            `;
-            html = html.replace(
-                /<div id="aboutContent".*?>.*?<\/div>/s,
-                `<div id="aboutContent" style="text-align: justify; max-width: 800px; margin: 0 auto; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6;">${aboutHtml}</div>`
-            );
-            
-            // Section title
-            html = html.replace(
-                /<h3 class="font-bold text-gray-800" id="sectionTitle">.*?<\/h3>/,
-                `<h3 class="font-bold text-gray-800" id="sectionTitle">📖 Chapters in "${book.title}"</h3>`
-            );
-            
-            // Category filters
-            html = html.replace(
-                /<div id="categoryFilters" class="flex flex-wrap gap-2 mb-4">.*?<\/div>/s,
-                `<div id="categoryFilters" class="flex flex-wrap gap-2 mb-4"><span class="text-sm text-gray-500">${bookTopics.length} chapters available</span></div>`
-            );
-            
-            // ============ Books grid - Show chapters with MCQ count ============
-            let chaptersHtml = '<div class="books-grid">';
-            if (bookTopics.length === 0) {
-                chaptersHtml += '<p class="text-gray-500 text-center py-4 col-span-full">No chapters available for this book yet.</p>';
-            } else {
-                // Sort topics by chapter number
-                const sortedTopics = [...bookTopics].sort((a, b) => (a.chapter_number || 0) - (b.chapter_number || 0));
-                sortedTopics.forEach((topic, idx) => {
-                    const chapterDisplay = topic.chapter_number ? `Ch ${topic.chapter_number}: ` : '';
-                    const mcqCount = questionCountByTopic[topic.id] || 0;
-                    chaptersHtml += `
-    <div class="book-list-item"
-         onclick="window.location.href='/quiz?topic=${topic.id}'">
-                            <div class="book-info">
-                                <div class="book-number">${idx + 1}</div>
-                                <div>
-                                    <div class="book-title">${chapterDisplay}${topic.name}</div>
-                                    <div class="book-author">${mcqCount} MCQs</div>
-                                </div>
-                            </div>
-                            <i class="fas fa-chevron-right text-gray-400 text-sm"></i>
-                        </div>
-                    `;
-                });
-            }
-            chaptersHtml += '</div>';
-            chaptersHtml += '<p class="text-xs text-gray-400 mt-4 text-center">Click on any chapter to start practicing</p>';
-            
-            html = html.replace(
-                /<div id="booksByCategory" class="bg-white\/50 rounded-xl p-4 max-h-80 overflow-y-auto">.*?<\/div>/s,
-                `<div id="booksByCategory" class="bg-white/50 rounded-xl p-4 max-h-80 overflow-y-auto">${chaptersHtml}</div>`
-            );
-            
-            // Store file
-            seoGeneratedFiles.push({
-                name: `${slug}.html`,
-                content: html,
-                book: book.title,
-                chapters: bookTopics.length,
-                questions: totalQuestionsForBook,
-                slug: slug
-            });
-            
-            // Add to book list
-            bookListHtml += `
-                <div class="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-200 hover:border-purple-300 transition">
-                    <div class="flex items-center gap-3">
-                        <span class="font-medium text-gray-800">${escapeHtml(book.title)}</span>
-                        ${book.author ? `<span class="text-gray-500 text-sm">by ${escapeHtml(book.author)}</span>` : ''}
-                        <span class="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full">${bookTopics.length} chapters, ${totalQuestionsForBook} MCQs</span>
-                    </div>
-                    <button onclick="downloadSingleSEOPage('${slug}')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm transition flex items-center gap-1">
-                        <i class="fas fa-download"></i> Download
-                    </button>
-                </div>
-            `;
-            
-            seoGeneratedCount++;
-            const progress = 20 + ((seoGeneratedCount / seoTotalBooks) * 70);
-            progressBar.style.width = `${progress}%`;
-            statusEl.textContent = `📄 Generated ${seoGeneratedCount}/${seoTotalBooks}: ${book.title}`;
-            countEl.textContent = `${seoGeneratedCount} pages`;
-            
-            logContent.innerHTML += `<div>✅ ${seoGeneratedCount}/${seoTotalBooks}: ${slug}.html (${bookTopics.length} chapters, ${totalQuestionsForBook} MCQs)</div>`;
-            logEl.scrollTop = logEl.scrollHeight;
-        });
-        
-        bookListEl.innerHTML = bookListHtml;
-        
-        progressBar.style.width = '95%';
-        statusEl.textContent = `🎉 All ${seoTotalBooks} pages generated!`;
-        countEl.textContent = `${seoTotalBooks} pages`;
-        
-        resultEl.classList.remove('hidden');
-        downloadAllBtn.classList.remove('hidden');
-        
-        logContent.innerHTML += `<div class="text-green-600 font-bold">🎉 Successfully generated ${seoTotalBooks} SEO pages!</div>`;
-        logContent.innerHTML += `<div class="text-blue-600">📥 Click "Download" next to each book to save individual pages.</div>`;
-        logEl.scrollTop = logEl.scrollHeight;
-        
-        progressBar.style.width = '100%';
-        
-    } catch (error) {
-        console.error('SEO Generation Error:', error);
-        statusEl.textContent = '❌ Error: ' + error.message;
-        logContent.innerHTML += `<div class="text-red-500">❌ Error: ${error.message}</div>`;
-        document.getElementById('seoBookList').innerHTML = `<div class="text-red-500 text-sm">Error: ${error.message}</div>`;
+        showToast(`✅ Downloaded: ${file.name}`);
     }
-}
 
-// Download individual SEO page
-function downloadSingleSEOPage(slug) {
-    const file = seoGeneratedFiles.find(f => f.slug === slug);
-    if (!file) {
-        showToast('File not found. Please regenerate pages.', true);
-        return;
-    }
-    
-    const blob = new Blob([file.content], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = file.name;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    showToast(`✅ Downloaded: ${file.name}`);
-}
-
-// Download all SEO pages
-function downloadAllSEOPages() {
-    if (seoGeneratedFiles.length === 0) {
-        showToast('No files to download. Generate pages first.', true);
-        return;
-    }
-    
-    showToast(`📥 Downloading ${seoGeneratedFiles.length} files...`);
-    
-    seoGeneratedFiles.forEach((file, index) => {
-        setTimeout(() => {
-            const blob = new Blob([file.content], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = file.name;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            if (index === seoGeneratedFiles.length - 1) {
-                showToast(`✅ All ${seoGeneratedFiles.length} files downloaded!`);
-            }
-        }, index * 300);
-    });
-}
-
-// Function to open SEO tab and auto-generate
-async function openSEOTab() {
-    showTab('seo');
-    setTimeout(() => {
-        generateSEOPages();
-    }, 500);
-}
-async function loadTopicFromUrl() {
-    const params = new URLSearchParams(window.location.search);
-    const topicId = params.get('topic');
-
-    if (!topicId) return;
-
-    try {
-        const { data: topic } = await _supabase
-            .from('topics')
-            .select('id, name, book_id')
-            .eq('id', topicId)
-            .single();
-
-        if (!topic) return;
-
-        selectedBookId = topic.book_id;
-
-        await loadTopics();
-
-        document.title = `${topic.name} MCQ Quiz | BookMCQ`;
-
-        document.getElementById('bookSelectedText').textContent =
-            'Loading topic...';
-
-        setTimeout(() => {
-            const checkbox = document.querySelector(
-                `input[value^="${topic.name}|"]`
-            );
-
-            if (checkbox) {
-                checkbox.checked = true;
-
-                const topicSelectedText =
-                    document.getElementById('topicSelectedText');
-
-                if (topicSelectedText) {
-                    topicSelectedText.textContent = topic.name;
+    function downloadAllSEOPages() {
+        if (seoGeneratedFiles.length === 0) {
+            showToast('No files to download. Generate pages first.', true);
+            return;
+        }
+        
+        showToast(`📥 Downloading ${seoGeneratedFiles.length} files...`);
+        
+        seoGeneratedFiles.forEach((file, index) => {
+            setTimeout(() => {
+                const blob = new Blob([file.content], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = file.name;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                if (index === seoGeneratedFiles.length - 1) {
+                    showToast(`✅ All ${seoGeneratedFiles.length} files downloaded!`);
                 }
-            }
-        }, 500);
-
-    } catch (err) {
-        console.error('Topic URL load failed:', err);
+            }, index * 300);
+        });
     }
-}
+
+    async function openSEOTab() {
+        showTab('seo');
+        setTimeout(() => {
+            generateSEOPages();
+        }, 500);
+    }
+
     function setupEventListeners() {
         document.getElementById('loginBtn').addEventListener('click', handleLogin);
         document.getElementById('signupBtn').addEventListener('click', handleSignup);
@@ -2830,10 +3091,17 @@ async function loadTopicFromUrl() {
         document.getElementById('tabBulkUploadBtn').addEventListener('click', () => showTab('bulkupload'));
         document.getElementById('tabAdminsBtn').addEventListener('click', () => showTab('admins'));
         document.getElementById('tabMessagesBtn').addEventListener('click', () => showTab('messages'));
-
         document.getElementById('tabSeoBtn').addEventListener('click', openSEOTab);
+        document.getElementById('tabSitemapBtn').addEventListener('click', () => showTab('sitemap'));
+        
         document.getElementById('generateSEOPagesBtn').addEventListener('click', generateSEOPages);
         document.getElementById('downloadAllSEOBtn').addEventListener('click', downloadAllSEOPages);
+        
+        // Sitemap event listeners
+        document.getElementById('generateSitemapBtn').addEventListener('click', generateSitemap);
+        document.getElementById('downloadSitemapBtn').addEventListener('click', downloadSitemap);
+        document.getElementById('viewSitemapUrlsBtn').addEventListener('click', toggleSitemapUrlPreview);
+        document.getElementById('closeUrlPreviewBtn').addEventListener('click', closeUrlPreview);
         
         document.getElementById('showAddBookBtn').addEventListener('click', () => {
             document.getElementById('addBookForm').classList.remove('hidden');
