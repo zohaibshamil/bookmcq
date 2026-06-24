@@ -3089,36 +3089,31 @@
     // ============================================================
     // DOWNLOAD SINGLE BOOK (all pages in folder)
     // ============================================================
-    function downloadSingleSEOPage(slug) {
-        const files = seoGeneratedFiles.filter(f => f.slug === slug);
+    function downloadSingleSEOPage(bookSlug) {
+        // Find ALL files that belong to this book (both index and chapters)
+        var files = seoGeneratedFiles.filter(function(f) {
+            return f.slug === bookSlug;
+        });
+        
         if (files.length === 0) {
             showToast('Book not found. Please regenerate pages.', true);
             return;
         }
         
-        // If only one file (book index), download it directly
-        if (files.length === 1) {
-            const blob = new Blob([files[0].content], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = files[0].name;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            showToast('✅ Downloaded: ' + files[0].name);
-            return;
-        }
+        // Sort files: index.html first, then chapters
+        files.sort(function(a, b) {
+            if (a.name.indexOf('index.html') !== -1) return -1;
+            if (b.name.indexOf('index.html') !== -1) return 1;
+            return a.name.localeCompare(b.name);
+        });
         
-        // Multiple files - download one by one
-        showToast('📦 Downloading ' + files.length + ' pages for ' + slug + '...');
+        showToast('📦 Downloading ' + files.length + ' pages for ' + bookSlug + '...');
         
-        files.forEach((file, index) => {
+        files.forEach(function(file, index) {
             setTimeout(function() {
-                const blob = new Blob([file.content], { type: 'text/html' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
+                var blob = new Blob([file.content], { type: 'text/html' });
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
                 a.href = url;
                 a.download = file.name;
                 document.body.appendChild(a);
@@ -3127,9 +3122,9 @@
                 URL.revokeObjectURL(url);
                 
                 if (index === files.length - 1) {
-                    showToast('✅ Downloaded all ' + files.length + ' pages for ' + slug);
+                    showToast('✅ Downloaded all ' + files.length + ' pages for ' + bookSlug);
                 }
-            }, index * 400);
+            }, index * 500);
         });
     }
 
@@ -3266,7 +3261,7 @@
                         content: chapterHtml,
                         book: book.title,
                         chapter: topic.name,
-                        slug: bookSlug,
+                        slug: bookSlug,  // Keep bookSlug so all files for a book can be found together
                         isChapter: true,
                         stats: stats
                     });
@@ -3281,7 +3276,7 @@
                             <span class="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full">${bookTopics.length} chapters, ${totalQuestionsForBook} MCQs</span>
                         </div>
                         <button onclick="downloadSingleSEOPage('${bookSlug}')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm transition flex items-center gap-1">
-                            <i class="fas fa-download"></i> Download
+                            <i class="fas fa-download"></i> Download All (${bookTopics.length + 1} pages)
                         </button>
                     </div>
                 `;
@@ -3306,7 +3301,7 @@
             downloadAllBtn.classList.remove('hidden');
             
             logContent.innerHTML += '<div class="text-green-600 font-bold">🎉 Successfully generated ' + seoGeneratedFiles.length + ' SEO pages!</div>';
-            logContent.innerHTML += '<div class="text-blue-600">📥 Click "Download" next to each book to save the complete folder.</div>';
+            logContent.innerHTML += '<div class="text-blue-600">📥 Click "Download All" next to each book to save all pages (index + chapters).</div>';
             logEl.scrollTop = logEl.scrollHeight;
             
             progressBar.style.width = '100%';
