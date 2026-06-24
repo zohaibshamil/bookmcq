@@ -2790,8 +2790,6 @@
         } catch(e) {
             console.log('Could not fetch template.html, using fallback');
         }
-        
-        // Fallback template - minimal but functional
         return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2801,18 +2799,28 @@
     <meta name="theme-color" content="#7c3aed">
     <title>BookMCQ</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #667eea, #764ba2); margin: 0; padding: 20px; min-height: 100vh; }
         .container { max-width: 1000px; margin: auto; }
         .card { background: white; border-radius: 16px; padding: 20px; margin-top: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        .chapter { display: flex; justify-content: space-between; padding: 15px; margin: 10px 0; border-radius: 12px; background: #f3f4f6; cursor: pointer; transition: 0.2s; }
+        .chapter { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; margin: 10px 0; border-radius: 12px; background: #f3f4f6; cursor: pointer; transition: 0.2s; border-left: 4px solid #7c3aed; }
         .chapter:hover { background: #e0e7ff; transform: translateX(5px); }
-        .title { font-weight: bold; }
+        .title { font-weight: bold; font-size: 16px; }
         .count { color: #6b7280; font-size: 13px; }
-        .difficulty-tag { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; margin-right: 5px; }
+        .difficulty-tag { display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; margin-right: 8px; }
         .easy { background: #dcfce7; color: #166534; }
         .medium { background: #fef3c7; color: #92400e; }
         .hard { background: #fee2e2; color: #991b1b; }
+        .start-btn { display: inline-block; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 14px 40px; border-radius: 30px; font-weight: bold; font-size: 18px; text-decoration: none; margin-top: 20px; transition: 0.3s; border: none; cursor: pointer; }
+        .start-btn:hover { transform: scale(1.05); box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4); }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 12px; margin: 16px 0; }
+        .stat-card { background: #f8fafc; padding: 12px; border-radius: 10px; text-align: center; border: 1px solid #e2e8f0; }
+        .stat-number { font-size: 22px; font-weight: 700; color: #1e293b; }
+        .stat-label { font-size: 11px; color: #64748b; margin-top: 2px; }
+        .back-link { display: inline-block; margin-bottom: 16px; color: #7c3aed; text-decoration: none; font-size: 14px; }
+        .back-link:hover { text-decoration: underline; }
+        .category-badge { background: #e0e7ff; color: #4338ca; padding: 2px 12px; border-radius: 20px; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -2902,7 +2910,6 @@
         bookListEl.innerHTML = '<div class="text-gray-500 text-sm">Loading books...</div>';
         
         try {
-            // Fetch books with their slugs
             const { data: books, error: booksError } = await _supabase
                 .from('books')
                 .select('id, title, slug, author, category, created_at')
@@ -2910,7 +2917,6 @@
             
             if (booksError) throw booksError;
             
-            // Fetch topics with book slugs
             const { data: topics, error: topicsError } = await _supabase
                 .from('topics')
                 .select('id, name, slug, book_id, chapter_number, created_at, books(title, slug)')
@@ -2919,19 +2925,15 @@
             
             if (topicsError) throw topicsError;
             
-            // Fetch all questions with difficulty
             const allQuestions = await fetchAllQuestions();
             
-            // Count questions per topic and by difficulty
             const questionCountByTopic = {};
             const difficultyCountByTopic = {};
             
             allQuestions.forEach(q => {
                 if (q.topic_id) {
-                    // Total count
                     questionCountByTopic[q.topic_id] = (questionCountByTopic[q.topic_id] || 0) + 1;
                     
-                    // Difficulty breakdown
                     if (!difficultyCountByTopic[q.topic_id]) {
                         difficultyCountByTopic[q.topic_id] = { easy: 0, medium: 0, hard: 0 };
                     }
@@ -2942,7 +2944,6 @@
                 }
             });
             
-            // Group topics by book
             const topicsByBook = {};
             topics.forEach(topic => {
                 if (topic.books && topic.books.slug) {
@@ -2980,14 +2981,13 @@
                     return sum + (questionCountByTopic[topic.id] || 0);
                 }, 0);
                 
-                // Sort topics by chapter number
                 const sortedTopics = [...bookTopics].sort((a, b) => {
                     const aNum = a.chapter_number || 999;
                     const bNum = b.chapter_number || 999;
                     return aNum - bNum;
                 });
                 
-                // ============ GENERATE BOOK INDEX PAGE ============
+                // Book Index Page
                 let bookIndexHtml = generateBookIndexPage(book, sortedTopics, questionCountByTopic, totalQuestionsForBook);
                 allGeneratedFiles.push({
                     name: `${slug}/index.html`,
@@ -3000,7 +3000,7 @@
                     isBook: true
                 });
                 
-                // ============ GENERATE CHAPTER PAGES ============
+                // Chapter Pages
                 sortedTopics.forEach((topic, idx) => {
                     const chapterSlug = topic.slug || createSlug(topic.name);
                     const mcqCount = questionCountByTopic[topic.id] || 0;
@@ -3020,7 +3020,6 @@
                     });
                 });
                 
-                // Add to book list for download
                 bookListHtml += `
                     <div class="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-200 hover:border-purple-300 transition">
                         <div class="flex items-center gap-3">
@@ -3045,7 +3044,6 @@
                 logEl.scrollTop = logEl.scrollHeight;
             });
             
-            // Store all generated files
             window.seoAllFiles = allGeneratedFiles;
             seoGeneratedFiles = allGeneratedFiles;
             
@@ -3077,13 +3075,11 @@
         const bookTitle = book.title;
         const bookAuthor = book.author || '';
         const bookCategory = book.category || '';
-        const lastmod = book.created_at ? new Date(book.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
         
         let chaptersHtml = '';
         topics.forEach((topic, idx) => {
             const chapterSlug = topic.slug || createSlug(topic.name);
             const mcqCount = questionCountByTopic[topic.id] || 0;
-            const displayName = topic.chapter_number ? `${topic.chapter_number}. ${topic.name}` : topic.name;
             const chapterNum = topic.chapter_number || (idx + 1);
             
             chaptersHtml += `
@@ -3129,6 +3125,7 @@
         .stat-label { font-size: 12px; color: #64748b; margin-top: 2px; }
         .header-icon { background: linear-gradient(135deg, #667eea, #764ba2); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
         .header-icon i { font-size: 28px; color: white; }
+        .category-badge { background: #e0e7ff; color: #4338ca; padding: 2px 12px; border-radius: 20px; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -3139,7 +3136,7 @@
         </div>
         <h1 style="margin: 0 0 8px 0; font-size: 28px;">${escapeHtml(bookTitle)}</h1>
         ${bookAuthor ? `<p style="color: #4b5563; margin-bottom: 8px;"><i class="fas fa-user"></i> ${escapeHtml(bookAuthor)}</p>` : ''}
-        ${bookCategory ? `<p style="color: #6b7280; font-size: 14px; margin-bottom: 12px;"><span class="category-badge" style="background: #e0e7ff; color: #4338ca; padding: 2px 12px; border-radius: 20px; font-size: 12px;">${escapeHtml(bookCategory)}</span></p>` : ''}
+        ${bookCategory ? `<p style="color: #6b7280; font-size: 14px; margin-bottom: 12px;"><span class="category-badge">${escapeHtml(bookCategory)}</span></p>` : ''}
         <p style="color: #374151; line-height: 1.6;">
             Practice chapter-wise MCQs for <strong>${escapeHtml(bookTitle)}</strong>.
             This book contains <strong>${topics.length} chapters</strong> and <strong>${totalQuestions} questions</strong>.
@@ -3184,7 +3181,6 @@
         const topicName = topic.name;
         const chapterNum = topic.chapter_number || '';
         const displayTitle = chapterNum ? `Chapter ${chapterNum}: ${topicName}` : topicName;
-        const lastmod = topic.created_at ? new Date(topic.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
         
         const easyCount = difficultyCount.easy || 0;
         const mediumCount = difficultyCount.medium || 0;
@@ -3295,8 +3291,6 @@
             return;
         }
         
-        // For simplicity, download each file individually
-        // In production, you'd want to use JSZip for folder download
         showToast(`📥 Downloading ${bookFiles.length} pages for ${slug}...`);
         
         bookFiles.forEach((file, index) => {
@@ -3372,7 +3366,6 @@
             generateSEOPages();
         }, 500);
     }
-
     function setupEventListeners() {
         document.getElementById('loginBtn').addEventListener('click', handleLogin);
         document.getElementById('signupBtn').addEventListener('click', handleSignup);
