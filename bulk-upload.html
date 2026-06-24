@@ -4,13 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="robots" content="noindex, nofollow">
-    <link rel="canonical" href="https://bookmcq.com/bulk-upload">
+<link rel="canonical" href="https://bookmcq.com/bulk-upload">
     <title>Bulk Upload - BookMCQ</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     
+    <!-- MathJax for rendering mathematical equations -->
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async></script>
     
     <style>
@@ -26,6 +27,7 @@
         .step-circle { transition: all 0.2s ease; }
         .step-card:hover .step-circle { transform: scale(1.1); }
         
+        /* Math preview styles */
         .math-preview {
             background: #f8f9fa;
             border-left: 4px solid #8b5cf6;
@@ -40,33 +42,28 @@
             margin-bottom: 5px;
             font-weight: 600;
         }
-        .math-rendered { line-height: 1.6; }
-        .math-rendered mjx-container { display: inline-block; margin: 0 2px; }
+        .math-rendered {
+            line-height: 1.6;
+        }
+        .math-rendered mjx-container {
+            display: inline-block;
+            margin: 0 2px;
+        }
         
+        /* Progress bar styles */
         .progress-container {
             background: #e5e7eb;
             border-radius: 10px;
-            height: 24px;
+            height: 20px;
             overflow: hidden;
             margin: 15px 0;
-            position: relative;
         }
         .progress-bar-fill {
-            background: linear-gradient(90deg, #8b5cf6, #6d28d9);
+            background: linear-gradient(90deg, #10b981, #059669);
             height: 100%;
             width: 0%;
-            transition: width 0.5s ease;
+            transition: width 0.3s ease;
             border-radius: 10px;
-        }
-        .progress-text {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 12px;
-            font-weight: 700;
-            color: #1e293b;
-            text-shadow: 0 1px 2px rgba(255,255,255,0.5);
         }
         .status-badge {
             display: inline-block;
@@ -79,35 +76,6 @@
         .status-error { background: #fee2e2; color: #991b1b; }
         .status-warning { background: #fed7aa; color: #92400e; }
         .status-info { background: #dbeafe; color: #1e40af; }
-        
-        .speed-indicator {
-            font-size: 13px;
-            color: #64748b;
-            padding: 8px 12px;
-            background: #f1f5f9;
-            border-radius: 8px;
-            display: inline-block;
-        }
-        .speed-indicator .highlight { color: #7c3aed; font-weight: 700; }
-        
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 9999;
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-weight: 600;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            display: none;
-            max-width: 90%;
-            text-align: center;
-        }
-        .toast-success { background: #10b981; color: white; }
-        .toast-error { background: #ef4444; color: white; }
-        .toast-info { background: #3b82f6; color: white; }
-        .toast-warning { background: #f59e0b; color: white; }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -117,16 +85,13 @@
     <!-- Header -->
     <div class="text-center mb-8">
         <div class="inline-flex items-center gap-2 bg-white/20 backdrop-blur rounded-full px-6 py-2 mb-4">
-            <i class="fas fa-bolt text-yellow-300"></i>
-            <span class="text-white font-semibold">BookMCQ Fast Bulk Upload</span>
+            <i class="fas fa-cloud-upload-alt text-white"></i>
+            <span class="text-white font-semibold">BookMCQ Bulk Upload</span>
         </div>
-        <h1 class="text-3xl md:text-4xl font-bold text-white">🚀 Fast Bulk Upload</h1>
-        <p class="text-white/70 mt-2">Upload hundreds of MCQs in <strong>seconds</strong> using batch processing</p>
+        <h1 class="text-3xl md:text-4xl font-bold text-white">📤 Bulk Upload Questions</h1>
+        <p class="text-white/70 mt-2">Upload hundreds of MCQs at once using CSV or Excel files</p>
         <p class="text-white/50 text-sm mt-1">Supports LaTeX math: \( \sqrt{x} \) or $$ \frac{a}{b} $$</p>
     </div>
-
-    <!-- Toast Notification -->
-    <div id="toast" class="toast"></div>
 
     <!-- Main Card -->
     <div class="upload-card p-6 md:p-8 shadow-xl">
@@ -138,7 +103,7 @@
             </a>
         </div>
 
-        <!-- Step 1: Select Book -->
+        <!-- Step 1: Select Book - Modern Card -->
         <div class="step-card bg-gradient-to-r from-blue-50 to-indigo-50 p-5 rounded-2xl mb-6 border border-blue-100 transition hover:shadow-md">
             <div class="flex items-center gap-4 mb-4">
                 <div class="step-circle w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-md">1</div>
@@ -147,11 +112,11 @@
                 <i class="fas fa-book text-blue-400 text-2xl"></i>
             </div>
             <select id="bookSelect" class="w-full p-3 border-2 border-blue-200 rounded-xl bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition">
-                <option value="">Loading books...</option>
+                <option>Loading books...</option>
             </select>
         </div>
 
-        <!-- Step 2: Select Topic -->
+        <!-- Step 2: Select Topic - Modern Card -->
         <div class="step-card bg-gradient-to-r from-green-50 to-emerald-50 p-5 rounded-2xl mb-6 border border-green-100 transition hover:shadow-md">
             <div class="flex items-center gap-4 mb-4">
                 <div class="step-circle w-10 h-10 bg-green-600 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-md">2</div>
@@ -160,11 +125,11 @@
                 <i class="fas fa-tags text-green-400 text-2xl"></i>
             </div>
             <select id="topicSelect" class="w-full p-3 border-2 border-green-200 rounded-xl bg-white focus:border-green-500 focus:ring-2 focus:ring-green-200 transition">
-                <option value="">Select book first</option>
+                <option>Select book first</option>
             </select>
         </div>
 
-        <!-- Step 3: Download Template -->
+        <!-- Step 3: Download Template - Modern Card -->
         <div class="step-card bg-gradient-to-r from-yellow-50 to-amber-50 p-5 rounded-2xl mb-6 border border-yellow-100 transition hover:shadow-md">
             <div class="flex items-center gap-4 mb-4">
                 <div class="step-circle w-10 h-10 bg-yellow-600 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-md">3</div>
@@ -174,13 +139,13 @@
             </div>
             <p class="text-sm text-gray-600 mb-3">Download the template, fill with your questions, then upload back.</p>
             <p class="text-xs text-purple-600 mb-3">💡 Use LaTeX for math: \( \sqrt{x} \), \( \frac{a}{b} \), \( \lim_{x \to 0} \), etc.</p>
-            <p class="text-xs text-blue-600 mb-3">📌 <strong>Important:</strong> For correct_answer, use A, B, C, or D. Example: A, B, C, or D</p>
+            <p class="text-xs text-blue-600 mb-3">📌 <strong>Important:</strong> For correct_answer, use A, B, C, or D (not numbers). Example: A, B, C, or D</p>
             <button id="downloadBtn" class="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded-xl inline-flex items-center gap-2 transition transform hover:scale-105 shadow-md">
                 <i class="fas fa-download"></i> Download CSV Template
             </button>
         </div>
 
-        <!-- Step 4: Upload File -->
+        <!-- Step 4: Upload File - Modern Upload Zone -->
         <div class="step-card bg-gradient-to-r from-purple-50 to-pink-50 p-5 rounded-2xl mb-6 border border-purple-100 transition hover:shadow-md">
             <div class="flex items-center gap-4 mb-4">
                 <div class="step-circle w-10 h-10 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-md">4</div>
@@ -189,6 +154,7 @@
                 <i class="fas fa-cloud-upload-alt text-purple-400 text-2xl"></i>
             </div>
             
+            <!-- Modern Upload Zone -->
             <div id="uploadZone" class="upload-zone rounded-xl p-10 text-center transition">
                 <i class="fas fa-cloud-upload-alt text-5xl text-purple-400 mb-4"></i>
                 <p class="text-gray-600 font-medium">Click or drag & drop your file here</p>
@@ -199,34 +165,30 @@
                 </button>
             </div>
             
-            <!-- Progress Section -->
+            <!-- Progress Indicator Section -->
             <div id="progressSection" style="display: none;" class="mt-4">
-                <div class="bg-white rounded-xl p-4 shadow-sm border border-purple-200">
+                <div class="bg-white rounded-xl p-4 shadow-sm">
                     <div class="flex justify-between items-center mb-2">
                         <span class="text-sm font-semibold text-gray-700">
-                            <i class="fas fa-spinner fa-spin mr-2 text-purple-600"></i>Uploading Questions...
+                            <i class="fas fa-spinner fa-spin mr-2"></i>Uploading Questions...
                         </span>
-                        <span class="speed-indicator">
-                            ⚡ <span id="uploadSpeed" class="highlight">0</span> questions/sec
-                        </span>
+                        <span id="progressPercent" class="text-sm font-bold text-green-600">0%</span>
                     </div>
                     <div class="progress-container">
                         <div id="progressFill" class="progress-bar-fill"></div>
-                        <span class="progress-text" id="progressPercent">0%</span>
                     </div>
-                    <div class="flex justify-between text-xs text-gray-500 mt-1">
-                        <span>✅ <span id="uploadedCount">0</span> uploaded</span>
-                        <span>📊 <span id="totalCount">0</span> total</span>
-                        <span>❌ <span id="failedCount">0</span> failed</span>
-                        <span>⏱️ <span id="timeElapsed">0s</span></span>
+                    <div class="flex justify-between text-xs text-gray-500 mt-2">
+                        <span id="uploadedCount">0</span>
+                        <span id="totalCount">0</span>
                     </div>
                     <div id="statusMessages" class="mt-3 max-h-40 overflow-y-auto text-xs space-y-1">
+                        <!-- Status messages will appear here -->
                     </div>
                 </div>
             </div>
             
-            <button id="uploadBtn" style="display: none;" class="mt-4 w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold py-3 rounded-xl inline-flex items-center justify-center gap-2 transition transform hover:scale-[1.02] shadow-lg">
-                <i class="fas fa-rocket"></i> Upload to Database (Fast Mode)
+            <button id="uploadBtn" style="display: none;" class="mt-4 w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold py-3 rounded-xl inline-flex items-center justify-center gap-2 transition transform hover:scale-[1.02] shadow-lg">
+                <i class="fas fa-upload"></i> Upload to Database
             </button>
         </div>
         
@@ -243,706 +205,559 @@
 
 <script>
     // ============================================
-    // 1. SECURE KEY VERIFICATION
+    // 1. SECURE KEY VERIFICATION (No URL Parameter)
     // ============================================
-    (function verifyAccess() {
-        try {
-            const SECRET_KEY = 'BookMCQ_Admin_Secure_Key_2024';
-            const storedKey = sessionStorage.getItem('bookmcq_bulk_access');
-            
-            if (storedKey !== SECRET_KEY) {
-                window.location.href = 'admin.html';
-                return;
-            }
-            sessionStorage.removeItem('bookmcq_bulk_access');
-        } catch(e) {
-            window.location.href = 'admin.html';
-        }
-    })();
+    const SECRET_KEY = 'BookMCQ_Admin_Secure_Key_2024';
 
-    // ============================================
-    // 2. TOAST NOTIFICATION
-    // ============================================
-    function showToast(message, type) {
-        var toast = document.getElementById('toast');
-        if (!toast) return;
+    function verifyAccess() {
+        const storedKey = sessionStorage.getItem('bookmcq_bulk_access');
         
-        toast.textContent = message;
-        toast.className = 'toast';
-        
-        if (type === 'success') toast.classList.add('toast-success');
-        else if (type === 'error') toast.classList.add('toast-error');
-        else if (type === 'warning') toast.classList.add('toast-warning');
-        else toast.classList.add('toast-info');
-        
-        toast.style.display = 'block';
-        
-        setTimeout(function() {
-            toast.style.display = 'none';
-        }, 5000);
+        if (storedKey === SECRET_KEY) {
+            sessionStorage.removeItem('bookmcq_bulk_access');
+            return true;
+        } else {
+            window.location.href = 'admin.html';
+            return false;
+        }
+    }
+
+    if (!verifyAccess()) {
+        throw new Error("Access Denied");
     }
 
     // ============================================
-    // 3. HELPERS
+    // 2. LOGGING FUNCTION (Kept for console, removed from UI)
+    // ============================================
+    function addLog(msg, type = 'info') {
+        console.log(`[${new Date().toLocaleTimeString()}] ${msg}`);
+    }
+    
+    addLog('Script started', 'info');
+    addLog('✅ Key verified', 'success');
+    
+    // ============================================
+    // 3. SAFE STRING HELPER
     // ============================================
     function safeString(value) {
         if (value === null || value === undefined) return '';
         return String(value);
     }
-    
-    function escapeHtml(str) {
-        if (!str) return '';
-        return String(str).replace(/[&<>]/g, function(m) {
-            if (m === '&') return '&amp;';
-            if (m === '<') return '&lt;';
-            if (m === '>') return '&gt;';
-            return m;
-        });
-    }
-    
+        // ============================================
+    // 3. A. NORMALIZE DIFFICULTY TO LOWERCASE
+    // ============================================
     function normalizeDifficulty(value) {
-        var str = safeString(value).toLowerCase().trim();
-        if (str === 'easy' || str === 'medium' || str === 'hard') return str;
+        const str = safeString(value).toLowerCase().trim();
+        // Valid difficulties: easy, medium, hard
+        if (str === 'easy' || str === 'medium' || str === 'hard') {
+            return str;
+        }
+        // Default to 'medium' if invalid
+        console.warn(`Invalid difficulty value: "${value}", defaulting to "medium"`);
         return 'medium';
     }
-    
+    // ============================================
+    // 4. CONVERT LETTER ANSWER TO NUMBER
+    // ============================================
     function convertAnswerToNumber(answer) {
-        var str = safeString(answer).toUpperCase().trim();
+        const str = safeString(answer).toUpperCase().trim();
+        
+        // Handle letter inputs (A, B, C, D)
         if (str === 'A') return 0;
         if (str === 'B') return 1;
         if (str === 'C') return 2;
         if (str === 'D') return 3;
+        
+        // Handle number inputs (0,1,2,3) for backward compatibility
         if (str === '0') return 0;
         if (str === '1') return 1;
         if (str === '2') return 2;
         if (str === '3') return 3;
+        
+        // Default to 0 if invalid
+        console.warn(`Invalid correct_answer value: "${answer}", defaulting to A (0)`);
         return 0;
     }
     
     function safeProcessMathContent(text) {
-        var str = safeString(text);
-        if (str.includes('\\(') || str.includes('\\[') || str.includes('$$')) return str;
+        const str = safeString(text);
+        if (str.includes('\\(') || str.includes('\\[') || str.includes('$$')) {
+            return str;
+        }
         return str;
     }
-
-    // ============================================
-    // 4. SUPABASE INIT
-    // ============================================
-    var SUPABASE_URL = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
-    var SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
-    var supabase = null;
-    var currentQuestions = [];
-    var isUploading = false;
-    var uploadStartTime = 0;
-    var uploadedCount = 0;
-    var failedCount = 0;
-
-    try {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    } catch(e) {
-        console.error('Supabase init error:', e);
-        showToast('Failed to connect to database. Please refresh and try again.', 'error');
-    }
-
-    // ============================================
-    // 5. LOAD BOOKS & TOPICS
-    // ============================================
-    async function loadBooks() {
-        var select = document.getElementById('bookSelect');
-        if (!select) return;
-        
-        try {
-            if (!supabase) throw new Error('Supabase not initialized');
-            
-            var result = await supabase.from('books').select('id, title').order('title');
-            if (result.error) throw result.error;
-            
-            var data = result.data || [];
-            select.innerHTML = '<option value="">-- Select a Book --</option>';
-            
-            data.forEach(function(book) {
-                var option = document.createElement('option');
-                option.value = book.id;
-                option.textContent = book.title;
-                select.appendChild(option);
-            });
-            
-            if (data.length === 0) {
-                select.innerHTML = '<option value="">-- No books available --</option>';
-                showToast('No books found. Please add a book first.', 'warning');
+    
+    // Function to render math in element
+    async function renderMathInElement(element) {
+        if (window.MathJax && element) {
+            try {
+                await MathJax.typesetPromise([element]);
+            } catch(e) {
+                console.log('MathJax error:', e);
             }
-        } catch(e) {
-            console.error('Error loading books:', e);
-            select.innerHTML = '<option value="">-- Error loading books --</option>';
-            showToast('Failed to load books: ' + e.message, 'error');
         }
     }
-
-    async function loadTopics() {
-        var bookId = document.getElementById('bookSelect').value;
-        var select = document.getElementById('topicSelect');
-        if (!select) return;
+    
+    // Function to update progress UI
+    function updateProgress(current, total, statusMessage) {
+        const percent = Math.round((current / total) * 100);
+        const progressFill = document.getElementById('progressFill');
+        const progressPercent = document.getElementById('progressPercent');
+        const uploadedCount = document.getElementById('uploadedCount');
+        const totalCount = document.getElementById('totalCount');
+        const statusMessages = document.getElementById('statusMessages');
         
-        if (!bookId) {
-            select.innerHTML = '<option value="">Select book first</option>';
+        if (progressFill) progressFill.style.width = `${percent}%`;
+        if (progressPercent) progressPercent.textContent = `${percent}%`;
+        if (uploadedCount) uploadedCount.textContent = current;
+        if (totalCount) totalCount.textContent = total;
+        
+        if (statusMessage && statusMessages) {
+            const timestamp = new Date().toLocaleTimeString();
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'text-gray-600';
+            messageDiv.innerHTML = `[${timestamp}] ${statusMessage}`;
+            statusMessages.appendChild(messageDiv);
+            statusMessages.scrollTop = statusMessages.scrollHeight;
+        }
+    }
+    
+    // ============================================
+    // 5. SUPABASE & CORE LOGIC
+    // ============================================
+    function checkLibraries() {
+        if (typeof window.supabase !== 'undefined') {
+            addLog('✅ Supabase detected', 'success');
+            return true;
+        }
+        addLog('⏳ Waiting for Supabase...', 'info');
+        return false;
+    }
+    
+    function init() {
+        if (!checkLibraries()) {
+            setTimeout(init, 100);
             return;
         }
         
-        select.innerHTML = '<option value="">Loading topics...</option>';
+        const SUPABASE_URL = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
         
-        try {
-            if (!supabase) throw new Error('Supabase not initialized');
-            
-            var result = await supabase.from('topics')
-                .select('id, name, chapter_number')
-                .eq('book_id', parseInt(bookId))
-                .order('chapter_number');
-            
-            if (result.error) throw result.error;
-            
-            var data = result.data || [];
-            select.innerHTML = '<option value="">-- Select a Topic --</option>';
-            
-            data.forEach(function(topic) {
-                var option = document.createElement('option');
-                option.value = topic.id;
-                var display = topic.chapter_number ? 'Ch ' + topic.chapter_number + ': ' + topic.name : topic.name;
-                option.textContent = display;
-                select.appendChild(option);
-            });
-            
-            if (data.length === 0) {
-                select.innerHTML = '<option value="">-- No topics available --</option>';
-                showToast('No topics found for this book. Please add a topic first.', 'warning');
+        addLog('Creating Supabase client...', 'info');
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        addLog('✅ Supabase client ready', 'success');
+        
+        let currentQuestions = [];
+        
+        async function loadBooks() {
+            addLog('Fetching books from database...', 'info');
+            try {
+                const { data, error } = await supabase.from('books').select('id, title').order('title');
+                if (error) throw error;
+                
+                addLog(`✅ Found ${data.length} books`, 'success');
+                const select = document.getElementById('bookSelect');
+                select.innerHTML = '<option value="">-- Select a Book --</option>';
+                data.forEach(book => {
+                    select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+                });
+            } catch(e) {
+                addLog(`❌ Error: ${e.message}`, 'error');
             }
-        } catch(e) {
-            console.error('Error loading topics:', e);
-            select.innerHTML = '<option value="">-- Error loading topics --</option>';
-            showToast('Failed to load topics: ' + e.message, 'error');
         }
-    }
-
-    // ============================================
-    // 6. DOWNLOAD TEMPLATE
-    // ============================================
-    function downloadTemplate() {
-        try {
-            var headers = ['question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'difficulty', 'explanation'];
-            var example = [
-                'What does \( \\text{typeof null} \) return?',
-                'null',
-                'undefined',
-                'object',
-                'number',
-                'C',
-                'easy',
-                '\( \\text{typeof null} \) returns "object" due to a historical bug in JavaScript'
-            ];
+        
+        async function loadTopics() {
+            const bookId = document.getElementById('bookSelect').value;
+            if (!bookId) {
+                document.getElementById('topicSelect').innerHTML = '<option>Select book first</option>';
+                return;
+            }
             
-            var csvRows = [headers.join(',')];
-            var escapedExample = example.map(function(cell) {
-                return '"' + safeString(cell).replace(/"/g, '""') + '"';
-            });
-            csvRows.push(escapedExample.join(','));
+            addLog(`Loading topics for book ${bookId}...`, 'info');
+            try {
+                const { data, error } = await supabase.from('topics')
+                    .select('id, name, chapter_number')
+                    .eq('book_id', parseInt(bookId))
+                    .order('chapter_number');
+                
+                if (error) throw error;
+                
+                addLog(`✅ Found ${data.length} topics`, 'success');
+                const select = document.getElementById('topicSelect');
+                select.innerHTML = '<option value="">-- Select a Topic --</option>';
+                data.forEach(topic => {
+                    const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
+                    select.innerHTML += `<option value="${topic.id}">${escapeHtml(display)}</option>`;
+                });
+            } catch(e) {
+                addLog(`❌ Error: ${e.message}`, 'error');
+            }
+        }
+        
+        function downloadTemplate() {
+            addLog('Generating CSV template...', 'info');
+            const headers = ['question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'difficulty', 'explanation'];
+            // Now using letter 'C' instead of number 2 for correct_answer
+            const example = ['What does \( \text{typeof null} \) return?', 'null', 'undefined', 'object', 'number', 'C', 'easy', '\( \text{typeof null} \) returns "object" due to a historical bug in JavaScript'];
+            const csv = [headers.join(','), example.map(cell => `"${safeString(cell).replace(/"/g, '""')}"`).join(',')].join('\n');
             
-            var csv = csvRows.join('\n');
-            var blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
-            var url = URL.createObjectURL(blob);
-            var a = document.createElement('a');
+            const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
             a.href = url;
             a.download = 'bookmcq_template.csv';
-            document.body.appendChild(a);
             a.click();
-            document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            
-            showToast('Template downloaded successfully!', 'success');
-        } catch(e) {
-            console.error('Download error:', e);
-            showToast('Failed to download template: ' + e.message, 'error');
+            addLog('✅ Template downloaded', 'success');
         }
-    }
-
-    // ============================================
-    // 7. PROCESS FILE
-    // ============================================
-    function processFile(file) {
-        try {
-            if (!file) {
-                showToast('No file selected', 'error');
-                return;
-            }
-            
-            var validExtensions = ['.csv', '.xlsx', '.xls'];
-            var ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
-            if (validExtensions.indexOf(ext) === -1) {
-                showToast('Please upload a CSV or Excel file (.csv, .xlsx, .xls)', 'error');
-                return;
-            }
-            
-            var reader = new FileReader();
-            
+        
+        function processFile(file) {
+            addLog(`Processing: ${file.name}`, 'info');
+            const reader = new FileReader();
             reader.onload = function(e) {
                 try {
-                    var data = new Uint8Array(e.target.result);
-                    var workbook = XLSX.read(data, { type: 'array' });
-                    var sheet = workbook.Sheets[workbook.SheetNames[0]];
-                    var rows = XLSX.utils.sheet_to_json(sheet);
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(sheet);
                     
-                    if (!rows || rows.length === 0) {
-                        showToast('No data found in file', 'error');
-                        return;
+                    addLog(`✅ Loaded ${rows.length} questions`, 'success');
+                    if (rows.length === 0) return;
+                    
+                    // Safe process each row and convert correct_answer from letter to number
+// Safe process each row and convert correct_answer from letter to number
+currentQuestions = rows.map(row => {
+    const processed = {};
+    Object.keys(row).forEach(key => {
+        processed[key] = safeString(row[key]);
+    });
+    // Convert the correct_answer from letter (A,B,C,D) to number (0,1,2,3)
+    const originalAnswer = processed.correct_answer;
+    processed.correct_answer_numeric = convertAnswerToNumber(originalAnswer);
+    if (originalAnswer !== processed.correct_answer_numeric.toString() && !['0','1','2','3'].includes(originalAnswer)) {
+        addLog(`⚠️ Converted correct_answer from "${originalAnswer}" to "${processed.correct_answer_numeric}" (${String.fromCharCode(65+processed.correct_answer_numeric)})`, 'warning');
+    }
+    // Normalize difficulty to lowercase
+    const originalDifficulty = processed.difficulty;
+    processed.difficulty = normalizeDifficulty(originalDifficulty);
+    if (originalDifficulty !== processed.difficulty) {
+        addLog(`⚠️ Converted difficulty from "${originalDifficulty}" to "${processed.difficulty}"`, 'warning');
+    }
+    return processed;
+});
+                    
+                    const previewDiv = document.getElementById('previewDiv');
+                    const uploadBtn = document.getElementById('uploadBtn');
+                    const mathPreviewDiv = document.getElementById('mathPreviewDiv');
+                    const mathPreviewContent = document.getElementById('mathPreviewContent');
+                    
+                    let html = '<h3 class="font-bold text-gray-700 mb-2">📋 Preview (first 3 rows):</h3>';
+                    html += '<div class="preview-table"><table>';
+                    const headers = Object.keys(currentQuestions[0]).filter(h => h !== 'correct_answer_numeric');
+                    html += '<thead><tr style="background:#f0fdf4;">' + headers.map(h => `<th style="padding:8px; border:1px solid #d1d5db; text-align:left; background:#dcfce7;">${escapeHtml(h)}</th>`).join('') + '</thead><tbody>';
+                    for (let i = 0; i < Math.min(3, currentQuestions.length); i++) {
+                        html += '<tr>' + headers.map(h => {
+                            let value = safeString(currentQuestions[i][h]);
+                            if (h === 'correct_answer') {
+                                // Show the letter version in preview
+                                const numVal = currentQuestions[i].correct_answer_numeric;
+                                value = String.fromCharCode(65 + numVal);
+                            }
+                            return `<td style="padding:8px; border:1px solid #d1d5db;">${escapeHtml(value.substring(0, 50))}</td>`;
+                        }).join('') + '</tr>';
+                    }
+                    html += '</tbody></table></div>';
+                    html += `<p class="text-green-600 text-sm mt-2"><i class="fas fa-check-circle"></i> ✅ ${currentQuestions.length} questions ready to upload</p>`;
+                    
+                    // Show conversion warning if any answers were converted
+                    const convertedCount = currentQuestions.filter(q => {
+                        const orig = safeString(q.correct_answer);
+                        return !['0','1','2','3','A','B','C','D','a','b','c','d'].includes(orig) || (orig.length > 1);
+                    }).length;
+                    if (convertedCount > 0) {
+                        html += `<p class="text-yellow-600 text-sm mt-1"><i class="fas fa-exclamation-triangle"></i> ⚠️ ${convertedCount} question(s) had invalid correct_answer values and were fixed to defaults.</p>`;
                     }
                     
-                    currentQuestions = rows.map(function(row) {
-                        var processed = {};
-                        Object.keys(row).forEach(function(key) {
-                            processed[key] = safeString(row[key]);
-                        });
-                        processed.correct_answer_numeric = convertAnswerToNumber(processed.correct_answer);
-                        processed.difficulty = normalizeDifficulty(processed.difficulty);
-                        return processed;
-                    });
+                    previewDiv.innerHTML = html;
+                    previewDiv.style.display = 'block';
+                    uploadBtn.style.display = 'inline-flex';
                     
-                    showToast('Loaded ' + currentQuestions.length + ' questions from file', 'success');
-                    displayPreview(currentQuestions);
+                    // Show math preview for first question
+                    if (currentQuestions.length > 0) {
+                        const firstQuestion = currentQuestions[0];
+                        const questionText = safeString(firstQuestion.question_text);
+                        const processedQuestion = safeProcessMathContent(questionText);
+                        mathPreviewContent.innerHTML = `
+                            <div class="mb-2"><strong>Question:</strong> <span class="math-content">${escapeHtml(processedQuestion)}</span></div>
+                            <div class="text-sm text-gray-500 mt-2">Correct Answer: ${String.fromCharCode(65 + firstQuestion.correct_answer_numeric)}</div>
+                        `;
+                        mathPreviewDiv.classList.remove('hidden');
+                        renderMathInElement(mathPreviewContent);
+                    } else {
+                        mathPreviewDiv.classList.add('hidden');
+                    }
                     
-                } catch(err) {
-                    console.error('File parse error:', err);
-                    showToast('Error parsing file: ' + err.message, 'error');
+                } catch(e) {
+                    addLog(`❌ Parse error: ${e.message}`, 'error');
+                    alert('Error parsing file: ' + e.message);
                 }
             };
-            
-            reader.onerror = function() {
-                showToast('Error reading file', 'error');
-            };
-            
             reader.readAsArrayBuffer(file);
-            
-        } catch(e) {
-            console.error('Process file error:', e);
-            showToast('Error processing file: ' + e.message, 'error');
         }
-    }
-
-    function displayPreview(questions) {
-        try {
-            var previewDiv = document.getElementById('previewDiv');
-            var uploadBtn = document.getElementById('uploadBtn');
-            var mathPreviewDiv = document.getElementById('mathPreviewDiv');
-            var mathPreviewContent = document.getElementById('mathPreviewContent');
+        
+        async function uploadToDatabase() {
+            const bookId = document.getElementById('bookSelect').value;
+            const topicId = document.getElementById('topicSelect').value;
             
-            if (!previewDiv || !uploadBtn) return;
-            
-            var html = '<h3 class="font-bold text-gray-700 mb-2">📋 Preview (first 3 rows):</h3>';
-            html += '<div class="preview-table"><table>';
-            
-            var headers = Object.keys(questions[0]).filter(function(h) { 
-                return h !== 'correct_answer_numeric'; 
-            });
-            
-            html += '<thead><tr style="background:#f0fdf4;">';
-            headers.forEach(function(h) {
-                html += '<th style="padding:8px; border:1px solid #d1d5db; text-align:left; background:#dcfce7;">' + escapeHtml(h) + '</th>';
-            });
-            html += '</tr></thead><tbody>';
-            
-            var maxRows = Math.min(3, questions.length);
-            for (var i = 0; i < maxRows; i++) {
-                html += '<tr>';
-                headers.forEach(function(h) {
-                    var value = safeString(questions[i][h]);
-                    if (h === 'correct_answer') {
-                        var numVal = questions[i].correct_answer_numeric;
-                        value = String.fromCharCode(65 + numVal);
-                    }
-                    html += '<td style="padding:8px; border:1px solid #d1d5db;">' + escapeHtml(value.substring(0, 50)) + '</td>';
-                });
-                html += '</tr>';
+            if (!bookId || !topicId) {
+                addLog('❌ Please select both a book and a topic', 'error');
+                alert('Please select both a book and a topic');
+                return;
             }
             
-            html += '</tbody></table></div>';
-            html += '<p class="text-green-600 text-sm mt-2"><i class="fas fa-check-circle"></i> ✅ ' + questions.length + ' questions ready to upload</p>';
+            if (!currentQuestions.length) {
+                addLog('❌ No questions to upload', 'error');
+                alert('No questions to upload. Please select a file first.');
+                return;
+            }
             
-            previewDiv.innerHTML = html;
-            previewDiv.style.display = 'block';
-            uploadBtn.style.display = 'inline-flex';
+            // Show progress section
+            const progressSection = document.getElementById('progressSection');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const previewDiv = document.getElementById('previewDiv');
             
-            // Math preview
-            if (questions.length > 0 && mathPreviewDiv && mathPreviewContent) {
-                var firstQuestion = questions[0];
-                var questionText = safeString(firstQuestion.question_text);
-                var processedQuestion = safeProcessMathContent(questionText);
+            progressSection.style.display = 'block';
+            uploadBtn.style.display = 'none';
+            previewDiv.style.display = 'none';
+            
+            // Clear previous status messages
+            const statusMessages = document.getElementById('statusMessages');
+            if (statusMessages) statusMessages.innerHTML = '';
+            
+            const total = currentQuestions.length;
+            let success = 0;
+            let failed = 0;
+            const failedIndices = [];
+            
+            addLog(`📤 Uploading ${total} questions...`, 'info');
+            updateProgress(0, total, 'Preparing questions for upload...');
+            
+            // ============================================================
+            // OPTIMIZATION 1: Prepare all data in memory first
+            // ============================================================
+            const questionsToInsert = [];
+            const optionsToInsert = [];
+            
+            for (let i = 0; i < currentQuestions.length; i++) {
+                const q = currentQuestions[i];
+                const correctAnswerNumeric = q.correct_answer_numeric !== undefined ? q.correct_answer_numeric : convertAnswerToNumber(q.correct_answer);
+                const questionText = safeString(q.question_text);
                 
-                mathPreviewContent.innerHTML = '<div class="mb-2"><strong>Question:</strong> <span class="math-content">' + escapeHtml(processedQuestion) + '</span></div>' +
-                    '<div class="text-sm text-gray-500 mt-2">Correct Answer: ' + String.fromCharCode(65 + firstQuestion.correct_answer_numeric) + '</div>';
+                if (!questionText) {
+                    failed++;
+                    failedIndices.push(i + 1);
+                    continue;
+                }
                 
-                mathPreviewDiv.classList.remove('hidden');
+                // Use a temporary ID for linking questions with options
+                const tempId = Date.now() + i + Math.random() * 1000;
                 
-                if (window.MathJax) {
-                    try {
-                        MathJax.typesetPromise([mathPreviewContent]).catch(function() {});
-                    } catch(e) {}
+                questionsToInsert.push({
+                    topic_id: parseInt(topicId),
+                    question_text: questionText,
+                    difficulty: normalizeDifficulty(q.difficulty),
+                    correct_answer: correctAnswerNumeric,
+                    explanation: safeString(q.explanation) || ''
+                });
+                
+                const options = [
+                    safeString(q.option_a),
+                    safeString(q.option_b),
+                    safeString(q.option_c),
+                    safeString(q.option_d)
+                ];
+                
+                for (let j = 0; j < options.length; j++) {
+                    optionsToInsert.push({
+                        temp_id: tempId,
+                        option_text: options[j],
+                        option_index: j
+                    });
+                }
+                
+                success++;
+                
+                // Update progress every 50 rows
+                if (i % 50 === 0 || i === currentQuestions.length - 1) {
+                    const progress = ((i + 1) / total) * 30;
+                    updateProgress(i + 1, total, `📝 Preparing ${i + 1}/${total} questions...`);
                 }
             }
             
-        } catch(e) {
-            console.error('Preview error:', e);
-            showToast('Error displaying preview: ' + e.message, 'error');
-        }
-    }
-
-    // ============================================
-    // 8. FAST UPLOAD - BATCH PROCESSING
-    // ============================================
-    async function fastUploadToDatabase() {
-        if (isUploading) {
-            showToast('Upload already in progress...', 'warning');
-            return;
-        }
-        
-        var bookId = document.getElementById('bookSelect').value;
-        var topicId = document.getElementById('topicSelect').value;
-        
-        if (!bookId || !topicId) {
-            showToast('Please select both a book and a topic', 'error');
-            return;
-        }
-        
-        if (!currentQuestions || currentQuestions.length === 0) {
-            showToast('No questions to upload. Please select a file first.', 'error');
-            return;
-        }
-        
-        if (!supabase) {
-            showToast('Database connection not available. Please refresh.', 'error');
-            return;
-        }
-        
-        isUploading = true;
-        uploadStartTime = Date.now();
-        uploadedCount = 0;
-        failedCount = 0;
-        
-        // Show progress
-        var progressSection = document.getElementById('progressSection');
-        var uploadBtn = document.getElementById('uploadBtn');
-        var previewDiv = document.getElementById('previewDiv');
-        var statusMessages = document.getElementById('statusMessages');
-        
-        if (progressSection) progressSection.style.display = 'block';
-        if (uploadBtn) uploadBtn.style.display = 'none';
-        if (previewDiv) previewDiv.style.display = 'none';
-        if (statusMessages) statusMessages.innerHTML = '';
-        
-        var total = currentQuestions.length;
-        var totalEl = document.getElementById('totalCount');
-        if (totalEl) totalEl.textContent = total;
-        
-        var failedEl = document.getElementById('failedCount');
-        if (failedEl) failedEl.textContent = '0';
-        
-        var processed = 0;
-        var allInsertedQuestions = [];
-        var uploadErrors = [];
-        var BATCH_SIZE = 200;
-        
-        updateProgress(0, total, '🚀 Starting fast upload...');
-        
-        try {
             // ============================================================
-            // STEP 1: Insert all questions in batches
+            // OPTIMIZATION 2: Batch insert questions (200 at a time)
             // ============================================================
-            var questionBatches = [];
-            for (var i = 0; i < currentQuestions.length; i += BATCH_SIZE) {
-                questionBatches.push(currentQuestions.slice(i, i + BATCH_SIZE));
-            }
+            const BATCH_SIZE = 200;
+            let insertedQuestions = 0;
+            let finalSuccess = 0;
+            let finalFail = 0;
             
-            for (var batchIdx = 0; batchIdx < questionBatches.length; batchIdx++) {
-                var batch = questionBatches[batchIdx];
-                var batchStart = batchIdx * BATCH_SIZE + 1;
-                var batchEnd = Math.min(batchStart + batch.length - 1, total);
-                
-                updateProgress(processed, total, '📝 Inserting questions ' + batchStart + '-' + batchEnd + '...');
-                
-                var questionData = batch.map(function(q) {
-                    return {
-                        topic_id: parseInt(topicId),
-                        question_text: safeString(q.question_text),
-                        difficulty: normalizeDifficulty(q.difficulty),
-                        correct_answer: q.correct_answer_numeric || 0,
-                        explanation: safeString(q.explanation) || ''
-                    };
-                });
+            updateProgress(0, questionsToInsert.length, '💾 Inserting questions in batches...');
+            
+            for (let i = 0; i < questionsToInsert.length; i += BATCH_SIZE) {
+                const batch = questionsToInsert.slice(i, i + BATCH_SIZE);
                 
                 try {
-                    var result = await supabase.from('questions').insert(questionData).select();
+                    const { data: inserted, error } = await supabase
+                        .from('questions')
+                        .insert(batch)
+                        .select();
                     
-                    if (result.error) {
-                        throw new Error(result.error.message);
-                    }
+                    if (error) throw error;
                     
-                    var inserted = result.data || [];
-                    if (inserted.length > 0) {
-                        allInsertedQuestions = allInsertedQuestions.concat(inserted);
-                        uploadedCount += inserted.length;
-                        processed += inserted.length;
-                    }
+                    insertedQuestions += inserted.length;
+                    finalSuccess += inserted.length;
                     
-                    updateProgress(processed, total, '✅ Inserted ' + uploadedCount + ' questions...');
+                    const progress = 30 + ((i + BATCH_SIZE) / questionsToInsert.length) * 50;
+                    updateProgress(insertedQuestions, questionsToInsert.length, 
+                        `✅ Inserted ${insertedQuestions}/${questionsToInsert.length} questions`);
                     
-                } catch(err) {
-                    console.error('Batch insert error:', err);
-                    failedCount += batch.length;
-                    processed += batch.length;
-                    uploadErrors.push('Batch ' + (batchIdx + 1) + ' failed: ' + err.message);
-                    updateProgress(processed, total, '❌ Batch ' + (batchIdx + 1) + ' failed');
+                } catch(e) {
+                    finalFail += batch.length;
+                    addLog(`❌ Batch ${Math.floor(i/BATCH_SIZE)+1} failed: ${e.message}`, 'error');
                 }
             }
             
             // ============================================================
-            // STEP 2: Insert options in batches
+            // OPTIMIZATION 3: Insert options in batches (no linking needed)
             // ============================================================
-            if (allInsertedQuestions.length > 0) {
-                updateProgress(processed, total, '📝 Preparing options for ' + allInsertedQuestions.length + ' questions...');
+            if (insertedQuestions > 0) {
+                updateProgress(insertedQuestions, questionsToInsert.length, '📝 Adding options...');
                 
-                var allOptions = [];
-                allInsertedQuestions.forEach(function(q, idx) {
-                    var originalQ = currentQuestions[idx];
-                    var options = [
-                        safeString(originalQ.option_a),
-                        safeString(originalQ.option_b),
-                        safeString(originalQ.option_c),
-                        safeString(originalQ.option_d)
-                    ];
-                    options.forEach(function(opt, optIdx) {
-                        if (opt) {
-                            allOptions.push({
-                                question_id: q.id,
-                                option_text: opt,
-                                option_index: optIdx
-                            });
+                // Get the actual question IDs from the database
+                const { data: actualQuestions, error: fetchError } = await supabase
+                    .from('questions')
+                    .select('id')
+                    .eq('topic_id', parseInt(topicId))
+                    .order('id', { ascending: false })
+                    .limit(insertedQuestions);
+                
+                if (!fetchError && actualQuestions) {
+                    // Reverse to match the insertion order
+                    const questionIds = actualQuestions.reverse().map(q => q.id);
+                    
+                    // Assign actual IDs to options
+                    const finalOptions = [];
+                    for (let i = 0; i < questionIds.length; i++) {
+                        const qId = questionIds[i];
+                        const baseIndex = i * 4;
+                        for (let j = 0; j < 4; j++) {
+                            if (optionsToInsert[baseIndex + j]) {
+                                finalOptions.push({
+                                    question_id: qId,
+                                    option_text: optionsToInsert[baseIndex + j].option_text,
+                                    option_index: j
+                                });
+                            }
                         }
-                    });
-                });
-                
-                var optionBatches = [];
-                for (var k = 0; k < allOptions.length; k += BATCH_SIZE) {
-                    optionBatches.push(allOptions.slice(k, k + BATCH_SIZE));
-                }
-                
-                var optionsInserted = 0;
-                for (var obIdx = 0; obIdx < optionBatches.length; obIdx++) {
-                    var obatch = optionBatches[obIdx];
-                    updateProgress(processed, total, '📝 Inserting options batch ' + (obIdx + 1) + '/' + optionBatches.length + '...');
+                    }
                     
-                    try {
-                        var optResult = await supabase.from('options').insert(obatch);
-                        if (optResult.error) {
-                            throw new Error(optResult.error.message);
+                    // Insert options in batches
+                    for (let i = 0; i < finalOptions.length; i += BATCH_SIZE) {
+                        const batch = finalOptions.slice(i, i + BATCH_SIZE);
+                        try {
+                            const { error } = await supabase
+                                .from('options')
+                                .insert(batch);
+                            
+                            if (error) throw error;
+                            
+                            const progress = 80 + ((i + BATCH_SIZE) / finalOptions.length) * 20;
+                            updateProgress(i + batch.length, finalOptions.length, 
+                                `📝 Adding options ${i + 1}-${Math.min(i + batch.length, finalOptions.length)}/${finalOptions.length}`);
+                            
+                        } catch(e) {
+                            addLog(`❌ Options batch failed: ${e.message}`, 'error');
                         }
-                        optionsInserted += obatch.length;
-                        updateProgress(processed, total, '✅ Inserted ' + optionsInserted + ' options...');
-                    } catch(err) {
-                        console.error('Options batch error:', err);
-                        uploadErrors.push('Options batch ' + (obIdx + 1) + ' failed: ' + err.message);
                     }
                 }
             }
             
             // ============================================================
-            // FINAL SUMMARY
+            // OPTIMIZATION 4: Show final results
             // ============================================================
-            var elapsed = ((Date.now() - uploadStartTime) / 1000).toFixed(1);
-            var finalSuccess = uploadedCount;
-            var finalFailed = failedCount;
+            const finalMessage = `📊 Upload Complete! Success: ${finalSuccess}, Failed: ${finalFail}`;
+            updateProgress(finalSuccess, questionsToInsert.length, finalMessage);
+            addLog(`📊 Complete: ${finalSuccess} uploaded, ${finalFail} failed`, finalSuccess > 0 ? 'success' : 'error');
             
-            updateProgress(total, total, '✅ Upload complete! ' + finalSuccess + ' questions added, ' + finalFailed + ' failed');
-            
-            var uploadedEl = document.getElementById('uploadedCount');
-            if (uploadedEl) uploadedEl.textContent = finalSuccess;
-            
-            var failedEl2 = document.getElementById('failedCount');
-            if (failedEl2) failedEl2.textContent = finalFailed;
-            
-            var timeEl = document.getElementById('timeElapsed');
-            if (timeEl) timeEl.textContent = elapsed + 's';
-            
-            var speed = Math.round(finalSuccess / parseFloat(elapsed)) || 0;
-            var speedEl = document.getElementById('uploadSpeed');
-            if (speedEl) speedEl.textContent = speed;
-            
-            if (uploadErrors.length > 0 && statusMessages) {
-                var errorDiv = statusMessages;
-                var maxErrors = Math.min(5, uploadErrors.length);
-                for (var ei = 0; ei < maxErrors; ei++) {
-                    var msgDiv = document.createElement('div');
-                    msgDiv.className = 'text-red-600 font-semibold';
-                    msgDiv.textContent = '❌ ' + uploadErrors[ei];
-                    errorDiv.appendChild(msgDiv);
-                }
-                if (uploadErrors.length > 5) {
-                    var moreDiv = document.createElement('div');
-                    moreDiv.className = 'text-gray-500';
-                    moreDiv.textContent = '... and ' + (uploadErrors.length - 5) + ' more errors';
-                    errorDiv.appendChild(moreDiv);
-                }
+            if (failedIndices.length > 0) {
+                updateProgress(finalSuccess, questionsToInsert.length, `⚠️ Failed question numbers: ${failedIndices.slice(0, 10).join(', ')}${failedIndices.length > 10 ? `... and ${failedIndices.length - 10} more` : ''}`);
             }
+            
+            alert(`Upload complete!\n✅ Success: ${finalSuccess} questions added\n❌ Failed: ${finalFail} questions\n\n${failedIndices.length > 0 ? `Failed question numbers: ${failedIndices.slice(0, 20).join(', ')}${failedIndices.length > 20 ? `... and ${failedIndices.length - 20} more` : ''}` : 'All questions uploaded successfully!'}`);
             
             if (finalSuccess > 0) {
-                showToast('✅ ' + finalSuccess + ' questions uploaded successfully! (⚡ ' + speed + ' q/s)', 'success');
-                
-                // Reset UI
-                var previewDiv2 = document.getElementById('previewDiv');
-                var mathPreviewDiv2 = document.getElementById('mathPreviewDiv');
-                var fileInput = document.getElementById('fileInput');
-                
-                if (previewDiv2) previewDiv2.style.display = 'none';
-                if (mathPreviewDiv2) mathPreviewDiv2.classList.add('hidden');
-                if (fileInput) fileInput.value = '';
+                document.getElementById('previewDiv').style.display = 'none';
+                document.getElementById('uploadBtn').style.display = 'none';
+                document.getElementById('mathPreviewDiv').classList.add('hidden');
+                document.getElementById('fileInput').value = '';
                 currentQuestions = [];
-                
-                // Hide progress after delay
-                setTimeout(function() {
-                    var ps = document.getElementById('progressSection');
-                    if (ps) ps.style.display = 'none';
-                }, 5000);
-            } else {
-                showToast('❌ Upload failed! Check errors below.', 'error');
             }
             
-        } catch(err) {
-            console.error('Upload error:', err);
-            showToast('Upload error: ' + err.message, 'error');
+            // Hide progress section after 3 seconds
+            setTimeout(() => {
+                progressSection.style.display = 'none';
+            }, 3000);
         }
         
-        isUploading = false;
-    }
-
-    function updateProgress(current, total, statusMessage) {
-        try {
-            var percent = Math.round((current / total) * 100);
-            var progressFill = document.getElementById('progressFill');
-            var progressPercent = document.getElementById('progressPercent');
-            var uploadedCountEl = document.getElementById('uploadedCount');
-            var statusMessages = document.getElementById('statusMessages');
-            
-            if (progressFill) {
-                progressFill.style.width = Math.min(percent, 100) + '%';
-            }
-            if (progressPercent) {
-                progressPercent.textContent = Math.min(percent, 100) + '%';
-            }
-            if (uploadedCountEl) {
-                uploadedCountEl.textContent = current;
-            }
-            
-            if (statusMessage && statusMessages) {
-                var timestamp = new Date().toLocaleTimeString();
-                var messageDiv = document.createElement('div');
-                var isError = statusMessage.indexOf('❌') !== -1 || statusMessage.indexOf('failed') !== -1;
-                var isSuccess = statusMessage.indexOf('✅') !== -1;
-                messageDiv.className = isError ? 'text-red-600' : isSuccess ? 'text-green-600' : 'text-gray-600';
-                messageDiv.textContent = '[' + timestamp + '] ' + statusMessage;
-                statusMessages.appendChild(messageDiv);
-                statusMessages.scrollTop = statusMessages.scrollHeight;
-                
-                // Keep only last 50 messages
-                while (statusMessages.children.length > 50) {
-                    statusMessages.removeChild(statusMessages.firstChild);
-                }
-            }
-        } catch(e) {
-            // Silent fail for progress updates
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
         }
-    }
-
-    // ============================================
-    // 9. SETUP EVENTS
-    // ============================================
-    function setupUploadZone() {
-        try {
-            var uploadZone = document.getElementById('uploadZone');
-            var fileInput = document.getElementById('fileInput');
-            var selectFileBtn = document.getElementById('selectFileBtn');
+        
+        // Setup file upload zone
+        function setupUploadZone() {
+            const uploadZone = document.getElementById('uploadZone');
+            const fileInput = document.getElementById('fileInput');
+            const selectFileBtn = document.getElementById('selectFileBtn');
             
             if (uploadZone) {
-                uploadZone.addEventListener('click', function() {
-                    if (fileInput) fileInput.click();
-                });
-                uploadZone.addEventListener('dragover', function(e) {
+                uploadZone.addEventListener('click', () => fileInput.click());
+                uploadZone.addEventListener('dragover', (e) => {
                     e.preventDefault();
                     uploadZone.classList.add('drag-over');
                 });
-                uploadZone.addEventListener('dragleave', function() {
+                uploadZone.addEventListener('dragleave', () => {
                     uploadZone.classList.remove('drag-over');
                 });
-                uploadZone.addEventListener('drop', function(e) {
+                uploadZone.addEventListener('drop', (e) => {
                     e.preventDefault();
                     uploadZone.classList.remove('drag-over');
-                    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                        processFile(e.dataTransfer.files[0]);
-                    }
+                    if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
                 });
             }
-            
             if (selectFileBtn) {
-                selectFileBtn.addEventListener('click', function(e) {
+                selectFileBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    if (fileInput) fileInput.click();
+                    fileInput.click();
                 });
             }
-            
             if (fileInput) {
-                fileInput.addEventListener('change', function(e) {
-                    if (e.target.files && e.target.files[0]) {
-                        processFile(e.target.files[0]);
-                    }
+                fileInput.addEventListener('change', e => {
+                    if (e.target.files && e.target.files[0]) processFile(e.target.files[0]);
                 });
             }
-        } catch(e) {
-            console.error('Setup upload zone error:', e);
         }
+        
+        document.getElementById('bookSelect').addEventListener('change', loadTopics);
+        document.getElementById('downloadBtn').addEventListener('click', downloadTemplate);
+        document.getElementById('uploadBtn').addEventListener('click', uploadToDatabase);
+        
+        setupUploadZone();
+        loadBooks();
     }
-
-    function init() {
-        try {
-            var bookSelect = document.getElementById('bookSelect');
-            var topicSelect = document.getElementById('topicSelect');
-            var downloadBtn = document.getElementById('downloadBtn');
-            var uploadBtn = document.getElementById('uploadBtn');
-            
-            if (bookSelect) {
-                bookSelect.addEventListener('change', loadTopics);
-            }
-            
-            if (downloadBtn) {
-                downloadBtn.addEventListener('click', downloadTemplate);
-            }
-            
-            if (uploadBtn) {
-                uploadBtn.addEventListener('click', fastUploadToDatabase);
-            }
-            
-            setupUploadZone();
-            loadBooks();
-            
-            showToast('🚀 Ready for bulk upload! Load a file to begin.', 'info');
-            
-        } catch(e) {
-            console.error('Init error:', e);
-            showToast('Error initializing: ' + e.message, 'error');
-        }
-    }
-
-    // ============================================
-    // 10. START
-    // ============================================
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        setTimeout(init, 100);
-    }
+    
+    addLog('Checking for Supabase library...', 'info');
+    setTimeout(init, 100);
 </script>
 </body>
 </html>
