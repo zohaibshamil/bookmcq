@@ -2552,34 +2552,34 @@
             document.getElementById('sitemapTopicCount').textContent = topics.length;
             document.getElementById('sitemapTotalCount').textContent = urls.length;
             
-            // ============================================================
-            // Build XML with CORRECT URLs
-            // ============================================================
-            let xml = `<?xml version="1.0" encoding="UTF-8"?>
+// ============================================================
+// Build XML with CORRECT URLs and LASTMOD for ALL pages
+// ============================================================
+let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <!-- ================= MAIN PAGES ================= -->\n`;
-            
-            // Add static pages
-            staticPages.forEach(page => {
-                xml += `  <url>
+
+// Add static pages
+staticPages.forEach(page => {
+    xml += `  <url>
     <loc>https://www.bookmcq.com${page.url}</loc>
     <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
     <changefreq>${page.changefreq}</changefreq>
     <priority>${page.priority}</priority>
   </url>\n`;
-            });
-            
-            xml += `
+});
+
+xml += `
   <!-- ================= BOOKS ================= -->\n`;
-            
-            // Add book main pages with CORRECT URL: /books/[slug]/index.html
-            sortedBooks.forEach(book => {
-                const slug = book.slug || createSlug(book.title);
-                const bookTitle = book.title;
-                const lastmod = book.created_at ? new Date(book.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-                
-                xml += `
+
+// Add book main pages with CORRECT URL: /books/[slug]/index.html
+sortedBooks.forEach(book => {
+    const slug = book.slug || createSlug(book.title);
+    const bookTitle = book.title;
+    const lastmod = book.created_at ? new Date(book.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+    
+    xml += `
   <!-- ${bookTitle} -->
   <url>
     <loc>https://www.bookmcq.com/books/${slug}/index.html</loc>
@@ -2587,29 +2587,36 @@
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>\n`;
-                
-                // Get topics for this book
-                const bookTopics = topicsByBook[slug] || [];
-                if (bookTopics.length > 0) {
-                    // Sort by chapter number
-                    bookTopics.sort((a, b) => {
-                        const aNum = a.chapter_number || 999;
-                        const bNum = b.chapter_number || 999;
-                        return aNum - bNum;
-                    });
-                    
-                    xml += `
+    
+    // Get topics for this book
+    const bookTopics = topicsByBook[slug] || [];
+    if (bookTopics.length > 0) {
+        // Sort by chapter number
+        bookTopics.sort((a, b) => {
+            const aNum = a.chapter_number || 999;
+            const bNum = b.chapter_number || 999;
+            return aNum - bNum;
+        });
+        
+        xml += `
   <!-- ${bookTitle} Chapters -->\n`;
-                    
-                    bookTopics.forEach(topic => {
-                        if (topic.slug) {
-                            xml += `  <url><loc>https://www.bookmcq.com/books/${slug}/${topic.slug}.html</loc></url>\n`;
-                        }
-                    });
-                }
-            });
-            
-            xml += `</urlset>`;
+        
+        bookTopics.forEach(topic => {
+            if (topic.slug) {
+                // ✅ FIXED: Add lastmod for chapters
+                const topicLastmod = topic.created_at ? new Date(topic.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+                xml += `  <url>
+    <loc>https://www.bookmcq.com/books/${slug}/${topic.slug}.html</loc>
+    <lastmod>${topicLastmod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>\n`;
+            }
+        });
+    }
+});
+
+xml += `</urlset>`;
             
             sitemapData = {
                 xml: xml,
