@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -167,6 +166,81 @@
                 grid-template-columns: repeat(2, 1fr);
             }
         }
+        
+        /* ===== NEW: Sub-Topics Styles ===== */
+        .subtopic-item {
+            background: #f8fafc;
+            border-left: 3px solid #8b5cf6;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .subtopic-item:hover {
+            background: #f1f5f9;
+        }
+        .subtopic-name {
+            font-weight: 500;
+            color: #1e293b;
+            font-size: 13px;
+        }
+        .subtopic-actions {
+            display: flex;
+            gap: 6px;
+        }
+        .subtopic-actions button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        .subtopic-actions .edit-btn:hover {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+        .subtopic-actions .delete-btn:hover {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        .subtopic-count {
+            font-size: 11px;
+            color: #64748b;
+            background: #e2e8f0;
+            padding: 1px 8px;
+            border-radius: 12px;
+        }
+        .expand-chapter-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #64748b;
+            transition: all 0.2s;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+        .expand-chapter-btn:hover {
+            background: #e2e8f0;
+            color: #1e293b;
+        }
+        .chapter-subtopics {
+            margin-top: 6px;
+            margin-left: 24px;
+            padding-left: 12px;
+            border-left: 2px dashed #e2e8f0;
+        }
+        .subtopic-badge {
+            background: #ede9fe;
+            color: #7c3aed;
+            padding: 1px 10px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -228,7 +302,8 @@
         <div id="adminFeatures" class="hidden">
             <div class="flex flex-wrap gap-2 mb-6">
                 <button id="tabBooksBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-purple-600 text-white">📚 Books</button>
-                <button id="tabTopicsBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">🏷️ Topics</button>
+                <button id="tabChaptersBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">📖 Chapters</button>
+                <button id="tabSubTopicsBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">📝 Topics</button>
                 <button id="tabQuestionsBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">❓ Questions</button>
                 <button id="tabCategoriesBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">🏷️ Categories</button>
                 <button id="tabBulkUploadBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">📤 Bulk Upload</button>
@@ -240,7 +315,7 @@
 
             <!-- Books Tab -->
             <div id="booksTab">
-                <h2 class="text-xl font-bold mb-4">Books</h2>
+                <h2 class="text-xl font-bold mb-4">📚 Books</h2>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
@@ -273,24 +348,60 @@
                 <div id="booksList"><div class="skeleton h-12 w-full mb-2"></div><div class="skeleton h-12 w-full mb-2"></div><div class="skeleton h-12 w-full"></div></div>
             </div>
 
-            <!-- Topics Tab -->
-            <div id="topicsTab" class="hidden">
-                <h2 class="text-xl font-bold mb-4">Topics</h2>
+            <!-- Chapters Tab (renamed from Topics) -->
+            <div id="chaptersTab" class="hidden">
+                <h2 class="text-xl font-bold mb-4">📖 Chapters</h2>
                 <div class="mb-4">
                     <label class="block text-sm font-semibold mb-2">Filter by Book:</label>
-                    <select id="topicFilterBookId" class="w-full md:w-1/2 p-2 border rounded-lg">
+                    <select id="chapterFilterBookId" class="w-full md:w-1/2 p-2 border rounded-lg">
                         <option value="">All Books</option>
                     </select>
                 </div>
-                <button id="showAddTopicBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg mb-4">+ Add Topic</button>
-                <div id="addTopicForm" class="hidden bg-gray-50 p-4 rounded-lg mb-4">
-                    <select id="topicBookId" class="w-full p-2 border rounded mb-2"></select>
-                    <input type="text" id="topicName" placeholder="Topic Name" class="w-full p-2 border rounded mb-2">
+                <button id="showAddChapterBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg mb-4">+ Add Chapter</button>
+                <div id="addChapterForm" class="hidden bg-gray-50 p-4 rounded-lg mb-4">
+                    <select id="chapterBookId" class="w-full p-2 border rounded mb-2"></select>
+                    <input type="text" id="chapterName" placeholder="Chapter Name" class="w-full p-2 border rounded mb-2">
                     <input type="number" id="chapterNumber" placeholder="Chapter Number (1, 2, 3...)" class="w-full p-2 border rounded mb-2">
-                    <button id="saveTopicBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
-                    <button id="cancelTopicBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
+                    <button id="saveChapterBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
+                    <button id="cancelChapterBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
                 </div>
-                <div id="topicsList"><div class="skeleton h-12 w-full mb-2"></div><div class="skeleton h-12 w-full mb-2"></div></div>
+                <div id="chaptersList"><div class="skeleton h-12 w-full mb-2"></div><div class="skeleton h-12 w-full mb-2"></div></div>
+            </div>
+
+            <!-- Sub-Topics Tab (NEW) -->
+            <div id="subTopicsTab" class="hidden">
+                <h2 class="text-xl font-bold mb-4">📝 Topics (Sub-topics inside Chapters)</h2>
+                <p class="text-sm text-gray-600 mb-4">Topics are sub-categories inside chapters. For example: "Introduction to Limits" inside "Chapter 1: Limits & Continuity"</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-semibold mb-2">Filter by Book:</label>
+                        <select id="subTopicFilterBookId" class="w-full p-2 border rounded-lg">
+                            <option value="">All Books</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-2">Filter by Chapter:</label>
+                        <select id="subTopicFilterChapterId" class="w-full p-2 border rounded-lg" disabled>
+                            <option value="">Select a book first</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button id="showAddSubTopicBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg mb-4">+ Add Topic</button>
+                <div id="addSubTopicForm" class="hidden bg-gray-50 p-4 rounded-lg mb-4">
+                    <select id="subTopicBookId" class="w-full p-2 border rounded mb-2">
+                        <option value="">Select Book</option>
+                    </select>
+                    <select id="subTopicChapterId" class="w-full p-2 border rounded mb-2">
+                        <option value="">Select Chapter</option>
+                    </select>
+                    <input type="text" id="subTopicName" placeholder="Topic Name" class="w-full p-2 border rounded mb-2">
+                    <button id="saveSubTopicBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
+                    <button id="cancelSubTopicBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
+                </div>
+                
+                <div id="subTopicsList"><div class="skeleton h-12 w-full mb-2"></div><div class="skeleton h-12 w-full mb-2"></div></div>
             </div>
 
             <!-- Categories Tab -->
@@ -319,9 +430,12 @@
                     <button id="showAddQuestionBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg">+ Add Question</button>
                 </div>
                 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
                     <select id="filterBookId" class="p-2 border rounded-lg">
                         <option value="">All Books</option>
+                    </select>
+                    <select id="filterChapterId" class="p-2 border rounded-lg">
+                        <option value="">All Chapters</option>
                     </select>
                     <select id="filterTopicId" class="p-2 border rounded-lg">
                         <option value="">All Topics</option>
@@ -337,6 +451,9 @@
                 <div id="addQuestionForm" class="hidden bg-gray-50 p-4 rounded-lg mb-4">
                     <select id="questionBookId" class="w-full p-2 border rounded mb-2">
                         <option value="">Select Book</option>
+                    </select>
+                    <select id="questionChapterId" class="w-full p-2 border rounded mb-2">
+                        <option value="">Select Chapter</option>
                     </select>
                     <select id="questionTopicId" class="w-full p-2 border rounded mb-2">
                         <option value="">Select Topic</option>
@@ -447,7 +564,7 @@
                     </div>
                     <p class="text-sm text-gray-700 mb-4">Delete multiple questions at once by selecting filters below. <span class="warning-text">⚠️ This action is permanent and cannot be undone!</span></p>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">📚 Select Book</label>
                             <select id="bulkDeleteBookId" class="w-full p-2 border rounded-lg bg-white">
@@ -455,9 +572,15 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">🏷️ Select Topic</label>
-                            <select id="bulkDeleteTopicId" class="w-full p-2 border rounded-lg bg-white" disabled>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">📖 Select Chapter</label>
+                            <select id="bulkDeleteChapterId" class="w-full p-2 border rounded-lg bg-white" disabled>
                                 <option value="">Select a book first</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">📝 Select Topic</label>
+                            <select id="bulkDeleteTopicId" class="w-full p-2 border rounded-lg bg-white" disabled>
+                                <option value="">Select a chapter first</option>
                             </select>
                         </div>
                         <div>
@@ -594,7 +717,6 @@
         </div>
         
         <div class="bg-gray-50 p-6 rounded-lg max-w-4xl mx-auto">
-            <!-- Book List with Individual Download Buttons -->
             <div class="mb-4 text-left">
                 <h3 class="font-bold text-gray-700 mb-3">📚 Your Books:</h3>
                 <div id="seoBookList" class="space-y-2 max-h-64 overflow-y-auto">
@@ -640,7 +762,7 @@
     <div class="text-center py-8">
         <i class="fas fa-sitemap text-6xl text-green-500 mb-4"></i>
         <h2 class="text-2xl font-bold mb-3">🗺️ Generate Sitemap.xml</h2>
-        <p class="text-gray-600 mb-6">Generate a sitemap.xml file automatically from your books and topics.</p>
+        <p class="text-gray-600 mb-6">Generate a sitemap.xml file automatically from your books and chapters.</p>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto text-left mb-6">
             <div class="bg-blue-50 p-4 rounded-lg">
@@ -655,8 +777,8 @@
             </div>
             <div class="bg-green-50 p-4 rounded-lg">
                 <div class="text-2xl mb-2">📖</div>
-                <h3 class="font-bold">Topics</h3>
-                <p class="text-sm text-gray-600">Automatically includes all topic pages.</p>
+                <h3 class="font-bold">Chapters</h3>
+                <p class="text-sm text-gray-600">Automatically includes all chapter pages.</p>
             </div>
         </div>
 
@@ -672,8 +794,8 @@
                     <div class="stat-label">Books</div>
                 </div>
                 <div class="sitemap-stat-card">
-                    <div class="stat-number" id="sitemapTopicCount">0</div>
-                    <div class="stat-label">Topics</div>
+                    <div class="stat-number" id="sitemapChapterCount">0</div>
+                    <div class="stat-label">Chapters</div>
                 </div>
                 <div class="sitemap-stat-card">
                     <div class="stat-number" id="sitemapTotalCount">0</div>
@@ -747,15 +869,36 @@
     </div>
 </div>
 
-<div id="editTopicModal" class="hidden modal">
+<div id="editChapterModal" class="hidden modal">
     <div class="modal-content p-6">
-        <h3 class="text-xl font-bold mb-4">Edit Topic</h3>
-        <input type="text" id="editTopicId" class="hidden">
-        <input type="text" id="editTopicName" placeholder="Topic Name" class="w-full p-2 border rounded mb-2">
+        <h3 class="text-xl font-bold mb-4">Edit Chapter</h3>
+        <input type="text" id="editChapterId" class="hidden">
+        <select id="editChapterBookId" class="w-full p-2 border rounded mb-2">
+            <option value="">Select Book</option>
+        </select>
+        <input type="text" id="editChapterName" placeholder="Chapter Name" class="w-full p-2 border rounded mb-2">
         <input type="number" id="editChapterNumber" placeholder="Chapter Number" class="w-full p-2 border rounded mb-4">
         <div class="flex gap-2">
-            <button id="updateTopicBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Update</button>
-            <button id="closeTopicModal" class="bg-gray-400 text-white px-4 py-2 rounded">Cancel</button>
+            <button id="updateChapterBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Update</button>
+            <button id="closeChapterModal" class="bg-gray-400 text-white px-4 py-2 rounded">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<div id="editSubTopicModal" class="hidden modal">
+    <div class="modal-content p-6">
+        <h3 class="text-xl font-bold mb-4">Edit Topic</h3>
+        <input type="text" id="editSubTopicId" class="hidden">
+        <select id="editSubTopicBookId" class="w-full p-2 border rounded mb-2">
+            <option value="">Select Book</option>
+        </select>
+        <select id="editSubTopicChapterId" class="w-full p-2 border rounded mb-2">
+            <option value="">Select Chapter</option>
+        </select>
+        <input type="text" id="editSubTopicName" placeholder="Topic Name" class="w-full p-2 border rounded mb-4">
+        <div class="flex gap-2">
+            <button id="updateSubTopicBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Update</button>
+            <button id="closeSubTopicModal" class="bg-gray-400 text-white px-4 py-2 rounded">Cancel</button>
         </div>
     </div>
 </div>
@@ -818,11 +961,13 @@
     let currentPage = 1;
     const PAGE_SIZE = 15;
     let totalQuestions = 0;
-    let currentFilters = { bookId: '', topicId: '', difficulty: '' };
-    let currentTopicBookFilter = '';
+    let currentFilters = { bookId: '', chapterId: '', topicId: '', difficulty: '' };
+    let currentChapterFilter = '';
+    let currentSubTopicFilter = { bookId: '', chapterId: '' };
     
     // Bulk Delete variables
     let bulkDeleteBookId = '';
+    let bulkDeleteChapterId = '';
     let bulkDeleteTopicId = '';
     let bulkDeleteDifficulty = '';
     let bulkDeleteCount = 0;
@@ -830,6 +975,17 @@
     // Sitemap variables
     let sitemapData = null;
     
+    // ============ CACHE SYSTEM ============
+let booksCache = null;
+let chaptersCache = {};
+let subTopicsCache = {};
+let categoriesCache = null;
+let booksListCache = null;
+let isLoadingBooks = false;
+let isLoadingChapters = false;
+let isLoadingSubTopics = false;
+let currentSubTopicFilter = { bookId: '', chapterId: '' };  // ← ADD THIS
+
     // ============ SESSION TIMEOUT ============
     let sessionTimeout;
     const SESSION_DURATION = 10 * 60 * 1000;
@@ -854,14 +1010,6 @@
     activityEvents.forEach(event => {
         document.addEventListener(event, trackUserActivity);
     });
-    
-    // ============ CACHE SYSTEM ============
-    let booksCache = null;
-    let topicsCache = {};
-    let categoriesCache = null;
-    let booksListCache = null;
-    let isLoadingBooks = false;
-    let isLoadingTopics = false;
 
     function showToast(message, isError = false) {
         const toast = document.getElementById('toast');
@@ -985,8 +1133,15 @@
         return data && data.length > 0;
     }
     
-    async function checkDuplicateTopic(name, bookId, excludeId = null) {
-        let query = _supabase.from('topics').select('id').eq('name', name).eq('book_id', bookId);
+    async function checkDuplicateChapter(name, bookId, excludeId = null) {
+        let query = _supabase.from('chapters').select('id').eq('name', name).eq('book_id', bookId);
+        if (excludeId) query = query.neq('id', excludeId);
+        const { data } = await query;
+        return data && data.length > 0;
+    }
+    
+    async function checkDuplicateSubTopic(name, chapterId, excludeId = null) {
+        let query = _supabase.from('subtopics').select('id').eq('name', name).eq('chapter_id', chapterId);
         if (excludeId) query = query.neq('id', excludeId);
         const { data } = await query;
         return data && data.length > 0;
@@ -1036,12 +1191,13 @@
                 
                 await Promise.all([
                     loadBooksCached(),
-                    loadTopicsCached(),
+                    loadChaptersCached(),
+                    loadSubTopicsCached(),
                     loadQuestions(),
                     loadAdmins(),
                     loadBookSelectsCached(),
                     loadFilterBooksCached(),
-                    loadTopicFilterBooksCached(),
+                    loadChapterFilterBooksCached(),
                     loadCategoriesCached(),
                     loadBulkDeleteBooks(),
                     loadMessages()
@@ -1091,7 +1247,8 @@
         _isAdmin = false;
         if (sessionTimeout) clearTimeout(sessionTimeout);
         booksCache = null;
-        topicsCache = {};
+        chaptersCache = {};
+        subTopicsCache = {};
         categoriesCache = null;
         booksListCache = null;
         document.getElementById('adminDashboard').classList.add('hidden');
@@ -1540,11 +1697,12 @@
     }
 
     window.deleteBook = async function(id) {
-        if (confirm('Delete this book? This will also delete all topics and questions in this book.')) {
+        if (confirm('Delete this book? This will also delete all chapters, topics, and questions in this book.')) {
             await _supabase.from('books').delete().eq('id', id);
             booksCache = null;
-            topicsCache = {};
-            await Promise.all([loadBooksCached(), loadTopicsCached(), loadFilterBooksCached(), loadBookSelectsCached(), loadTopicFilterBooksCached(), loadBulkDeleteBooks()]);
+            chaptersCache = {};
+            subTopicsCache = {};
+            await Promise.all([loadBooksCached(), loadChaptersCached(), loadSubTopicsCached(), loadFilterBooksCached(), loadBookSelectsCached(), loadChapterFilterBooksCached(), loadBulkDeleteBooks()]);
             showToast('Book deleted');
         }
     };
@@ -1583,7 +1741,7 @@
             document.getElementById('bookTitle').value = '';
             document.getElementById('bookAuthor').value = '';
             booksCache = null;
-            await Promise.all([loadBooksCached(), loadFilterBooksCached(), loadBookSelectsCached(), loadTopicFilterBooksCached(), loadBulkDeleteBooks()]);
+            await Promise.all([loadBooksCached(), loadFilterBooksCached(), loadBookSelectsCached(), loadChapterFilterBooksCached(), loadBulkDeleteBooks()]);
         }
     }
 
@@ -1628,26 +1786,26 @@
             showToast('Book updated!');
             document.getElementById('editBookModal').classList.add('hidden');
             booksCache = null;
-            await Promise.all([loadBooksCached(), loadFilterBooksCached(), loadBookSelectsCached(), loadTopicFilterBooksCached(), loadBulkDeleteBooks()]);
+            await Promise.all([loadBooksCached(), loadFilterBooksCached(), loadBookSelectsCached(), loadChapterFilterBooksCached(), loadBulkDeleteBooks()]);
         }
     }
 
-    // ============ CACHED TOPICS ============
-    async function loadTopicFilterBooksCached() {
+    // ============ CACHED CHAPTERS ============
+    async function loadChapterFilterBooksCached() {
         if (booksCache !== null) {
-            renderTopicFilterBooks(booksCache);
+            renderChapterFilterBooks(booksCache);
             return;
         }
         
         const { data } = await _supabase.from('books').select('id, title');
         if (data) {
             booksCache = data;
-            renderTopicFilterBooks(data);
+            renderChapterFilterBooks(data);
         }
     }
     
-    function renderTopicFilterBooks(books) {
-        const select = document.getElementById('topicFilterBookId');
+    function renderChapterFilterBooks(books) {
+        const select = document.getElementById('chapterFilterBookId');
         select.innerHTML = '<option value="">All Books</option>';
         if (books) {
             books.forEach(book => {
@@ -1656,34 +1814,35 @@
         }
     }
     
-    async function loadTopicsCached() {
-        let query = _supabase.from('topics').select('*, books(title)');
+    async function loadChaptersCached() {
+        let query = _supabase.from('chapters').select('*, books(title)');
         
-        if (currentTopicBookFilter && currentTopicBookFilter !== '') {
-            query = query.eq('book_id', parseInt(currentTopicBookFilter));
+        if (currentChapterFilter && currentChapterFilter !== '') {
+            query = query.eq('book_id', parseInt(currentChapterFilter));
         }
         
         const { data, error } = await query.order('book_id', { ascending: true }).order('chapter_number', { ascending: true, nullsFirst: false }).order('id', { ascending: true });
-        const container = document.getElementById('topicsList');
+        const container = document.getElementById('chaptersList');
         
         if (error || !data || data.length === 0) {
-            container.innerHTML = '<p class="text-gray-500">No topics yet. Add your first topic!</p>';
+            container.innerHTML = '<p class="text-gray-500">No chapters yet. Add your first chapter!</p>';
             return;
         }
         
-        container.innerHTML = data.map(topic => {
-            const chapterDisplay = topic.chapter_number ? `Ch ${topic.chapter_number}: ` : '';
+        container.innerHTML = data.map(chapter => {
+            const chapterDisplay = chapter.chapter_number ? `Ch ${chapter.chapter_number}: ` : '';
+            const bookTitle = chapter.books?.title || 'Unknown';
             return `
             <div class="bg-gray-50 p-3 rounded-lg mb-2 flex justify-between items-center">
                 <div>
-                    <strong>${chapterDisplay}${escapeHtml(topic.name)}</strong>
-                    <span class="text-gray-600 text-sm ml-2">(${escapeHtml(topic.books?.title || 'Unknown')})</span>
+                    <strong>${chapterDisplay}${escapeHtml(chapter.name)}</strong>
+                    <span class="text-gray-600 text-sm ml-2">(${escapeHtml(bookTitle)})</span>
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="openEditTopicModal(${topic.id}, '${escapeHtml(topic.name)}', ${topic.chapter_number || ''})" class="text-blue-600 hover:text-blue-800">
+                    <button onclick="openEditChapterModal(${chapter.id}, '${escapeHtml(chapter.name)}', ${chapter.chapter_number || ''}, ${chapter.book_id})" class="text-blue-600 hover:text-blue-800">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button onclick="deleteTopic(${topic.id})" class="text-red-600 hover:text-red-800">
+                    <button onclick="deleteChapter(${chapter.id})" class="text-red-600 hover:text-red-800">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -1691,86 +1850,87 @@
         `}).join('');
     }
     
-    async function applyTopicFilter() {
-        currentTopicBookFilter = document.getElementById('topicFilterBookId').value;
-        await loadTopicsCached();
+    async function applyChapterFilter() {
+        currentChapterFilter = document.getElementById('chapterFilterBookId').value;
+        await loadChaptersCached();
     }
 
-    window.deleteTopic = async function(id) {
-        if (confirm('Delete this topic? This will also delete all questions in this topic.')) {
-            await _supabase.from('topics').delete().eq('id', id);
-            topicsCache = {};
-            await Promise.all([loadTopicsCached(), loadQuestions(), loadFilterBooksCached()]);
-            showToast('Topic deleted');
+    window.deleteChapter = async function(id) {
+        if (confirm('Delete this chapter? This will also delete all topics and questions in this chapter.')) {
+            await _supabase.from('chapters').delete().eq('id', id);
+            chaptersCache = {};
+            subTopicsCache = {};
+            await Promise.all([loadChaptersCached(), loadSubTopicsCached(), loadQuestions()]);
+            showToast('Chapter deleted');
         }
     };
 
-    async function addTopic() {
-        const bookId = document.getElementById('topicBookId').value;
-        const name = document.getElementById('topicName').value;
+    async function addChapter() {
+        const bookId = document.getElementById('chapterBookId').value;
+        const name = document.getElementById('chapterName').value;
         const chapterNumber = document.getElementById('chapterNumber').value;
         
         if (!bookId || !name) {
-            showToast('Please select a book and enter a topic name', true);
+            showToast('Please select a book and enter a chapter name', true);
             return;
         }
         
-        const duplicate = await checkDuplicateTopic(name, parseInt(bookId));
+        const duplicate = await checkDuplicateChapter(name, parseInt(bookId));
         if (duplicate) {
-            showToast('Topic already exists for this book!', true);
+            showToast('Chapter already exists for this book!', true);
             return;
         }
         
-        const topicData = {
+        const chapterData = {
             book_id: parseInt(bookId),
             name: name,
             slug: createSlug(name),
             chapter_number: chapterNumber ? parseInt(chapterNumber) : null
         };
         
-        const { error } = await _supabase.from('topics').insert([topicData]);
+        const { error } = await _supabase.from('chapters').insert([chapterData]);
         if (error) {
             showToast('Error: ' + error.message, true);
         } else {
-            showToast('Topic added!');
-            document.getElementById('addTopicForm').classList.add('hidden');
-            document.getElementById('topicName').value = '';
+            showToast('Chapter added!');
+            document.getElementById('addChapterForm').classList.add('hidden');
+            document.getElementById('chapterName').value = '';
             document.getElementById('chapterNumber').value = '';
-            topicsCache = {};
-            await Promise.all([loadTopicsCached(), loadFilterBooksCached()]);
+            chaptersCache = {};
+            await Promise.all([loadChaptersCached(), loadFilterBooksCached(), loadChapterFilterBooksCached(), loadSubTopicChapterFilters()]);
         }
     }
 
-    window.openEditTopicModal = function(id, name, chapterNumber) {
-        document.getElementById('editTopicId').value = id;
-        document.getElementById('editTopicName').value = name;
+    window.openEditChapterModal = function(id, name, chapterNumber, bookId) {
+        document.getElementById('editChapterId').value = id;
+        document.getElementById('editChapterName').value = name;
         document.getElementById('editChapterNumber').value = chapterNumber;
-        loadBookSelectForEditTopic();
-        document.getElementById('editTopicModal').classList.remove('hidden');
+        loadBookSelectForEditChapter(bookId);
+        document.getElementById('editChapterModal').classList.remove('hidden');
     };
 
-    async function updateTopic() {
-        const id = document.getElementById('editTopicId').value;
-        const name = document.getElementById('editTopicName').value;
+    async function updateChapter() {
+        const id = document.getElementById('editChapterId').value;
+        const name = document.getElementById('editChapterName').value;
         const chapterNumber = document.getElementById('editChapterNumber').value;
-        const bookId = document.getElementById('editTopicBookId')?.value;
+        const bookId = document.getElementById('editChapterBookId')?.value;
         
         if (!name) {
-            showToast('Please enter a topic name', true);
+            showToast('Please enter a chapter name', true);
             return;
         }
         
-        const { data: currentTopic } = await _supabase.from('topics').select('book_id').eq('id', id).single();
-        const targetBookId = bookId || currentTopic?.book_id;
+        const { data: currentChapter } = await _supabase.from('chapters').select('book_id').eq('id', id).single();
+        const targetBookId = bookId || currentChapter?.book_id;
         
-        const duplicate = await checkDuplicateTopic(name, targetBookId, id);
+        const duplicate = await checkDuplicateChapter(name, targetBookId, id);
         if (duplicate) {
-            showToast('Another topic with same name already exists for this book!', true);
+            showToast('Another chapter with same name already exists for this book!', true);
             return;
         }
         
         const { error } = await _supabase
-            .from('topics')
+            .from('chapters')
             .update({
                 name,
                 slug: createSlug(name),
@@ -1782,20 +1942,20 @@
         if (error) {
             showToast('Error: ' + error.message, true);
         } else {
-            showToast('Topic updated!');
-            document.getElementById('editTopicModal').classList.add('hidden');
-            topicsCache = {};
-            await Promise.all([loadTopicsCached(), loadFilterBooksCached()]);
+            showToast('Chapter updated!');
+            document.getElementById('editChapterModal').classList.add('hidden');
+            chaptersCache = {};
+            await Promise.all([loadChaptersCached(), loadFilterBooksCached(), loadSubTopicChapterFilters()]);
         }
     }
     
-    async function loadBookSelectForEditTopic() {
+    async function loadBookSelectForEditChapter(selectedBookId = null) {
         if (booksCache !== null) {
-            const select = document.getElementById('editTopicBookId');
+            const select = document.getElementById('editChapterBookId');
             if (select) {
                 select.innerHTML = '<option value="">Select Book</option>';
                 booksCache.forEach(book => {
-                    select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+                    select.innerHTML += `<option value="${book.id}" ${book.id == selectedBookId ? 'selected' : ''}>${escapeHtml(book.title)}</option>`;
                 });
             }
             return;
@@ -1804,36 +1964,254 @@
         const { data } = await _supabase.from('books').select('id, title');
         if (data) {
             booksCache = data;
-            const select = document.getElementById('editTopicBookId');
+            const select = document.getElementById('editChapterBookId');
             if (select) {
                 select.innerHTML = '<option value="">Select Book</option>';
                 data.forEach(book => {
-                    select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+                    select.innerHTML += `<option value="${book.id}" ${book.id == selectedBookId ? 'selected' : ''}>${escapeHtml(book.title)}</option>`;
                 });
             }
         }
     }
 
-    async function loadBookSelectForTopics() {
+    async function loadBookSelectForChapters() {
         if (booksCache !== null) {
-            renderBookSelectForTopics(booksCache);
+            renderBookSelectForChapters(booksCache);
             return;
         }
         
         const { data } = await _supabase.from('books').select('id, title');
         if (data) {
             booksCache = data;
-            renderBookSelectForTopics(data);
+            renderBookSelectForChapters(data);
         }
     }
     
-    function renderBookSelectForTopics(books) {
-        const select = document.getElementById('topicBookId');
+    function renderBookSelectForChapters(books) {
+        const select = document.getElementById('chapterBookId');
         select.innerHTML = '<option value="">Select Book</option>';
         if (books) {
             books.forEach(book => {
                 select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
             });
+        }
+    }
+
+    // ============ SUB-TOPICS ============
+    async function loadSubTopicFilterBooks() {
+        if (booksCache !== null) {
+            const select = document.getElementById('subTopicFilterBookId');
+            select.innerHTML = '<option value="">All Books</option>';
+            booksCache.forEach(book => {
+                select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+            });
+            return;
+        }
+        
+        const { data } = await _supabase.from('books').select('id, title');
+        if (data) {
+            booksCache = data;
+            const select = document.getElementById('subTopicFilterBookId');
+            select.innerHTML = '<option value="">All Books</option>';
+            data.forEach(book => {
+                select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+            });
+        }
+    }
+
+    async function loadSubTopicChapters() {
+        const bookId = document.getElementById('subTopicFilterBookId').value;
+        const chapterSelect = document.getElementById('subTopicFilterChapterId');
+        
+        if (!bookId || bookId === '') {
+            chapterSelect.innerHTML = '<option value="">Select a book first</option>';
+            chapterSelect.disabled = true;
+            currentSubTopicFilter.chapterId = '';
+            return;
+        }
+        
+        chapterSelect.innerHTML = '<option value="">Loading chapters...</option>';
+        chapterSelect.disabled = false;
+        
+        const { data } = await _supabase.from('chapters')
+            .select('id, name, chapter_number')
+            .eq('book_id', parseInt(bookId))
+            .order('chapter_number', { ascending: true });
+        
+        chapterSelect.innerHTML = '<option value="">All Chapters</option>';
+        if (data && data.length > 0) {
+            data.forEach(chapter => {
+                const display = chapter.chapter_number ? `Ch ${chapter.chapter_number}: ${chapter.name}` : chapter.name;
+                chapterSelect.innerHTML += `<option value="${chapter.id}">${escapeHtml(display)}</option>`;
+            });
+        }
+    }
+
+    async function loadSubTopicsCached() {
+        const container = document.getElementById('subTopicsList');
+        container.innerHTML = '<div class="skeleton h-12 w-full mb-2"></div><div class="skeleton h-12 w-full mb-2"></div>';
+        
+        let query = _supabase.from('subtopics').select('*, chapters(id, name, chapter_number, book_id, books(title))');
+        
+        const bookFilter = document.getElementById('subTopicFilterBookId')?.value;
+        const chapterFilter = document.getElementById('subTopicFilterChapterId')?.value;
+        
+        if (bookFilter && bookFilter !== '') {
+            // Filter by book through chapters
+            const { data: chaptersInBook } = await _supabase.from('chapters').select('id').eq('book_id', parseInt(bookFilter));
+            if (chaptersInBook && chaptersInBook.length > 0) {
+                const chapterIds = chaptersInBook.map(c => c.id);
+                query = query.in('chapter_id', chapterIds);
+            } else {
+                container.innerHTML = '<p class="text-gray-500">No topics found for this book.</p>';
+                return;
+            }
+        }
+        
+        if (chapterFilter && chapterFilter !== '') {
+            query = query.eq('chapter_id', parseInt(chapterFilter));
+        }
+        
+        const { data, error } = await query.order('chapter_id', { ascending: true }).order('id', { ascending: true });
+        
+        if (error || !data || data.length === 0) {
+            container.innerHTML = '<p class="text-gray-500">No topics yet. Add your first topic!</p>';
+            return;
+        }
+        
+        container.innerHTML = data.map(topic => {
+            const chapterName = topic.chapters?.name || 'Unknown Chapter';
+            const bookTitle = topic.chapters?.books?.title || 'Unknown Book';
+            const chapterDisplay = topic.chapters?.chapter_number ? `Ch ${topic.chapters.chapter_number}: ` : '';
+            return `
+            <div class="bg-gray-50 p-3 rounded-lg mb-2 flex justify-between items-center">
+                <div>
+                    <strong>${escapeHtml(topic.name)}</strong>
+                    <span class="text-gray-600 text-sm ml-2">(${chapterDisplay}${escapeHtml(chapterName)} - ${escapeHtml(bookTitle)})</span>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="openEditSubTopicModal(${topic.id}, '${escapeHtml(topic.name)}', ${topic.chapter_id})" class="text-blue-600 hover:text-blue-800">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="deleteSubTopic(${topic.id})" class="text-red-600 hover:text-red-800">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `}).join('');
+    }
+
+    async function applySubTopicFilter() {
+        await loadSubTopicsCached();
+    }
+
+    window.deleteSubTopic = async function(id) {
+        if (confirm('Delete this topic? This will also delete all questions in this topic.')) {
+            await _supabase.from('subtopics').delete().eq('id', id);
+            subTopicsCache = {};
+            await Promise.all([loadSubTopicsCached(), loadQuestions()]);
+            showToast('Topic deleted');
+        }
+    };
+
+    async function addSubTopic() {
+        const chapterId = document.getElementById('subTopicChapterId').value;
+        const name = document.getElementById('subTopicName').value;
+        
+        if (!chapterId || !name) {
+            showToast('Please select a chapter and enter a topic name', true);
+            return;
+        }
+        
+        const duplicate = await checkDuplicateSubTopic(name, parseInt(chapterId));
+        if (duplicate) {
+            showToast('Topic already exists for this chapter!', true);
+            return;
+        }
+        
+        const subTopicData = {
+            chapter_id: parseInt(chapterId),
+            name: name,
+            slug: createSlug(name)
+        };
+        
+        const { error } = await _supabase.from('subtopics').insert([subTopicData]);
+        if (error) {
+            showToast('Error: ' + error.message, true);
+        } else {
+            showToast('Topic added!');
+            document.getElementById('addSubTopicForm').classList.add('hidden');
+            document.getElementById('subTopicName').value = '';
+            subTopicsCache = {};
+            await loadSubTopicsCached();
+        }
+    }
+
+    window.openEditSubTopicModal = function(id, name, chapterId) {
+        document.getElementById('editSubTopicId').value = id;
+        document.getElementById('editSubTopicName').value = name;
+        loadBookAndChapterForEditSubTopic(chapterId);
+        document.getElementById('editSubTopicModal').classList.remove('hidden');
+    };
+
+    async function loadBookAndChapterForEditSubTopic(selectedChapterId = null) {
+        // Load books
+        const { data: books } = await _supabase.from('books').select('id, title');
+        if (books) {
+            const bookSelect = document.getElementById('editSubTopicBookId');
+            bookSelect.innerHTML = '<option value="">Select Book</option>';
+            books.forEach(book => {
+                bookSelect.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+            });
+        }
+        
+        // Load chapters for the selected book
+        const bookId = document.getElementById('editSubTopicBookId')?.value;
+        if (bookId) {
+            const { data: chapters } = await _supabase.from('chapters').select('id, name, chapter_number').eq('book_id', parseInt(bookId)).order('chapter_number', { ascending: true });
+            const chapterSelect = document.getElementById('editSubTopicChapterId');
+            chapterSelect.innerHTML = '<option value="">Select Chapter</option>';
+            if (chapters) {
+                chapters.forEach(chapter => {
+                    const display = chapter.chapter_number ? `Ch ${chapter.chapter_number}: ${chapter.name}` : chapter.name;
+                    chapterSelect.innerHTML += `<option value="${chapter.id}" ${chapter.id == selectedChapterId ? 'selected' : ''}>${escapeHtml(display)}</option>`;
+                });
+            }
+        }
+    }
+
+    async function updateSubTopic() {
+        const id = document.getElementById('editSubTopicId').value;
+        const name = document.getElementById('editSubTopicName').value;
+        const chapterId = document.getElementById('editSubTopicChapterId').value;
+        
+        if (!name || !chapterId) {
+            showToast('Please fill all fields', true);
+            return;
+        }
+        
+        const duplicate = await checkDuplicateSubTopic(name, parseInt(chapterId), id);
+        if (duplicate) {
+            showToast('Another topic with same name already exists for this chapter!', true);
+            return;
+        }
+        
+        const { error } = await _supabase
+            .from('subtopics')
+            .update({
+                name,
+                slug: createSlug(name),
+                chapter_id: parseInt(chapterId)
+            })
+            .eq('id', id);
+        
+        if (error) {
+            showToast('Error: ' + error.message, true);
+        } else {
+            showToast('Topic updated!');
+            document.getElementById('editSubTopicModal').classList.add('hidden');
+            subTopicsCache = {};
+            await loadSubTopicsCached();
         }
     }
 
@@ -1861,32 +2239,55 @@
         }
     }
 
-    async function loadTopicsForQuestion() {
+    async function loadChaptersForQuestion() {
         const bookId = document.getElementById('questionBookId').value;
+        const chapterSelect = document.getElementById('questionChapterId');
+        
         if (!bookId || bookId === '') {
+            chapterSelect.innerHTML = '<option value="">Select Chapter</option>';
             document.getElementById('questionTopicId').innerHTML = '<option value="">Select Topic</option>';
             return;
         }
         
-        if (topicsCache[bookId]) {
-            renderTopicsForQuestion(topicsCache[bookId]);
+        if (chaptersCache[bookId]) {
+            renderChaptersForQuestion(chaptersCache[bookId]);
             return;
         }
         
-        const { data } = await _supabase.from('topics').select('id, name, chapter_number').eq('book_id', parseInt(bookId)).order('chapter_number', { ascending: true });
+        const { data } = await _supabase.from('chapters').select('id, name, chapter_number').eq('book_id', parseInt(bookId)).order('chapter_number', { ascending: true });
         if (data) {
-            topicsCache[bookId] = data;
-            renderTopicsForQuestion(data);
+            chaptersCache[bookId] = data;
+            renderChaptersForQuestion(data);
         }
     }
     
-    function renderTopicsForQuestion(topics) {
-        const select = document.getElementById('questionTopicId');
-        select.innerHTML = '<option value="">Select Topic</option>';
-        if (topics && topics.length > 0) {
-            topics.forEach(topic => {
-                const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
-                select.innerHTML += `<option value="${topic.id}">${escapeHtml(display)}</option>`;
+    function renderChaptersForQuestion(chapters) {
+        const chapterSelect = document.getElementById('questionChapterId');
+        chapterSelect.innerHTML = '<option value="">Select Chapter</option>';
+        if (chapters && chapters.length > 0) {
+            chapters.forEach(chapter => {
+                const display = chapter.chapter_number ? `Ch ${chapter.chapter_number}: ${chapter.name}` : chapter.name;
+                chapterSelect.innerHTML += `<option value="${chapter.id}">${escapeHtml(display)}</option>`;
+            });
+        }
+        // Reset topic dropdown
+        document.getElementById('questionTopicId').innerHTML = '<option value="">Select Topic</option>';
+    }
+
+    async function loadTopicsForQuestion() {
+        const chapterId = document.getElementById('questionChapterId').value;
+        const topicSelect = document.getElementById('questionTopicId');
+        
+        if (!chapterId || chapterId === '') {
+            topicSelect.innerHTML = '<option value="">Select Topic</option>';
+            return;
+        }
+        
+        const { data } = await _supabase.from('subtopics').select('id, name').eq('chapter_id', parseInt(chapterId)).order('name', { ascending: true });
+        topicSelect.innerHTML = '<option value="">Select Topic</option>';
+        if (data && data.length > 0) {
+            data.forEach(topic => {
+                topicSelect.innerHTML += `<option value="${topic.id}">${escapeHtml(topic.name)}</option>`;
             });
         }
     }
@@ -1915,39 +2316,68 @@
         }
     }
     
-    async function loadFilterTopics() {
+    async function loadFilterChapters() {
         const bookId = document.getElementById('filterBookId').value;
-        const topicSelect = document.getElementById('filterTopicId');
+        const chapterSelect = document.getElementById('filterChapterId');
         
         if (!bookId || bookId === '') {
-            topicSelect.innerHTML = '<option value="">All Topics</option>';
+            chapterSelect.innerHTML = '<option value="">All Chapters</option>';
+            document.getElementById('filterTopicId').innerHTML = '<option value="">All Topics</option>';
+            currentFilters.chapterId = '';
             currentFilters.topicId = '';
             return;
         }
         
-        if (topicsCache[bookId]) {
-            renderFilterTopics(topicsCache[bookId]);
+        if (chaptersCache[bookId]) {
+            renderFilterChapters(chaptersCache[bookId]);
             return;
         }
         
-        const { data } = await _supabase.from('topics')
+        const { data } = await _supabase.from('chapters')
             .select('id, name, chapter_number')
             .eq('book_id', parseInt(bookId))
             .order('chapter_number', { ascending: true });
         
         if (data) {
-            topicsCache[bookId] = data;
-            renderFilterTopics(data);
+            chaptersCache[bookId] = data;
+            renderFilterChapters(data);
         }
     }
     
-    function renderFilterTopics(topics) {
+    function renderFilterChapters(chapters) {
+        const chapterSelect = document.getElementById('filterChapterId');
+        chapterSelect.innerHTML = '<option value="">All Chapters</option>';
+        if (chapters && chapters.length > 0) {
+            chapters.forEach(chapter => {
+                const display = chapter.chapter_number ? `Ch ${chapter.chapter_number}: ${chapter.name}` : chapter.name;
+                chapterSelect.innerHTML += `<option value="${chapter.id}">${escapeHtml(display)}</option>`;
+            });
+        }
+        document.getElementById('filterTopicId').innerHTML = '<option value="">All Topics</option>';
+        currentFilters.chapterId = '';
+        currentFilters.topicId = '';
+        chapterSelect.value = '';
+    }
+    
+    async function loadFilterTopics() {
+        const chapterId = document.getElementById('filterChapterId').value;
         const topicSelect = document.getElementById('filterTopicId');
+        
+        if (!chapterId || chapterId === '') {
+            topicSelect.innerHTML = '<option value="">All Topics</option>';
+            currentFilters.topicId = '';
+            return;
+        }
+        
+        const { data } = await _supabase.from('subtopics')
+            .select('id, name')
+            .eq('chapter_id', parseInt(chapterId))
+            .order('name', { ascending: true });
+        
         topicSelect.innerHTML = '<option value="">All Topics</option>';
-        if (topics && topics.length > 0) {
-            topics.forEach(topic => {
-                const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
-                topicSelect.innerHTML += `<option value="${topic.id}">${escapeHtml(display)}</option>`;
+        if (data && data.length > 0) {
+            data.forEach(topic => {
+                topicSelect.innerHTML += `<option value="${topic.id}">${escapeHtml(topic.name)}</option>`;
             });
         }
         currentFilters.topicId = '';
@@ -1963,20 +2393,29 @@
             .from('questions')
             .select(`
                 *,
-                topics!inner (
+                subtopics!inner (
                     id,
                     name,
-                    chapter_number,
-                    book_id,
-                    books!inner (
+                    chapter_id,
+                    chapters!inner (
                         id,
-                        title
+                        name,
+                        chapter_number,
+                        book_id,
+                        books!inner (
+                            id,
+                            title
+                        )
                     )
                 )
             `, { count: 'exact' });
         
         if (currentFilters.bookId && currentFilters.bookId !== '') {
-            query = query.eq('topics.book_id', parseInt(currentFilters.bookId));
+            query = query.eq('subtopics.chapters.book_id', parseInt(currentFilters.bookId));
+        }
+        
+        if (currentFilters.chapterId && currentFilters.chapterId !== '') {
+            query = query.eq('subtopics.chapter_id', parseInt(currentFilters.chapterId));
         }
         
         if (currentFilters.topicId && currentFilters.topicId !== '') {
@@ -2010,17 +2449,19 @@
         
         container.innerHTML = data.map((q, index) => {
             const sequentialNumber = startNumber + index;
-            const topicData = q.topics;
-            const bookTitle = topicData?.books?.title || 'Unknown';
-            const topicDisplay = topicData?.chapter_number ? 
-                `Ch ${topicData.chapter_number}: ${escapeHtml(topicData.name)}` : 
-                escapeHtml(topicData?.name || 'Unknown');
+            const topicData = q.subtopics;
+            const chapterData = topicData?.chapters;
+            const bookTitle = chapterData?.books?.title || 'Unknown';
+            const chapterDisplay = chapterData?.chapter_number ? 
+                `Ch ${chapterData.chapter_number}: ${escapeHtml(chapterData.name)}` : 
+                escapeHtml(chapterData?.name || 'Unknown');
+            const topicName = escapeHtml(topicData?.name || 'Unknown');
             return `
             <div class="bg-gray-50 p-3 rounded-lg mb-2">
                 <div class="flex justify-between items-start">
                     <div class="flex-1">
                         <p class="font-bold text-sm math-rendered">Q${sequentialNumber}. <span class="math-content">${escapeHtml(q.question_text)}</span></p>
-                        <p class="text-xs text-gray-600 mt-1">Book: ${escapeHtml(bookTitle)} | Topic: ${topicDisplay} | Difficulty: ${q.difficulty}</p>
+                        <p class="text-xs text-gray-600 mt-1">Book: ${escapeHtml(bookTitle)} | Chapter: ${chapterDisplay} | Topic: ${topicName} | Difficulty: ${q.difficulty}</p>
                     </div>
                     <div class="flex gap-2 ml-2">
                         <button onclick="openEditQuestionModal(${q.id})" class="text-blue-600 hover:text-blue-800 text-sm">
@@ -2041,6 +2482,7 @@
     
     async function applyFilters() {
         currentFilters.bookId = document.getElementById('filterBookId').value;
+        currentFilters.chapterId = document.getElementById('filterChapterId').value;
         currentFilters.topicId = document.getElementById('filterTopicId').value;
         currentFilters.difficulty = document.getElementById('filterDifficulty').value;
         currentPage = 1;
@@ -2217,12 +2659,48 @@
         });
     }
     
-    async function loadBulkDeleteTopics() {
+    async function loadBulkDeleteChapters() {
         const bookId = document.getElementById('bulkDeleteBookId').value;
+        const chapterSelect = document.getElementById('bulkDeleteChapterId');
         const topicSelect = document.getElementById('bulkDeleteTopicId');
         
         if (!bookId) {
-            topicSelect.innerHTML = '<option value="">Select a book first</option>';
+            chapterSelect.innerHTML = '<option value="">Select a book first</option>';
+            chapterSelect.disabled = true;
+            topicSelect.innerHTML = '<option value="">Select a chapter first</option>';
+            topicSelect.disabled = true;
+            return;
+        }
+        
+        chapterSelect.innerHTML = '<option value="">Loading chapters...</option>';
+        chapterSelect.disabled = false;
+        
+        const { data, error } = await _supabase.from('chapters')
+            .select('id, name, chapter_number')
+            .eq('book_id', parseInt(bookId))
+            .order('chapter_number');
+        
+        if (error) {
+            chapterSelect.innerHTML = '<option value="">Error loading chapters</option>';
+            return;
+        }
+        
+        chapterSelect.innerHTML = '<option value="">All Chapters</option>';
+        data.forEach(chapter => {
+            const display = chapter.chapter_number ? `Ch ${chapter.chapter_number}: ${chapter.name}` : chapter.name;
+            chapterSelect.innerHTML += `<option value="${chapter.id}">${escapeHtml(display)}</option>`;
+        });
+        
+        topicSelect.innerHTML = '<option value="">Select a chapter first</option>';
+        topicSelect.disabled = true;
+    }
+    
+    async function loadBulkDeleteTopics() {
+        const chapterId = document.getElementById('bulkDeleteChapterId').value;
+        const topicSelect = document.getElementById('bulkDeleteTopicId');
+        
+        if (!chapterId) {
+            topicSelect.innerHTML = '<option value="">Select a chapter first</option>';
             topicSelect.disabled = true;
             return;
         }
@@ -2230,10 +2708,10 @@
         topicSelect.innerHTML = '<option value="">Loading topics...</option>';
         topicSelect.disabled = false;
         
-        const { data, error } = await _supabase.from('topics')
-            .select('id, name, chapter_number')
-            .eq('book_id', parseInt(bookId))
-            .order('chapter_number');
+        const { data, error } = await _supabase.from('subtopics')
+            .select('id, name')
+            .eq('chapter_id', parseInt(chapterId))
+            .order('name');
         
         if (error) {
             topicSelect.innerHTML = '<option value="">Error loading topics</option>';
@@ -2242,20 +2720,23 @@
         
         topicSelect.innerHTML = '<option value="">All Topics</option>';
         data.forEach(topic => {
-            const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
-            topicSelect.innerHTML += `<option value="${topic.id}">${escapeHtml(display)}</option>`;
+            topicSelect.innerHTML += `<option value="${topic.id}">${escapeHtml(topic.name)}</option>`;
         });
     }
     
     async function refreshBulkDeletePreview() {
         const bookId = document.getElementById('bulkDeleteBookId').value;
+        const chapterId = document.getElementById('bulkDeleteChapterId').value;
         const topicId = document.getElementById('bulkDeleteTopicId').value;
         const difficulty = document.getElementById('bulkDeleteDifficulty').value;
         
-        let query = _supabase.from('questions').select('id, topics!inner(book_id)', { count: 'exact' });
+        let query = _supabase.from('questions').select('id, subtopics!inner(chapter_id, chapters!inner(book_id))', { count: 'exact' });
         
         if (bookId) {
-            query = query.eq('topics.book_id', parseInt(bookId));
+            query = query.eq('subtopics.chapters.book_id', parseInt(bookId));
+        }
+        if (chapterId) {
+            query = query.eq('subtopics.chapter_id', parseInt(chapterId));
         }
         if (topicId) {
             query = query.eq('topic_id', parseInt(topicId));
@@ -2284,28 +2765,49 @@
             countSpan.textContent = bulkDeleteCount;
             
             let detailsText = '';
-            if (bookId && topicId && difficulty) {
+            if (bookId && chapterId && topicId && difficulty) {
                 const bookName = document.getElementById('bulkDeleteBookId').options[document.getElementById('bulkDeleteBookId').selectedIndex]?.text || 'Selected Book';
+                const chapterName = document.getElementById('bulkDeleteChapterId').options[document.getElementById('bulkDeleteChapterId').selectedIndex]?.text || 'Selected Chapter';
                 const topicName = document.getElementById('bulkDeleteTopicId').options[document.getElementById('bulkDeleteTopicId').selectedIndex]?.text || 'Selected Topic';
-                detailsText = `Book: ${bookName} | Topic: ${topicName} | Difficulty: ${difficulty}`;
+                detailsText = `Book: ${bookName} | Chapter: ${chapterName} | Topic: ${topicName} | Difficulty: ${difficulty}`;
+            } else if (bookId && chapterId && topicId) {
+                const bookName = document.getElementById('bulkDeleteBookId').options[document.getElementById('bulkDeleteBookId').selectedIndex]?.text || 'Selected Book';
+                const chapterName = document.getElementById('bulkDeleteChapterId').options[document.getElementById('bulkDeleteChapterId').selectedIndex]?.text || 'Selected Chapter';
+                const topicName = document.getElementById('bulkDeleteTopicId').options[document.getElementById('bulkDeleteTopicId').selectedIndex]?.text || 'Selected Topic';
+                detailsText = `Book: ${bookName} | Chapter: ${chapterName} | Topic: ${topicName} | All Difficulties`;
+            } else if (bookId && chapterId && difficulty) {
+                const bookName = document.getElementById('bulkDeleteBookId').options[document.getElementById('bulkDeleteBookId').selectedIndex]?.text || 'Selected Book';
+                const chapterName = document.getElementById('bulkDeleteChapterId').options[document.getElementById('bulkDeleteChapterId').selectedIndex]?.text || 'Selected Chapter';
+                detailsText = `Book: ${bookName} | Chapter: ${chapterName} | All Topics | Difficulty: ${difficulty}`;
             } else if (bookId && topicId) {
                 const bookName = document.getElementById('bulkDeleteBookId').options[document.getElementById('bulkDeleteBookId').selectedIndex]?.text || 'Selected Book';
                 const topicName = document.getElementById('bulkDeleteTopicId').options[document.getElementById('bulkDeleteTopicId').selectedIndex]?.text || 'Selected Topic';
-                detailsText = `Book: ${bookName} | Topic: ${topicName} | All Difficulties`;
+                detailsText = `Book: ${bookName} | All Chapters | Topic: ${topicName} | All Difficulties`;
+            } else if (bookId && chapterId) {
+                const bookName = document.getElementById('bulkDeleteBookId').options[document.getElementById('bulkDeleteBookId').selectedIndex]?.text || 'Selected Book';
+                const chapterName = document.getElementById('bulkDeleteChapterId').options[document.getElementById('bulkDeleteChapterId').selectedIndex]?.text || 'Selected Chapter';
+                detailsText = `Book: ${bookName} | Chapter: ${chapterName} | All Topics | All Difficulties`;
             } else if (bookId && difficulty) {
                 const bookName = document.getElementById('bulkDeleteBookId').options[document.getElementById('bulkDeleteBookId').selectedIndex]?.text || 'Selected Book';
-                detailsText = `Book: ${bookName} | All Topics | Difficulty: ${difficulty}`;
-            } else if (topicId && difficulty) {
-                const topicName = document.getElementById('bulkDeleteTopicId').options[document.getElementById('bulkDeleteTopicId').selectedIndex]?.text || 'Selected Topic';
-                detailsText = `All Books | Topic: ${topicName} | Difficulty: ${difficulty}`;
+                detailsText = `Book: ${bookName} | All Chapters | All Topics | Difficulty: ${difficulty}`;
             } else if (bookId) {
                 const bookName = document.getElementById('bulkDeleteBookId').options[document.getElementById('bulkDeleteBookId').selectedIndex]?.text || 'Selected Book';
-                detailsText = `Book: ${bookName} | All Topics | All Difficulties`;
-            } else if (topicId) {
+                detailsText = `Book: ${bookName} | All Chapters | All Topics | All Difficulties`;
+            } else if (chapterId && topicId && difficulty) {
+                const chapterName = document.getElementById('bulkDeleteChapterId').options[document.getElementById('bulkDeleteChapterId').selectedIndex]?.text || 'Selected Chapter';
                 const topicName = document.getElementById('bulkDeleteTopicId').options[document.getElementById('bulkDeleteTopicId').selectedIndex]?.text || 'Selected Topic';
-                detailsText = `All Books | Topic: ${topicName} | All Difficulties`;
+                detailsText = `All Books | Chapter: ${chapterName} | Topic: ${topicName} | Difficulty: ${difficulty}`;
+            } else if (chapterId && topicId) {
+                const chapterName = document.getElementById('bulkDeleteChapterId').options[document.getElementById('bulkDeleteChapterId').selectedIndex]?.text || 'Selected Chapter';
+                const topicName = document.getElementById('bulkDeleteTopicId').options[document.getElementById('bulkDeleteTopicId').selectedIndex]?.text || 'Selected Topic';
+                detailsText = `All Books | Chapter: ${chapterName} | Topic: ${topicName} | All Difficulties`;
+            } else if (topicId && difficulty) {
+                const topicName = document.getElementById('bulkDeleteTopicId').options[document.getElementById('bulkDeleteTopicId').selectedIndex]?.text || 'Selected Topic';
+                detailsText = `All Books | All Chapters | Topic: ${topicName} | Difficulty: ${difficulty}`;
             } else if (difficulty) {
-                detailsText = `All Books | All Topics | Difficulty: ${difficulty}`;
+                detailsText = `All Books | All Chapters | All Topics | Difficulty: ${difficulty}`;
+            } else {
+                detailsText = 'All Books | All Chapters | All Topics | All Difficulties';
             }
             
             detailsDiv.innerHTML = detailsText;
@@ -2320,6 +2822,7 @@
     
     async function executeBulkDelete() {
         const bookId = document.getElementById('bulkDeleteBookId').value;
+        const chapterId = document.getElementById('bulkDeleteChapterId').value;
         const topicId = document.getElementById('bulkDeleteTopicId').value;
         const difficulty = document.getElementById('bulkDeleteDifficulty').value;
         
@@ -2341,10 +2844,30 @@
         let query = _supabase.from('questions').select('id');
         
         if (bookId) {
-            const topicsForBook = await _supabase.from('topics').select('id').eq('book_id', parseInt(bookId));
-            const topicIds = topicsForBook.data?.map(t => t.id) || [];
+            const chaptersForBook = await _supabase.from('chapters').select('id').eq('book_id', parseInt(bookId));
+            const chapterIds = chaptersForBook.data?.map(c => c.id) || [];
+            if (chapterIds.length > 0) {
+                const topicsForChapters = await _supabase.from('subtopics').select('id').in('chapter_id', chapterIds);
+                const topicIds = topicsForChapters.data?.map(t => t.id) || [];
+                if (topicIds.length > 0) {
+                    query = query.in('topic_id', topicIds);
+                } else {
+                    showToast('No topics found for this book', true);
+                    return;
+                }
+            } else {
+                showToast('No chapters found for this book', true);
+                return;
+            }
+        }
+        if (chapterId) {
+            const topicsForChapter = await _supabase.from('subtopics').select('id').eq('chapter_id', parseInt(chapterId));
+            const topicIds = topicsForChapter.data?.map(t => t.id) || [];
             if (topicIds.length > 0) {
                 query = query.in('topic_id', topicIds);
+            } else {
+                showToast('No topics found for this chapter', true);
+                return;
             }
         }
         if (topicId) {
@@ -2393,11 +2916,14 @@
         await Promise.all([
             loadQuestions(),
             refreshBulkDeletePreview(),
-            loadTopicsCached()
+            loadChaptersCached(),
+            loadSubTopicsCached()
         ]);
         
         document.getElementById('bulkDeleteBookId').value = '';
-        document.getElementById('bulkDeleteTopicId').innerHTML = '<option value="">Select a book first</option>';
+        document.getElementById('bulkDeleteChapterId').innerHTML = '<option value="">Select a book first</option>';
+        document.getElementById('bulkDeleteChapterId').disabled = true;
+        document.getElementById('bulkDeleteTopicId').innerHTML = '<option value="">Select a chapter first</option>';
         document.getElementById('bulkDeleteTopicId').disabled = true;
         document.getElementById('bulkDeleteDifficulty').value = '';
         document.getElementById('bulkDeletePreview').classList.add('hidden');
@@ -2423,7 +2949,33 @@
         `).join('');
     }
 
-    // ============ SITEMAP GENERATOR - FIXED ============
+    // ============ SUB-TOPIC CHAPTER FILTERS ============
+    async function loadSubTopicChapterFilters(selectedChapterId = null) {
+        const bookId = document.getElementById('subTopicBookId').value;
+        const chapterSelect = document.getElementById('subTopicChapterId');
+        
+        if (!bookId || bookId === '') {
+            chapterSelect.innerHTML = '<option value="">Select Book first</option>';
+            return;
+        }
+        
+        chapterSelect.innerHTML = '<option value="">Loading chapters...</option>';
+        
+        const { data } = await _supabase.from('chapters')
+            .select('id, name, chapter_number')
+            .eq('book_id', parseInt(bookId))
+            .order('chapter_number', { ascending: true });
+        
+        chapterSelect.innerHTML = '<option value="">Select Chapter</option>';
+        if (data && data.length > 0) {
+            data.forEach(chapter => {
+                const display = chapter.chapter_number ? `Ch ${chapter.chapter_number}: ${chapter.name}` : chapter.name;
+                chapterSelect.innerHTML += `<option value="${chapter.id}" ${chapter.id == selectedChapterId ? 'selected' : ''}>${escapeHtml(display)}</option>`;
+            });
+        }
+    }
+
+    // ============ SITEMAP GENERATOR ============
     async function generateSitemap() {
         const statusEl = document.getElementById('sitemapStatus');
         const countEl = document.getElementById('sitemapCount');
@@ -2445,7 +2997,7 @@
         
         statusEl.textContent = '📦 Fetching data...';
         progressBar.style.width = '10%';
-        logContent.innerHTML += '<div>📦 Fetching books and topics...</div>';
+        logContent.innerHTML += '<div>📦 Fetching books and chapters...</div>';
         
         try {
             // Fetch books
@@ -2456,16 +3008,16 @@
             
             if (booksError) throw booksError;
             
-            // Fetch topics with their book slugs
-            const { data: topics, error: topicsError } = await _supabase
-                .from('topics')
+            // Fetch chapters with their book slugs
+            const { data: chapters, error: chaptersError } = await _supabase
+                .from('chapters')
                 .select('id, name, slug, book_id, chapter_number, created_at, books(title, slug)')
                 .order('book_id')
                 .order('chapter_number', { ascending: true, nullsFirst: false });
             
-            if (topicsError) throw topicsError;
+            if (chaptersError) throw chaptersError;
             
-            logContent.innerHTML += `<div>📚 Found ${books.length} books, ${topics.length} topics</div>`;
+            logContent.innerHTML += `<div>📚 Found ${books.length} books, ${chapters.length} chapters</div>`;
             statusEl.textContent = '📄 Generating sitemap URLs...';
             progressBar.style.width = '30%';
             
@@ -2491,22 +3043,18 @@
                 });
             });
             
-            // Group topics by book
-            const topicsByBook = {};
-            topics.forEach(topic => {
-                if (topic.books && topic.books.slug) {
-                    const bookSlug = topic.books.slug;
-                    if (!topicsByBook[bookSlug]) {
-                        topicsByBook[bookSlug] = [];
+            // Group chapters by book
+            const chaptersByBook = {};
+            chapters.forEach(chapter => {
+                if (chapter.books && chapter.books.slug) {
+                    const bookSlug = chapter.books.slug;
+                    if (!chaptersByBook[bookSlug]) {
+                        chaptersByBook[bookSlug] = [];
                     }
-                    topicsByBook[bookSlug].push(topic);
+                    chaptersByBook[bookSlug].push(chapter);
                 }
             });
             
-            // ============================================================
-            // FIXED: Book main page URL - /books/[book-slug]/index.html
-            // NOT /books/[book-slug].html
-            // ============================================================
             const sortedBooks = [...books].sort((a, b) => a.title.localeCompare(b.title));
             sortedBooks.forEach(book => {
                 const slug = book.slug || createSlug(book.title);
@@ -2521,26 +3069,25 @@
                 });
             });
             
-            // Add topic/chapter pages - /books/[book-slug]/[chapter-slug].html
-            const sortedBookSlugs = Object.keys(topicsByBook).sort();
+            // Add chapter pages
+            const sortedBookSlugs = Object.keys(chaptersByBook).sort();
             sortedBookSlugs.forEach(bookSlug => {
-                const bookTopics = topicsByBook[bookSlug];
-                // Sort topics by chapter number
-                bookTopics.sort((a, b) => {
+                const bookChapters = chaptersByBook[bookSlug];
+                bookChapters.sort((a, b) => {
                     const aNum = a.chapter_number || 999;
                     const bNum = b.chapter_number || 999;
                     return aNum - bNum;
                 });
                 
-                bookTopics.forEach(topic => {
-                    if (topic.slug) {
+                bookChapters.forEach(chapter => {
+                    if (chapter.slug) {
                         urls.push({
-                            loc: `https://www.bookmcq.com/books/${bookSlug}/${topic.slug}.html`,
+                            loc: `https://www.bookmcq.com/books/${bookSlug}/${chapter.slug}.html`,
                             priority: '0.8',
                             changefreq: 'weekly',
-                            lastmod: topic.created_at ? new Date(topic.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                            lastmod: chapter.created_at ? new Date(chapter.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
                             bookSlug: bookSlug,
-                            chapterNumber: topic.chapter_number
+                            chapterNumber: chapter.chapter_number
                         });
                     }
                 });
@@ -2549,37 +3096,33 @@
             // Update stats
             document.getElementById('sitemapStaticCount').textContent = staticPages.length;
             document.getElementById('sitemapBookCount').textContent = books.length;
-            document.getElementById('sitemapTopicCount').textContent = topics.length;
+            document.getElementById('sitemapChapterCount').textContent = chapters.length;
             document.getElementById('sitemapTotalCount').textContent = urls.length;
             
-// ============================================================
-// Build XML with CORRECT URLs and LASTMOD for ALL pages
-// ============================================================
-let xml = `<?xml version="1.0" encoding="UTF-8"?>
+            // Build XML
+            let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <!-- ================= MAIN PAGES ================= -->\n`;
-
-// Add static pages
-staticPages.forEach(page => {
-    xml += `  <url>
+            
+            staticPages.forEach(page => {
+                xml += `  <url>
     <loc>https://www.bookmcq.com${page.url}</loc>
     <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
     <changefreq>${page.changefreq}</changefreq>
     <priority>${page.priority}</priority>
   </url>\n`;
-});
-
-xml += `
+            });
+            
+            xml += `
   <!-- ================= BOOKS ================= -->\n`;
-
-// Add book main pages with CORRECT URL: /books/[slug]/index.html
-sortedBooks.forEach(book => {
-    const slug = book.slug || createSlug(book.title);
-    const bookTitle = book.title;
-    const lastmod = book.created_at ? new Date(book.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-    
-    xml += `
+            
+            sortedBooks.forEach(book => {
+                const slug = book.slug || createSlug(book.title);
+                const bookTitle = book.title;
+                const lastmod = book.created_at ? new Date(book.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+                
+                xml += `
   <!-- ${bookTitle} -->
   <url>
     <loc>https://www.bookmcq.com/books/${slug}/index.html</loc>
@@ -2587,36 +3130,33 @@ sortedBooks.forEach(book => {
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>\n`;
-    
-    // Get topics for this book
-    const bookTopics = topicsByBook[slug] || [];
-    if (bookTopics.length > 0) {
-        // Sort by chapter number
-        bookTopics.sort((a, b) => {
-            const aNum = a.chapter_number || 999;
-            const bNum = b.chapter_number || 999;
-            return aNum - bNum;
-        });
-        
-        xml += `
+                
+                const bookChapters = chaptersByBook[slug] || [];
+                if (bookChapters.length > 0) {
+                    bookChapters.sort((a, b) => {
+                        const aNum = a.chapter_number || 999;
+                        const bNum = b.chapter_number || 999;
+                        return aNum - bNum;
+                    });
+                    
+                    xml += `
   <!-- ${bookTitle} Chapters -->\n`;
-        
-        bookTopics.forEach(topic => {
-            if (topic.slug) {
-                // ✅ FIXED: Add lastmod for chapters
-                const topicLastmod = topic.created_at ? new Date(topic.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-                xml += `  <url>
-    <loc>https://www.bookmcq.com/books/${slug}/${topic.slug}.html</loc>
-    <lastmod>${topicLastmod}</lastmod>
+                    
+                    bookChapters.forEach(chapter => {
+                        if (chapter.slug) {
+                            const chapterLastmod = chapter.created_at ? new Date(chapter.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+                            xml += `  <url>
+    <loc>https://www.bookmcq.com/books/${slug}/${chapter.slug}.html</loc>
+    <lastmod>${chapterLastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>\n`;
-            }
-        });
-    }
-});
-
-xml += `</urlset>`;
+                        }
+                    });
+                }
+            });
+            
+            xml += `</urlset>`;
             
             sitemapData = {
                 xml: xml,
@@ -2624,17 +3164,16 @@ xml += `</urlset>`;
                 total: urls.length,
                 staticCount: staticPages.length,
                 bookCount: books.length,
-                topicCount: topics.length
+                chapterCount: chapters.length
             };
             
-            // Store URL list for preview
             window.sitemapUrls = urls;
             
             progressBar.style.width = '90%';
             statusEl.textContent = '✅ Sitemap generated!';
             countEl.textContent = `${urls.length} URLs`;
             logContent.innerHTML += `<div class="text-green-600">✅ Sitemap generated with ${urls.length} URLs</div>`;
-            logContent.innerHTML += `<div>📊 ${staticPages.length} static, ${books.length} books, ${topics.length} chapters</div>`;
+            logContent.innerHTML += `<div>📊 ${staticPages.length} static, ${books.length} books, ${chapters.length} chapters</div>`;
             
             resultEl.classList.remove('hidden');
             downloadBtn.classList.remove('hidden');
@@ -2673,7 +3212,6 @@ xml += `</urlset>`;
         const urlListEl = document.getElementById('sitemapUrlList');
         
         if (previewEl.classList.contains('hidden')) {
-            // Show preview
             if (!window.sitemapUrls || window.sitemapUrls.length === 0) {
                 showToast('No URLs to display', true);
                 return;
@@ -2707,7 +3245,8 @@ xml += `</urlset>`;
         }
         
         document.getElementById('booksTab').classList.add('hidden');
-        document.getElementById('topicsTab').classList.add('hidden');
+        document.getElementById('chaptersTab').classList.add('hidden');
+        document.getElementById('subTopicsTab').classList.add('hidden');
         document.getElementById('questionsTab').classList.add('hidden');
         document.getElementById('categoriesTab').classList.add('hidden');
         document.getElementById('bulkUploadTab').classList.add('hidden');
@@ -2717,7 +3256,7 @@ xml += `</urlset>`;
         document.getElementById('sitemapTab').classList.add('hidden');
         document.getElementById(`${tabName}Tab`).classList.remove('hidden');
         
-        const buttons = ['Books', 'Topics', 'Questions', 'Categories', 'BulkUpload', 'Admins', 'Messages', 'Seo', 'Sitemap'];
+        const buttons = ['Books', 'Chapters', 'SubTopics', 'Questions', 'Categories', 'BulkUpload', 'Admins', 'Messages', 'Seo', 'Sitemap'];
         buttons.forEach(btn => {
             const btnElement = document.getElementById(`tab${btn}Btn`);
             if (btnElement) {
@@ -2741,11 +3280,14 @@ xml += `</urlset>`;
             setTimeout(generateSEOPages, 500);
         }
         if (tabName === 'sitemap') {
-            // Reset stats to show zeros initially
             document.getElementById('sitemapStaticCount').textContent = '0';
             document.getElementById('sitemapBookCount').textContent = '0';
-            document.getElementById('sitemapTopicCount').textContent = '0';
+            document.getElementById('sitemapChapterCount').textContent = '0';
             document.getElementById('sitemapTotalCount').textContent = '0';
+        }
+        if (tabName === 'subtopics') {
+            loadSubTopicFilterBooks();
+            loadSubTopicsCached();
         }
     }
     
@@ -2765,12 +3307,13 @@ xml += `</urlset>`;
                 document.getElementById('nonAdminView').classList.add('hidden');
                 await Promise.all([
                     loadBooksCached(),
-                    loadTopicsCached(),
+                    loadChaptersCached(),
+                    loadSubTopicsCached(),
                     loadQuestions(),
                     loadAdmins(),
                     loadBookSelectsCached(),
                     loadFilterBooksCached(),
-                    loadTopicFilterBooksCached(),
+                    loadChapterFilterBooksCached(),
                     loadCategoriesCached(),
                     loadBulkDeleteBooks(),
                     loadMessages()
@@ -2786,15 +3329,12 @@ xml += `</urlset>`;
         }
     }
 
-    // ============ SEO PAGE GENERATION - COMPLETE FIXED VERSION ============
+    // ============ SEO PAGE GENERATION ============
     let seoGeneratedFiles = [];
     let seoTotalBooks = 0;
     let seoGeneratedCount = 0;
     let seoBooksData = [];
 
-    // ============================================================
-    // FETCH ALL QUESTIONS WITH DIFFICULTY
-    // ============================================================
     async function fetchAllQuestionsWithDifficulty() {
         let allQuestions = [];
         let page = 0;
@@ -2828,27 +3368,22 @@ xml += `</urlset>`;
         return allQuestions;
     }
 
-    // ============================================================
-    // GENERATE BOOK INDEX PAGE
-    // ============================================================
-    function generateBookIndexPage(book, topics, questionStats, totalQuestions) {
+    function generateBookIndexPage(book, chapters, questionStats, totalQuestions) {
         const bookSlug = book.slug || createSlug(book.title);
         const bookTitle = escapeHtml(book.title);
         const bookAuthor = book.author ? escapeHtml(book.author) : '';
         const bookCategory = book.category ? escapeHtml(book.category) : '';
         
         let chaptersHtml = '';
-        topics.forEach((topic, idx) => {
-            const topicSlug = topic.slug || createSlug(topic.name);
-            const stats = questionStats[topic.id] || { total: 0 };
-            const chapterDisplay = topic.chapter_number ? topic.chapter_number + '. ' : '';
-            const chapterName = escapeHtml(topic.name);
+        chapters.forEach((chapter, idx) => {
+            const chapterSlug = chapter.slug || createSlug(chapter.name);
+            const chapterDisplay = chapter.chapter_number ? chapter.chapter_number + '. ' : '';
+            const chapterName = escapeHtml(chapter.name);
             
             chaptersHtml += `
-        <div class="chapter" onclick="window.location.href='/books/${bookSlug}/${topicSlug}.html'">
+        <div class="chapter" onclick="window.location.href='/books/${bookSlug}/${chapterSlug}.html'">
             <div>
                 <div class="title">${chapterDisplay}${chapterName}</div>
-                <div class="count">${stats.total || 0} MCQs</div>
             </div>
         </div>`;
         });
@@ -2859,7 +3394,7 @@ xml += `</urlset>`;
         '    <meta charset="UTF-8">\n' +
         '    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">\n' +
         '    <title>' + bookTitle + ' MCQs - Chapter-wise Practice | BookMCQ</title>\n' +
-        '    <meta name="description" content="Practice ' + bookTitle + ' MCQs chapter-wise. ' + topics.length + ' chapters and ' + totalQuestions + ' questions available. Improve your knowledge with detailed explanations.">\n' +
+        '    <meta name="description" content="Practice ' + bookTitle + ' MCQs chapter-wise. ' + chapters.length + ' chapters and ' + totalQuestions + ' questions available. Improve your knowledge with detailed explanations.">\n' +
         '    <meta name="keywords" content="' + bookTitle + ' MCQs, ' + bookTitle + ' questions, ' + bookTitle + ' practice, ' + bookTitle + ' exam preparation' + (bookCategory ? ', ' + bookCategory + ' MCQs' : '') + '">\n' +
         '    <meta name="robots" content="index, follow">\n' +
         '    <link rel="canonical" href="https://bookmcq.com/books/' + bookSlug + '/">\n' +
@@ -2905,36 +3440,6 @@ xml += `</urlset>`;
         '        .title {\n' +
         '            font-weight: bold;\n' +
         '        }\n' +
-        '        .count {\n' +
-        '            color: #6b7280;\n' +
-        '            font-size: 13px;\n' +
-        '        }\n' +
-        '        .stats-summary {\n' +
-        '            display: flex;\n' +
-        '            gap: 20px;\n' +
-        '            flex-wrap: wrap;\n' +
-        '            margin: 15px 0;\n' +
-        '            padding: 15px;\n' +
-        '            background: #f8fafc;\n' +
-        '            border-radius: 12px;\n' +
-        '        }\n' +
-        '        .stat-item {\n' +
-        '            display: flex;\n' +
-        '            align-items: center;\n' +
-        '            gap: 6px;\n' +
-        '        }\n' +
-        '        .stat-item .label {\n' +
-        '            color: #64748b;\n' +
-        '            font-size: 13px;\n' +
-        '        }\n' +
-        '        .stat-item .value {\n' +
-        '            font-weight: bold;\n' +
-        '            font-size: 16px;\n' +
-        '        }\n' +
-        '        .stat-item .value.easy { color: #22c55e; }\n' +
-        '        .stat-item .value.medium { color: #eab308; }\n' +
-        '        .stat-item .value.hard { color: #ef4444; }\n' +
-        '        .stat-item .value.total { color: #3b82f6; }\n' +
         '        .back-link {\n' +
         '            display: inline-block;\n' +
         '            margin-bottom: 15px;\n' +
@@ -2953,7 +3458,7 @@ xml += `</urlset>`;
         '        <h1>' + bookTitle + '</h1>\n' +
         (bookAuthor ? '        <p><strong>Author:</strong> ' + bookAuthor + '</p>\n' : '') +
         (bookCategory ? '        <p><strong>Category:</strong> ' + bookCategory + '</p>\n' : '') +
-        '        <p>Practice chapter-wise MCQs for ' + bookTitle + '. This book contains <strong>' + topics.length + ' chapters</strong> and <strong>' + totalQuestions + ' questions</strong>.</p>\n' +
+        '        <p>Practice chapter-wise MCQs for ' + bookTitle + '. This book contains <strong>' + chapters.length + ' chapters</strong> and <strong>' + totalQuestions + ' questions</strong>.</p>\n' +
         '        \n' +
         '        <h2>Chapters</h2>\n' +
         chaptersHtml +
@@ -2963,32 +3468,24 @@ xml += `</urlset>`;
         '</html>';
     }
 
-    // ============================================================
-    // GENERATE CHAPTER PAGE
-    // ============================================================
-    function generateChapterPage(book, topic, stats) {
+    function generateChapterPage(book, chapter) {
         const bookSlug = book.slug || createSlug(book.title);
         const bookTitle = escapeHtml(book.title);
-        const topicSlug = topic.slug || createSlug(topic.name);
-        const topicName = escapeHtml(topic.name);
-        const chapterDisplay = topic.chapter_number ? topic.chapter_number + '. ' : '';
-        const total = stats.total || 0;
-        const easy = stats.easy || 0;
-        const medium = stats.medium || 0;
-        const hard = stats.hard || 0;
+        const chapterSlug = chapter.slug || createSlug(chapter.name);
+        const chapterName = escapeHtml(chapter.name);
+        const chapterDisplay = chapter.chapter_number ? chapter.chapter_number + '. ' : '';
         
         return '<!DOCTYPE html>\n' +
         '<html lang="en">\n' +
         '<head>\n' +
         '    <meta charset="UTF-8">\n' +
         '    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">\n' +
-        '    <title>' + topicName + ' MCQs - ' + bookTitle + ' | BookMCQ</title>\n' +
-        '    <meta name="description" content="Practice ' + topicName + ' MCQs from ' + bookTitle + '. ' + total + ' questions available with difficulty breakdown: Easy: ' + easy + ', Medium: ' + medium + ', Hard: ' + hard + '. Perfect for exam preparation.">\n' +
-        '    <meta name="keywords" content="' + topicName + ' MCQs, ' + bookTitle + ' ' + topicName + ' questions, ' + topicName + ' practice, ' + bookTitle + ' chapter ' + (topic.chapter_number || '') + '">\n' +
+        '    <title>' + chapterName + ' - ' + bookTitle + ' | BookMCQ</title>\n' +
+        '    <meta name="description" content="Practice ' + chapterName + ' from ' + bookTitle + '. Chapter ' + (chapter.chapter_number || '') + ' with comprehensive MCQs for exam preparation.">\n' +
+        '    <meta name="keywords" content="' + chapterName + ' MCQs, ' + bookTitle + ' ' + chapterName + ' questions, ' + chapterName + ' practice, ' + bookTitle + ' chapter ' + (chapter.chapter_number || '') + '">\n' +
         '    <meta name="robots" content="index, follow">\n' +
-        '    <link rel="canonical" href="https://bookmcq.com/books/' + bookSlug + '/' + topicSlug + '.html">\n' +
-        '    <meta property="og:title" content="' + topicName + ' MCQs - ' + bookTitle + ' | BookMCQ">\n' +
-        '    <meta property="og:description" content="Practice ' + topicName + ' MCQs with ' + total + ' questions. Difficulty: Easy ' + easy + ', Medium ' + medium + ', Hard ' + hard + '.">\n' +
+        '    <link rel="canonical" href="https://bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '.html">\n' +
+        '    <meta property="og:title" content="' + chapterName + ' - ' + bookTitle + ' | BookMCQ">\n' +
         '    <meta property="og:type" content="website">\n' +
         '    <meta name="theme-color" content="#7c3aed">\n' +
         '    <script src="https://cdn.tailwindcss.com"><\/script>\n' +
@@ -3011,29 +3508,6 @@ xml += `</urlset>`;
         '            padding: 20px;\n' +
         '            margin-top: 20px;\n' +
         '            box-shadow: 0 10px 25px rgba(0,0,0,0.1);\n' +
-        '        }\n' +
-        '        .difficulty-grid {\n' +
-        '            display: grid;\n' +
-        '            grid-template-columns: repeat(3, 1fr);\n' +
-        '            gap: 12px;\n' +
-        '            margin: 20px 0;\n' +
-        '        }\n' +
-        '        .difficulty-card {\n' +
-        '            padding: 16px;\n' +
-        '            border-radius: 12px;\n' +
-        '            text-align: center;\n' +
-        '            border: 1px solid #e2e8f0;\n' +
-        '        }\n' +
-        '        .difficulty-card.easy { background: #dcfce7; border-color: #86efac; }\n' +
-        '        .difficulty-card.medium { background: #fef9c3; border-color: #fde047; }\n' +
-        '        .difficulty-card.hard { background: #fee2e2; border-color: #fca5a5; }\n' +
-        '        .difficulty-card .num {\n' +
-        '            font-size: 32px;\n' +
-        '            font-weight: 700;\n' +
-        '        }\n' +
-        '        .difficulty-card .label {\n' +
-        '            font-size: 14px;\n' +
-        '            color: #64748b;\n' +
         '        }\n' +
         '        .btn-primary {\n' +
         '            display: inline-block;\n' +
@@ -3070,28 +3544,12 @@ xml += `</urlset>`;
         '<div class="container">\n' +
         '    <div class="card">\n' +
         '        <a href="/books/' + bookSlug + '/" class="back-link">← Back to ' + bookTitle + '</a>\n' +
-        '        <h1>' + chapterDisplay + topicName + '</h1>\n' +
+        '        <h1>' + chapterDisplay + chapterName + '</h1>\n' +
         '        <p class="chapter-info">From <strong>' + bookTitle + '</strong></p>\n' +
-        '        <p>Practice MCQs for ' + topicName + '. Test your knowledge with ' + total + ' carefully crafted questions.</p>\n' +
-        '        \n' +
-        '        <div class="difficulty-grid">\n' +
-        '            <div class="difficulty-card easy">\n' +
-        '                <div class="num">' + easy + '</div>\n' +
-        '                <div class="label">Easy</div>\n' +
-        '            </div>\n' +
-        '            <div class="difficulty-card medium">\n' +
-        '                <div class="num">' + medium + '</div>\n' +
-        '                <div class="label">Medium</div>\n' +
-        '            </div>\n' +
-        '            <div class="difficulty-card hard">\n' +
-        '                <div class="num">' + hard + '</div>\n' +
-        '                <div class="label">Hard</div>\n' +
-        '            </div>\n' +
-        '        </div>\n' +
-        '        <p style="text-align: center; font-size: 14px; color: #64748b;">Total: <strong>' + total + '</strong> questions</p>\n' +
+        '        <p>Practice MCQs for ' + chapterName + '. Test your knowledge with carefully crafted questions.</p>\n' +
         '        \n' +
         '        <div style="text-align: center;">\n' +
-        '            <a href="/quiz?topic=' + topic.id + '" class="btn-primary">Start Quiz</a>\n' +
+        '            <a href="/quiz" class="btn-primary">Start Quiz</a>\n' +
         '        </div>\n' +
         '    </div>\n' +
         '</div>\n' +
@@ -3099,9 +3557,6 @@ xml += `</urlset>`;
         '</html>';
     }
 
-    // ============================================================
-    // DOWNLOAD SINGLE FILE
-    // ============================================================
     function downloadSingleFile(fileName) {
         var file = seoGeneratedFiles.find(function(f) { return f.name === fileName; });
         if (!file) {
@@ -3121,11 +3576,7 @@ xml += `</urlset>`;
         showToast('✅ Downloaded: ' + file.name);
     }
 
-    // ============================================================
-    // DOWNLOAD SINGLE BOOK (all pages in folder)
-    // ============================================================
     function downloadSingleSEOPage(bookSlug) {
-        // Find ALL files that belong to this book (both index and chapters)
         var files = seoGeneratedFiles.filter(function(f) {
             return f.bookSlug === bookSlug;
         });
@@ -3135,7 +3586,6 @@ xml += `</urlset>`;
             return;
         }
         
-        // Sort files: index.html first, then chapters
         files.sort(function(a, b) {
             if (a.name.indexOf('index.html') !== -1) return -1;
             if (b.name.indexOf('index.html') !== -1) return 1;
@@ -3163,9 +3613,6 @@ xml += `</urlset>`;
         });
     }
 
-    // ============================================================
-    // GENERATE ALL SEO PAGES - MAIN FUNCTION (FIXED)
-    // ============================================================
     async function generateSEOPages() {
         const statusEl = document.getElementById('seoStatus');
         const countEl = document.getElementById('seoCount');
@@ -3176,7 +3623,6 @@ xml += `</urlset>`;
         const downloadAllBtn = document.getElementById('downloadAllSEOBtn');
         const bookListEl = document.getElementById('seoBookList');
         
-        // Clear previous data
         seoGeneratedFiles = [];
         seoGeneratedCount = 0;
         seoBooksData = [];
@@ -3187,11 +3633,10 @@ xml += `</urlset>`;
         
         statusEl.textContent = '📦 Fetching data from database...';
         progressBar.style.width = '10%';
-        logContent.innerHTML += '<div>📦 Fetching books, topics, and questions...</div>';
+        logContent.innerHTML += '<div>📦 Fetching books, chapters, and questions...</div>';
         bookListEl.innerHTML = '<div class="text-gray-500 text-sm">Loading books...</div>';
         
         try {
-            // Fetch books
             const { data: books, error: booksError } = await _supabase
                 .from('books')
                 .select('*')
@@ -3199,33 +3644,17 @@ xml += `</urlset>`;
             
             if (booksError) throw booksError;
             
-            // Fetch topics with book info
-            const { data: topics, error: topicsError } = await _supabase
-                .from('topics')
+            const { data: chapters, error: chaptersError } = await _supabase
+                .from('chapters')
                 .select('*, books(title, slug)')
                 .order('book_id')
                 .order('chapter_number', { ascending: true, nullsFirst: false });
             
-            if (topicsError) throw topicsError;
+            if (chaptersError) throw chaptersError;
             
-            // Fetch ALL questions with difficulty
             const allQuestions = await fetchAllQuestionsWithDifficulty();
             
-            // Group questions by topic and difficulty
-            const questionStats = {};
-            allQuestions.forEach(function(q) {
-                if (q.topic_id) {
-                    if (!questionStats[q.topic_id]) {
-                        questionStats[q.topic_id] = { total: 0, easy: 0, medium: 0, hard: 0 };
-                    }
-                    questionStats[q.topic_id].total++;
-                    if (q.difficulty === 'easy') questionStats[q.topic_id].easy++;
-                    else if (q.difficulty === 'medium') questionStats[q.topic_id].medium++;
-                    else if (q.difficulty === 'hard') questionStats[q.topic_id].hard++;
-                }
-            });
-            
-            logContent.innerHTML += '<div>📚 Found ' + books.length + ' books, ' + topics.length + ' topics, ' + allQuestions.length + ' total questions</div>';
+            logContent.innerHTML += '<div>📚 Found ' + books.length + ' books, ' + chapters.length + ' chapters, ' + allQuestions.length + ' total questions</div>';
             statusEl.textContent = '📄 Generating SEO pages...';
             progressBar.style.width = '20%';
             
@@ -3236,88 +3665,63 @@ xml += `</urlset>`;
                 return;
             }
             
-            // Group topics by book
-            var topicsByBook = {};
-            topics.forEach(function(topic) {
-                if (topic.book_id) {
-                    if (!topicsByBook[topic.book_id]) {
-                        topicsByBook[topic.book_id] = [];
+            var chaptersByBook = {};
+            chapters.forEach(function(chapter) {
+                if (chapter.book_id) {
+                    if (!chaptersByBook[chapter.book_id]) {
+                        chaptersByBook[chapter.book_id] = [];
                     }
-                    topicsByBook[topic.book_id].push(topic);
+                    chaptersByBook[chapter.book_id].push(chapter);
                 }
             });
             
-            // Store all generated files in a temporary array first
             var tempFiles = [];
             
-            // Process each book
             books.forEach(function(book) {
                 var bookSlug = book.slug || createSlug(book.title);
-                var bookTopics = topicsByBook[book.id] || [];
+                var bookChapters = chaptersByBook[book.id] || [];
                 
-                // Sort topics by chapter number
-                bookTopics.sort(function(a, b) {
+                bookChapters.sort(function(a, b) {
                     var aNum = a.chapter_number || 999;
                     var bNum = b.chapter_number || 999;
                     return aNum - bNum;
                 });
                 
-                // Calculate total questions for this book
                 var totalQuestionsForBook = 0;
-                bookTopics.forEach(function(topic) {
-                    var stats = questionStats[topic.id];
-                    if (stats) {
-                        totalQuestionsForBook += stats.total || 0;
-                    }
-                });
                 
-                // ============================================================
-                // 1. GENERATE BOOK INDEX PAGE (/books/[book-slug]/index.html)
-                // ============================================================
-                var bookIndexHtml = generateBookIndexPage(book, bookTopics, questionStats, totalQuestionsForBook);
+                var bookIndexHtml = generateBookIndexPage(book, bookChapters, {}, totalQuestionsForBook);
                 tempFiles.push({
                     name: bookSlug + '/index.html',
                     content: bookIndexHtml,
                     book: book.title,
                     bookSlug: bookSlug,
-                    chapters: bookTopics.length,
+                    chapters: bookChapters.length,
                     questions: totalQuestionsForBook,
                     isBook: true,
                     displayName: '📖 Index'
                 });
                 
-                // ============================================================
-                // 2. GENERATE CHAPTER PAGES (/books/[book-slug]/[chapter-slug].html)
-                // ============================================================
-                bookTopics.forEach(function(topic) {
-                    var topicSlug = topic.slug || createSlug(topic.name);
-                    var stats = questionStats[topic.id] || { total: 0, easy: 0, medium: 0, hard: 0 };
-                    var chapterDisplay = topic.chapter_number ? topic.chapter_number + '. ' : '';
+                bookChapters.forEach(function(chapter) {
+                    var chapterSlug = chapter.slug || createSlug(chapter.name);
+                    var chapterDisplay = chapter.chapter_number ? chapter.chapter_number + '. ' : '';
                     
-                    var chapterHtml = generateChapterPage(book, topic, stats);
+                    var chapterHtml = generateChapterPage(book, chapter);
                     tempFiles.push({
-                        name: bookSlug + '/' + topicSlug + '.html',
+                        name: bookSlug + '/' + chapterSlug + '.html',
                         content: chapterHtml,
                         book: book.title,
                         bookSlug: bookSlug,
-                        chapter: topic.name,
-                        chapterNumber: topic.chapter_number,
-                        stats: stats,
+                        chapter: chapter.name,
+                        chapterNumber: chapter.chapter_number,
                         isBook: false,
-                        displayName: '📄 ' + chapterDisplay + topic.name + ' (' + stats.total + ' MCQs)'
+                        displayName: '📄 ' + chapterDisplay + chapter.name
                     });
                 });
             });
             
-            // Now assign to global variable
             seoGeneratedFiles = tempFiles;
             
-            // ============================================================
-            // BUILD BOOK LIST WITH DROPDOWNS
-            // ============================================================
             var bookListHtml = '';
-            
-            // Get unique book slugs from the generated files
             var uniqueBookSlugs = [];
             seoGeneratedFiles.forEach(function(f) {
                 if (uniqueBookSlugs.indexOf(f.bookSlug) === -1) {
@@ -3325,11 +3729,9 @@ xml += `</urlset>`;
                 }
             });
             
-            // Also track which books we've already processed to avoid duplicates
             var processedBooks = {};
             
             uniqueBookSlugs.forEach(function(bookSlug) {
-                // Get all files for this book
                 var bookFiles = seoGeneratedFiles.filter(function(f) { 
                     return f.bookSlug === bookSlug; 
                 });
@@ -3337,22 +3739,12 @@ xml += `</urlset>`;
                 if (bookFiles.length === 0 || processedBooks[bookSlug]) return;
                 processedBooks[bookSlug] = true;
                 
-                // Get book info from first file
                 var firstFile = bookFiles[0];
                 var bookTitle = firstFile.book;
-                
-                // Count chapters (only files where isBook is false)
                 var totalChapters = bookFiles.filter(function(f) { 
                     return f.isBook === false; 
                 }).length;
                 
-                // Get total questions
-                var totalQuestions = 0;
-                bookFiles.forEach(function(f) {
-                    if (f.questions) totalQuestions = f.questions;
-                });
-                
-                // Build dropdown options - sort: index first, then chapters by chapter number
                 bookFiles.sort(function(a, b) {
                     if (a.isBook) return -1;
                     if (b.isBook) return 1;
@@ -3369,7 +3761,7 @@ xml += `</urlset>`;
                     <div class="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-200 hover:border-purple-300 transition">
                         <div class="flex items-center gap-3">
                             <span class="font-medium text-gray-800">${escapeHtml(bookTitle)}</span>
-                            <span class="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full">${totalChapters} chapters, ${totalQuestions} MCQs</span>
+                            <span class="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full">${totalChapters} chapters</span>
                         </div>
                         <div class="flex items-center gap-2">
                             <select id="fileSelect_${bookSlug}" class="p-2 border rounded-lg text-sm bg-white max-w-[220px]">
@@ -3396,7 +3788,6 @@ xml += `</urlset>`;
             downloadAllBtn.classList.remove('hidden');
             
             logContent.innerHTML += '<div class="text-green-600 font-bold">🎉 Successfully generated ' + seoGeneratedFiles.length + ' SEO pages!</div>';
-            logContent.innerHTML += '<div class="text-blue-600">📥 Select a file from dropdown or click "All" to download all pages for a book.</div>';
             logEl.scrollTop = logEl.scrollHeight;
             
             progressBar.style.width = '100%';
@@ -3408,9 +3799,7 @@ xml += `</urlset>`;
             document.getElementById('seoBookList').innerHTML = '<div class="text-red-500 text-sm">Error: ' + error.message + '</div>';
         }
     }
-    // ============================================================
-    // DOWNLOAD SELECTED FILE FROM DROPDOWN
-    // ============================================================
+
     function downloadSelectedFile(bookSlug) {
         var select = document.getElementById('fileSelect_' + bookSlug);
         if (!select) {
@@ -3427,9 +3816,6 @@ xml += `</urlset>`;
         downloadSingleFile(fileName);
     }
 
-    // ============================================================
-    // DOWNLOAD ALL SEO PAGES
-    // ============================================================
     function downloadAllSEOPages() {
         if (seoGeneratedFiles.length === 0) {
             showToast('No files to download. Generate pages first.', true);
@@ -3456,25 +3842,6 @@ xml += `</urlset>`;
             }, index * 300);
         });
     }
-    function downloadSingleSEOPage(slug) {
-        const file = seoGeneratedFiles.find(f => f.slug === slug);
-        if (!file) {
-            showToast('File not found. Please regenerate pages.', true);
-            return;
-        }
-        
-        const blob = new Blob([file.content], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = file.name;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        showToast(`✅ Downloaded: ${file.name}`);
-    }
 
     async function openSEOTab() {
         showTab('seo');
@@ -3482,6 +3849,287 @@ xml += `</urlset>`;
             generateSEOPages();
         }, 500);
     }
+// ============ SUB-TOPICS FUNCTIONS ============
+
+// Load books into the filter dropdown
+async function loadSubTopicFilterBooks() {
+    if (booksCache !== null) {
+        const select = document.getElementById('subTopicFilterBookId');
+        if (select) {
+            select.innerHTML = '<option value="">All Books</option>';
+            booksCache.forEach(book => {
+                select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+            });
+        }
+        return;
+    }
+    
+    const { data } = await _supabase.from('books').select('id, title');
+    if (data) {
+        booksCache = data;
+        const select = document.getElementById('subTopicFilterBookId');
+        if (select) {
+            select.innerHTML = '<option value="">All Books</option>';
+            data.forEach(book => {
+                select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+            });
+        }
+    }
+}
+
+// Load chapters based on selected book
+async function loadSubTopicChapters() {
+    const bookId = document.getElementById('subTopicFilterBookId').value;
+    const chapterSelect = document.getElementById('subTopicFilterChapterId');
+    
+    if (!bookId || bookId === '') {
+        if (chapterSelect) {
+            chapterSelect.innerHTML = '<option value="">Select a book first</option>';
+            chapterSelect.disabled = true;
+        }
+        currentSubTopicFilter.chapterId = '';
+        return;
+    }
+    
+    if (chapterSelect) {
+        chapterSelect.innerHTML = '<option value="">Loading chapters...</option>';
+        chapterSelect.disabled = false;
+    }
+    
+    const { data } = await _supabase.from('chapters')
+        .select('id, name, chapter_number')
+        .eq('book_id', parseInt(bookId))
+        .order('chapter_number', { ascending: true });
+    
+    if (chapterSelect) {
+        chapterSelect.innerHTML = '<option value="">All Chapters</option>';
+        if (data && data.length > 0) {
+            data.forEach(chapter => {
+                const display = chapter.chapter_number ? `Ch ${chapter.chapter_number}: ${chapter.name}` : chapter.name;
+                chapterSelect.innerHTML += `<option value="${chapter.id}">${escapeHtml(display)}</option>`;
+            });
+        }
+    }
+}
+
+// Load subtopics list
+async function loadSubTopicsCached() {
+    const container = document.getElementById('subTopicsList');
+    if (!container) return;
+    
+    container.innerHTML = '<div class="skeleton h-12 w-full mb-2"></div><div class="skeleton h-12 w-full mb-2"></div>';
+    
+    let query = _supabase.from('subtopics').select('*, chapters(id, name, chapter_number, book_id, books(title))');
+    
+    const bookFilter = document.getElementById('subTopicFilterBookId')?.value;
+    const chapterFilter = document.getElementById('subTopicFilterChapterId')?.value;
+    
+    if (bookFilter && bookFilter !== '') {
+        const { data: chaptersInBook } = await _supabase.from('chapters').select('id').eq('book_id', parseInt(bookFilter));
+        if (chaptersInBook && chaptersInBook.length > 0) {
+            const chapterIds = chaptersInBook.map(c => c.id);
+            query = query.in('chapter_id', chapterIds);
+        } else {
+            container.innerHTML = '<p class="text-gray-500">No topics found for this book.</p>';
+            return;
+        }
+    }
+    
+    if (chapterFilter && chapterFilter !== '') {
+        query = query.eq('chapter_id', parseInt(chapterFilter));
+    }
+    
+    const { data, error } = await query.order('chapter_id', { ascending: true }).order('id', { ascending: true });
+    
+    if (error || !data || data.length === 0) {
+        container.innerHTML = '<p class="text-gray-500">No topics yet. Add your first topic!</p>';
+        return;
+    }
+    
+    container.innerHTML = data.map(topic => {
+        const chapterName = topic.chapters?.name || 'Unknown Chapter';
+        const bookTitle = topic.chapters?.books?.title || 'Unknown Book';
+        const chapterDisplay = topic.chapters?.chapter_number ? `Ch ${topic.chapters.chapter_number}: ` : '';
+        return `
+        <div class="bg-gray-50 p-3 rounded-lg mb-2 flex justify-between items-center">
+            <div>
+                <strong>${escapeHtml(topic.name)}</strong>
+                <span class="text-gray-600 text-sm ml-2">(${chapterDisplay}${escapeHtml(chapterName)} - ${escapeHtml(bookTitle)})</span>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="openEditSubTopicModal(${topic.id}, '${escapeHtml(topic.name)}', ${topic.chapter_id})" class="text-blue-600 hover:text-blue-800">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="deleteSubTopic(${topic.id})" class="text-red-600 hover:text-red-800">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `}).join('');
+}
+
+// Apply subtopic filter
+async function applySubTopicFilter() {
+    await loadSubTopicsCached();
+}
+
+// Add a new subtopic
+async function addSubTopic() {
+    const chapterId = document.getElementById('subTopicChapterId').value;
+    const name = document.getElementById('subTopicName').value;
+    
+    if (!chapterId || !name) {
+        showToast('Please select a chapter and enter a topic name', true);
+        return;
+    }
+    
+    const duplicate = await checkDuplicateSubTopic(name, parseInt(chapterId));
+    if (duplicate) {
+        showToast('Topic already exists for this chapter!', true);
+        return;
+    }
+    
+    const subTopicData = {
+        chapter_id: parseInt(chapterId),
+        name: name,
+        slug: createSlug(name)
+    };
+    
+    const { error } = await _supabase.from('subtopics').insert([subTopicData]);
+    if (error) {
+        showToast('Error: ' + error.message, true);
+    } else {
+        showToast('Topic added!');
+        document.getElementById('addSubTopicForm').classList.add('hidden');
+        document.getElementById('subTopicName').value = '';
+        subTopicsCache = {};
+        await loadSubTopicsCached();
+    }
+}
+
+// Delete a subtopic
+window.deleteSubTopic = async function(id) {
+    if (confirm('Delete this topic? This will also delete all questions in this topic.')) {
+        await _supabase.from('subtopics').delete().eq('id', id);
+        subTopicsCache = {};
+        await Promise.all([loadSubTopicsCached(), loadQuestions()]);
+        showToast('Topic deleted');
+    }
+};
+
+// Open edit subtopic modal
+window.openEditSubTopicModal = function(id, name, chapterId) {
+    document.getElementById('editSubTopicId').value = id;
+    document.getElementById('editSubTopicName').value = name;
+    loadBookAndChapterForEditSubTopic(chapterId);
+    document.getElementById('editSubTopicModal').classList.remove('hidden');
+};
+
+// Load book and chapter for edit subtopic
+async function loadBookAndChapterForEditSubTopic(selectedChapterId = null) {
+    const { data: books } = await _supabase.from('books').select('id, title');
+    if (books) {
+        const bookSelect = document.getElementById('editSubTopicBookId');
+        if (bookSelect) {
+            bookSelect.innerHTML = '<option value="">Select Book</option>';
+            books.forEach(book => {
+                bookSelect.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+            });
+        }
+    }
+    
+    const bookId = document.getElementById('editSubTopicBookId')?.value;
+    if (bookId) {
+        const { data: chapters } = await _supabase.from('chapters').select('id, name, chapter_number').eq('book_id', parseInt(bookId)).order('chapter_number', { ascending: true });
+        const chapterSelect = document.getElementById('editSubTopicChapterId');
+        if (chapterSelect) {
+            chapterSelect.innerHTML = '<option value="">Select Chapter</option>';
+            if (chapters) {
+                chapters.forEach(chapter => {
+                    const display = chapter.chapter_number ? `Ch ${chapter.chapter_number}: ${chapter.name}` : chapter.name;
+                    chapterSelect.innerHTML += `<option value="${chapter.id}" ${chapter.id == selectedChapterId ? 'selected' : ''}>${escapeHtml(display)}</option>`;
+                });
+            }
+        }
+    }
+}
+
+// Update subtopic
+async function updateSubTopic() {
+    const id = document.getElementById('editSubTopicId').value;
+    const name = document.getElementById('editSubTopicName').value;
+    const chapterId = document.getElementById('editSubTopicChapterId').value;
+    
+    if (!name || !chapterId) {
+        showToast('Please fill all fields', true);
+        return;
+    }
+    
+    const duplicate = await checkDuplicateSubTopic(name, parseInt(chapterId), id);
+    if (duplicate) {
+        showToast('Another topic with same name already exists for this chapter!', true);
+        return;
+    }
+    
+    const { error } = await _supabase
+        .from('subtopics')
+        .update({
+            name,
+            slug: createSlug(name),
+            chapter_id: parseInt(chapterId)
+        })
+        .eq('id', id);
+    
+    if (error) {
+        showToast('Error: ' + error.message, true);
+    } else {
+        showToast('Topic updated!');
+        document.getElementById('editSubTopicModal').classList.add('hidden');
+        subTopicsCache = {};
+        await loadSubTopicsCached();
+    }
+}
+
+// Load subtopic chapter filters
+async function loadSubTopicChapterFilters(selectedChapterId = null) {
+    const bookId = document.getElementById('subTopicBookId').value;
+    const chapterSelect = document.getElementById('subTopicChapterId');
+    
+    if (!bookId || bookId === '') {
+        if (chapterSelect) {
+            chapterSelect.innerHTML = '<option value="">Select Book first</option>';
+        }
+        return;
+    }
+    
+    if (chapterSelect) {
+        chapterSelect.innerHTML = '<option value="">Loading chapters...</option>';
+    }
+    
+    const { data } = await _supabase.from('chapters')
+        .select('id, name, chapter_number')
+        .eq('book_id', parseInt(bookId))
+        .order('chapter_number', { ascending: true });
+    
+    if (chapterSelect) {
+        chapterSelect.innerHTML = '<option value="">Select Chapter</option>';
+        if (data && data.length > 0) {
+            data.forEach(chapter => {
+                const display = chapter.chapter_number ? `Ch ${chapter.chapter_number}: ${chapter.name}` : chapter.name;
+                chapterSelect.innerHTML += `<option value="${chapter.id}" ${chapter.id == selectedChapterId ? 'selected' : ''}>${escapeHtml(display)}</option>`;
+            });
+        }
+    }
+}
+
+// Duplicate check for subtopics
+async function checkDuplicateSubTopic(name, chapterId, excludeId = null) {
+    let query = _supabase.from('subtopics').select('id').eq('name', name).eq('chapter_id', chapterId);
+    if (excludeId) query = query.neq('id', excludeId);
+    const { data } = await query;
+    return data && data.length > 0;
+}
+    // ============ EVENT LISTENERS ============
     function setupEventListeners() {
         document.getElementById('loginBtn').addEventListener('click', handleLogin);
         document.getElementById('signupBtn').addEventListener('click', handleSignup);
@@ -3489,8 +4137,10 @@ xml += `</urlset>`;
         document.getElementById('showLoginBtn').addEventListener('click', showLoginForm);
         document.getElementById('logoutBtn').addEventListener('click', handleLogout);
         
+        // Tab buttons
         document.getElementById('tabBooksBtn').addEventListener('click', () => showTab('books'));
-        document.getElementById('tabTopicsBtn').addEventListener('click', () => showTab('topics'));
+        document.getElementById('tabChaptersBtn').addEventListener('click', () => showTab('chapters'));
+        document.getElementById('tabSubTopicsBtn').addEventListener('click', () => showTab('subtopics'));
         document.getElementById('tabQuestionsBtn').addEventListener('click', () => showTab('questions'));
         document.getElementById('tabCategoriesBtn').addEventListener('click', () => showTab('categories'));
         document.getElementById('tabBulkUploadBtn').addEventListener('click', () => showTab('bulkupload'));
@@ -3499,15 +4149,17 @@ xml += `</urlset>`;
         document.getElementById('tabSeoBtn').addEventListener('click', openSEOTab);
         document.getElementById('tabSitemapBtn').addEventListener('click', () => showTab('sitemap'));
         
+        // SEO
         document.getElementById('generateSEOPagesBtn').addEventListener('click', generateSEOPages);
         document.getElementById('downloadAllSEOBtn').addEventListener('click', downloadAllSEOPages);
         
-        // Sitemap event listeners
+        // Sitemap
         document.getElementById('generateSitemapBtn').addEventListener('click', generateSitemap);
         document.getElementById('downloadSitemapBtn').addEventListener('click', downloadSitemap);
         document.getElementById('viewSitemapUrlsBtn').addEventListener('click', toggleSitemapUrlPreview);
         document.getElementById('closeUrlPreviewBtn').addEventListener('click', closeUrlPreview);
         
+        // Books
         document.getElementById('showAddBookBtn').addEventListener('click', () => {
             document.getElementById('addBookForm').classList.remove('hidden');
         });
@@ -3516,6 +4168,7 @@ xml += `</urlset>`;
         });
         document.getElementById('saveBookBtn').addEventListener('click', addBook);
         
+        // Categories
         document.getElementById('showAddCategoryBtn').addEventListener('click', () => {
             document.getElementById('addCategoryForm').classList.remove('hidden');
         });
@@ -3525,16 +4178,32 @@ xml += `</urlset>`;
         });
         document.getElementById('saveCategoryBtn').addEventListener('click', addCategory);
         
-        document.getElementById('showAddTopicBtn').addEventListener('click', async () => {
-            await loadBookSelectForTopics();
-            document.getElementById('addTopicForm').classList.remove('hidden');
+        // Chapters
+        document.getElementById('showAddChapterBtn').addEventListener('click', async () => {
+            await loadBookSelectForChapters();
+            document.getElementById('addChapterForm').classList.remove('hidden');
         });
-        document.getElementById('cancelTopicBtn').addEventListener('click', () => {
-            document.getElementById('addTopicForm').classList.add('hidden');
+        document.getElementById('cancelChapterBtn').addEventListener('click', () => {
+            document.getElementById('addChapterForm').classList.add('hidden');
         });
-        document.getElementById('saveTopicBtn').addEventListener('click', addTopic);
-        document.getElementById('topicFilterBookId').addEventListener('change', applyTopicFilter);
+        document.getElementById('saveChapterBtn').addEventListener('click', addChapter);
+        document.getElementById('chapterFilterBookId').addEventListener('change', applyChapterFilter);
         
+        // Sub-Topics
+        document.getElementById('showAddSubTopicBtn').addEventListener('click', async () => {
+            await loadSubTopicFilterBooks();
+            document.getElementById('addSubTopicForm').classList.remove('hidden');
+        });
+        document.getElementById('cancelSubTopicBtn').addEventListener('click', () => {
+            document.getElementById('addSubTopicForm').classList.add('hidden');
+            document.getElementById('subTopicName').value = '';
+        });
+        document.getElementById('saveSubTopicBtn').addEventListener('click', addSubTopic);
+        document.getElementById('subTopicBookId').addEventListener('change', loadSubTopicChapterFilters);
+        document.getElementById('subTopicFilterBookId').addEventListener('change', loadSubTopicChapters);
+        document.getElementById('subTopicFilterChapterId').addEventListener('change', applySubTopicFilter);
+        
+        // Questions
         document.getElementById('showAddQuestionBtn').addEventListener('click', async () => {
             await loadBookSelectsCached();
             document.getElementById('addQuestionForm').classList.remove('hidden');
@@ -3543,36 +4212,39 @@ xml += `</urlset>`;
             document.getElementById('addQuestionForm').classList.add('hidden');
         });
         document.getElementById('saveQuestionBtn').addEventListener('click', addQuestion);
-        document.getElementById('questionBookId').addEventListener('change', loadTopicsForQuestion);
+        document.getElementById('questionBookId').addEventListener('change', loadChaptersForQuestion);
+        document.getElementById('questionChapterId').addEventListener('change', loadTopicsForQuestion);
         
-        const filterBook = document.getElementById('filterBookId');
-        if (filterBook) {
-            filterBook.addEventListener('change', async () => {
-                await loadFilterTopics();
-                await applyFilters();
-            });
-        }
+        // Filters
+        document.getElementById('filterBookId').addEventListener('change', async () => {
+            await loadFilterChapters();
+            await applyFilters();
+        });
+        document.getElementById('filterChapterId').addEventListener('change', async () => {
+            await loadFilterTopics();
+            await applyFilters();
+        });
+        document.getElementById('filterTopicId').addEventListener('change', applyFilters);
+        document.getElementById('filterDifficulty').addEventListener('change', applyFilters);
         
-        const filterTopic = document.getElementById('filterTopicId');
-        if (filterTopic) filterTopic.addEventListener('change', applyFilters);
+        // Pagination
+        document.getElementById('prevPageBtn').addEventListener('click', goToPrevPage);
+        document.getElementById('nextPageBtn').addEventListener('click', goToNextPage);
         
-        const filterDiff = document.getElementById('filterDifficulty');
-        if (filterDiff) filterDiff.addEventListener('change', applyFilters);
-        
-        const prevBtn = document.getElementById('prevPageBtn');
-        if (prevBtn) prevBtn.addEventListener('click', goToPrevPage);
-        
-        const nextBtn = document.getElementById('nextPageBtn');
-        if (nextBtn) nextBtn.addEventListener('click', goToNextPage);
-        
+        // Edit modals
         document.getElementById('updateBookBtn').addEventListener('click', updateBook);
         document.getElementById('closeBookModal').addEventListener('click', () => {
             document.getElementById('editBookModal').classList.add('hidden');
         });
         
-        document.getElementById('updateTopicBtn').addEventListener('click', updateTopic);
-        document.getElementById('closeTopicModal').addEventListener('click', () => {
-            document.getElementById('editTopicModal').classList.add('hidden');
+        document.getElementById('updateChapterBtn').addEventListener('click', updateChapter);
+        document.getElementById('closeChapterModal').addEventListener('click', () => {
+            document.getElementById('editChapterModal').classList.add('hidden');
+        });
+        
+        document.getElementById('updateSubTopicBtn').addEventListener('click', updateSubTopic);
+        document.getElementById('closeSubTopicModal').addEventListener('click', () => {
+            document.getElementById('editSubTopicModal').classList.add('hidden');
         });
         
         document.getElementById('updateCategoryBtn').addEventListener('click', updateCategory);
@@ -3585,71 +4257,32 @@ xml += `</urlset>`;
             document.getElementById('editQuestionModal').classList.add('hidden');
         });
         
-        // Bulk Delete Event Listeners
-        const bulkDeleteBook = document.getElementById('bulkDeleteBookId');
-        if (bulkDeleteBook) {
-            bulkDeleteBook.addEventListener('change', async () => {
-                await loadBulkDeleteTopics();
-                await refreshBulkDeletePreview();
-            });
-        }
+        // Bulk Delete
+        document.getElementById('bulkDeleteBookId').addEventListener('change', async () => {
+            await loadBulkDeleteChapters();
+            await refreshBulkDeletePreview();
+        });
+        document.getElementById('bulkDeleteChapterId').addEventListener('change', async () => {
+            await loadBulkDeleteTopics();
+            await refreshBulkDeletePreview();
+        });
+        document.getElementById('bulkDeleteTopicId').addEventListener('change', refreshBulkDeletePreview);
+        document.getElementById('bulkDeleteDifficulty').addEventListener('change', refreshBulkDeletePreview);
+        document.getElementById('refreshPreviewBtn').addEventListener('click', refreshBulkDeletePreview);
+        document.getElementById('bulkDeleteBtn').addEventListener('click', executeBulkDelete);
         
-        const bulkDeleteTopic = document.getElementById('bulkDeleteTopicId');
-        if (bulkDeleteTopic) {
-            bulkDeleteTopic.addEventListener('change', refreshBulkDeletePreview);
-        }
+        // Messages
+        document.getElementById('messageStatusFilter').addEventListener('change', loadMessages);
+        document.getElementById('refreshMessagesBtn').addEventListener('click', loadMessages);
+        document.getElementById('exportMessagesBtn').addEventListener('click', exportMessagesToCSV);
+        document.getElementById('deleteAllMessagesBtn').addEventListener('click', deleteAllMessages);
         
-        const bulkDeleteDifficulty = document.getElementById('bulkDeleteDifficulty');
-        if (bulkDeleteDifficulty) {
-            bulkDeleteDifficulty.addEventListener('change', refreshBulkDeletePreview);
-        }
-        
-        const refreshPreviewBtn = document.getElementById('refreshPreviewBtn');
-        if (refreshPreviewBtn) {
-            refreshPreviewBtn.addEventListener('click', refreshBulkDeletePreview);
-        }
-        
-        const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
-        if (bulkDeleteBtn) {
-            bulkDeleteBtn.addEventListener('click', executeBulkDelete);
-        }
-        
-        // Messages Tab Event Listeners
-        const messageStatusFilter = document.getElementById('messageStatusFilter');
-        if (messageStatusFilter) {
-            messageStatusFilter.addEventListener('change', loadMessages);
-        }
-        
-        const refreshMessagesBtn = document.getElementById('refreshMessagesBtn');
-        if (refreshMessagesBtn) {
-            refreshMessagesBtn.addEventListener('click', loadMessages);
-        }
-        
-        const exportMessagesBtn = document.getElementById('exportMessagesBtn');
-        if (exportMessagesBtn) {
-            exportMessagesBtn.addEventListener('click', exportMessagesToCSV);
-        }
-        
-        const deleteAllMessagesBtn = document.getElementById('deleteAllMessagesBtn');
-        if (deleteAllMessagesBtn) {
-            deleteAllMessagesBtn.addEventListener('click', deleteAllMessages);
-        }
-        
-        // Make math functions globally available
+        // Math
         window.toggleMathHelp = toggleMathHelp;
         window.insertMath = insertMath;
     }
 
-    // Add missing edit topic book select
-    const editTopicModal = document.getElementById('editTopicModal');
-    if (editTopicModal) {
-        const bookSelectHtml = '<select id="editTopicBookId" class="w-full p-2 border rounded mb-2"><option value="">Select Book</option></select>';
-        const topicNameInput = document.getElementById('editTopicName');
-        if (topicNameInput) {
-            topicNameInput.insertAdjacentHTML('beforebegin', bookSelectHtml);
-        }
-    }
-
+    // ============ INIT ============
     setupEventListeners();
     checkSession();
 </script>
