@@ -2750,37 +2750,69 @@ async function loadFilterTopics() {
     const itemsContainer = document.getElementById('topicDropdownItems');
     const selectAllBtn = document.getElementById('topicSelectAllBtn');
     const clearAllBtn = document.getElementById('topicClearAllBtn');
+    const toggle = document.getElementById('topicDropdownToggle');
+    const label = document.getElementById('topicDropdownLabel');
     
     // Clear selected topics
     selectedTopicIds = [];
     
     if (!chapterId || chapterId === '') {
-        itemsContainer.innerHTML = '<div style="padding:8px 12px; color:#6b7280; font-size:13px; text-align:center;">Select a chapter first</div>';
-        topicSelect.innerHTML = '';
-        selectAllBtn.style.display = 'none';
-        clearAllBtn.style.display = 'none';
-        document.getElementById('topicDropdownToggle').style.cursor = 'default';
-        document.getElementById('topicDropdownToggle').style.opacity = '0.6';
-        updateTopicUI();
+        if (itemsContainer) {
+            itemsContainer.innerHTML = '<div style="padding:8px 12px; color:#6b7280; font-size:13px; text-align:center;">Select a chapter first</div>';
+        }
+        if (topicSelect) {
+            topicSelect.innerHTML = '';
+            topicSelect.disabled = true;
+        }
+        if (selectAllBtn) selectAllBtn.style.display = 'none';
+        if (clearAllBtn) clearAllBtn.style.display = 'none';
+        if (toggle) {
+            toggle.style.cursor = 'default';
+            toggle.style.opacity = '0.6';
+        }
+        if (label) {
+            label.textContent = 'Select topics...';
+            label.style.color = '#6b7280';
+        }
+        // Clear tags
+        const tagsContainer = document.getElementById('topicSelectedTags');
+        if (tagsContainer) tagsContainer.innerHTML = '';
         document.getElementById('questionsList').innerHTML = '<p class="text-gray-500">Select a chapter to view topics</p>';
         return;
     }
     
-    document.getElementById('topicDropdownToggle').style.cursor = 'pointer';
-    document.getElementById('topicDropdownToggle').style.opacity = '1';
+    if (toggle) {
+        toggle.style.cursor = 'pointer';
+        toggle.style.opacity = '1';
+    }
     
-    itemsContainer.innerHTML = '<div style="padding:8px 12px; color:#6b7280; font-size:13px; text-align:center;">Loading topics...</div>';
-    topicSelect.innerHTML = '';
-    selectAllBtn.style.display = 'inline-block';
-    clearAllBtn.style.display = 'inline-block';
+    if (itemsContainer) {
+        itemsContainer.innerHTML = '<div style="padding:8px 12px; color:#6b7280; font-size:13px; text-align:center;">Loading topics...</div>';
+    }
+    if (topicSelect) {
+        topicSelect.innerHTML = '';
+        topicSelect.disabled = false;
+    }
+    if (selectAllBtn) selectAllBtn.style.display = 'inline-block';
+    if (clearAllBtn) clearAllBtn.style.display = 'inline-block';
     
-    const { data } = await _supabase.from('subtopics')
+    const { data, error } = await _supabase.from('subtopics')
         .select('id, name')
         .eq('chapter_id', parseInt(chapterId))
         .order('name', { ascending: true });
     
+    if (error) {
+        console.error('Error loading topics:', error);
+        if (itemsContainer) {
+            itemsContainer.innerHTML = '<div style="padding:8px 12px; color:#ef4444; font-size:13px; text-align:center;">Error loading topics</div>';
+        }
+        return;
+    }
+    
     // Clear existing options
-    topicSelect.innerHTML = '';
+    if (topicSelect) {
+        topicSelect.innerHTML = '';
+    }
     
     let html = '';
     if (data && data.length > 0) {
@@ -2788,7 +2820,7 @@ async function loadFilterTopics() {
             const option = document.createElement('option');
             option.value = topic.id;
             option.textContent = topic.name;
-            topicSelect.appendChild(option);
+            if (topicSelect) topicSelect.appendChild(option);
             
             html += `
                 <div class="topic-dropdown-item" data-value="${topic.id}">
@@ -2797,25 +2829,146 @@ async function loadFilterTopics() {
                 </div>
             `;
         });
-        selectAllBtn.disabled = false;
-        clearAllBtn.disabled = false;
+        if (selectAllBtn) selectAllBtn.disabled = false;
+        if (clearAllBtn) clearAllBtn.disabled = false;
     } else {
         html = '<div style="padding:8px 12px; color:#6b7280; font-size:13px; text-align:center;">No topics found</div>';
-        selectAllBtn.disabled = true;
-        clearAllBtn.disabled = true;
+        if (selectAllBtn) selectAllBtn.disabled = true;
+        if (clearAllBtn) clearAllBtn.disabled = true;
     }
     
-    itemsContainer.innerHTML = html;
+    if (itemsContainer) {
+        itemsContainer.innerHTML = html;
+    }
     
     // Add event listeners to checkboxes
-    itemsContainer.querySelectorAll('.topic-dropdown-item input[type="checkbox"]').forEach(cb => {
-        cb.addEventListener('change', function() {
-            const option = topicSelect.querySelector(`option[value="${this.value}"]`);
-            if (option) {
-                option.selected = this.checked;
-                updateTopicUI();
-                applyFilters();
-            }
+    if (itemsContainer) {
+        itemsContainer.querySelectorAll('.topic-dropdown-item input[type="checkbox"]').forEach(cb => {
+            cb.addEventListener('change', function() {
+                const option = topicSelect ? topicSelect.querySelector(`option[value="${this.value}"]`) : null;
+                if (option) {
+                    option.selected = this.checked;
+                    updateTopicUI();
+                    // Call loadQuestions directly instead of applyFilters to avoid duplication
+                    loadQuestions();
+                }
+            });
+        });
+        
+        // Click on the item to toggle checkbox
+        itemsContainer.querySelectorAll('.topic-dropdown-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'LABEL') {
+                    const cb = this.querySelector('input[type="checkbox"]');
+                    if (cb) {
+                        cb.checked = !cb.checked;
+                        cb.dispatchEvent(new Event('change'));
+                    }
+                }
+            });
+        });
+    }
+    
+    // Clear any previous selections
+    if (topicSelect) {
+        for (let opt of topicSelect.options) {
+            opt.selected = false;
+        }
+    }
+    updateTopicUI();
+    
+    // Load questions after topics are loaded
+    loadQuestions();
+}
+
+// Update topic UI function
+function updateTopicUI() {
+    const topicSelect = document.getElementById('filterTopicId');
+    const label = document.getElementById('topicDropdownLabel');
+    const countSpan = document.getElementById('topicSelectedCount');
+    const tagsContainer = document.getElementById('topicSelectedTags');
+    
+    if (!topicSelect) return;
+    
+    const selected = Array.from(topicSelect.selectedOptions).filter(opt => opt.value !== '');
+    const count = selected.length;
+    
+    if (count === 0) {
+        if (label) {
+            label.textContent = 'Select topics...';
+            label.style.color = '#6b7280';
+        }
+    } else if (count === 1) {
+        if (label) {
+            label.textContent = selected[0].textContent;
+            label.style.color = '#1e293b';
+        }
+    } else {
+        if (label) {
+            label.textContent = `${count} topics selected`;
+            label.style.color = '#1e293b';
+        }
+    }
+    
+    if (countSpan) {
+        countSpan.textContent = `${count} selected`;
+    }
+    
+    // Update tags
+    if (tagsContainer) {
+        tagsContainer.innerHTML = '';
+        selected.forEach(opt => {
+            const tag = document.createElement('span');
+            tag.className = 'topic-selected-tag';
+            tag.innerHTML = `${escapeHtml(opt.textContent)} <span class="remove-topic" data-value="${opt.value}">×</span>`;
+            tag.querySelector('.remove-topic').addEventListener('click', function(e) {
+                e.stopPropagation();
+                const val = this.dataset.value;
+                const option = topicSelect.querySelector(`option[value="${val}"]`);
+                if (option) {
+                    option.selected = false;
+                    const cb = document.querySelector(`#topicDropdownItems input[type="checkbox"][value="${val}"]`);
+                    if (cb) cb.checked = false;
+                    updateTopicUI();
+                    loadQuestions();
+                }
+            });
+            tagsContainer.appendChild(tag);
+        });
+    }
+}
+
+// Select all topics
+function selectAllTopics() {
+    const topicSelect = document.getElementById('filterTopicId');
+    if (!topicSelect) return;
+    const items = document.querySelectorAll('#topicDropdownItems .topic-dropdown-item input[type="checkbox"]');
+    for (let opt of topicSelect.options) {
+        if (opt.value !== '') {
+            opt.selected = true;
+        }
+    }
+    items.forEach(cb => {
+        cb.checked = true;
+    });
+    updateTopicUI();
+    loadQuestions();
+}
+
+// Clear all topics
+function clearAllTopics() {
+    const topicSelect = document.getElementById('filterTopicId');
+    if (!topicSelect) return;
+    const items = document.querySelectorAll('#topicDropdownItems .topic-dropdown-item input[type="checkbox"]');
+    for (let opt of topicSelect.options) {
+        opt.selected = false;
+    }
+    items.forEach(cb => {
+        cb.checked = false;
+    });
+    updateTopicUI();
+    loadQuestions();
+}
         });
     });
     
@@ -4928,7 +5081,7 @@ async function generateSEOPages() {
         }, 500);
     }
 
-    // ============ EVENT LISTENERS ============
+// ============ EVENT LISTENERS ============
 function setupEventListeners() {
     document.getElementById('loginBtn').addEventListener('click', handleLogin);
     document.getElementById('signupBtn').addEventListener('click', handleSignup);
@@ -5011,18 +5164,52 @@ function setupEventListeners() {
     document.getElementById('questionBookId').addEventListener('change', loadChaptersForQuestion);
     document.getElementById('questionChapterId').addEventListener('change', loadTopicsForQuestion);
     
-    // FIX 1: Multi-select topic event listeners
-    document.getElementById('filterBookId').addEventListener('change', async () => {
-        await loadFilterChapters();
-        await applyFilters();
+    // ============================================
+    // FIX: Questions Tab - Multi-select topic event listeners
+    // ============================================
+    
+    // When book changes, load chapters and reset topic dropdown
+    document.getElementById('filterBookId').addEventListener('change', function() {
+        loadFilterChapters();
+        // Reset topic dropdown
+        const topicSelect = document.getElementById('filterTopicId');
+        if (topicSelect) {
+            topicSelect.innerHTML = '';
+            topicSelect.disabled = true;
+        }
+        const itemsContainer = document.getElementById('topicDropdownItems');
+        if (itemsContainer) {
+            itemsContainer.innerHTML = '<div style="padding:8px 12px; color:#6b7280; font-size:13px; text-align:center;">Select a chapter first</div>';
+        }
+        const label = document.getElementById('topicDropdownLabel');
+        if (label) {
+            label.textContent = 'Select topics...';
+            label.style.color = '#6b7280';
+        }
+        const tagsContainer = document.getElementById('topicSelectedTags');
+        if (tagsContainer) tagsContainer.innerHTML = '';
+        const countSpan = document.getElementById('topicSelectedCount');
+        if (countSpan) countSpan.textContent = '0 selected';
+        document.getElementById('questionsList').innerHTML = '<p class="text-gray-500">Select a chapter to view questions</p>';
     });
-    document.getElementById('filterChapterId').addEventListener('change', async () => {
-        await loadFilterTopics();
+    
+    // When chapter changes, load topics
+    document.getElementById('filterChapterId').addEventListener('change', function() {
+        loadFilterTopics();
     });
-    document.getElementById('filterDifficulty').addEventListener('change', applyFilters);
+    
+    // When difficulty changes, reload questions
+    document.getElementById('filterDifficulty').addEventListener('change', function() {
+        loadQuestions();
+    });
+    
+    // Download CSV button
     document.getElementById('downloadQuestionsCsvBtn').addEventListener('click', downloadQuestionsCSV);
     
-    // FIX 1: Topic dropdown toggle - ADD THESE
+    // ============================================
+    // FIX: Topic dropdown toggle events
+    // ============================================
+    
     const topicToggle = document.getElementById('topicDropdownToggle');
     if (topicToggle) {
         topicToggle.addEventListener('click', function(e) {
@@ -5035,7 +5222,7 @@ function setupEventListeners() {
         });
     }
     
-    // FIX 1: Close dropdown when clicking outside
+    // Close dropdown when clicking outside
     document.addEventListener('click', function(e) {
         const wrapper = document.querySelector('.topic-dropdown-wrapper');
         if (wrapper && !wrapper.contains(e.target)) {
@@ -5048,7 +5235,7 @@ function setupEventListeners() {
         }
     });
     
-    // FIX 1: Select All button
+    // Select All button
     const selectAllBtn = document.getElementById('topicSelectAllBtn');
     if (selectAllBtn) {
         selectAllBtn.addEventListener('click', function(e) {
@@ -5057,7 +5244,7 @@ function setupEventListeners() {
         });
     }
     
-    // FIX 1: Clear All button
+    // Clear All button
     const clearAllBtn = document.getElementById('topicClearAllBtn');
     if (clearAllBtn) {
         clearAllBtn.addEventListener('click', function(e) {
@@ -5066,9 +5253,15 @@ function setupEventListeners() {
         });
     }
     
+    // ============================================
+    // Pagination
+    // ============================================
     document.getElementById('prevPageBtn').addEventListener('click', goToPrevPage);
     document.getElementById('nextPageBtn').addEventListener('click', goToNextPage);
     
+    // ============================================
+    // Edit Modals
+    // ============================================
     document.getElementById('updateBookBtn').addEventListener('click', updateBook);
     document.getElementById('closeBookModal').addEventListener('click', () => {
         document.getElementById('editBookModal').classList.add('hidden');
@@ -5094,6 +5287,9 @@ function setupEventListeners() {
         document.getElementById('editQuestionModal').classList.add('hidden');
     });
     
+    // ============================================
+    // Bulk Delete
+    // ============================================
     document.getElementById('bulkDeleteBookId').addEventListener('change', async () => {
         await loadBulkDeleteChapters();
         await refreshBulkDeletePreview();
@@ -5107,20 +5303,27 @@ function setupEventListeners() {
     document.getElementById('refreshPreviewBtn').addEventListener('click', refreshBulkDeletePreview);
     document.getElementById('bulkDeleteBtn').addEventListener('click', executeBulkDelete);
     
+    // ============================================
+    // Messages
+    // ============================================
     document.getElementById('messageStatusFilter').addEventListener('change', loadMessages);
     document.getElementById('refreshMessagesBtn').addEventListener('click', loadMessages);
     document.getElementById('exportMessagesBtn').addEventListener('click', exportMessagesToCSV);
     document.getElementById('deleteAllMessagesBtn').addEventListener('click', deleteAllMessages);
     
+    // ============================================
+    // Math functions
+    // ============================================
     window.toggleMathHelp = toggleMathHelp;
     window.insertMath = insertMath;
     
-    // FIX 2: SEO Dropdown functions
+    // ============================================
+    // SEO Dropdown functions
+    // ============================================
     window.toggleSeoDropdown = toggleSeoDropdown;
     window.downloadSelectedSeoFiles = downloadSelectedSeoFiles;
     window.downloadSingleSEOPage = downloadSingleSEOPage;
 }
-
     // ============ INIT ============
     setupEventListeners();
     checkSession();
