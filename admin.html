@@ -2684,6 +2684,70 @@ function renderFilterBooks(books) {
         });
     }
 }
+
+    // ============ FILTER CHAPTERS (for Questions Tab) ============
+async function loadFilterChapters() {
+    const bookId = document.getElementById('filterBookId').value;
+    const chapterSelect = document.getElementById('filterChapterId');
+    const topicSelect = document.getElementById('filterTopicId');
+    
+    if (!bookId || bookId === '') {
+        chapterSelect.innerHTML = '<option value="">Select a book first</option>';
+        chapterSelect.disabled = true;
+        topicSelect.innerHTML = '';
+        topicSelect.disabled = true;
+        document.getElementById('topicDropdownItems').innerHTML = '<div style="padding:8px 12px; color:#6b7280; font-size:13px; text-align:center;">Select a chapter first</div>';
+        document.getElementById('topicDropdownToggle').style.cursor = 'default';
+        document.getElementById('topicDropdownToggle').style.opacity = '0.6';
+        updateTopicUI();
+        document.getElementById('questionsList').innerHTML = '<p class="text-gray-500">Select a book to view chapters</p>';
+        return;
+    }
+    
+    chapterSelect.disabled = false;
+    chapterSelect.innerHTML = '<option value="">Loading chapters...</option>';
+    
+    if (chaptersCache[bookId]) {
+        renderChaptersForFilter(chaptersCache[bookId]);
+        return;
+    }
+    
+    const { data } = await _supabase.from('chapters')
+        .select('id, name, chapter_number')
+        .eq('book_id', parseInt(bookId))
+        .order('chapter_number', { ascending: true });
+    
+    if (data) {
+        chaptersCache[bookId] = data;
+        renderChaptersForFilter(data);
+    }
+}
+
+function renderChaptersForFilter(chapters) {
+    const chapterSelect = document.getElementById('filterChapterId');
+    chapterSelect.innerHTML = '<option value="">-- Select a Chapter --</option>';
+    if (chapters && chapters.length > 0) {
+        chapters.forEach(chapter => {
+            const display = chapter.chapter_number ? `Ch ${chapter.chapter_number}: ${chapter.name}` : chapter.name;
+            chapterSelect.innerHTML += `<option value="${chapter.id}">${escapeHtml(display)}</option>`;
+        });
+    } else {
+        chapterSelect.innerHTML = '<option value="">No chapters found</option>';
+    }
+    
+    const topicSelect = document.getElementById('filterTopicId');
+    topicSelect.innerHTML = '';
+    topicSelect.disabled = false;
+    const itemsContainer = document.getElementById('topicDropdownItems');
+    itemsContainer.innerHTML = '<div style="padding:8px 12px; color:#6b7280; font-size:13px; text-align:center;">Select a chapter first</div>';
+    document.getElementById('topicDropdownToggle').style.cursor = 'default';
+    document.getElementById('topicDropdownToggle').style.opacity = '0.6';
+    document.getElementById('topicSelectedTags').innerHTML = '';
+    document.getElementById('topicDropdownLabel').textContent = 'Select topics...';
+    document.getElementById('topicDropdownLabel').style.color = '#6b7280';
+    document.getElementById('topicSelectedCount').textContent = '0 selected';
+}
+    
 // Close topic dropdown
 function closeTopicDropdown() {
     const menu = document.getElementById('topicDropdownMenu');
