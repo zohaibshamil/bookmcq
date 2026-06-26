@@ -3324,194 +3324,221 @@ async function applyFilters() {
         }
     }
 
-    // ============ SITEMAP GENERATOR - UPDATED WITH TOPICS ============
-    async function generateSitemap() {
-        const statusEl = document.getElementById('sitemapStatus');
-        const countEl = document.getElementById('sitemapCount');
-        const progressBar = document.getElementById('sitemapProgressBar');
-        const logEl = document.getElementById('sitemapLog');
-        const logContent = document.getElementById('sitemapLogContent');
-        const resultEl = document.getElementById('sitemapResult');
-        const downloadBtn = document.getElementById('downloadSitemapBtn');
-        const viewUrlsBtn = document.getElementById('viewSitemapUrlsBtn');
-        const urlPreviewEl = document.getElementById('sitemapUrlPreview');
-        const urlListEl = document.getElementById('sitemapUrlList');
+// ============ SITEMAP - FIXED WITH CORRECT CHAPTER GROUPING ============
+async function generateSitemap() {
+    const statusEl = document.getElementById('sitemapStatus');
+    const countEl = document.getElementById('sitemapCount');
+    const progressBar = document.getElementById('sitemapProgressBar');
+    const logEl = document.getElementById('sitemapLog');
+    const logContent = document.getElementById('sitemapLogContent');
+    const resultEl = document.getElementById('sitemapResult');
+    const downloadBtn = document.getElementById('downloadSitemapBtn');
+    const viewUrlsBtn = document.getElementById('viewSitemapUrlsBtn');
+    const urlPreviewEl = document.getElementById('sitemapUrlPreview');
+    const urlListEl = document.getElementById('sitemapUrlList');
+    
+    logEl.classList.remove('hidden');
+    logContent.innerHTML = '';
+    resultEl.classList.add('hidden');
+    downloadBtn.classList.add('hidden');
+    viewUrlsBtn.classList.add('hidden');
+    urlPreviewEl.classList.add('hidden');
+    
+    statusEl.textContent = '📦 Fetching data...';
+    progressBar.style.width = '10%';
+    logContent.innerHTML += '<div>📦 Fetching books, chapters, and topics...</div>';
+    
+    try {
+        // Fetch books
+        const { data: books, error: booksError } = await _supabase
+            .from('books')
+            .select('id, title, slug, created_at')
+            .order('title');
         
-        logEl.classList.remove('hidden');
-        logContent.innerHTML = '';
-        resultEl.classList.add('hidden');
-        downloadBtn.classList.add('hidden');
-        viewUrlsBtn.classList.add('hidden');
-        urlPreviewEl.classList.add('hidden');
+        if (booksError) throw booksError;
         
-        statusEl.textContent = '📦 Fetching data...';
-        progressBar.style.width = '10%';
-        logContent.innerHTML += '<div>📦 Fetching books, chapters, and topics...</div>';
+        // Fetch chapters with their book slugs
+        const { data: chapters, error: chaptersError } = await _supabase
+            .from('chapters')
+            .select('id, name, slug, book_id, chapter_number, created_at, books(title, slug)')
+            .order('book_id')
+            .order('chapter_number', { ascending: true, nullsFirst: false });
         
-        try {
-            // Fetch books
-            const { data: books, error: booksError } = await _supabase
-                .from('books')
-                .select('id, title, slug, created_at')
-                .order('title');
+        if (chaptersError) throw chaptersError;
+        
+        // Fetch topics with their chapter and book info
+        const { data: topics, error: topicsError } = await _supabase
+            .from('subtopics')
+            .select(`
+                id, 
+                name, 
+                slug, 
+                chapter_id, 
+                created_at,
+                chapters!inner (
+                    id,
+                    name,
+                    slug,
+                    chapter_number,
+                    book_id,
+                    books!inner (
+                        id,
+                        title,
+                        slug
+                    )
+                )
+            `)
+            .order('chapter_id')
+            .order('name');
+        
+        if (topicsError) throw topicsError;
+        
+        logContent.innerHTML += `<div>📚 Found ${books.length} books, ${chapters.length} chapters, ${topics.length} topics</div>`;
+        statusEl.textContent = '📄 Generating sitemap URLs...';
+        progressBar.style.width = '30%';
+        
+        // Static pages
+        const staticPages = [
+            { url: '/', priority: '1.0', changefreq: 'daily' },
+            { url: '/quiz', priority: '0.9', changefreq: 'weekly' },
+            { url: '/practice', priority: '0.9', changefreq: 'weekly' },
+            { url: '/contact', priority: '0.6', changefreq: 'monthly' },
+            { url: '/privacy', priority: '0.5', changefreq: 'yearly' }
+        ];
+        
+        // Build sitemap URLs
+        const urls = [];
+        
+        // Add static pages
+        staticPages.forEach(page => {
+            urls.push({
+                loc: `https://www.bookmcq.com${page.url}`,
+                priority: page.priority,
+                changefreq: page.changefreq,
+                lastmod: new Date().toISOString().split('T')[0]
+            });
+        });
+        
+        // Group chapters by book
+        const chaptersByBook = {};
+        chapters.forEach(chapter => {
+            if (chapter.books && chapter.books.slug) {
+                const bookSlug = chapter.books.slug;
+                if (!chaptersByBook[bookSlug]) {
+                    chaptersByBook[bookSlug] = [];
+                }
+                chaptersByBook[bookSlug].push(chapter);
+            }
+        });
+        
+        // Group topics by chapter (for correct URL generation)
+        const topicsByChapter = {};
+        topics.forEach(topic => {
+            if (topic.chapters && topic.chapters.id) {
+                const chapterId = topic.chapters.id;
+                if (!topicsByChapter[chapterId]) {
+                    topicsByChapter[chapterId] = [];
+                }
+                topicsByChapter[chapterId].push(topic);
+            }
+        });
+        
+        const sortedBooks = [...books].sort((a, b) => a.title.localeCompare(b.title));
+        
+        // Add book and chapter URLs
+        sortedBooks.forEach(book => {
+            const slug = book.slug || createSlug(book.title);
+            const bookTitle = book.title;
+            const lastmod = book.created_at ? new Date(book.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
             
-            if (booksError) throw booksError;
-            
-            // Fetch chapters with their book slugs
-            const { data: chapters, error: chaptersError } = await _supabase
-                .from('chapters')
-                .select('id, name, slug, book_id, chapter_number, created_at, books(title, slug)')
-                .order('book_id')
-                .order('chapter_number', { ascending: true, nullsFirst: false });
-            
-            if (chaptersError) throw chaptersError;
-            
-            // Fetch topics
-            const { data: topics, error: topicsError } = await _supabase
-                .from('subtopics')
-                .select('id, name, slug, chapter_id, created_at, chapters(book_id, books(title, slug))')
-                .order('chapter_id')
-                .order('name');
-            
-            if (topicsError) throw topicsError;
-            
-            logContent.innerHTML += `<div>📚 Found ${books.length} books, ${chapters.length} chapters, ${topics.length} topics</div>`;
-            statusEl.textContent = '📄 Generating sitemap URLs...';
-            progressBar.style.width = '30%';
-            
-            // Static pages
-            const staticPages = [
-                { url: '/', priority: '1.0', changefreq: 'daily' },
-                { url: '/quiz', priority: '0.9', changefreq: 'weekly' },
-                { url: '/practice', priority: '0.9', changefreq: 'weekly' },
-                { url: '/contact', priority: '0.6', changefreq: 'monthly' },
-                { url: '/privacy', priority: '0.5', changefreq: 'yearly' }
-            ];
-            
-            // Build sitemap URLs
-            const urls = [];
-            
-            // Add static pages
-            staticPages.forEach(page => {
-                urls.push({
-                    loc: `https://www.bookmcq.com${page.url}`,
-                    priority: page.priority,
-                    changefreq: page.changefreq,
-                    lastmod: new Date().toISOString().split('T')[0]
-                });
+            // Book index page
+            urls.push({
+                loc: `https://www.bookmcq.com/books/${slug}/index.html`,
+                priority: '0.9',
+                changefreq: 'weekly',
+                lastmod: lastmod,
+                bookTitle: bookTitle,
+                isBook: true,
+                isIndex: true,
+                bookSlug: slug
             });
             
-            // Group chapters by book
-            const chaptersByBook = {};
-            chapters.forEach(chapter => {
-                if (chapter.books && chapter.books.slug) {
-                    const bookSlug = chapter.books.slug;
-                    if (!chaptersByBook[bookSlug]) {
-                        chaptersByBook[bookSlug] = [];
-                    }
-                    chaptersByBook[bookSlug].push(chapter);
+            // Add chapter pages for this book
+            const bookChapters = chaptersByBook[slug] || [];
+            bookChapters.sort((a, b) => {
+                const aNum = a.chapter_number || 999;
+                const bNum = b.chapter_number || 999;
+                return aNum - bNum;
+            });
+            
+            bookChapters.forEach(chapter => {
+                if (chapter.slug) {
+                    const chapterLastmod = chapter.created_at ? new Date(chapter.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+                    urls.push({
+                        loc: `https://www.bookmcq.com/books/${slug}/${chapter.slug}.html`,
+                        priority: '0.8',
+                        changefreq: 'weekly',
+                        lastmod: chapterLastmod,
+                        bookSlug: slug,
+                        chapterNumber: chapter.chapter_number,
+                        isChapter: true,
+                        chapterId: chapter.id
+                    });
                 }
             });
             
-            // Group topics by book slug
-            const topicsByBook = {};
-            topics.forEach(topic => {
-                if (topic.chapters && topic.chapters.books && topic.chapters.books.slug) {
-                    const bookSlug = topic.chapters.books.slug;
-                    if (!topicsByBook[bookSlug]) {
-                        topicsByBook[bookSlug] = [];
-                    }
-                    topicsByBook[bookSlug].push(topic);
-                }
-            });
-            
-            const sortedBooks = [...books].sort((a, b) => a.title.localeCompare(b.title));
-            sortedBooks.forEach(book => {
-                const slug = book.slug || createSlug(book.title);
-                urls.push({
-                    loc: `https://www.bookmcq.com/books/${slug}/index.html`,
-                    priority: '0.9',
-                    changefreq: 'weekly',
-                    lastmod: book.created_at ? new Date(book.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-                    bookTitle: book.title,
-                    isBook: true,
-                    isIndex: true
-                });
-            });
-            
-            // Add chapter pages
-            const sortedBookSlugs = Object.keys(chaptersByBook).sort();
-            sortedBookSlugs.forEach(bookSlug => {
-                const bookChapters = chaptersByBook[bookSlug];
-                bookChapters.sort((a, b) => {
-                    const aNum = a.chapter_number || 999;
-                    const bNum = b.chapter_number || 999;
-                    return aNum - bNum;
-                });
-                
-                bookChapters.forEach(chapter => {
-                    if (chapter.slug) {
-                        urls.push({
-                            loc: `https://www.bookmcq.com/books/${bookSlug}/${chapter.slug}.html`,
-                            priority: '0.8',
-                            changefreq: 'weekly',
-                            lastmod: chapter.created_at ? new Date(chapter.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-                            bookSlug: bookSlug,
-                            chapterNumber: chapter.chapter_number,
-                            isChapter: true
-                        });
-                    }
-                });
-            });
-            
-            // Add topic pages
-            sortedBookSlugs.forEach(bookSlug => {
-                const bookTopics = topicsByBook[bookSlug] || [];
-                bookTopics.forEach(topic => {
+            // Add topics for this book's chapters - grouped by chapter
+            bookChapters.forEach(chapter => {
+                const chapterTopics = topicsByChapter[chapter.id] || [];
+                chapterTopics.forEach(topic => {
                     if (topic.slug) {
+                        const topicLastmod = topic.created_at ? new Date(topic.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
                         urls.push({
-                            loc: `https://www.bookmcq.com/books/${bookSlug}/topics/${topic.slug}.html`,
+                            loc: `https://www.bookmcq.com/books/${slug}/topics/${topic.slug}.html`,
                             priority: '0.7',
                             changefreq: 'weekly',
-                            lastmod: topic.created_at ? new Date(topic.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-                            bookSlug: bookSlug,
+                            lastmod: topicLastmod,
+                            bookSlug: slug,
+                            chapterId: chapter.id,
+                            chapterName: chapter.name,
+                            chapterNumber: chapter.chapter_number,
                             topicName: topic.name,
-                            isTopic: true
+                            isTopic: true,
+                            isTopicUnderChapter: true
                         });
                     }
                 });
             });
-            
-            // Update stats
-            document.getElementById('sitemapStaticCount').textContent = staticPages.length;
-            document.getElementById('sitemapBookCount').textContent = books.length;
-            document.getElementById('sitemapChapterCount').textContent = chapters.length;
-            document.getElementById('sitemapTotalCount').textContent = urls.length;
-            
-            // Build XML
-            let xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  
-  <!-- ================= MAIN PAGES ================= -->\n`;
-            
-            staticPages.forEach(page => {
-                xml += `  <url>
+        });
+        
+        // Update stats
+        document.getElementById('sitemapStaticCount').textContent = staticPages.length;
+        document.getElementById('sitemapBookCount').textContent = books.length;
+        document.getElementById('sitemapChapterCount').textContent = chapters.length;
+        document.getElementById('sitemapTotalCount').textContent = urls.length;
+        
+        // Build XML with proper grouping
+        let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
+        
+        // Static pages
+        staticPages.forEach(page => {
+            xml += `  <url>
     <loc>https://www.bookmcq.com${page.url}</loc>
     <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
     <changefreq>${page.changefreq}</changefreq>
     <priority>${page.priority}</priority>
   </url>\n`;
-            });
+        });
+        
+        // Books and their content
+        sortedBooks.forEach(book => {
+            const slug = book.slug || createSlug(book.title);
+            const bookTitle = book.title;
+            const lastmod = book.created_at ? new Date(book.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
             
+            // Book index
             xml += `
-  <!-- ================= BOOKS ================= -->\n`;
-            
-            sortedBooks.forEach(book => {
-                const slug = book.slug || createSlug(book.title);
-                const bookTitle = book.title;
-                const lastmod = book.created_at ? new Date(book.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-                
-                xml += `
   <!-- ${bookTitle} -->
   <url>
     <loc>https://www.bookmcq.com/books/${slug}/index.html</loc>
@@ -3519,38 +3546,40 @@ async function applyFilters() {
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>\n`;
-                
-                const bookChapters = chaptersByBook[slug] || [];
-                if (bookChapters.length > 0) {
-                    bookChapters.sort((a, b) => {
-                        const aNum = a.chapter_number || 999;
-                        const bNum = b.chapter_number || 999;
-                        return aNum - bNum;
-                    });
+            
+            const bookChapters = chaptersByBook[slug] || [];
+            bookChapters.sort((a, b) => {
+                const aNum = a.chapter_number || 999;
+                const bNum = b.chapter_number || 999;
+                return aNum - bNum;
+            });
+            
+            // Chapters
+            bookChapters.forEach(chapter => {
+                if (chapter.slug) {
+                    const chapterLastmod = chapter.created_at ? new Date(chapter.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+                    const chapterDisplay = chapter.chapter_number ? `Ch ${chapter.chapter_number}: ` : '';
                     
                     xml += `
-  <!-- ${bookTitle} Chapters -->\n`;
-                    
-                    bookChapters.forEach(chapter => {
-                        if (chapter.slug) {
-                            const chapterLastmod = chapter.created_at ? new Date(chapter.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-                            xml += `  <url>
+  <!-- ${chapterDisplay}${chapter.name} -->
+  <url>
     <loc>https://www.bookmcq.com/books/${slug}/${chapter.slug}.html</loc>
     <lastmod>${chapterLastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>\n`;
-                        }
-                    });
                 }
-                
-                // Add topics for this book
-                const bookTopics = topicsByBook[slug] || [];
-                if (bookTopics.length > 0) {
+            });
+            
+            // Topics - grouped by chapter
+            bookChapters.forEach(chapter => {
+                const chapterTopics = topicsByChapter[chapter.id] || [];
+                if (chapterTopics.length > 0) {
+                    const chapterDisplay = chapter.chapter_number ? `Ch ${chapter.chapter_number}: ` : '';
                     xml += `
-  <!-- ${bookTitle} Topics -->\n`;
+  <!-- ${chapterDisplay}${chapter.name} Topics -->\n`;
                     
-                    bookTopics.forEach(topic => {
+                    chapterTopics.forEach(topic => {
                         if (topic.slug) {
                             const topicLastmod = topic.created_at ? new Date(topic.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
                             xml += `  <url>
@@ -3563,39 +3592,41 @@ async function applyFilters() {
                     });
                 }
             });
-            
-            xml += `</urlset>`;
-            
-            sitemapData = {
-                xml: xml,
-                urls: urls,
-                total: urls.length,
-                staticCount: staticPages.length,
-                bookCount: books.length,
-                chapterCount: chapters.length,
-                topicCount: topics.length
-            };
-            
-            window.sitemapUrls = urls;
-            
-            progressBar.style.width = '90%';
-            statusEl.textContent = '✅ Sitemap generated!';
-            countEl.textContent = `${urls.length} URLs`;
-            logContent.innerHTML += `<div class="text-green-600">✅ Sitemap generated with ${urls.length} URLs</div>`;
-            logContent.innerHTML += `<div>📊 ${staticPages.length} static, ${books.length} books, ${chapters.length} chapters, ${topics.length} topics</div>`;
-            
-            resultEl.classList.remove('hidden');
-            downloadBtn.classList.remove('hidden');
-            viewUrlsBtn.classList.remove('hidden');
-            
-            progressBar.style.width = '100%';
-            
-        } catch (error) {
-            console.error('Sitemap Generation Error:', error);
-            statusEl.textContent = '❌ Error: ' + error.message;
-            logContent.innerHTML += `<div class="text-red-500">❌ Error: ${error.message}</div>`;
-        }
+        });
+        
+        xml += `</urlset>`;
+        
+        sitemapData = {
+            xml: xml,
+            urls: urls,
+            total: urls.length,
+            staticCount: staticPages.length,
+            bookCount: books.length,
+            chapterCount: chapters.length,
+            topicCount: topics.length
+        };
+        
+        window.sitemapUrls = urls;
+        
+        progressBar.style.width = '90%';
+        statusEl.textContent = '✅ Sitemap generated!';
+        countEl.textContent = `${urls.length} URLs`;
+        logContent.innerHTML += `<div class="text-green-600">✅ Sitemap generated with ${urls.length} URLs</div>`;
+        logContent.innerHTML += `<div>📊 ${staticPages.length} static, ${books.length} books, ${chapters.length} chapters, ${topics.length} topics</div>`;
+        logContent.innerHTML += `<div>📝 Topics are correctly grouped under their chapters</div>`;
+        
+        resultEl.classList.remove('hidden');
+        downloadBtn.classList.remove('hidden');
+        viewUrlsBtn.classList.remove('hidden');
+        
+        progressBar.style.width = '100%';
+        
+    } catch (error) {
+        console.error('Sitemap Generation Error:', error);
+        statusEl.textContent = '❌ Error: ' + error.message;
+        logContent.innerHTML += `<div class="text-red-500">❌ Error: ${error.message}</div>`;
     }
+}
     
     function downloadSitemap() {
         if (!sitemapData) {
@@ -4132,291 +4163,412 @@ async function applyFilters() {
         });
     }
 
-    async function generateSEOPages() {
-        const statusEl = document.getElementById('seoStatus');
-        const countEl = document.getElementById('seoCount');
-        const progressBar = document.getElementById('seoProgressBar');
-        const logEl = document.getElementById('seoLog');
-        const logContent = document.getElementById('seoLogContent');
-        const resultEl = document.getElementById('seoResult');
-        const downloadAllBtn = document.getElementById('downloadAllSEOBtn');
-        const bookListEl = document.getElementById('seoBookList');
+// ============ SEO - COMPLETE FIXED VERSION WITH CHECKBOXES ============
+async function generateSEOPages() {
+    const statusEl = document.getElementById('seoStatus');
+    const countEl = document.getElementById('seoCount');
+    const progressBar = document.getElementById('seoProgressBar');
+    const logEl = document.getElementById('seoLog');
+    const logContent = document.getElementById('seoLogContent');
+    const resultEl = document.getElementById('seoResult');
+    const downloadAllBtn = document.getElementById('downloadAllSEOBtn');
+    const bookListEl = document.getElementById('seoBookList');
+    
+    seoGeneratedFiles = [];
+    seoGeneratedCount = 0;
+    seoBooksData = [];
+    logEl.classList.remove('hidden');
+    logContent.innerHTML = '';
+    resultEl.classList.add('hidden');
+    downloadAllBtn.classList.add('hidden');
+    
+    statusEl.textContent = '📦 Fetching data from database...';
+    progressBar.style.width = '10%';
+    logContent.innerHTML += '<div>📦 Fetching books, chapters, topics, and questions...</div>';
+    bookListEl.innerHTML = '<div class="text-gray-500 text-sm">Loading books...</div>';
+    
+    try {
+        const { data: books, error: booksError } = await _supabase
+            .from('books')
+            .select('*')
+            .order('title');
         
-        seoGeneratedFiles = [];
-        seoGeneratedCount = 0;
-        seoBooksData = [];
-        logEl.classList.remove('hidden');
-        logContent.innerHTML = '';
-        resultEl.classList.add('hidden');
-        downloadAllBtn.classList.add('hidden');
+        if (booksError) throw booksError;
         
-        statusEl.textContent = '📦 Fetching data from database...';
-        progressBar.style.width = '10%';
-        logContent.innerHTML += '<div>📦 Fetching books, chapters, topics, and questions...</div>';
-        bookListEl.innerHTML = '<div class="text-gray-500 text-sm">Loading books...</div>';
+        const { data: chapters, error: chaptersError } = await _supabase
+            .from('chapters')
+            .select('*, books(title, slug)')
+            .order('book_id')
+            .order('chapter_number', { ascending: true, nullsFirst: false });
         
-        try {
-            const { data: books, error: booksError } = await _supabase
-                .from('books')
-                .select('*')
-                .order('title');
-            
-            if (booksError) throw booksError;
-            
-            const { data: chapters, error: chaptersError } = await _supabase
-                .from('chapters')
-                .select('*, books(title, slug)')
-                .order('book_id')
-                .order('chapter_number', { ascending: true, nullsFirst: false });
-            
-            if (chaptersError) throw chaptersError;
-            
-            const { data: topics, error: topicsError } = await _supabase
-                .from('subtopics')
-                .select('*, chapters(book_id, books(title, slug))')
-                .order('chapter_id')
-                .order('name');
-            
-            if (topicsError) throw topicsError;
-            
-            const allQuestions = await fetchAllQuestionsWithDifficulty();
-            
-            logContent.innerHTML += '<div>📚 Found ' + books.length + ' books, ' + chapters.length + ' chapters, ' + topics.length + ' topics, ' + allQuestions.length + ' total questions</div>';
-            statusEl.textContent = '📄 Generating SEO pages...';
-            progressBar.style.width = '20%';
-            
-            if (books.length === 0) {
-                statusEl.textContent = '⚠️ No books found to generate pages';
-                logContent.innerHTML += '<div class="text-red-500">⚠️ No books found in database.</div>';
-                bookListEl.innerHTML = '<div class="text-gray-500 text-sm">No books available</div>';
-                return;
+        if (chaptersError) throw chaptersError;
+        
+        const { data: topics, error: topicsError } = await _supabase
+            .from('subtopics')
+            .select('*, chapters(book_id, books(title, slug))')
+            .order('chapter_id')
+            .order('name');
+        
+        if (topicsError) throw topicsError;
+        
+        const allQuestions = await fetchAllQuestionsWithDifficulty();
+        
+        logContent.innerHTML += '<div>📚 Found ' + books.length + ' books, ' + chapters.length + ' chapters, ' + topics.length + ' topics, ' + allQuestions.length + ' total questions</div>';
+        statusEl.textContent = '📄 Generating SEO pages...';
+        progressBar.style.width = '20%';
+        
+        if (books.length === 0) {
+            statusEl.textContent = '⚠️ No books found to generate pages';
+            logContent.innerHTML += '<div class="text-red-500">⚠️ No books found in database.</div>';
+            bookListEl.innerHTML = '<div class="text-gray-500 text-sm">No books available</div>';
+            return;
+        }
+        
+        var chaptersByBook = {};
+        chapters.forEach(function(chapter) {
+            if (chapter.book_id) {
+                if (!chaptersByBook[chapter.book_id]) {
+                    chaptersByBook[chapter.book_id] = [];
+                }
+                chaptersByBook[chapter.book_id].push(chapter);
             }
-            
-            var chaptersByBook = {};
-            chapters.forEach(function(chapter) {
-                if (chapter.book_id) {
-                    if (!chaptersByBook[chapter.book_id]) {
-                        chaptersByBook[chapter.book_id] = [];
-                    }
-                    chaptersByBook[chapter.book_id].push(chapter);
+        });
+        
+        var topicsByBook = {};
+        topics.forEach(function(topic) {
+            if (topic.chapters && topic.chapters.book_id) {
+                if (!topicsByBook[topic.chapters.book_id]) {
+                    topicsByBook[topic.chapters.book_id] = [];
                 }
+                topicsByBook[topic.chapters.book_id].push(topic);
+            }
+        });
+        
+        var tempFiles = [];
+        
+        books.forEach(function(book) {
+            var bookSlug = book.slug || createSlug(book.title);
+            var bookChapters = chaptersByBook[book.id] || [];
+            var bookTopics = topicsByBook[book.id] || [];
+            
+            bookChapters.sort(function(a, b) {
+                var aNum = a.chapter_number || 999;
+                var bNum = b.chapter_number || 999;
+                return aNum - bNum;
             });
             
-            var topicsByBook = {};
-            topics.forEach(function(topic) {
-                if (topic.chapters && topic.chapters.book_id) {
-                    if (!topicsByBook[topic.chapters.book_id]) {
-                        topicsByBook[topic.chapters.book_id] = [];
-                    }
-                    topicsByBook[topic.chapters.book_id].push(topic);
-                }
+            var totalQuestionsForBook = allQuestions.filter(function(q) {
+                return q.chapter_id && bookChapters.some(function(c) { return c.id === q.chapter_id; });
+            }).length;
+            
+            // Generate book index page with topics
+            var bookIndexHtml = generateBookIndexPage(book, bookChapters, bookTopics, {}, totalQuestionsForBook);
+            tempFiles.push({
+                name: bookSlug + '/index.html',
+                content: bookIndexHtml,
+                book: book.title,
+                bookSlug: bookSlug,
+                chapters: bookChapters.length,
+                topics: bookTopics.length,
+                questions: totalQuestionsForBook,
+                isBook: true,
+                displayName: '📖 Index'
             });
             
-            var tempFiles = [];
-            
-            books.forEach(function(book) {
-                var bookSlug = book.slug || createSlug(book.title);
-                var bookChapters = chaptersByBook[book.id] || [];
-                var bookTopics = topicsByBook[book.id] || [];
+            // Generate chapter pages
+            bookChapters.forEach(function(chapter) {
+                var chapterSlug = chapter.slug || createSlug(chapter.name);
+                var chapterDisplay = chapter.chapter_number ? chapter.chapter_number + '. ' : '';
                 
-                bookChapters.sort(function(a, b) {
-                    var aNum = a.chapter_number || 999;
-                    var bNum = b.chapter_number || 999;
-                    return aNum - bNum;
-                });
-                
-                var totalQuestionsForBook = allQuestions.filter(function(q) {
-                    return q.chapter_id && bookChapters.some(function(c) { return c.id === q.chapter_id; });
-                }).length;
-                
-                // Generate book index page with topics
-                var bookIndexHtml = generateBookIndexPage(book, bookChapters, bookTopics, {}, totalQuestionsForBook);
+                var chapterHtml = generateChapterPage(book, chapter);
                 tempFiles.push({
-                    name: bookSlug + '/index.html',
-                    content: bookIndexHtml,
+                    name: bookSlug + '/' + chapterSlug + '.html',
+                    content: chapterHtml,
                     book: book.title,
                     bookSlug: bookSlug,
-                    chapters: bookChapters.length,
-                    topics: bookTopics.length,
-                    questions: totalQuestionsForBook,
-                    isBook: true,
-                    displayName: '📖 Index'
-                });
-                
-                // Generate chapter pages
-                bookChapters.forEach(function(chapter) {
-                    var chapterSlug = chapter.slug || createSlug(chapter.name);
-                    var chapterDisplay = chapter.chapter_number ? chapter.chapter_number + '. ' : '';
-                    
-                    var chapterHtml = generateChapterPage(book, chapter);
-                    tempFiles.push({
-                        name: bookSlug + '/' + chapterSlug + '.html',
-                        content: chapterHtml,
-                        book: book.title,
-                        bookSlug: bookSlug,
-                        chapter: chapter.name,
-                        chapterNumber: chapter.chapter_number,
-                        isBook: false,
-                        isTopic: false,
-                        displayName: '📄 ' + chapterDisplay + chapter.name
-                    });
-                });
-                
-                // Generate topic pages
-                bookTopics.forEach(function(topic) {
-                    var topicSlug = topic.slug || createSlug(topic.name);
-                    
-                    var topicHtml = generateTopicPage(book, topic);
-                    tempFiles.push({
-                        name: bookSlug + '/topics/' + topicSlug + '.html',
-                        content: topicHtml,
-                        book: book.title,
-                        bookSlug: bookSlug,
-                        topic: topic.name,
-                        isBook: false,
-                        isTopic: true,
-                        displayName: '📝 ' + topic.name
-                    });
+                    chapter: chapter.name,
+                    chapterNumber: chapter.chapter_number,
+                    isBook: false,
+                    isTopic: false,
+                    displayName: '📄 ' + chapterDisplay + chapter.name
                 });
             });
             
-            seoGeneratedFiles = tempFiles;
+            // Generate topic pages
+            bookTopics.forEach(function(topic) {
+                var topicSlug = topic.slug || createSlug(topic.name);
+                
+                var topicHtml = generateTopicPage(book, topic);
+                tempFiles.push({
+                    name: bookSlug + '/topics/' + topicSlug + '.html',
+                    content: topicHtml,
+                    book: book.title,
+                    bookSlug: bookSlug,
+                    topic: topic.name,
+                    isBook: false,
+                    isTopic: true,
+                    displayName: '📝 ' + topic.name
+                });
+            });
+        });
+        
+        seoGeneratedFiles = tempFiles;
+        
+        var bookListHtml = '';
+        var uniqueBookSlugs = [];
+        seoGeneratedFiles.forEach(function(f) {
+            if (uniqueBookSlugs.indexOf(f.bookSlug) === -1) {
+                uniqueBookSlugs.push(f.bookSlug);
+            }
+        });
+        
+        var processedBooks = {};
+        
+        uniqueBookSlugs.forEach(function(bookSlug) {
+            var bookFiles = seoGeneratedFiles.filter(function(f) { 
+                return f.bookSlug === bookSlug; 
+            });
             
-            var bookListHtml = '';
-            var uniqueBookSlugs = [];
-            seoGeneratedFiles.forEach(function(f) {
-                if (uniqueBookSlugs.indexOf(f.bookSlug) === -1) {
-                    uniqueBookSlugs.push(f.bookSlug);
+            if (bookFiles.length === 0 || processedBooks[bookSlug]) return;
+            processedBooks[bookSlug] = true;
+            
+            var firstFile = bookFiles[0];
+            var bookTitle = firstFile.book;
+            var totalChapters = bookFiles.filter(function(f) { 
+                return f.isBook === false && f.isTopic === false; 
+            }).length;
+            var totalTopics = bookFiles.filter(function(f) { 
+                return f.isTopic === true; 
+            }).length;
+            
+            // Group files by chapter for better organization
+            var chapterGroups = {};
+            var indexFile = null;
+            var topicFiles = [];
+            
+            bookFiles.forEach(function(f) {
+                if (f.isBook) {
+                    indexFile = f;
+                } else if (f.isTopic) {
+                    topicFiles.push(f);
+                } else {
+                    var chapterKey = f.chapterNumber || 'uncategorized';
+                    if (!chapterGroups[chapterKey]) {
+                        chapterGroups[chapterKey] = [];
+                    }
+                    chapterGroups[chapterKey].push(f);
                 }
             });
             
-            var processedBooks = {};
+            // Sort chapter groups
+            var sortedChapterKeys = Object.keys(chapterGroups).sort((a, b) => {
+                if (a === 'uncategorized') return 1;
+                if (b === 'uncategorized') return -1;
+                return parseInt(a) - parseInt(b);
+            });
             
-            uniqueBookSlugs.forEach(function(bookSlug) {
-                var bookFiles = seoGeneratedFiles.filter(function(f) { 
-                    return f.bookSlug === bookSlug; 
+            // Build file list with checkboxes
+            var fileOptionsHtml = '';
+            var fileCounter = 0;
+            
+            // Add index file
+            if (indexFile) {
+                fileOptionsHtml += `
+                    <div class="sitemap-url-item" style="border-left-color: #8b5cf6; background: #f5f3ff;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; width: 100%;">
+                            <input type="checkbox" class="seo-file-checkbox" data-filename="${indexFile.name}" data-bookslug="${bookSlug}" checked>
+                            <span class="url-path">📖 ${escapeHtml(indexFile.displayName || 'Index')}</span>
+                        </label>
+                    </div>
+                `;
+                fileCounter++;
+            }
+            
+            // Add chapter files
+            sortedChapterKeys.forEach(function(chapterKey) {
+                var chapterFiles = chapterGroups[chapterKey];
+                var chapterDisplay = chapterKey !== 'uncategorized' ? `Ch ${chapterKey}` : 'Other Chapters';
+                
+                fileOptionsHtml += `
+                    <div style="margin-top: 4px; margin-left: 12px; border-left: 2px solid #e2e8f0; padding-left: 12px;">
+                        <div style="font-size: 11px; color: #64748b; font-weight: 600; margin-bottom: 2px;">${escapeHtml(chapterDisplay)}</div>
+                `;
+                
+                chapterFiles.forEach(function(f) {
+                    fileOptionsHtml += `
+                        <div class="sitemap-url-item" style="border-left-color: #3b82f6; margin-left: 8px;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; width: 100%;">
+                                <input type="checkbox" class="seo-file-checkbox" data-filename="${f.name}" data-bookslug="${bookSlug}" checked>
+                                <span class="url-path">📄 ${escapeHtml(f.displayName || f.name)}</span>
+                            </label>
+                        </div>
+                    `;
+                    fileCounter++;
                 });
                 
-                if (bookFiles.length === 0 || processedBooks[bookSlug]) return;
-                processedBooks[bookSlug] = true;
+                fileOptionsHtml += `</div>`;
+            });
+            
+            // Add topic files (if any)
+            if (topicFiles.length > 0) {
+                fileOptionsHtml += `
+                    <div style="margin-top: 4px; margin-left: 12px; border-left: 2px solid #e2e8f0; padding-left: 12px;">
+                        <div style="font-size: 11px; color: #64748b; font-weight: 600; margin-bottom: 2px;">📝 Topics</div>
+                `;
                 
-                var firstFile = bookFiles[0];
-                var bookTitle = firstFile.book;
-                var totalChapters = bookFiles.filter(function(f) { 
-                    return f.isBook === false && f.isTopic === false; 
-                }).length;
-                var totalTopics = bookFiles.filter(function(f) { 
-                    return f.isTopic === true; 
-                }).length;
-                
-                bookFiles.sort(function(a, b) {
-                    if (a.isBook) return -1;
-                    if (b.isBook) return 1;
-                    if (a.isTopic && !b.isTopic) return 1;
-                    if (!a.isTopic && b.isTopic) return -1;
-                    return (a.chapterNumber || 999) - (b.chapterNumber || 999);
+                topicFiles.forEach(function(f) {
+                    fileOptionsHtml += `
+                        <div class="sitemap-url-item" style="border-left-color: #22c55e; margin-left: 8px;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; width: 100%;">
+                                <input type="checkbox" class="seo-file-checkbox" data-filename="${f.name}" data-bookslug="${bookSlug}" checked>
+                                <span class="url-path">📝 ${escapeHtml(f.displayName || f.name)}</span>
+                            </label>
+                        </div>
+                    `;
+                    fileCounter++;
                 });
                 
-                var dropdownOptions = '';
-                bookFiles.forEach(function(f) {
-                    var label = f.displayName;
-                    dropdownOptions += '<option value="' + f.name + '">' + label + '</option>';
-                });
-                
-                bookListHtml += `
-                    <div class="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-200 hover:border-purple-300 transition">
+                fileOptionsHtml += `</div>`;
+            }
+            
+            // Select/Deselect All buttons
+            var selectAllHtml = `
+                <div style="display: flex; gap: 8px; margin-top: 8px; margin-bottom: 8px;">
+                    <button onclick="selectAllFiles('${bookSlug}', true)" class="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded transition">Select All</button>
+                    <button onclick="selectAllFiles('${bookSlug}', false)" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded transition">Deselect All</button>
+                    <span style="font-size: 11px; color: #64748b; margin-left: auto;">${fileCounter} files</span>
+                </div>
+            `;
+            
+            bookListHtml += `
+                <div class="bg-white p-3 rounded-lg border border-gray-200 hover:border-purple-300 transition mb-3">
+                    <div class="flex justify-between items-center mb-2">
                         <div class="flex items-center gap-3">
-                            <span class="font-medium text-gray-800">${escapeHtml(bookTitle)}</span>
+                            <span class="font-medium text-gray-800">📚 ${escapeHtml(bookTitle)}</span>
                             <span class="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full">${totalChapters} chapters</span>
                             ${totalTopics > 0 ? `<span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">${totalTopics} topics</span>` : ''}
                         </div>
                         <div class="flex items-center gap-2">
-                            <select id="fileSelect_${bookSlug}" class="p-2 border rounded-lg text-sm bg-white max-w-[220px]">
-                                ${dropdownOptions}
-                            </select>
-                            <button onclick="downloadSelectedFile('${bookSlug}')" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm transition flex items-center gap-1">
-                                <i class="fas fa-download"></i> Download
+                            <button onclick="downloadSelectedSEOFiles('${bookSlug}')" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm transition flex items-center gap-1">
+                                <i class="fas fa-download"></i> Download Selected
                             </button>
-                            <button onclick="downloadSingleSEOPage('${bookSlug}')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm transition flex items-center gap-1">
-                                <i class="fas fa-folder-open"></i> All (${bookFiles.length})
+                            <button onclick="downloadAllSEOFiles('${bookSlug}')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm transition flex items-center gap-1">
+                                <i class="fas fa-folder-open"></i> All (${fileCounter})
                             </button>
                         </div>
                     </div>
-                `;
-            });
-            
-            bookListEl.innerHTML = bookListHtml;
-            
-            progressBar.style.width = '95%';
-            statusEl.textContent = '🎉 All ' + uniqueBookSlugs.length + ' book pages generated!';
-            countEl.textContent = seoGeneratedFiles.length + ' pages (' + uniqueBookSlugs.length + ' books)';
-            
-            resultEl.classList.remove('hidden');
-            downloadAllBtn.classList.remove('hidden');
-            
-            logContent.innerHTML += '<div class="text-green-600 font-bold">🎉 Successfully generated ' + seoGeneratedFiles.length + ' SEO pages!</div>';
-            logEl.scrollTop = logEl.scrollHeight;
-            
-            progressBar.style.width = '100%';
-            
-        } catch (error) {
-            console.error('SEO Generation Error:', error);
-            statusEl.textContent = '❌ Error: ' + error.message;
-            logContent.innerHTML += '<div class="text-red-500">❌ Error: ' + error.message + '</div>';
-            document.getElementById('seoBookList').innerHTML = '<div class="text-red-500 text-sm">Error: ' + error.message + '</div>';
-        }
-    }
-
-    function downloadSelectedFile(bookSlug) {
-        var select = document.getElementById('fileSelect_' + bookSlug);
-        if (!select) {
-            showToast('Dropdown not found', true);
-            return;
-        }
-        
-        var fileName = select.value;
-        if (!fileName) {
-            showToast('Please select a file', true);
-            return;
-        }
-        
-        downloadSingleFile(fileName);
-    }
-
-    function downloadAllSEOPages() {
-        if (seoGeneratedFiles.length === 0) {
-            showToast('No files to download. Generate pages first.', true);
-            return;
-        }
-        
-        showToast('📥 Downloading ' + seoGeneratedFiles.length + ' files...');
-        
-        seoGeneratedFiles.forEach(function(file, index) {
-            setTimeout(function() {
-                var blob = new Blob([file.content], { type: 'text/html' });
-                var url = URL.createObjectURL(blob);
-                var a = document.createElement('a');
-                a.href = url;
-                a.download = file.name;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                
-                if (index === seoGeneratedFiles.length - 1) {
-                    showToast('✅ All ' + seoGeneratedFiles.length + ' files downloaded!');
-                }
-            }, index * 300);
+                    <div style="max-height: 200px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px;">
+                        ${selectAllHtml}
+                        ${fileOptionsHtml}
+                    </div>
+                </div>
+            `;
         });
+        
+        bookListEl.innerHTML = bookListHtml;
+        
+        progressBar.style.width = '95%';
+        statusEl.textContent = '🎉 All ' + uniqueBookSlugs.length + ' book pages generated!';
+        countEl.textContent = seoGeneratedFiles.length + ' pages (' + uniqueBookSlugs.length + ' books)';
+        
+        resultEl.classList.remove('hidden');
+        downloadAllBtn.classList.remove('hidden');
+        
+        logContent.innerHTML += '<div class="text-green-600 font-bold">🎉 Successfully generated ' + seoGeneratedFiles.length + ' SEO pages!</div>';
+        logEl.scrollTop = logEl.scrollHeight;
+        
+        progressBar.style.width = '100%';
+        
+    } catch (error) {
+        console.error('SEO Generation Error:', error);
+        statusEl.textContent = '❌ Error: ' + error.message;
+        logContent.innerHTML += '<div class="text-red-500">❌ Error: ' + error.message + '</div>';
+        document.getElementById('seoBookList').innerHTML = '<div class="text-red-500 text-sm">Error: ' + error.message + '</div>';
     }
+}
 
-    async function openSEOTab() {
-        showTab('seo');
-        setTimeout(() => {
-            generateSEOPages();
-        }, 500);
+// Helper functions for SEO checkbox selection
+function selectAllFiles(bookSlug, select) {
+    var checkboxes = document.querySelectorAll(`.seo-file-checkbox[data-bookslug="${bookSlug}"]`);
+    checkboxes.forEach(function(cb) {
+        cb.checked = select;
+    });
+}
+
+function getSelectedSEOFileNames(bookSlug) {
+    var checkboxes = document.querySelectorAll(`.seo-file-checkbox[data-bookslug="${bookSlug}"]:checked`);
+    var files = [];
+    checkboxes.forEach(function(cb) {
+        files.push(cb.getAttribute('data-filename'));
+    });
+    return files;
+}
+
+function downloadSelectedSEOFiles(bookSlug) {
+    var selectedFiles = getSelectedSEOFileNames(bookSlug);
+    if (selectedFiles.length === 0) {
+        showToast('Please select at least one file to download', true);
+        return;
     }
+    
+    showToast(`📥 Downloading ${selectedFiles.length} selected files...`);
+    
+    selectedFiles.forEach(function(fileName, index) {
+        // Find the file content
+        var file = seoGeneratedFiles.find(function(f) { return f.name === fileName; });
+        if (!file) return;
+        
+        setTimeout(function() {
+            // Extract just the filename without book slug
+            var cleanFileName = fileName.split('/').pop();
+            var blob = new Blob([file.content], { type: 'text/html' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = cleanFileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            if (index === selectedFiles.length - 1) {
+                showToast(`✅ Downloaded ${selectedFiles.length} files!`);
+            }
+        }, index * 400);
+    });
+}
 
+function downloadAllSEOFiles(bookSlug) {
+    // Select all files for this book first
+    selectAllFiles(bookSlug, true);
+    // Then download selected
+    setTimeout(function() {
+        downloadSelectedSEOFiles(bookSlug);
+    }, 100);
+}
+
+// Also need to fix the downloadSingleSEOPage function for the "All" button
+function downloadSingleSEOPage(bookSlug) {
+    // This now calls downloadAllSEOFiles
+    downloadAllSEOFiles(bookSlug);
+}
+
+// Update the SEO tab click handler to show the proper tab
+async function openSEOTab() {
+    showTab('seo');
+    // Clear previous data
+    document.getElementById('seoBookList').innerHTML = '<div class="text-gray-500 text-sm">Loading books...</div>';
+    document.getElementById('seoStatus').textContent = 'Ready to generate';
+    document.getElementById('seoCount').textContent = '0 pages';
+    document.getElementById('seoProgressBar').style.width = '0%';
+    document.getElementById('seoLog').classList.add('hidden');
+    document.getElementById('seoResult').classList.add('hidden');
+    document.getElementById('downloadAllSEOBtn').classList.add('hidden');
+    
+    setTimeout(() => {
+        generateSEOPages();
+    }, 500);
+}
     // ============ EVENT LISTENERS ============
     function setupEventListeners() {
         document.getElementById('loginBtn').addEventListener('click', handleLogin);
