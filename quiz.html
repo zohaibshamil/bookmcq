@@ -19,7 +19,31 @@
     <!-- jsPDF for PDF generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
-    <!-- MathJax for rendering mathematical equations -->
+    <!-- MathJax for rendering mathematical equations - Supports ALL formats -->
+    <script>
+    window.MathJax = {
+        tex: {
+            inlineMath: [
+                ['$', '$'],           // For $f(x) = 2x^2$
+                ['\\(', '\\)']        // For \( \lim_{x \to 0} \)
+            ],
+            displayMath: [
+                ['$$', '$$'],         // For $$ \int_0^1 x^2 dx $$
+                ['\\[', '\\]']        // For \[ \sum_{i=1}^n i \]
+            ],
+            processEscapes: true,      // Handle escaped characters
+            processEnvironments: true  // Handle \begin{...} \end{...}
+        },
+        svg: {
+            fontCache: 'global'
+        },
+        options: {
+            skipHtmlTypes: 'script',   // Skip processing inside script tags
+            ignoreHtmlClass: 'no-mathjax', // Skip elements with this class
+            processHtmlClass: 'math'   // Process elements with this class
+        }
+    };
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async></script>
     
     <!-- Tailwind CSS CDN -->
@@ -1064,6 +1088,55 @@
         if (timeRemaining <= 60) document.getElementById('timerDisplay').classList.add('text-red-600', 'font-bold');
     }
 
+    // ================================================
+    // MATH RENDERING FUNCTIONS (ADDED)
+    // ================================================
+    
+    // Function to render math content in an element
+    async function renderMathInElement(element) {
+        if (window.MathJax && element) {
+            try {
+                await MathJax.typesetPromise([element]);
+            } catch(e) {
+                console.log('MathJax error:', e);
+            }
+        }
+    }
+    
+    // Function to render all math on page
+    async function renderAllMath() {
+        if (window.MathJax) {
+            try {
+                await MathJax.typesetPromise();
+            } catch(e) {
+                console.log('MathJax error:', e);
+            }
+        }
+    }
+    
+    // Function to process text with math delimiters (supports ALL formats)
+    function processMathContent(text) {
+        if (!text) return '';
+        // All formats are supported by MathJax configuration
+        return text;
+    }
+    
+    // Function to safely escape HTML but preserve math delimiters
+    function escapeHtmlPreserveMath(text) {
+        if (!text) return '';
+        // Escape HTML entities
+        let escaped = text.replace(/&/g, '&amp;')
+                          .replace(/</g, '&lt;')
+                          .replace(/>/g, '&gt;')
+                          .replace(/"/g, '&quot;')
+                          .replace(/'/g, '&#039;');
+        return escaped;
+    }
+    
+    // ================================================
+    // END OF MATH RENDERING FUNCTIONS
+    // ================================================
+
     async function loadBooks() {
         const container = document.getElementById('bookDropdownItems');
         if (!container) return;
@@ -1631,18 +1704,6 @@
                 }
             }
             completeQuiz();
-        }
-    }
-
-    function processMathContent(text) {
-        if (!text) return '';
-        if (text.includes('\\(') || text.includes('\\[') || text.includes('$$')) return text;
-        return text;
-    }
-
-    async function renderMathInElement(element) {
-        if (window.MathJax && element) {
-            try { await MathJax.typesetPromise([element]); } catch(e) { console.log('MathJax error:', e); }
         }
     }
 
