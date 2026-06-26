@@ -5088,18 +5088,32 @@ function setupEventListeners() {
     document.getElementById('filterDifficulty').addEventListener('change', applyFilters);
     document.getElementById('downloadQuestionsCsvBtn').addEventListener('click', downloadQuestionsCSV);
     
-    // FIX 1: Topic dropdown toggle - ADD THESE
-    const topicToggle = document.getElementById('topicDropdownToggle');
-    if (topicToggle) {
-        topicToggle.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const menu = document.getElementById('topicDropdownMenu');
-            if (menu) {
-                menu.classList.toggle('open');
-                this.classList.toggle('active');
-            }
-        });
-    }
+// FIX 1: Topic dropdown toggle - FIXED
+const topicToggle = document.getElementById('topicDropdownToggle');
+const topicMenu = document.getElementById('topicDropdownMenu');
+
+if (topicToggle && topicMenu) {
+    // Remove any existing listeners by cloning and replacing
+    const newToggle = topicToggle.cloneNode(true);
+    topicToggle.parentNode.replaceChild(newToggle, topicToggle);
+    
+    // Get the fresh reference
+    const freshToggle = document.getElementById('topicDropdownToggle');
+    
+    freshToggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Toggle the menu
+        if (topicMenu.classList.contains('open')) {
+            topicMenu.classList.remove('open');
+            this.classList.remove('active');
+        } else {
+            topicMenu.classList.add('open');
+            this.classList.add('active');
+        }
+    });
+}
     
     // FIX 1: Close dropdown when clicking outside
     document.addEventListener('click', function(e) {
