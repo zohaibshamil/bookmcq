@@ -151,9 +151,9 @@
         <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
             <i class="fas fa-database text-purple-600"></i> Practice MCQs
         </h2>
-        <p class="text-gray-600 mb-6">Browse and practice questions organized by book, chapter, and topic</p>
+        <p class="text-gray-600 mb-6">Browse and practice questions organized by book, chapter, and difficulty</p>
         
-        <!-- Filter Row - Added Difficulty Filter -->
+        <!-- Filter Row - Updated to use Chapters -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">📚 Select Book</label>
@@ -162,8 +162,8 @@
                 </select>
             </div>
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">🏷️ Select Topic / Chapter</label>
-                <select id="practiceTopicSelect" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" disabled>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">📖 Select Chapter</label>
+                <select id="practiceChapterSelect" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" disabled>
                     <option value="">Select a book first</option>
                 </select>
             </div>
@@ -190,7 +190,7 @@
         </div>
         
         <div id="practiceQuestionsContainer" class="space-y-4 mt-2">
-            <div class="text-center py-8 text-gray-500">Select a book and topic to view questions</div>
+            <div class="text-center py-8 text-gray-500">Select a book and chapter to view questions</div>
         </div>
         
         <div id="practicePagination" class="mt-6"></div>
@@ -260,7 +260,7 @@
         return text;
     }
 
-    // Cache Manager (from combined code)
+    // Cache Manager
     class CacheManager {
         #cachePrefix = 'bookmcq_';
         #ttl = 3600000;
@@ -281,7 +281,6 @@
         }
         remove(key) { localStorage.removeItem(this.#cachePrefix + key); }
         
-        // New method to clear all cache
         clearAllCache() {
             const keysToRemove = [];
             for (let i = 0; i < localStorage.length; i++) {
@@ -294,7 +293,7 @@
         }
     }
 
-    // Supabase Service (from combined code) - Updated to NOT cache difficulty queries
+    // Supabase Service - Updated to use chapters instead of topics
     class SupabaseService {
         #supabase;
         #cache;
@@ -312,21 +311,25 @@
             this.#cache.set('books', data);
             return data;
         }
-        async getTopics(bookId) {
-            const cached = this.#cache.get(`topics_${bookId}`);
+        async getChapters(bookId) {
+            const cached = this.#cache.get(`chapters_${bookId}`);
             if (cached) return cached;
-            const { data, error } = await this.#supabase.from('topics').select('id, name, chapter_number').eq('book_id', bookId).order('chapter_number');
+            const { data, error } = await this.#supabase
+                .from('chapters')
+                .select('id, name, chapter_number')
+                .eq('book_id', bookId)
+                .order('chapter_number');
             if (error) throw error;
-            this.#cache.set(`topics_${bookId}`, data);
+            this.#cache.set(`chapters_${bookId}`, data);
             return data;
         }
-        async getPaginatedQuestions(topicId, page = 1, pageSize = 10, difficulty = '') {
+        async getPaginatedQuestions(chapterId, page = 1, pageSize = 10, difficulty = '') {
             const from = (page - 1) * pageSize;
             const to = from + pageSize - 1;
             
             // Include difficulty in cache key to differentiate between different difficulty filters
             const difficultySuffix = difficulty ? `_${difficulty}` : '_all';
-            const cacheKey = `questions_page_${topicId}_${page}_${pageSize}${difficultySuffix}`;
+            const cacheKey = `questions_page_chapter_${chapterId}_${page}_${pageSize}${difficultySuffix}`;
             
             // Check cache first
             const cached = this.#cache.get(cacheKey);
@@ -336,7 +339,7 @@
             
             let query = this.#supabase.from('questions')
                 .select(`id, question_text, difficulty, correct_answer, explanation, options (option_text, option_index)`, { count: 'exact' })
-                .eq('topic_id', topicId);
+                .eq('chapter_id', chapterId);
             
             // Apply difficulty filter if selected
             if (difficulty && difficulty !== '') {
@@ -377,13 +380,13 @@
             }
         }
         
-        // New method to clear question cache for a specific topic
-        clearQuestionCacheForTopic(topicId) {
-            if (!topicId) return;
+        // Clear question cache for a specific chapter
+        clearQuestionCacheForChapter(chapterId) {
+            if (!chapterId) return;
             const keysToRemove = [];
             for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i);
-                if (key && key.includes(`questions_page_${topicId}`)) {
+                if (key && key.includes(`questions_page_chapter_${chapterId}`)) {
                     keysToRemove.push(key);
                 }
             }
@@ -396,7 +399,7 @@
 
     let currentPage = 1;
     let totalPages = 0;
-    let currentTopicId = null;
+    let currentChapterId = null;
     let currentPerPage = 10;
 
     function showToast(message, isError = false) {
@@ -428,36 +431,36 @@
         } catch(e) { select.innerHTML = '<option value="">Error loading books</option>'; showToast('Error loading books', true); }
     }
 
-    async function loadTopics() {
+    async function loadChapters() {
         const bookId = document.getElementById('practiceBookSelect').value;
-        const select = document.getElementById('practiceTopicSelect');
+        const select = document.getElementById('practiceChapterSelect');
         if (!bookId) {
             select.innerHTML = '<option value="">Select a book first</option>';
             select.disabled = true;
             return;
         }
-        select.innerHTML = '<option value="">Loading topics...</option>';
+        select.innerHTML = '<option value="">Loading chapters...</option>';
         select.disabled = false;
         try {
-            const topics = await supabaseService.getTopics(bookId);
-            if (!topics || topics.length === 0) {
-                select.innerHTML = '<option value="">No topics available</option>';
+            const chapters = await supabaseService.getChapters(bookId);
+            if (!chapters || chapters.length === 0) {
+                select.innerHTML = '<option value="">No chapters available</option>';
                 select.disabled = true;
-                showToast('No topics found for this book. Please add topics through admin panel.', true);
+                showToast('No chapters found for this book. Please add chapters through admin panel.', true);
                 return;
             }
-            select.innerHTML = '<option value="">-- Select a Topic --</option>';
-            topics.forEach(topic => {
-                const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
-                select.innerHTML += `<option value="${topic.id}">${escapeHtml(display)}</option>`;
+            select.innerHTML = '<option value="">-- Select a Chapter --</option>';
+            chapters.forEach(chapter => {
+                const display = chapter.chapter_number ? `Ch ${chapter.chapter_number}: ${chapter.name}` : chapter.name;
+                select.innerHTML += `<option value="${chapter.id}">${escapeHtml(display)}</option>`;
             });
             select.disabled = false;
-        } catch(e) { select.innerHTML = '<option value="">Error loading topics</option>'; select.disabled = true; }
+        } catch(e) { select.innerHTML = '<option value="">Error loading chapters</option>'; select.disabled = true; }
     }
 
-    async function loadQuestions(topicId, page = 1) {
-        if (!topicId) return;
-        currentTopicId = topicId;
+    async function loadQuestions(chapterId, page = 1) {
+        if (!chapterId) return;
+        currentChapterId = chapterId;
         currentPage = page;
         const container = document.getElementById('practiceQuestionsContainer');
         container.innerHTML = '<div class="skeleton h-32 w-full mb-4"></div><div class="skeleton h-32 w-full mb-4"></div>';
@@ -470,7 +473,7 @@
             // Get current difficulty filter
             const difficultyFilter = document.getElementById('practiceDifficultySelect')?.value || '';
             
-            const result = await supabaseService.getPaginatedQuestions(topicId, page, currentPerPage, difficultyFilter);
+            const result = await supabaseService.getPaginatedQuestions(chapterId, page, currentPerPage, difficultyFilter);
             
             // Calculate total pages (if not showing all)
             if (currentPerPage === 0) {
@@ -545,8 +548,8 @@
         
         const prevBtn = document.getElementById('practicePrevBtn');
         const nextBtn = document.getElementById('practiceNextBtn');
-        if (prevBtn) prevBtn.onclick = () => { if (currentPage > 1) loadQuestions(currentTopicId, currentPage - 1); };
-        if (nextBtn) nextBtn.onclick = () => { if (currentPage < totalPages) loadQuestions(currentTopicId, currentPage + 1); };
+        if (prevBtn) prevBtn.onclick = () => { if (currentPage > 1) loadQuestions(currentChapterId, currentPage - 1); };
+        if (nextBtn) nextBtn.onclick = () => { if (currentPage < totalPages) loadQuestions(currentChapterId, currentPage + 1); };
     }
 
     // Mobile Menu functionality (matching home page)
@@ -594,14 +597,15 @@
     
     // Refresh questions when filters change
     function refreshQuestions() {
-        if (currentTopicId) {
+        if (currentChapterId) {
             currentPage = 1;
-            loadQuestions(currentTopicId, 1);
+            loadQuestions(currentChapterId, 1);
         }
     }
 
-    document.getElementById('practiceBookSelect').addEventListener('change', loadTopics);
-    document.getElementById('practiceTopicSelect').addEventListener('change', (e) => {
+    // Event Listeners - Updated to use chapters
+    document.getElementById('practiceBookSelect').addEventListener('change', loadChapters);
+    document.getElementById('practiceChapterSelect').addEventListener('change', (e) => {
         if (e.target.value) {
             currentPage = 1;
             loadQuestions(e.target.value, 1);
@@ -614,7 +618,7 @@
     
     loadBooks();
     initNavbarScroll();
-    initMobileMenu(); // Added mobile menu initialization
+    initMobileMenu();
 </script>
 </body>
 </html>
