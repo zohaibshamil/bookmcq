@@ -3287,6 +3287,7 @@ let isLoadingSubTopics = false;
         if (tabName === 'subtopics') {
             loadSubTopicFilterBooks();
             loadSubTopicsCached();
+            // Load books for the Add Topic form
             loadBookSelectForSubTopic();
         }
     }
@@ -3849,286 +3850,34 @@ let isLoadingSubTopics = false;
             generateSEOPages();
         }, 500);
     }
-// ============ SUB-TOPICS FUNCTIONS ============
 
-// Load books into the filter dropdown
-async function loadSubTopicFilterBooks() {
-    if (booksCache !== null) {
-        const select = document.getElementById('subTopicFilterBookId');
-        if (select) {
-            select.innerHTML = '<option value="">All Books</option>';
-            booksCache.forEach(book => {
-                select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
-            });
-        }
-        return;
-    }
-    
-    const { data } = await _supabase.from('books').select('id, title');
-    if (data) {
-        booksCache = data;
-        const select = document.getElementById('subTopicFilterBookId');
-        if (select) {
-            select.innerHTML = '<option value="">All Books</option>';
-            data.forEach(book => {
-                select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
-            });
-        }
-    }
-}
-
-// Load chapters based on selected book
-async function loadSubTopicChapters() {
-    const bookId = document.getElementById('subTopicFilterBookId').value;
-    const chapterSelect = document.getElementById('subTopicFilterChapterId');
-    
-    if (!bookId || bookId === '') {
-        if (chapterSelect) {
-            chapterSelect.innerHTML = '<option value="">Select a book first</option>';
-            chapterSelect.disabled = true;
-        }
-        currentSubTopicFilter.chapterId = '';
-        return;
-    }
-    
-    if (chapterSelect) {
-        chapterSelect.innerHTML = '<option value="">Loading chapters...</option>';
-        chapterSelect.disabled = false;
-    }
-    
-    const { data } = await _supabase.from('chapters')
-        .select('id, name, chapter_number')
-        .eq('book_id', parseInt(bookId))
-        .order('chapter_number', { ascending: true });
-    
-    if (chapterSelect) {
-        chapterSelect.innerHTML = '<option value="">All Chapters</option>';
-        if (data && data.length > 0) {
-            data.forEach(chapter => {
-                const display = chapter.chapter_number ? `Ch ${chapter.chapter_number}: ${chapter.name}` : chapter.name;
-                chapterSelect.innerHTML += `<option value="${chapter.id}">${escapeHtml(display)}</option>`;
-            });
-        }
-    }
-}
-
-// Load subtopics list
-async function loadSubTopicsCached() {
-    const container = document.getElementById('subTopicsList');
-    if (!container) return;
-    
-    container.innerHTML = '<div class="skeleton h-12 w-full mb-2"></div><div class="skeleton h-12 w-full mb-2"></div>';
-    
-    let query = _supabase.from('subtopics').select('*, chapters(id, name, chapter_number, book_id, books(title))');
-    
-    const bookFilter = document.getElementById('subTopicFilterBookId')?.value;
-    const chapterFilter = document.getElementById('subTopicFilterChapterId')?.value;
-    
-    if (bookFilter && bookFilter !== '') {
-        const { data: chaptersInBook } = await _supabase.from('chapters').select('id').eq('book_id', parseInt(bookFilter));
-        if (chaptersInBook && chaptersInBook.length > 0) {
-            const chapterIds = chaptersInBook.map(c => c.id);
-            query = query.in('chapter_id', chapterIds);
-        } else {
-            container.innerHTML = '<p class="text-gray-500">No topics found for this book.</p>';
+    // ============ LOAD BOOKS FOR ADD TOPIC FORM ============
+    // ✅ FIXED: Moved outside setupEventListeners
+    async function loadBookSelectForSubTopic() {
+        if (booksCache !== null) {
+            const select = document.getElementById('subTopicBookId');
+            if (select) {
+                select.innerHTML = '<option value="">Select Book</option>';
+                booksCache.forEach(book => {
+                    select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+                });
+            }
             return;
         }
-    }
-    
-    if (chapterFilter && chapterFilter !== '') {
-        query = query.eq('chapter_id', parseInt(chapterFilter));
-    }
-    
-    const { data, error } = await query.order('chapter_id', { ascending: true }).order('id', { ascending: true });
-    
-    if (error || !data || data.length === 0) {
-        container.innerHTML = '<p class="text-gray-500">No topics yet. Add your first topic!</p>';
-        return;
-    }
-    
-    container.innerHTML = data.map(topic => {
-        const chapterName = topic.chapters?.name || 'Unknown Chapter';
-        const bookTitle = topic.chapters?.books?.title || 'Unknown Book';
-        const chapterDisplay = topic.chapters?.chapter_number ? `Ch ${topic.chapters.chapter_number}: ` : '';
-        return `
-        <div class="bg-gray-50 p-3 rounded-lg mb-2 flex justify-between items-center">
-            <div>
-                <strong>${escapeHtml(topic.name)}</strong>
-                <span class="text-gray-600 text-sm ml-2">(${chapterDisplay}${escapeHtml(chapterName)} - ${escapeHtml(bookTitle)})</span>
-            </div>
-            <div class="flex gap-2">
-                <button onclick="openEditSubTopicModal(${topic.id}, '${escapeHtml(topic.name)}', ${topic.chapter_id})" class="text-blue-600 hover:text-blue-800">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button onclick="deleteSubTopic(${topic.id})" class="text-red-600 hover:text-red-800">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>
-        </div>
-    `}).join('');
-}
-
-// Apply subtopic filter
-async function applySubTopicFilter() {
-    await loadSubTopicsCached();
-}
-
-// Add a new subtopic
-async function addSubTopic() {
-    const chapterId = document.getElementById('subTopicChapterId').value;
-    const name = document.getElementById('subTopicName').value;
-    
-    if (!chapterId || !name) {
-        showToast('Please select a chapter and enter a topic name', true);
-        return;
-    }
-    
-    const duplicate = await checkDuplicateSubTopic(name, parseInt(chapterId));
-    if (duplicate) {
-        showToast('Topic already exists for this chapter!', true);
-        return;
-    }
-    
-    const subTopicData = {
-        chapter_id: parseInt(chapterId),
-        name: name,
-        slug: createSlug(name)
-    };
-    
-    const { error } = await _supabase.from('subtopics').insert([subTopicData]);
-    if (error) {
-        showToast('Error: ' + error.message, true);
-    } else {
-        showToast('Topic added!');
-        document.getElementById('addSubTopicForm').classList.add('hidden');
-        document.getElementById('subTopicName').value = '';
-        subTopicsCache = {};
-        await loadSubTopicsCached();
-    }
-}
-
-// Delete a subtopic
-window.deleteSubTopic = async function(id) {
-    if (confirm('Delete this topic? This will also delete all questions in this topic.')) {
-        await _supabase.from('subtopics').delete().eq('id', id);
-        subTopicsCache = {};
-        await Promise.all([loadSubTopicsCached(), loadQuestions()]);
-        showToast('Topic deleted');
-    }
-};
-
-// Open edit subtopic modal
-window.openEditSubTopicModal = function(id, name, chapterId) {
-    document.getElementById('editSubTopicId').value = id;
-    document.getElementById('editSubTopicName').value = name;
-    loadBookAndChapterForEditSubTopic(chapterId);
-    document.getElementById('editSubTopicModal').classList.remove('hidden');
-};
-
-// Load book and chapter for edit subtopic
-async function loadBookAndChapterForEditSubTopic(selectedChapterId = null) {
-    const { data: books } = await _supabase.from('books').select('id, title');
-    if (books) {
-        const bookSelect = document.getElementById('editSubTopicBookId');
-        if (bookSelect) {
-            bookSelect.innerHTML = '<option value="">Select Book</option>';
-            books.forEach(book => {
-                bookSelect.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
-            });
-        }
-    }
-    
-    const bookId = document.getElementById('editSubTopicBookId')?.value;
-    if (bookId) {
-        const { data: chapters } = await _supabase.from('chapters').select('id, name, chapter_number').eq('book_id', parseInt(bookId)).order('chapter_number', { ascending: true });
-        const chapterSelect = document.getElementById('editSubTopicChapterId');
-        if (chapterSelect) {
-            chapterSelect.innerHTML = '<option value="">Select Chapter</option>';
-            if (chapters) {
-                chapters.forEach(chapter => {
-                    const display = chapter.chapter_number ? `Ch ${chapter.chapter_number}: ${chapter.name}` : chapter.name;
-                    chapterSelect.innerHTML += `<option value="${chapter.id}" ${chapter.id == selectedChapterId ? 'selected' : ''}>${escapeHtml(display)}</option>`;
+        
+        const { data } = await _supabase.from('books').select('id, title');
+        if (data) {
+            booksCache = data;
+            const select = document.getElementById('subTopicBookId');
+            if (select) {
+                select.innerHTML = '<option value="">Select Book</option>';
+                data.forEach(book => {
+                    select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
                 });
             }
         }
     }
-}
 
-// Update subtopic
-async function updateSubTopic() {
-    const id = document.getElementById('editSubTopicId').value;
-    const name = document.getElementById('editSubTopicName').value;
-    const chapterId = document.getElementById('editSubTopicChapterId').value;
-    
-    if (!name || !chapterId) {
-        showToast('Please fill all fields', true);
-        return;
-    }
-    
-    const duplicate = await checkDuplicateSubTopic(name, parseInt(chapterId), id);
-    if (duplicate) {
-        showToast('Another topic with same name already exists for this chapter!', true);
-        return;
-    }
-    
-    const { error } = await _supabase
-        .from('subtopics')
-        .update({
-            name,
-            slug: createSlug(name),
-            chapter_id: parseInt(chapterId)
-        })
-        .eq('id', id);
-    
-    if (error) {
-        showToast('Error: ' + error.message, true);
-    } else {
-        showToast('Topic updated!');
-        document.getElementById('editSubTopicModal').classList.add('hidden');
-        subTopicsCache = {};
-        await loadSubTopicsCached();
-    }
-}
-
-// Load subtopic chapter filters
-async function loadSubTopicChapterFilters(selectedChapterId = null) {
-    const bookId = document.getElementById('subTopicBookId').value;
-    const chapterSelect = document.getElementById('subTopicChapterId');
-    
-    if (!bookId || bookId === '') {
-        if (chapterSelect) {
-            chapterSelect.innerHTML = '<option value="">Select Book first</option>';
-        }
-        return;
-    }
-    
-    if (chapterSelect) {
-        chapterSelect.innerHTML = '<option value="">Loading chapters...</option>';
-    }
-    
-    const { data } = await _supabase.from('chapters')
-        .select('id, name, chapter_number')
-        .eq('book_id', parseInt(bookId))
-        .order('chapter_number', { ascending: true });
-    
-    if (chapterSelect) {
-        chapterSelect.innerHTML = '<option value="">Select Chapter</option>';
-        if (data && data.length > 0) {
-            data.forEach(chapter => {
-                const display = chapter.chapter_number ? `Ch ${chapter.chapter_number}: ${chapter.name}` : chapter.name;
-                chapterSelect.innerHTML += `<option value="${chapter.id}" ${chapter.id == selectedChapterId ? 'selected' : ''}>${escapeHtml(display)}</option>`;
-            });
-        }
-    }
-}
-
-// Duplicate check for subtopics
-async function checkDuplicateSubTopic(name, chapterId, excludeId = null) {
-    let query = _supabase.from('subtopics').select('id').eq('name', name).eq('chapter_id', chapterId);
-    if (excludeId) query = query.neq('id', excludeId);
-    const { data } = await query;
-    return data && data.length > 0;
-}
     // ============ EVENT LISTENERS ============
     function setupEventListeners() {
         document.getElementById('loginBtn').addEventListener('click', handleLogin);
@@ -4189,49 +3938,21 @@ async function checkDuplicateSubTopic(name, chapterId, excludeId = null) {
         document.getElementById('saveChapterBtn').addEventListener('click', addChapter);
         document.getElementById('chapterFilterBookId').addEventListener('change', applyChapterFilter);
         
-// Sub-Topics - FIXED
-document.getElementById('showAddSubTopicBtn').addEventListener('click', async () => {
-    // Load books for the Add Topic form (NOT the filter dropdown)
-    await loadBookSelectForSubTopic();
-    // Show the form
-    document.getElementById('addSubTopicForm').classList.remove('hidden');
-});
-document.getElementById('cancelSubTopicBtn').addEventListener('click', () => {
-    document.getElementById('addSubTopicForm').classList.add('hidden');
-    document.getElementById('subTopicName').value = '';
-});
-document.getElementById('saveSubTopicBtn').addEventListener('click', addSubTopic);
-document.getElementById('subTopicBookId').addEventListener('change', loadSubTopicChapterFilters);
-document.getElementById('subTopicFilterBookId').addEventListener('change', loadSubTopicChapters);
-document.getElementById('subTopicFilterChapterId').addEventListener('change', applySubTopicFilter);
-
-
-        // Load books for the Add Topic form
-async function loadBookSelectForSubTopic() {
-    if (booksCache !== null) {
-        const select = document.getElementById('subTopicBookId');
-        if (select) {
-            select.innerHTML = '<option value="">Select Book</option>';
-            booksCache.forEach(book => {
-                select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
-            });
-        }
-        return;
-    }
-    
-    const { data } = await _supabase.from('books').select('id, title');
-    if (data) {
-        booksCache = data;
-        const select = document.getElementById('subTopicBookId');
-        if (select) {
-            select.innerHTML = '<option value="">Select Book</option>';
-            data.forEach(book => {
-                select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
-            });
-        }
-    }
-}
-        
+        // ===== SUB-TOPICS EVENT LISTENERS (FIXED) =====
+        document.getElementById('showAddSubTopicBtn').addEventListener('click', async () => {
+            // Load books for the Add Topic form
+            await loadBookSelectForSubTopic();
+            // Show the form
+            document.getElementById('addSubTopicForm').classList.remove('hidden');
+        });
+        document.getElementById('cancelSubTopicBtn').addEventListener('click', () => {
+            document.getElementById('addSubTopicForm').classList.add('hidden');
+            document.getElementById('subTopicName').value = '';
+        });
+        document.getElementById('saveSubTopicBtn').addEventListener('click', addSubTopic);
+        document.getElementById('subTopicBookId').addEventListener('change', loadSubTopicChapterFilters);
+        document.getElementById('subTopicFilterBookId').addEventListener('change', loadSubTopicChapters);
+        document.getElementById('subTopicFilterChapterId').addEventListener('change', applySubTopicFilter);
         
         // Questions
         document.getElementById('showAddQuestionBtn').addEventListener('click', async () => {
