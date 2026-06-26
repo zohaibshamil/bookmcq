@@ -103,7 +103,7 @@
             </a>
         </div>
 
-        <!-- Step 1: Select Book - Modern Card -->
+        <!-- Step 1: Select Book -->
         <div class="step-card bg-gradient-to-r from-blue-50 to-indigo-50 p-5 rounded-2xl mb-6 border border-blue-100 transition hover:shadow-md">
             <div class="flex items-center gap-4 mb-4">
                 <div class="step-circle w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-md">1</div>
@@ -116,20 +116,21 @@
             </select>
         </div>
 
-        <!-- Step 2: Select Topic - Modern Card -->
+        <!-- Step 2: Select Chapter -->
         <div class="step-card bg-gradient-to-r from-green-50 to-emerald-50 p-5 rounded-2xl mb-6 border border-green-100 transition hover:shadow-md">
             <div class="flex items-center gap-4 mb-4">
                 <div class="step-circle w-10 h-10 bg-green-600 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-md">2</div>
-                <h3 class="font-bold text-xl text-gray-800">Select Topic</h3>
+                <h3 class="font-bold text-xl text-gray-800">Select Chapter</h3>
                 <div class="flex-1"></div>
-                <i class="fas fa-tags text-green-400 text-2xl"></i>
+                <i class="fas fa-list-ul text-green-400 text-2xl"></i>
             </div>
-            <select id="topicSelect" class="w-full p-3 border-2 border-green-200 rounded-xl bg-white focus:border-green-500 focus:ring-2 focus:ring-green-200 transition">
+            <select id="chapterSelect" class="w-full p-3 border-2 border-green-200 rounded-xl bg-white focus:border-green-500 focus:ring-2 focus:ring-green-200 transition">
                 <option>Select book first</option>
             </select>
+            <p class="text-xs text-gray-500 mt-2">⚠️ Topics will be auto-created from the CSV if they don't exist</p>
         </div>
 
-        <!-- Step 3: Download Template - Modern Card -->
+        <!-- Step 3: Download Template -->
         <div class="step-card bg-gradient-to-r from-yellow-50 to-amber-50 p-5 rounded-2xl mb-6 border border-yellow-100 transition hover:shadow-md">
             <div class="flex items-center gap-4 mb-4">
                 <div class="step-circle w-10 h-10 bg-yellow-600 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-md">3</div>
@@ -140,12 +141,13 @@
             <p class="text-sm text-gray-600 mb-3">Download the template, fill with your questions, then upload back.</p>
             <p class="text-xs text-purple-600 mb-3">💡 Use LaTeX for math: \( \sqrt{x} \), \( \frac{a}{b} \), \( \lim_{x \to 0} \), etc.</p>
             <p class="text-xs text-blue-600 mb-3">📌 <strong>Important:</strong> For correct_answer, use A, B, C, or D (not numbers). Example: A, B, C, or D</p>
+            <p class="text-xs text-green-600 mb-3">📌 <strong>Topic:</strong> Enter topic name. If it doesn't exist, it will be auto-created. Leave empty for no topic.</p>
             <button id="downloadBtn" class="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded-xl inline-flex items-center gap-2 transition transform hover:scale-105 shadow-md">
                 <i class="fas fa-download"></i> Download CSV Template
             </button>
         </div>
 
-        <!-- Step 4: Upload File - Modern Upload Zone -->
+        <!-- Step 4: Upload File -->
         <div class="step-card bg-gradient-to-r from-purple-50 to-pink-50 p-5 rounded-2xl mb-6 border border-purple-100 transition hover:shadow-md">
             <div class="flex items-center gap-4 mb-4">
                 <div class="step-circle w-10 h-10 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-md">4</div>
@@ -154,7 +156,7 @@
                 <i class="fas fa-cloud-upload-alt text-purple-400 text-2xl"></i>
             </div>
             
-            <!-- Modern Upload Zone -->
+            <!-- Upload Zone -->
             <div id="uploadZone" class="upload-zone rounded-xl p-10 text-center transition">
                 <i class="fas fa-cloud-upload-alt text-5xl text-purple-400 mb-4"></i>
                 <p class="text-gray-600 font-medium">Click or drag & drop your file here</p>
@@ -165,7 +167,7 @@
                 </button>
             </div>
             
-            <!-- Progress Indicator Section -->
+            <!-- Progress Section -->
             <div id="progressSection" style="display: none;" class="mt-4">
                 <div class="bg-white rounded-xl p-4 shadow-sm">
                     <div class="flex justify-between items-center mb-2">
@@ -205,7 +207,7 @@
 
 <script>
     // ============================================
-    // 1. SECURE KEY VERIFICATION (No URL Parameter)
+    // 1. SECURE KEY VERIFICATION
     // ============================================
     const SECRET_KEY = 'BookMCQ_Admin_Secure_Key_2024';
 
@@ -226,7 +228,7 @@
     }
 
     // ============================================
-    // 2. LOGGING FUNCTION (Kept for console, removed from UI)
+    // 2. LOGGING FUNCTION
     // ============================================
     function addLog(msg, type = 'info') {
         console.log(`[${new Date().toLocaleTimeString()}] ${msg}`);
@@ -242,38 +244,35 @@
         if (value === null || value === undefined) return '';
         return String(value);
     }
-        // ============================================
-    // 3. A. NORMALIZE DIFFICULTY TO LOWERCASE
+    
+    // ============================================
+    // 4. NORMALIZE DIFFICULTY
     // ============================================
     function normalizeDifficulty(value) {
         const str = safeString(value).toLowerCase().trim();
-        // Valid difficulties: easy, medium, hard
         if (str === 'easy' || str === 'medium' || str === 'hard') {
             return str;
         }
-        // Default to 'medium' if invalid
         console.warn(`Invalid difficulty value: "${value}", defaulting to "medium"`);
         return 'medium';
     }
+    
     // ============================================
-    // 4. CONVERT LETTER ANSWER TO NUMBER
+    // 5. CONVERT LETTER ANSWER TO NUMBER
     // ============================================
     function convertAnswerToNumber(answer) {
         const str = safeString(answer).toUpperCase().trim();
         
-        // Handle letter inputs (A, B, C, D)
         if (str === 'A') return 0;
         if (str === 'B') return 1;
         if (str === 'C') return 2;
         if (str === 'D') return 3;
         
-        // Handle number inputs (0,1,2,3) for backward compatibility
         if (str === '0') return 0;
         if (str === '1') return 1;
         if (str === '2') return 2;
         if (str === '3') return 3;
         
-        // Default to 0 if invalid
         console.warn(`Invalid correct_answer value: "${answer}", defaulting to A (0)`);
         return 0;
     }
@@ -286,7 +285,6 @@
         return str;
     }
     
-    // Function to render math in element
     async function renderMathInElement(element) {
         if (window.MathJax && element) {
             try {
@@ -297,7 +295,6 @@
         }
     }
     
-    // Function to update progress UI
     function updateProgress(current, total, statusMessage) {
         const percent = Math.round((current / total) * 100);
         const progressFill = document.getElementById('progressFill');
@@ -322,7 +319,15 @@
     }
     
     // ============================================
-    // 5. SUPABASE & CORE LOGIC
+    // 6. ESCAPE HTML
+    // ============================================
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
+    }
+    
+    // ============================================
+    // 7. SUPABASE & CORE LOGIC
     // ============================================
     function checkLibraries() {
         if (typeof window.supabase !== 'undefined') {
@@ -347,7 +352,11 @@
         addLog('✅ Supabase client ready', 'success');
         
         let currentQuestions = [];
+        let topicCache = {}; // Cache for topic IDs by (chapter_id, topic_name)
         
+        // ============================================
+        // 8. LOAD BOOKS
+        // ============================================
         async function loadBooks() {
             addLog('Fetching books from database...', 'info');
             try {
@@ -365,51 +374,138 @@
             }
         }
         
-        async function loadTopics() {
+        // ============================================
+        // 9. LOAD CHAPTERS
+        // ============================================
+        async function loadChapters() {
             const bookId = document.getElementById('bookSelect').value;
+            const chapterSelect = document.getElementById('chapterSelect');
+            
             if (!bookId) {
-                document.getElementById('topicSelect').innerHTML = '<option>Select book first</option>';
+                chapterSelect.innerHTML = '<option>Select book first</option>';
                 return;
             }
             
-            addLog(`Loading topics for book ${bookId}...`, 'info');
+            addLog(`Loading chapters for book ${bookId}...`, 'info');
             try {
-                const { data, error } = await supabase.from('topics')
+                const { data, error } = await supabase.from('chapters')
                     .select('id, name, chapter_number')
                     .eq('book_id', parseInt(bookId))
-                    .order('chapter_number');
+                    .order('chapter_number', { ascending: true, nullsFirst: false });
                 
                 if (error) throw error;
                 
-                addLog(`✅ Found ${data.length} topics`, 'success');
-                const select = document.getElementById('topicSelect');
-                select.innerHTML = '<option value="">-- Select a Topic --</option>';
-                data.forEach(topic => {
-                    const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${topic.name}` : topic.name;
-                    select.innerHTML += `<option value="${topic.id}">${escapeHtml(display)}</option>`;
+                addLog(`✅ Found ${data.length} chapters`, 'success');
+                chapterSelect.innerHTML = '<option value="">-- Select a Chapter --</option>';
+                data.forEach(chapter => {
+                    const display = chapter.chapter_number ? `Ch ${chapter.chapter_number}: ${chapter.name}` : chapter.name;
+                    chapterSelect.innerHTML += `<option value="${chapter.id}">${escapeHtml(display)}</option>`;
                 });
+                
+                // Clear topic cache when chapter changes
+                topicCache = {};
             } catch(e) {
                 addLog(`❌ Error: ${e.message}`, 'error');
             }
         }
         
+        // ============================================
+        // 10. DOWNLOAD TEMPLATE
+        // ============================================
         function downloadTemplate() {
             addLog('Generating CSV template...', 'info');
-            const headers = ['question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'difficulty', 'explanation'];
-            // Now using letter 'C' instead of number 2 for correct_answer
-            const example = ['What does \( \text{typeof null} \) return?', 'null', 'undefined', 'object', 'number', 'C', 'easy', '\( \text{typeof null} \) returns "object" due to a historical bug in JavaScript'];
+            // Added 'topic' column for auto-topic creation
+            const headers = ['topic', 'question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'difficulty', 'explanation'];
+            // Example with topic
+            const example = ['JavaScript Basics', 'What does \( \text{typeof null} \) return?', 'null', 'undefined', 'object', 'number', 'C', 'easy', '\( \text{typeof null} \) returns "object" due to a historical bug in JavaScript'];
             const csv = [headers.join(','), example.map(cell => `"${safeString(cell).replace(/"/g, '""')}"`).join(',')].join('\n');
             
             const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'bookmcq_template.csv';
+            a.download = 'bookmcq_template_with_topics.csv';
             a.click();
             URL.revokeObjectURL(url);
             addLog('✅ Template downloaded', 'success');
         }
         
+        // ============================================
+        // 11. GET OR CREATE TOPIC
+        // ============================================
+        async function getOrCreateTopic(chapterId, topicName) {
+            if (!topicName || topicName.trim() === '') {
+                return null;
+            }
+            
+            const trimmedName = topicName.trim();
+            const cacheKey = `${chapterId}_${trimmedName}`;
+            
+            // Check cache first
+            if (topicCache[cacheKey]) {
+                return topicCache[cacheKey];
+            }
+            
+            // Try to find existing topic
+            const { data: existing, error: findError } = await supabase
+                .from('subtopics')
+                .select('id')
+                .eq('chapter_id', parseInt(chapterId))
+                .eq('name', trimmedName)
+                .maybeSingle();
+            
+            if (findError) {
+                addLog(`❌ Error finding topic: ${findError.message}`, 'error');
+                return null;
+            }
+            
+            if (existing) {
+                topicCache[cacheKey] = existing.id;
+                addLog(`🔍 Found existing topic: "${trimmedName}" (ID: ${existing.id})`, 'info');
+                return existing.id;
+            }
+            
+            // Create new topic
+            const slug = trimmedName
+                .toLowerCase()
+                .trim()
+                .replace(/&/g, 'and')
+                .replace(/[^a-z0-9\s-]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-');
+            
+            // Check if slug exists
+            const { data: slugCheck } = await supabase
+                .from('subtopics')
+                .select('id')
+                .eq('slug', slug)
+                .maybeSingle();
+            
+            const finalSlug = slugCheck ? `${slug}-${Date.now()}` : slug;
+            
+            const { data: newTopic, error: createError } = await supabase
+                .from('subtopics')
+                .insert({
+                    chapter_id: parseInt(chapterId),
+                    name: trimmedName,
+                    slug: finalSlug
+                })
+                .select()
+                .single();
+            
+            if (createError) {
+                addLog(`❌ Error creating topic: ${createError.message}`, 'error');
+                return null;
+            }
+            
+            topicCache[cacheKey] = newTopic.id;
+            addLog(`✅ Created new topic: "${trimmedName}" (ID: ${newTopic.id})`, 'success');
+            return newTopic.id;
+        }
+        
+        // ============================================
+        // 12. PROCESS FILE
+        // ============================================
         function processFile(file) {
             addLog(`Processing: ${file.name}`, 'info');
             const reader = new FileReader();
@@ -423,27 +519,29 @@
                     addLog(`✅ Loaded ${rows.length} questions`, 'success');
                     if (rows.length === 0) return;
                     
-                    // Safe process each row and convert correct_answer from letter to number
-// Safe process each row and convert correct_answer from letter to number
-currentQuestions = rows.map(row => {
-    const processed = {};
-    Object.keys(row).forEach(key => {
-        processed[key] = safeString(row[key]);
-    });
-    // Convert the correct_answer from letter (A,B,C,D) to number (0,1,2,3)
-    const originalAnswer = processed.correct_answer;
-    processed.correct_answer_numeric = convertAnswerToNumber(originalAnswer);
-    if (originalAnswer !== processed.correct_answer_numeric.toString() && !['0','1','2','3'].includes(originalAnswer)) {
-        addLog(`⚠️ Converted correct_answer from "${originalAnswer}" to "${processed.correct_answer_numeric}" (${String.fromCharCode(65+processed.correct_answer_numeric)})`, 'warning');
-    }
-    // Normalize difficulty to lowercase
-    const originalDifficulty = processed.difficulty;
-    processed.difficulty = normalizeDifficulty(originalDifficulty);
-    if (originalDifficulty !== processed.difficulty) {
-        addLog(`⚠️ Converted difficulty from "${originalDifficulty}" to "${processed.difficulty}"`, 'warning');
-    }
-    return processed;
-});
+                    // Process each row
+                    currentQuestions = rows.map((row, index) => {
+                        const processed = {};
+                        Object.keys(row).forEach(key => {
+                            processed[key] = safeString(row[key]);
+                        });
+                        
+                        // Convert correct_answer from letter to number
+                        const originalAnswer = processed.correct_answer;
+                        processed.correct_answer_numeric = convertAnswerToNumber(originalAnswer);
+                        if (originalAnswer !== processed.correct_answer_numeric.toString() && !['0','1','2','3'].includes(originalAnswer)) {
+                            addLog(`⚠️ Row ${index+1}: Converted correct_answer from "${originalAnswer}" to "${processed.correct_answer_numeric}" (${String.fromCharCode(65+processed.correct_answer_numeric)})`, 'warning');
+                        }
+                        
+                        // Normalize difficulty
+                        const originalDifficulty = processed.difficulty;
+                        processed.difficulty = normalizeDifficulty(originalDifficulty);
+                        if (originalDifficulty !== processed.difficulty) {
+                            addLog(`⚠️ Row ${index+1}: Converted difficulty from "${originalDifficulty}" to "${processed.difficulty}"`, 'warning');
+                        }
+                        
+                        return processed;
+                    });
                     
                     const previewDiv = document.getElementById('previewDiv');
                     const uploadBtn = document.getElementById('uploadBtn');
@@ -458,7 +556,6 @@ currentQuestions = rows.map(row => {
                         html += '<tr>' + headers.map(h => {
                             let value = safeString(currentQuestions[i][h]);
                             if (h === 'correct_answer') {
-                                // Show the letter version in preview
                                 const numVal = currentQuestions[i].correct_answer_numeric;
                                 value = String.fromCharCode(65 + numVal);
                             }
@@ -468,27 +565,37 @@ currentQuestions = rows.map(row => {
                     html += '</tbody></table></div>';
                     html += `<p class="text-green-600 text-sm mt-2"><i class="fas fa-check-circle"></i> ✅ ${currentQuestions.length} questions ready to upload</p>`;
                     
-                    // Show conversion warning if any answers were converted
+                    // Show conversion warnings
                     const convertedCount = currentQuestions.filter(q => {
                         const orig = safeString(q.correct_answer);
                         return !['0','1','2','3','A','B','C','D','a','b','c','d'].includes(orig) || (orig.length > 1);
                     }).length;
                     if (convertedCount > 0) {
-                        html += `<p class="text-yellow-600 text-sm mt-1"><i class="fas fa-exclamation-triangle"></i> ⚠️ ${convertedCount} question(s) had invalid correct_answer values and were fixed to defaults.</p>`;
+                        html += `<p class="text-yellow-600 text-sm mt-1"><i class="fas fa-exclamation-triangle"></i> ⚠️ ${convertedCount} question(s) had invalid correct_answer values and were fixed.</p>`;
+                    }
+                    
+                    // Check if topic column exists
+                    const hasTopicColumn = currentQuestions.some(q => q.topic && q.topic.trim() !== '');
+                    if (hasTopicColumn) {
+                        html += `<p class="text-blue-600 text-sm mt-1"><i class="fas fa-info-circle"></i> ℹ️ Topics will be auto-created from the CSV data.</p>`;
+                    } else {
+                        html += `<p class="text-gray-500 text-sm mt-1"><i class="fas fa-info-circle"></i> ℹ️ No topic column found. Questions will be added without a topic.</p>`;
                     }
                     
                     previewDiv.innerHTML = html;
                     previewDiv.style.display = 'block';
                     uploadBtn.style.display = 'inline-flex';
                     
-                    // Show math preview for first question
+                    // Show math preview
                     if (currentQuestions.length > 0) {
                         const firstQuestion = currentQuestions[0];
                         const questionText = safeString(firstQuestion.question_text);
                         const processedQuestion = safeProcessMathContent(questionText);
+                        const topicDisplay = firstQuestion.topic ? `Topic: ${escapeHtml(firstQuestion.topic)}` : 'No topic';
                         mathPreviewContent.innerHTML = `
                             <div class="mb-2"><strong>Question:</strong> <span class="math-content">${escapeHtml(processedQuestion)}</span></div>
                             <div class="text-sm text-gray-500 mt-2">Correct Answer: ${String.fromCharCode(65 + firstQuestion.correct_answer_numeric)}</div>
+                            <div class="text-sm text-gray-500">${topicDisplay}</div>
                         `;
                         mathPreviewDiv.classList.remove('hidden');
                         renderMathInElement(mathPreviewContent);
@@ -504,13 +611,16 @@ currentQuestions = rows.map(row => {
             reader.readAsArrayBuffer(file);
         }
         
+        // ============================================
+        // 13. UPLOAD TO DATABASE
+        // ============================================
         async function uploadToDatabase() {
             const bookId = document.getElementById('bookSelect').value;
-            const topicId = document.getElementById('topicSelect').value;
+            const chapterId = document.getElementById('chapterSelect').value;
             
-            if (!bookId || !topicId) {
-                addLog('❌ Please select both a book and a topic', 'error');
-                alert('Please select both a book and a topic');
+            if (!bookId || !chapterId) {
+                addLog('❌ Please select both a book and a chapter', 'error');
+                alert('Please select both a book and a chapter');
                 return;
             }
             
@@ -520,7 +630,7 @@ currentQuestions = rows.map(row => {
                 return;
             }
             
-            // Show progress section
+            // Show progress
             const progressSection = document.getElementById('progressSection');
             const uploadBtn = document.getElementById('uploadBtn');
             const previewDiv = document.getElementById('previewDiv');
@@ -529,45 +639,56 @@ currentQuestions = rows.map(row => {
             uploadBtn.style.display = 'none';
             previewDiv.style.display = 'none';
             
-            // Clear previous status messages
             const statusMessages = document.getElementById('statusMessages');
             if (statusMessages) statusMessages.innerHTML = '';
             
             const total = currentQuestions.length;
             let success = 0;
             let failed = 0;
-            const failedIndices = [];
+            let topicCount = 0;
             
-            addLog(`📤 Uploading ${total} questions...`, 'info');
+            addLog(`📤 Uploading ${total} questions to chapter ${chapterId}...`, 'info');
             updateProgress(0, total, 'Preparing questions for upload...');
             
-            // ============================================================
-            // OPTIMIZATION 1: Prepare all data in memory first
-            // ============================================================
+            // Prepare data
             const questionsToInsert = [];
             const optionsToInsert = [];
             
             for (let i = 0; i < currentQuestions.length; i++) {
                 const q = currentQuestions[i];
-                const correctAnswerNumeric = q.correct_answer_numeric !== undefined ? q.correct_answer_numeric : convertAnswerToNumber(q.correct_answer);
                 const questionText = safeString(q.question_text);
                 
                 if (!questionText) {
                     failed++;
-                    failedIndices.push(i + 1);
                     continue;
                 }
                 
-                // Use a temporary ID for linking questions with options
+                // Get or create topic
+                let topicId = null;
+                if (q.topic && q.topic.trim() !== '') {
+                    try {
+                        topicId = await getOrCreateTopic(chapterId, q.topic);
+                        if (topicId) topicCount++;
+                    } catch(e) {
+                        addLog(`❌ Error with topic "${q.topic}": ${e.message}`, 'error');
+                    }
+                }
+                
                 const tempId = Date.now() + i + Math.random() * 1000;
                 
-                questionsToInsert.push({
-                    topic_id: parseInt(topicId),
+                const questionData = {
+                    chapter_id: parseInt(chapterId),
                     question_text: questionText,
                     difficulty: normalizeDifficulty(q.difficulty),
-                    correct_answer: correctAnswerNumeric,
+                    correct_answer: q.correct_answer_numeric !== undefined ? q.correct_answer_numeric : convertAnswerToNumber(q.correct_answer),
                     explanation: safeString(q.explanation) || ''
-                });
+                };
+                
+                if (topicId) {
+                    questionData.topic_id = topicId;
+                }
+                
+                questionsToInsert.push(questionData);
                 
                 const options = [
                     safeString(q.option_a),
@@ -586,20 +707,14 @@ currentQuestions = rows.map(row => {
                 
                 success++;
                 
-                // Update progress every 50 rows
                 if (i % 50 === 0 || i === currentQuestions.length - 1) {
-                    const progress = ((i + 1) / total) * 30;
                     updateProgress(i + 1, total, `📝 Preparing ${i + 1}/${total} questions...`);
                 }
             }
             
-            // ============================================================
-            // OPTIMIZATION 2: Batch insert questions (200 at a time)
-            // ============================================================
+            // Batch insert questions
             const BATCH_SIZE = 200;
             let insertedQuestions = 0;
-            let finalSuccess = 0;
-            let finalFail = 0;
             
             updateProgress(0, questionsToInsert.length, '💾 Inserting questions in batches...');
             
@@ -615,37 +730,30 @@ currentQuestions = rows.map(row => {
                     if (error) throw error;
                     
                     insertedQuestions += inserted.length;
-                    finalSuccess += inserted.length;
                     
-                    const progress = 30 + ((i + BATCH_SIZE) / questionsToInsert.length) * 50;
+                    const progress = ((i + BATCH_SIZE) / questionsToInsert.length) * 70;
                     updateProgress(insertedQuestions, questionsToInsert.length, 
                         `✅ Inserted ${insertedQuestions}/${questionsToInsert.length} questions`);
                     
                 } catch(e) {
-                    finalFail += batch.length;
                     addLog(`❌ Batch ${Math.floor(i/BATCH_SIZE)+1} failed: ${e.message}`, 'error');
                 }
             }
             
-            // ============================================================
-            // OPTIMIZATION 3: Insert options in batches (no linking needed)
-            // ============================================================
+            // Insert options
             if (insertedQuestions > 0) {
                 updateProgress(insertedQuestions, questionsToInsert.length, '📝 Adding options...');
                 
-                // Get the actual question IDs from the database
                 const { data: actualQuestions, error: fetchError } = await supabase
                     .from('questions')
                     .select('id')
-                    .eq('topic_id', parseInt(topicId))
+                    .eq('chapter_id', parseInt(chapterId))
                     .order('id', { ascending: false })
                     .limit(insertedQuestions);
                 
                 if (!fetchError && actualQuestions) {
-                    // Reverse to match the insertion order
                     const questionIds = actualQuestions.reverse().map(q => q.id);
                     
-                    // Assign actual IDs to options
                     const finalOptions = [];
                     for (let i = 0; i < questionIds.length; i++) {
                         const qId = questionIds[i];
@@ -661,7 +769,6 @@ currentQuestions = rows.map(row => {
                         }
                     }
                     
-                    // Insert options in batches
                     for (let i = 0; i < finalOptions.length; i += BATCH_SIZE) {
                         const batch = finalOptions.slice(i, i + BATCH_SIZE);
                         try {
@@ -671,7 +778,6 @@ currentQuestions = rows.map(row => {
                             
                             if (error) throw error;
                             
-                            const progress = 80 + ((i + BATCH_SIZE) / finalOptions.length) * 20;
                             updateProgress(i + batch.length, finalOptions.length, 
                                 `📝 Adding options ${i + 1}-${Math.min(i + batch.length, finalOptions.length)}/${finalOptions.length}`);
                             
@@ -682,20 +788,15 @@ currentQuestions = rows.map(row => {
                 }
             }
             
-            // ============================================================
-            // OPTIMIZATION 4: Show final results
-            // ============================================================
-            const finalMessage = `📊 Upload Complete! Success: ${finalSuccess}, Failed: ${finalFail}`;
-            updateProgress(finalSuccess, questionsToInsert.length, finalMessage);
-            addLog(`📊 Complete: ${finalSuccess} uploaded, ${finalFail} failed`, finalSuccess > 0 ? 'success' : 'error');
+            // Final results
+            const finalMessage = `📊 Upload Complete! Success: ${insertedQuestions}, Failed: ${total - insertedQuestions}`;
+            updateProgress(insertedQuestions, total, finalMessage);
+            addLog(`📊 Complete: ${insertedQuestions} uploaded, ${total - insertedQuestions} failed`, insertedQuestions > 0 ? 'success' : 'error');
+            addLog(`📊 Topics created/linked: ${topicCount}`, 'info');
             
-            if (failedIndices.length > 0) {
-                updateProgress(finalSuccess, questionsToInsert.length, `⚠️ Failed question numbers: ${failedIndices.slice(0, 10).join(', ')}${failedIndices.length > 10 ? `... and ${failedIndices.length - 10} more` : ''}`);
-            }
+            alert(`Upload complete!\n✅ Success: ${insertedQuestions} questions added\n❌ Failed: ${total - insertedQuestions} questions\n📝 Topics created/linked: ${topicCount}\n\nNote: Topics were auto-created from the CSV data.`);
             
-            alert(`Upload complete!\n✅ Success: ${finalSuccess} questions added\n❌ Failed: ${finalFail} questions\n\n${failedIndices.length > 0 ? `Failed question numbers: ${failedIndices.slice(0, 20).join(', ')}${failedIndices.length > 20 ? `... and ${failedIndices.length - 20} more` : ''}` : 'All questions uploaded successfully!'}`);
-            
-            if (finalSuccess > 0) {
+            if (insertedQuestions > 0) {
                 document.getElementById('previewDiv').style.display = 'none';
                 document.getElementById('uploadBtn').style.display = 'none';
                 document.getElementById('mathPreviewDiv').classList.add('hidden');
@@ -703,18 +804,14 @@ currentQuestions = rows.map(row => {
                 currentQuestions = [];
             }
             
-            // Hide progress section after 3 seconds
             setTimeout(() => {
                 progressSection.style.display = 'none';
             }, 3000);
         }
         
-        function escapeHtml(str) {
-            if (!str) return '';
-            return String(str).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
-        }
-        
-        // Setup file upload zone
+        // ============================================
+        // 14. SETUP UPLOAD ZONE
+        // ============================================
         function setupUploadZone() {
             const uploadZone = document.getElementById('uploadZone');
             const fileInput = document.getElementById('fileInput');
@@ -748,10 +845,16 @@ currentQuestions = rows.map(row => {
             }
         }
         
-        document.getElementById('bookSelect').addEventListener('change', loadTopics);
+        // ============================================
+        // 15. EVENT LISTENERS
+        // ============================================
+        document.getElementById('bookSelect').addEventListener('change', loadChapters);
         document.getElementById('downloadBtn').addEventListener('click', downloadTemplate);
         document.getElementById('uploadBtn').addEventListener('click', uploadToDatabase);
         
+        // ============================================
+        // 16. INIT
+        // ============================================
         setupUploadZone();
         loadBooks();
     }
