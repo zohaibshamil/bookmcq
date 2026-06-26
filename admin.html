@@ -303,7 +303,7 @@
             <div class="flex flex-wrap gap-2 mb-6">
                 <button id="tabBooksBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-purple-600 text-white">📚 Books</button>
                 <button id="tabChaptersBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">📖 Chapters</button>
-                <button id="tabSubTopicsBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">📝 Topics</button>
+                <button id="tabSubTopicsBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-purple-600 text-white">📝 Topics</button>
                 <button id="tabQuestionsBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">❓ Questions</button>
                 <button id="tabCategoriesBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">🏷️ Categories</button>
                 <button id="tabBulkUploadBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">📤 Bulk Upload</button>
@@ -314,7 +314,7 @@
             </div>
 
             <!-- Books Tab -->
-            <div id="booksTab">
+            <div id="booksTab" class="hidden">
                 <h2 class="text-xl font-bold mb-4">📚 Books</h2>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -348,7 +348,7 @@
                 <div id="booksList"><div class="skeleton h-12 w-full mb-2"></div><div class="skeleton h-12 w-full mb-2"></div><div class="skeleton h-12 w-full"></div></div>
             </div>
 
-            <!-- Chapters Tab (renamed from Topics) -->
+            <!-- Chapters Tab -->
             <div id="chaptersTab" class="hidden">
                 <h2 class="text-xl font-bold mb-4">📖 Chapters</h2>
                 <div class="mb-4">
@@ -368,41 +368,48 @@
                 <div id="chaptersList"><div class="skeleton h-12 w-full mb-2"></div><div class="skeleton h-12 w-full mb-2"></div></div>
             </div>
 
-            <!-- Sub-Topics Tab (NEW) -->
-            <div id="subTopicsTab" class="hidden">
-                <h2 class="text-xl font-bold mb-4">📝 Topics (Sub-topics inside Chapters)</h2>
-                <p class="text-sm text-gray-600 mb-4">Topics are sub-categories inside chapters. For example: "Introduction to Limits" inside "Chapter 1: Limits & Continuity"</p>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label class="block text-sm font-semibold mb-2">Filter by Book:</label>
-                        <select id="subTopicFilterBookId" class="w-full p-2 border rounded-lg">
-                            <option value="">All Books</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold mb-2">Filter by Chapter:</label>
-                        <select id="subTopicFilterChapterId" class="w-full p-2 border rounded-lg" disabled>
-                            <option value="">Select a book first</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <button id="showAddSubTopicBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg mb-4">+ Add Topic</button>
-                <div id="addSubTopicForm" class="hidden bg-gray-50 p-4 rounded-lg mb-4">
-                    <select id="subTopicBookId" class="w-full p-2 border rounded mb-2">
-                        <option value="">Select Book</option>
-                    </select>
-                    <select id="subTopicChapterId" class="w-full p-2 border rounded mb-2">
-                        <option value="">Select Chapter</option>
-                    </select>
-                    <input type="text" id="subTopicName" placeholder="Topic Name" class="w-full p-2 border rounded mb-2">
-                    <button id="saveSubTopicBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
-                    <button id="cancelSubTopicBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
-                </div>
-                
-                <div id="subTopicsList"><div class="skeleton h-12 w-full mb-2"></div><div class="skeleton h-12 w-full mb-2"></div></div>
-            </div>
+<!-- Sub-Topics Tab (Topics) - FIXED - Changed id to match the tab name -->
+<div id="subtopicsTab" class="hidden">
+    <h2 class="text-xl font-bold mb-4">📝 Topics (Sub-topics inside Chapters)</h2>
+    <p class="text-sm text-gray-600 mb-4">Topics are sub-categories inside chapters. For example: "Introduction to Limits" inside "Chapter 1: Limits & Continuity"</p>
+    
+    <!-- Filter Section -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+            <label class="block text-sm font-semibold mb-2">Filter by Book:</label>
+            <select id="subTopicFilterBookId" class="w-full p-2 border rounded-lg">
+                <option value="">All Books</option>
+            </select>
+        </div>
+        <div>
+            <label class="block text-sm font-semibold mb-2">Filter by Chapter:</label>
+            <select id="subTopicFilterChapterId" class="w-full p-2 border rounded-lg" disabled>
+                <option value="">Select a book first</option>
+            </select>
+        </div>
+    </div>
+    
+    <!-- Add Topic Button -->
+    <button id="showAddSubTopicBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg mb-4">+ Add Topic</button>
+    
+    <!-- Add Topic Form -->
+    <div id="addSubTopicForm" class="hidden bg-gray-50 p-4 rounded-lg mb-4">
+        <select id="subTopicBookId" class="w-full p-2 border rounded mb-2">
+            <option value="">Select Book</option>
+        </select>
+        <select id="subTopicChapterId" class="w-full p-2 border rounded mb-2">
+            <option value="">Select Chapter</option>
+        </select>
+        <input type="text" id="subTopicName" placeholder="Topic Name" class="w-full p-2 border rounded mb-2">
+        <div class="flex gap-2">
+            <button id="saveSubTopicBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Save Topic</button>
+            <button id="cancelSubTopicBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
+        </div>
+    </div>
+    
+    <!-- Topics List -->
+    <div id="subTopicsList"><div class="skeleton h-12 w-full mb-2"></div><div class="skeleton h-12 w-full mb-2"></div></div>
+</div>
 
             <!-- Categories Tab -->
             <div id="categoriesTab" class="hidden">
@@ -976,14 +983,14 @@
     let sitemapData = null;
     
     // ============ CACHE SYSTEM ============
-let booksCache = null;
-let chaptersCache = {};
-let subTopicsCache = {};
-let categoriesCache = null;
-let booksListCache = null;
-let isLoadingBooks = false;
-let isLoadingChapters = false;
-let isLoadingSubTopics = false;
+    let booksCache = null;
+    let chaptersCache = {};
+    let subTopicsCache = {};
+    let categoriesCache = null;
+    let booksListCache = null;
+    let isLoadingBooks = false;
+    let isLoadingChapters = false;
+    let isLoadingSubTopics = false;
 
     // ============ SESSION TIMEOUT ============
     let sessionTimeout;
@@ -1996,7 +2003,9 @@ let isLoadingSubTopics = false;
         }
     }
 
-    // ============ SUB-TOPICS ============
+    // ============ SUB-TOPICS - FIXED ============
+    
+    // Load books for filter
     async function loadSubTopicFilterBooks() {
         if (booksCache !== null) {
             const select = document.getElementById('subTopicFilterBookId');
@@ -2018,6 +2027,7 @@ let isLoadingSubTopics = false;
         }
     }
 
+    // Load chapters for filter
     async function loadSubTopicChapters() {
         const bookId = document.getElementById('subTopicFilterBookId').value;
         const chapterSelect = document.getElementById('subTopicFilterChapterId');
@@ -2046,6 +2056,7 @@ let isLoadingSubTopics = false;
         }
     }
 
+    // Load topics list
     async function loadSubTopicsCached() {
         const container = document.getElementById('subTopicsList');
         container.innerHTML = '<div class="skeleton h-12 w-full mb-2"></div><div class="skeleton h-12 w-full mb-2"></div>';
@@ -2056,7 +2067,6 @@ let isLoadingSubTopics = false;
         const chapterFilter = document.getElementById('subTopicFilterChapterId')?.value;
         
         if (bookFilter && bookFilter !== '') {
-            // Filter by book through chapters
             const { data: chaptersInBook } = await _supabase.from('chapters').select('id').eq('book_id', parseInt(bookFilter));
             if (chaptersInBook && chaptersInBook.length > 0) {
                 const chapterIds = chaptersInBook.map(c => c.id);
@@ -2113,25 +2123,90 @@ let isLoadingSubTopics = false;
         }
     };
 
-    async function addSubTopic() {
-        const chapterId = document.getElementById('subTopicChapterId').value;
-        const name = document.getElementById('subTopicName').value;
-        
-        if (!chapterId || !name) {
-            showToast('Please select a chapter and enter a topic name', true);
+    // ===== LOAD BOOKS FOR ADD TOPIC FORM - SAME AS CHAPTERS =====
+    async function loadBookSelectForSubTopic() {
+        // SAME LOGIC as loadBookSelectForChapters()
+        if (booksCache !== null) {
+            renderBookSelectForSubTopic(booksCache);
             return;
         }
         
-        const duplicate = await checkDuplicateSubTopic(name, parseInt(chapterId));
+        const { data } = await _supabase.from('books').select('id, title');
+        if (data) {
+            booksCache = data;
+            renderBookSelectForSubTopic(data);
+        }
+    }
+
+    function renderBookSelectForSubTopic(books) {
+        const select = document.getElementById('subTopicBookId');
+        select.innerHTML = '<option value="">Select Book</option>';
+        if (books) {
+            books.forEach(book => {
+                select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+            });
+        }
+    }
+
+    // ===== LOAD CHAPTERS FOR ADD TOPIC FORM - SAME AS CHAPTER FILTER =====
+    async function loadSubTopicChaptersForForm() {
+        // SAME LOGIC as loadSubTopicChapterFilters()
+        const bookId = document.getElementById('subTopicBookId').value;
+        const chapterSelect = document.getElementById('subTopicChapterId');
+        
+        if (!bookId || bookId === '') {
+            chapterSelect.innerHTML = '<option value="">Select Chapter</option>';
+            return;
+        }
+        
+        chapterSelect.innerHTML = '<option value="">Loading chapters...</option>';
+        
+        const { data } = await _supabase.from('chapters')
+            .select('id, name, chapter_number')
+            .eq('book_id', parseInt(bookId))
+            .order('chapter_number', { ascending: true });
+        
+        chapterSelect.innerHTML = '<option value="">Select Chapter</option>';
+        if (data && data.length > 0) {
+            data.forEach(chapter => {
+                const display = chapter.chapter_number ? `Ch ${chapter.chapter_number}: ${chapter.name}` : chapter.name;
+                chapterSelect.innerHTML += `<option value="${chapter.id}">${escapeHtml(display)}</option>`;
+            });
+        }
+    }
+
+    // ===== ADD TOPIC - SAME AS ADD CHAPTER =====
+    async function addSubTopic() {
+        const bookId = document.getElementById('subTopicBookId').value;
+        const chapterId = document.getElementById('subTopicChapterId').value;
+        const name = document.getElementById('subTopicName').value;
+        
+        // SAME VALIDATION as addChapter
+        if (!bookId) {
+            showToast('Please select a book', true);
+            return;
+        }
+        if (!chapterId) {
+            showToast('Please select a chapter', true);
+            return;
+        }
+        if (!name || name.trim() === '') {
+            showToast('Please enter a topic name', true);
+            return;
+        }
+        
+        // SAME DUPLICATE CHECK as addChapter
+        const duplicate = await checkDuplicateSubTopic(name.trim(), parseInt(chapterId));
         if (duplicate) {
             showToast('Topic already exists for this chapter!', true);
             return;
         }
         
+        // SAME SAVE LOGIC as addChapter
         const subTopicData = {
             chapter_id: parseInt(chapterId),
-            name: name,
-            slug: createSlug(name)
+            name: name.trim(),
+            slug: createSlug(name.trim())
         };
         
         const { error } = await _supabase.from('subtopics').insert([subTopicData]);
@@ -2139,8 +2214,11 @@ let isLoadingSubTopics = false;
             showToast('Error: ' + error.message, true);
         } else {
             showToast('Topic added!');
+            // SAME CLEANUP as addChapter
             document.getElementById('addSubTopicForm').classList.add('hidden');
             document.getElementById('subTopicName').value = '';
+            document.getElementById('subTopicBookId').value = '';
+            document.getElementById('subTopicChapterId').innerHTML = '<option value="">Select Chapter</option>';
             subTopicsCache = {};
             await loadSubTopicsCached();
         }
@@ -3287,8 +3365,6 @@ let isLoadingSubTopics = false;
         if (tabName === 'subtopics') {
             loadSubTopicFilterBooks();
             loadSubTopicsCached();
-            // Load books for the Add Topic form
-            loadBookSelectForSubTopic();
         }
     }
     
@@ -3851,33 +3927,6 @@ let isLoadingSubTopics = false;
         }, 500);
     }
 
-    // ============ LOAD BOOKS FOR ADD TOPIC FORM ============
-    // ✅ FIXED: Moved outside setupEventListeners
-    async function loadBookSelectForSubTopic() {
-        if (booksCache !== null) {
-            const select = document.getElementById('subTopicBookId');
-            if (select) {
-                select.innerHTML = '<option value="">Select Book</option>';
-                booksCache.forEach(book => {
-                    select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
-                });
-            }
-            return;
-        }
-        
-        const { data } = await _supabase.from('books').select('id, title');
-        if (data) {
-            booksCache = data;
-            const select = document.getElementById('subTopicBookId');
-            if (select) {
-                select.innerHTML = '<option value="">Select Book</option>';
-                data.forEach(book => {
-                    select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
-                });
-            }
-        }
-    }
-
     // ============ EVENT LISTENERS ============
     function setupEventListeners() {
         document.getElementById('loginBtn').addEventListener('click', handleLogin);
@@ -3938,19 +3987,32 @@ let isLoadingSubTopics = false;
         document.getElementById('saveChapterBtn').addEventListener('click', addChapter);
         document.getElementById('chapterFilterBookId').addEventListener('change', applyChapterFilter);
         
-        // ===== SUB-TOPICS EVENT LISTENERS (FIXED) =====
+        // ===== SUB-TOPICS EVENT LISTENERS - SAME AS CHAPTERS =====
+        // Show Add Topic Form - SAME AS Add Chapter
         document.getElementById('showAddSubTopicBtn').addEventListener('click', async () => {
-            // Load books for the Add Topic form
+            // Load books for the Add Topic form (SAME AS CHAPTERS)
             await loadBookSelectForSubTopic();
-            // Show the form
+            // Reset chapter dropdown
+            document.getElementById('subTopicChapterId').innerHTML = '<option value="">Select Chapter</option>';
+            // Show the form (SAME AS CHAPTERS)
             document.getElementById('addSubTopicForm').classList.remove('hidden');
         });
+        
+        // Cancel Add Topic - SAME AS Cancel Chapter
         document.getElementById('cancelSubTopicBtn').addEventListener('click', () => {
             document.getElementById('addSubTopicForm').classList.add('hidden');
             document.getElementById('subTopicName').value = '';
+            document.getElementById('subTopicBookId').value = '';
+            document.getElementById('subTopicChapterId').innerHTML = '<option value="">Select Chapter</option>';
         });
+        
+        // Save Topic - calls addSubTopic
         document.getElementById('saveSubTopicBtn').addEventListener('click', addSubTopic);
-        document.getElementById('subTopicBookId').addEventListener('change', loadSubTopicChapterFilters);
+        
+        // When book is selected in Add Topic form, load chapters - SAME AS question form
+        document.getElementById('subTopicBookId').addEventListener('change', loadSubTopicChaptersForForm);
+        
+        // Filter events
         document.getElementById('subTopicFilterBookId').addEventListener('change', loadSubTopicChapters);
         document.getElementById('subTopicFilterChapterId').addEventListener('change', applySubTopicFilter);
         
