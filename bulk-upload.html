@@ -701,7 +701,7 @@ async function batchGetOrCreateTopics(chapterId, uniqueTopics) {
         }
         
 // ============================================
-// 14. FAST BULK UPLOAD TO DATABASE - COMPLETELY FIXED
+// 14. FAST BULK UPLOAD TO DATABASE - OPTIMIZED
 // ============================================
 async function uploadToDatabase() {
     const bookId = document.getElementById('bookSelect').value;
@@ -736,10 +736,8 @@ async function uploadToDatabase() {
     updateProgress(0, total, '🚀 Starting fast upload...');
     
     try {
-        // STEP 1: Get all unique topics - trim and clean them
+        // STEP 1: Get all unique topics (clean them)
         const uniqueTopics = [];
-        const topicMap = {};
-        
         currentQuestions.forEach(q => {
             if (q.topic && q.topic.trim() !== '') {
                 const cleanedTopic = q.topic.trim();
@@ -749,121 +747,124 @@ async function uploadToDatabase() {
             }
         });
         
-        addLog(`📝 Found ${uniqueTopics.length} unique topics: ${uniqueTopics.join(', ')}`, 'info');
+        addLog(`📝 Found ${uniqueTopics.length} unique topics`, 'info');
         
-        // STEP 2: Create all topics first
+        // STEP 2: BATCH GET OR CREATE TOPICS - FAST VERSION
         const topicIdMap = {};
+        
         if (uniqueTopics.length > 0) {
-            updateProgress(0, total, `📝 Creating ${uniqueTopics.length} topics...`);
+            updateProgress(0, total, `📝 Processing ${uniqueTopics.length} topics...`);
             
-            // Check existing topics first
+            // First, fetch all existing topics for this chapter
             const { data: existingTopics, error: fetchError } = await supabase
                 .from('subtopics')
                 .select('id, name')
-                .eq('chapter_id', parseInt(chapterId))
-                .in('name', uniqueTopics);
+                .eq('chapter_id', parseInt(chapterId));
             
             if (fetchError) {
-                addLog(`❌ Error fetching existing topics: ${fetchError.message}`, 'error');
+                addLog(`❌ Error fetching topics: ${fetchError.message}`, 'error');
             } else {
-                // Map existing topics
+                // Create a map of existing topics
+                const existingMap = {};
                 existingTopics.forEach(t => {
-                    topicIdMap[t.name] = t.id;
-                    addLog(`✅ Found existing topic: "${t.name}" (ID: ${t.id})`, 'success');
+                    existingMap[t.name] = t.id;
                 });
-            }
-            
-            // Find topics that need to be created
-            const topicsToCreate = uniqueTopics.filter(name => !topicIdMap[name]);
-            
-            if (topicsToCreate.length > 0) {
-                addLog(`📝 Creating ${topicsToCreate.length} new topics...`, 'info');
                 
-                // Create each topic individually to avoid slug conflicts
-                for (let i = 0; i < topicsToCreate.length; i++) {
-                    const name = topicsToCreate[i];
-                    try {
-                        // Create a unique slug
+                // Find topics that need to be created
+                const topicsToCreate = uniqueTopics.filter(name => !existingMap[name]);
+                
+                // Map existing topics
+                uniqueTopics.forEach(name => {
+                    if (existingMap[name]) {
+                        topicIdMap[name] = existingMap[name];
+                    }
+                });
+                
+                // BATCH CREATE all new topics at once
+                if (topicsToCreate.length > 0) {
+                    addLog(`📝 Creating ${topicsToCreate.length} new topics in batch...`, 'info');
+                    
+                    // Prepare data for batch insert with unique slugs
+                    const topicsData = topicsToCreate.map((name, index) => {
+                        // Create a URL-friendly slug
                         const baseSlug = name
                             .toLowerCase()
                             .trim()
-                            .replace(/&/g, 'and')
                             .replace(/[^a-z0-9\s-]/g, '')
                             .replace(/\s+/g, '-')
-                            .replace(/-+/g, '-');
+                            .replace(/-+/g, '-')
+                            .substring(0, 50); // Limit length
                         
-                        const uniqueSlug = `${baseSlug}-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 8)}`;
+                        // Add timestamp and index to ensure uniqueness
+                        const timestamp = Date.now();
+                        const uniqueSlug = `${baseSlug}-${timestamp}-${index}`;
                         
-                        // First check if topic with this name already exists (double check)
-                        const { data: checkExisting, error: checkError } = await supabase
-                            .from('subtopics')
-                            .select('id')
-                            .eq('chapter_id', parseInt(chapterId))
-                            .eq('name', name)
-                            .maybeSingle();
+                        return {
+                            chapter_id: parseInt(chapterId),
+                            name: name,
+                            slug: uniqueSlug
+                        };
+                    });
+                    
+                    // Batch insert all topics at once
+                    const { data: createdTopics, error: createError } = await supabase
+                        .from('subtopics')
+                        .insert(topicsData)
+                        .select();
+                    
+                    if (createError) {
+                        addLog(`❌ Batch topic creation failed: ${createError.message}`, 'error');
                         
-                        if (checkError) {
-                            addLog(`❌ Error checking topic "${name}": ${checkError.message}`, 'error');
-                            continue;
-                        }
-                        
-                        if (checkExisting) {
-                            // Topic was created in the meantime
-                            topicIdMap[name] = checkExisting.id;
-                            addLog(`✅ Topic "${name}" already exists (ID: ${checkExisting.id})`, 'success');
-                            continue;
-                        }
-                        
-                        // Insert the new topic
-                        const { data: newTopic, error: createError } = await supabase
-                            .from('subtopics')
-                            .insert({
-                                chapter_id: parseInt(chapterId),
-                                name: name,
-                                slug: uniqueSlug
-                            })
-                            .select()
-                            .single();
-                        
-                        if (createError) {
-                            addLog(`❌ Error creating topic "${name}": ${createError.message}`, 'error');
-                            
-                            // Try one more time without the index in slug
-                            const fallbackSlug = `${baseSlug}-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
-                            const { data: retryTopic, error: retryError } = await supabase
-                                .from('subtopics')
-                                .insert({
-                                    chapter_id: parseInt(chapterId),
-                                    name: name,
-                                    slug: fallbackSlug
-                                })
-                                .select()
-                                .single();
-                            
-                            if (!retryError && retryTopic) {
-                                topicIdMap[name] = retryTopic.id;
-                                addLog(`✅ Created topic "${name}" on retry (ID: ${retryTopic.id})`, 'success');
-                            } else {
-                                addLog(`❌ Failed to create topic "${name}" on retry: ${retryError?.message}`, 'error');
+                        // Fallback: Try one by one with simpler slugs
+                        addLog('🔄 Trying individual topic creation...', 'info');
+                        for (let i = 0; i < topicsToCreate.length; i++) {
+                            const name = topicsToCreate[i];
+                            try {
+                                const simpleSlug = name
+                                    .toLowerCase()
+                                    .trim()
+                                    .replace(/[^a-z0-9\s-]/g, '')
+                                    .replace(/\s+/g, '-')
+                                    .replace(/-+/g, '-')
+                                    .substring(0, 40) + `-${Date.now()}-${i}`;
+                                
+                                const { data: newTopic, error: singleError } = await supabase
+                                    .from('subtopics')
+                                    .insert({
+                                        chapter_id: parseInt(chapterId),
+                                        name: name,
+                                        slug: simpleSlug
+                                    })
+                                    .select()
+                                    .single();
+                                
+                                if (!singleError && newTopic) {
+                                    topicIdMap[name] = newTopic.id;
+                                    addLog(`✅ Created topic: "${name}"`, 'success');
+                                } else {
+                                    addLog(`❌ Failed to create topic "${name}": ${singleError?.message}`, 'error');
+                                }
+                            } catch(e) {
+                                addLog(`❌ Exception creating topic "${name}": ${e.message}`, 'error');
                             }
-                        } else if (newTopic) {
-                            topicIdMap[name] = newTopic.id;
-                            addLog(`✅ Created new topic: "${name}" (ID: ${newTopic.id})`, 'success');
                         }
-                    } catch(e) {
-                        addLog(`❌ Exception creating topic "${name}": ${e.message}`, 'error');
+                    } else if (createdTopics) {
+                        // Map the newly created topics
+                        createdTopics.forEach(t => {
+                            topicIdMap[t.name] = t.id;
+                            addLog(`✅ Created topic: "${t.name}" (ID: ${t.id})`, 'success');
+                        });
                     }
                 }
             }
             
-            addLog(`📊 Topic map created: ${Object.keys(topicIdMap).length} topics`, 'success');
+            addLog(`📊 Topic map: ${Object.keys(topicIdMap).length} topics ready`, 'success');
         }
         
-        // STEP 3: Prepare questions with topic_id
+        // STEP 3: Prepare questions data
         updateProgress(0, total, '📦 Preparing questions data...');
         const questionsToInsert = [];
         let questionsWithTopics = 0;
-        let questionsWithoutTopics = 0;
         
         for (let i = 0; i < currentQuestions.length; i++) {
             const q = currentQuestions[i];
@@ -886,7 +887,7 @@ async function uploadToDatabase() {
                     questionData.topic_id = topicIdMap[cleanedTopic];
                     questionsWithTopics++;
                 } else {
-                    // Try to find the topic one more time
+                    // Try to find the topic one more time in database
                     const { data: findTopic, error: findError } = await supabase
                         .from('subtopics')
                         .select('id')
@@ -898,27 +899,21 @@ async function uploadToDatabase() {
                         questionData.topic_id = findTopic.id;
                         topicIdMap[cleanedTopic] = findTopic.id;
                         questionsWithTopics++;
-                        addLog(`✅ Found topic "${cleanedTopic}" on second check (ID: ${findTopic.id})`, 'success');
-                    } else {
-                        questionsWithoutTopics++;
-                        addLog(`⚠️ Topic "${cleanedTopic}" not found, question will be added without topic`, 'warning');
                     }
                 }
-            } else {
-                questionsWithoutTopics++;
             }
             
             questionsToInsert.push(questionData);
         }
         
-        addLog(`📊 Questions: ${questionsToInsert.length} total, ${questionsWithTopics} with topics, ${questionsWithoutTopics} without topics`, 'info');
+        addLog(`📊 Prepared ${questionsToInsert.length} questions (${questionsWithTopics} with topics)`, 'info');
         
-        // STEP 4: Batch insert questions
-        const BATCH_SIZE = 100;
+        // STEP 4: BATCH INSERT QUESTIONS (FAST)
+        const BATCH_SIZE = 500;
         let insertedQuestions = 0;
         const allInsertedQuestions = [];
         
-        updateProgress(0, questionsToInsert.length, '💾 Inserting questions...');
+        updateProgress(0, questionsToInsert.length, '💾 Inserting questions in batches...');
         
         for (let i = 0; i < questionsToInsert.length; i += BATCH_SIZE) {
             const batch = questionsToInsert.slice(i, i + BATCH_SIZE);
@@ -931,25 +926,6 @@ async function uploadToDatabase() {
                 
                 if (error) {
                     addLog(`❌ Batch ${Math.floor(i/BATCH_SIZE)+1} error: ${error.message}`, 'error');
-                    
-                    // Try inserting one by one
-                    for (let j = 0; j < batch.length; j++) {
-                        try {
-                            const { data: singleInsert, error: singleError } = await supabase
-                                .from('questions')
-                                .insert([batch[j]])
-                                .select('id');
-                            
-                            if (!singleError && singleInsert) {
-                                allInsertedQuestions.push(singleInsert[0]);
-                                insertedQuestions++;
-                            } else {
-                                addLog(`❌ Failed to insert question ${i+j+1}: ${singleError?.message}`, 'error');
-                            }
-                        } catch(e) {
-                            addLog(`❌ Exception inserting question ${i+j+1}: ${e.message}`, 'error');
-                        }
-                    }
                 } else if (inserted) {
                     allInsertedQuestions.push(...inserted);
                     insertedQuestions += inserted.length;
@@ -957,14 +933,14 @@ async function uploadToDatabase() {
                 
                 const progress = Math.round((insertedQuestions / questionsToInsert.length) * 70);
                 updateProgress(insertedQuestions, questionsToInsert.length, 
-                    `✅ Inserted ${insertedQuestions}/${questionsToInsert.length} questions`);
+                    `✅ ${insertedQuestions}/${questionsToInsert.length} questions inserted`);
                 
             } catch(e) {
                 addLog(`❌ Batch ${Math.floor(i/BATCH_SIZE)+1} exception: ${e.message}`, 'error');
             }
         }
         
-        // STEP 5: Insert options
+        // STEP 5: BATCH INSERT OPTIONS (FAST)
         if (allInsertedQuestions.length > 0) {
             updateProgress(insertedQuestions, questionsToInsert.length, '📝 Adding options...');
             
@@ -982,7 +958,7 @@ async function uploadToDatabase() {
                 ];
                 
                 for (let j = 0; j < options.length; j++) {
-                    if (options[j]) { // Only add non-empty options
+                    if (options[j]) {
                         optionsData.push({
                             question_id: qId,
                             option_text: options[j],
@@ -1000,15 +976,13 @@ async function uploadToDatabase() {
                             .from('options')
                             .insert(batch);
                         
-                        if (error) {
-                            addLog(`❌ Options batch error: ${error.message}`, 'error');
-                        } else {
+                        if (!error) {
                             const progress = 70 + Math.round((i + batch.length) / optionsData.length * 30);
                             updateProgress(insertedQuestions, questionsToInsert.length, 
-                                `📝 Added options ${i + 1}-${Math.min(i + batch.length, optionsData.length)}/${optionsData.length}`);
+                                `📝 Options: ${Math.min(i + batch.length, optionsData.length)}/${optionsData.length}`);
                         }
                     } catch(e) {
-                        addLog(`❌ Options batch exception: ${e.message}`, 'error');
+                        addLog(`❌ Options batch error: ${e.message}`, 'error');
                     }
                 }
             }
@@ -1016,11 +990,11 @@ async function uploadToDatabase() {
         
         // STEP 6: Final results
         updateProgress(insertedQuestions, questionsToInsert.length, '✅ Upload complete!');
-        addLog(`📊 Complete: ${insertedQuestions} uploaded, ${questionsToInsert.length - insertedQuestions} failed`, 'success');
-        addLog(`📊 Topics created: ${Object.keys(topicIdMap).length}`, 'success');
+        addLog(`📊 Complete: ${insertedQuestions} questions uploaded`, 'success');
+        addLog(`📊 Topics: ${Object.keys(topicIdMap).length} topics processed`, 'success');
         
-        // Show success message with details
-        const successMsg = `Upload complete!\n✅ Success: ${insertedQuestions} questions added\n❌ Failed: ${questionsToInsert.length - insertedQuestions} questions\n📝 Topics created/found: ${Object.keys(topicIdMap).length}\n📊 Questions with topics: ${questionsWithTopics}\n📊 Questions without topics: ${questionsWithoutTopics}`;
+        // Show success message
+        const successMsg = `✅ Upload complete!\n\n📊 ${insertedQuestions} questions added\n📝 ${Object.keys(topicIdMap).length} topics processed\n📚 Chapter: ${document.getElementById('chapterSelect').selectedOptions[0]?.text || chapterId}`;
         alert(successMsg);
         
         if (insertedQuestions > 0) {
