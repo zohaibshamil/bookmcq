@@ -76,6 +76,15 @@
         .status-error { background: #fee2e2; color: #991b1b; }
         .status-warning { background: #fed7aa; color: #92400e; }
         .status-info { background: #dbeafe; color: #1e40af; }
+        
+        /* Fast upload animation */
+        .fast-upload-pulse {
+            animation: pulse-fast 0.5s ease-in-out;
+        }
+        @keyframes pulse-fast {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -253,7 +262,6 @@
         if (str === 'easy' || str === 'medium' || str === 'hard') {
             return str;
         }
-        console.warn(`Invalid difficulty value: "${value}", defaulting to "medium"`);
         return 'medium';
     }
     
@@ -273,7 +281,6 @@
         if (str === '2') return 2;
         if (str === '3') return 3;
         
-        console.warn(`Invalid correct_answer value: "${answer}", defaulting to A (0)`);
         return 0;
     }
     
@@ -296,15 +303,15 @@
     }
     
     function updateProgress(current, total, statusMessage) {
-        const percent = Math.round((current / total) * 100);
+        const percent = total > 0 ? Math.round((current / total) * 100) : 0;
         const progressFill = document.getElementById('progressFill');
         const progressPercent = document.getElementById('progressPercent');
         const uploadedCount = document.getElementById('uploadedCount');
         const totalCount = document.getElementById('totalCount');
         const statusMessages = document.getElementById('statusMessages');
         
-        if (progressFill) progressFill.style.width = `${percent}%`;
-        if (progressPercent) progressPercent.textContent = `${percent}%`;
+        if (progressFill) progressFill.style.width = `${Math.min(percent, 100)}%`;
+        if (progressPercent) progressPercent.textContent = `${Math.min(percent, 100)}%`;
         if (uploadedCount) uploadedCount.textContent = current;
         if (totalCount) totalCount.textContent = total;
         
@@ -352,7 +359,7 @@
         addLog('✅ Supabase client ready', 'success');
         
         let currentQuestions = [];
-        let topicCache = {}; // Cache for topic IDs by (chapter_id, topic_name)
+        let topicCache = {};
         
         // ============================================
         // 8. LOAD BOOKS
@@ -402,7 +409,6 @@
                     chapterSelect.innerHTML += `<option value="${chapter.id}">${escapeHtml(display)}</option>`;
                 });
                 
-                // Clear topic cache when chapter changes
                 topicCache = {};
             } catch(e) {
                 addLog(`❌ Error: ${e.message}`, 'error');
@@ -414,9 +420,7 @@
         // ============================================
         function downloadTemplate() {
             addLog('Generating CSV template...', 'info');
-            // Added 'topic' column for auto-topic creation
             const headers = ['topic', 'question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'difficulty', 'explanation'];
-            // Example with topic
             const example = ['JavaScript Basics', 'What does \( \text{typeof null} \) return?', 'null', 'undefined', 'object', 'number', 'C', 'easy', '\( \text{typeof null} \) returns "object" due to a historical bug in JavaScript'];
             const csv = [headers.join(','), example.map(cell => `"${safeString(cell).replace(/"/g, '""')}"`).join(',')].join('\n');
             
@@ -431,7 +435,7 @@
         }
         
         // ============================================
-        // 11. GET OR CREATE TOPIC
+        // 11. GET OR CREATE TOPIC - FAST CACHED VERSION
         // ============================================
         async function getOrCreateTopic(chapterId, topicName) {
             if (!topicName || topicName.trim() === '') {
@@ -441,7 +445,6 @@
             const trimmedName = topicName.trim();
             const cacheKey = `${chapterId}_${trimmedName}`;
             
-            // Check cache first
             if (topicCache[cacheKey]) {
                 return topicCache[cacheKey];
             }
@@ -461,7 +464,6 @@
             
             if (existing) {
                 topicCache[cacheKey] = existing.id;
-                addLog(`🔍 Found existing topic: "${trimmedName}" (ID: ${existing.id})`, 'info');
                 return existing.id;
             }
             
@@ -474,7 +476,6 @@
                 .replace(/\s+/g, '-')
                 .replace(/-+/g, '-');
             
-            // Check if slug exists
             const { data: slugCheck } = await supabase
                 .from('subtopics')
                 .select('id')
@@ -504,7 +505,77 @@
         }
         
         // ============================================
-        // 12. PROCESS FILE
+        // 12. BATCH GET OR CREATE TOPICS
+        // ============================================
+        async function batchGetOrCreateTopics(chapterId, uniqueTopics) {
+            const results = {};
+            const topicsToCreate = [];
+            
+            // First, find all existing topics in one query
+            if (uniqueTopics.length > 0) {
+                const { data: existingTopics, error } = await supabase
+                    .from('subtopics')
+                    .select('id, name')
+                    .eq('chapter_id', parseInt(chapterId))
+                    .in('name', uniqueTopics);
+                
+                if (!error && existingTopics) {
+                    existingTopics.forEach(t => {
+                        const key = `${chapterId}_${t.name}`;
+                        results[key] = t.id;
+                        topicCache[key] = t.id;
+                    });
+                }
+                
+                // Find which topics need to be created
+                uniqueTopics.forEach(name => {
+                    const key = `${chapterId}_${name}`;
+                    if (!results[key]) {
+                        topicsToCreate.push(name);
+                    }
+                });
+            }
+            
+            // Batch create all missing topics
+            if (topicsToCreate.length > 0) {
+                const topicsData = topicsToCreate.map(name => {
+                    const slug = name
+                        .toLowerCase()
+                        .trim()
+                        .replace(/&/g, 'and')
+                        .replace(/[^a-z0-9\s-]/g, '')
+                        .replace(/\s+/g, '-')
+                        .replace(/-+/g, '-');
+                    
+                    return {
+                        chapter_id: parseInt(chapterId),
+                        name: name,
+                        slug: `${slug}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`
+                    };
+                });
+                
+                const { data: createdTopics, error } = await supabase
+                    .from('subtopics')
+                    .insert(topicsData)
+                    .select();
+                
+                if (!error && createdTopics) {
+                    createdTopics.forEach(t => {
+                        const key = `${chapterId}_${t.name}`;
+                        results[key] = t.id;
+                        topicCache[key] = t.id;
+                        addLog(`✅ Created new topic: "${t.name}" (ID: ${t.id})`, 'success');
+                    });
+                } else {
+                    addLog(`❌ Error creating topics: ${error?.message}`, 'error');
+                }
+            }
+            
+            return results;
+        }
+        
+        // ============================================
+        // 13. PROCESS FILE
         // ============================================
         function processFile(file) {
             addLog(`Processing: ${file.name}`, 'info');
@@ -519,26 +590,17 @@
                     addLog(`✅ Loaded ${rows.length} questions`, 'success');
                     if (rows.length === 0) return;
                     
-                    // Process each row
                     currentQuestions = rows.map((row, index) => {
                         const processed = {};
                         Object.keys(row).forEach(key => {
                             processed[key] = safeString(row[key]);
                         });
                         
-                        // Convert correct_answer from letter to number
                         const originalAnswer = processed.correct_answer;
                         processed.correct_answer_numeric = convertAnswerToNumber(originalAnswer);
-                        if (originalAnswer !== processed.correct_answer_numeric.toString() && !['0','1','2','3'].includes(originalAnswer)) {
-                            addLog(`⚠️ Row ${index+1}: Converted correct_answer from "${originalAnswer}" to "${processed.correct_answer_numeric}" (${String.fromCharCode(65+processed.correct_answer_numeric)})`, 'warning');
-                        }
                         
-                        // Normalize difficulty
                         const originalDifficulty = processed.difficulty;
                         processed.difficulty = normalizeDifficulty(originalDifficulty);
-                        if (originalDifficulty !== processed.difficulty) {
-                            addLog(`⚠️ Row ${index+1}: Converted difficulty from "${originalDifficulty}" to "${processed.difficulty}"`, 'warning');
-                        }
                         
                         return processed;
                     });
@@ -551,7 +613,7 @@
                     let html = '<h3 class="font-bold text-gray-700 mb-2">📋 Preview (first 3 rows):</h3>';
                     html += '<div class="preview-table"><table>';
                     const headers = Object.keys(currentQuestions[0]).filter(h => h !== 'correct_answer_numeric');
-                    html += '<thead><tr style="background:#f0fdf4;">' + headers.map(h => `<th style="padding:8px; border:1px solid #d1d5db; text-align:left; background:#dcfce7;">${escapeHtml(h)}</th>`).join('') + '</thead><tbody>';
+                    html += '<thead><tr>' + headers.map(h => `<th style="padding:8px; border:1px solid #d1d5db; text-align:left; background:#dcfce7;">${escapeHtml(h)}</th>`).join('') + '</thead><tbody>';
                     for (let i = 0; i < Math.min(3, currentQuestions.length); i++) {
                         html += '<tr>' + headers.map(h => {
                             let value = safeString(currentQuestions[i][h]);
@@ -565,28 +627,18 @@
                     html += '</tbody></table></div>';
                     html += `<p class="text-green-600 text-sm mt-2"><i class="fas fa-check-circle"></i> ✅ ${currentQuestions.length} questions ready to upload</p>`;
                     
-                    // Show conversion warnings
-                    const convertedCount = currentQuestions.filter(q => {
-                        const orig = safeString(q.correct_answer);
-                        return !['0','1','2','3','A','B','C','D','a','b','c','d'].includes(orig) || (orig.length > 1);
-                    }).length;
-                    if (convertedCount > 0) {
-                        html += `<p class="text-yellow-600 text-sm mt-1"><i class="fas fa-exclamation-triangle"></i> ⚠️ ${convertedCount} question(s) had invalid correct_answer values and were fixed.</p>`;
-                    }
-                    
-                    // Check if topic column exists
-                    const hasTopicColumn = currentQuestions.some(q => q.topic && q.topic.trim() !== '');
-                    if (hasTopicColumn) {
-                        html += `<p class="text-blue-600 text-sm mt-1"><i class="fas fa-info-circle"></i> ℹ️ Topics will be auto-created from the CSV data.</p>`;
+                    // Check for topics
+                    const uniqueTopics = [...new Set(currentQuestions.map(q => q.topic).filter(t => t && t.trim() !== ''))];
+                    if (uniqueTopics.length > 0) {
+                        html += `<p class="text-blue-600 text-sm mt-1"><i class="fas fa-info-circle"></i> ℹ️ ${uniqueTopics.length} unique topic(s) will be auto-created: ${uniqueTopics.slice(0, 5).join(', ')}${uniqueTopics.length > 5 ? `... and ${uniqueTopics.length - 5} more` : ''}</p>`;
                     } else {
-                        html += `<p class="text-gray-500 text-sm mt-1"><i class="fas fa-info-circle"></i> ℹ️ No topic column found. Questions will be added without a topic.</p>`;
+                        html += `<p class="text-gray-500 text-sm mt-1"><i class="fas fa-info-circle"></i> ℹ️ No topics found. Questions will be added without a topic.</p>`;
                     }
                     
                     previewDiv.innerHTML = html;
                     previewDiv.style.display = 'block';
                     uploadBtn.style.display = 'inline-flex';
                     
-                    // Show math preview
                     if (currentQuestions.length > 0) {
                         const firstQuestion = currentQuestions[0];
                         const questionText = safeString(firstQuestion.question_text);
@@ -612,7 +664,7 @@
         }
         
         // ============================================
-        // 13. UPLOAD TO DATABASE
+        // 14. FAST BULK UPLOAD TO DATABASE
         // ============================================
         async function uploadToDatabase() {
             const bookId = document.getElementById('bookSelect').value;
@@ -643,134 +695,111 @@
             if (statusMessages) statusMessages.innerHTML = '';
             
             const total = currentQuestions.length;
-            let success = 0;
-            let failed = 0;
-            let topicCount = 0;
-            
             addLog(`📤 Uploading ${total} questions to chapter ${chapterId}...`, 'info');
-            updateProgress(0, total, 'Preparing questions for upload...');
+            updateProgress(0, total, '🚀 Starting fast upload...');
             
-            // Prepare data
-            const questionsToInsert = [];
-            const optionsToInsert = [];
-            
-            for (let i = 0; i < currentQuestions.length; i++) {
-                const q = currentQuestions[i];
-                const questionText = safeString(q.question_text);
+            try {
+                // STEP 1: Get all unique topics and batch create them
+                const uniqueTopics = [...new Set(currentQuestions.map(q => q.topic).filter(t => t && t.trim() !== ''))];
+                let topicMap = {};
                 
-                if (!questionText) {
-                    failed++;
-                    continue;
+                if (uniqueTopics.length > 0) {
+                    updateProgress(0, total, `📝 Creating ${uniqueTopics.length} topics...`);
+                    topicMap = await batchGetOrCreateTopics(chapterId, uniqueTopics);
                 }
                 
-                // Get or create topic
-                let topicId = null;
-                if (q.topic && q.topic.trim() !== '') {
-                    try {
-                        topicId = await getOrCreateTopic(chapterId, q.topic);
-                        if (topicId) topicCount++;
-                    } catch(e) {
-                        addLog(`❌ Error with topic "${q.topic}": ${e.message}`, 'error');
-                    }
-                }
+                // STEP 2: Prepare all questions data
+                updateProgress(0, total, '📦 Preparing questions data...');
+                const questionsToInsert = [];
+                const optionsToInsert = [];
                 
-                const tempId = Date.now() + i + Math.random() * 1000;
-                
-                const questionData = {
-                    chapter_id: parseInt(chapterId),
-                    question_text: questionText,
-                    difficulty: normalizeDifficulty(q.difficulty),
-                    correct_answer: q.correct_answer_numeric !== undefined ? q.correct_answer_numeric : convertAnswerToNumber(q.correct_answer),
-                    explanation: safeString(q.explanation) || ''
-                };
-                
-                if (topicId) {
-                    questionData.topic_id = topicId;
-                }
-                
-                questionsToInsert.push(questionData);
-                
-                const options = [
-                    safeString(q.option_a),
-                    safeString(q.option_b),
-                    safeString(q.option_c),
-                    safeString(q.option_d)
-                ];
-                
-                for (let j = 0; j < options.length; j++) {
-                    optionsToInsert.push({
-                        temp_id: tempId,
-                        option_text: options[j],
-                        option_index: j
-                    });
-                }
-                
-                success++;
-                
-                if (i % 50 === 0 || i === currentQuestions.length - 1) {
-                    updateProgress(i + 1, total, `📝 Preparing ${i + 1}/${total} questions...`);
-                }
-            }
-            
-            // Batch insert questions
-            const BATCH_SIZE = 200;
-            let insertedQuestions = 0;
-            
-            updateProgress(0, questionsToInsert.length, '💾 Inserting questions in batches...');
-            
-            for (let i = 0; i < questionsToInsert.length; i += BATCH_SIZE) {
-                const batch = questionsToInsert.slice(i, i + BATCH_SIZE);
-                
-                try {
-                    const { data: inserted, error } = await supabase
-                        .from('questions')
-                        .insert(batch)
-                        .select();
+                for (let i = 0; i < currentQuestions.length; i++) {
+                    const q = currentQuestions[i];
+                    const questionText = safeString(q.question_text);
                     
-                    if (error) throw error;
+                    if (!questionText) continue;
                     
-                    insertedQuestions += inserted.length;
+                    const questionData = {
+                        chapter_id: parseInt(chapterId),
+                        question_text: questionText,
+                        difficulty: normalizeDifficulty(q.difficulty),
+                        correct_answer: q.correct_answer_numeric !== undefined ? q.correct_answer_numeric : convertAnswerToNumber(q.correct_answer),
+                        explanation: safeString(q.explanation) || ''
+                    };
                     
-                    const progress = ((i + BATCH_SIZE) / questionsToInsert.length) * 70;
-                    updateProgress(insertedQuestions, questionsToInsert.length, 
-                        `✅ Inserted ${insertedQuestions}/${questionsToInsert.length} questions`);
-                    
-                } catch(e) {
-                    addLog(`❌ Batch ${Math.floor(i/BATCH_SIZE)+1} failed: ${e.message}`, 'error');
-                }
-            }
-            
-            // Insert options
-            if (insertedQuestions > 0) {
-                updateProgress(insertedQuestions, questionsToInsert.length, '📝 Adding options...');
-                
-                const { data: actualQuestions, error: fetchError } = await supabase
-                    .from('questions')
-                    .select('id')
-                    .eq('chapter_id', parseInt(chapterId))
-                    .order('id', { ascending: false })
-                    .limit(insertedQuestions);
-                
-                if (!fetchError && actualQuestions) {
-                    const questionIds = actualQuestions.reverse().map(q => q.id);
-                    
-                    const finalOptions = [];
-                    for (let i = 0; i < questionIds.length; i++) {
-                        const qId = questionIds[i];
-                        const baseIndex = i * 4;
-                        for (let j = 0; j < 4; j++) {
-                            if (optionsToInsert[baseIndex + j]) {
-                                finalOptions.push({
-                                    question_id: qId,
-                                    option_text: optionsToInsert[baseIndex + j].option_text,
-                                    option_index: j
-                                });
-                            }
+                    // Add topic_id if topic exists
+                    if (q.topic && q.topic.trim() !== '') {
+                        const key = `${chapterId}_${q.topic.trim()}`;
+                        if (topicMap[key]) {
+                            questionData.topic_id = topicMap[key];
                         }
                     }
                     
-                    for (let i = 0; i < finalOptions.length; i += BATCH_SIZE) {
-                        const batch = finalOptions.slice(i, i + BATCH_SIZE);
+                    questionsToInsert.push(questionData);
+                }
+                
+                // STEP 3: Batch insert questions (500 at a time for speed)
+                const BATCH_SIZE = 500;
+                let insertedQuestions = 0;
+                const allInsertedQuestions = [];
+                
+                updateProgress(0, questionsToInsert.length, '💾 Inserting questions in batches...');
+                
+                for (let i = 0; i < questionsToInsert.length; i += BATCH_SIZE) {
+                    const batch = questionsToInsert.slice(i, i + BATCH_SIZE);
+                    
+                    try {
+                        const { data: inserted, error } = await supabase
+                            .from('questions')
+                            .insert(batch)
+                            .select('id');
+                        
+                        if (error) throw error;
+                        
+                        if (inserted) {
+                            allInsertedQuestions.push(...inserted);
+                            insertedQuestions += inserted.length;
+                        }
+                        
+                        const progress = Math.round((insertedQuestions / questionsToInsert.length) * 70);
+                        updateProgress(insertedQuestions, questionsToInsert.length, 
+                            `✅ Inserted ${insertedQuestions}/${questionsToInsert.length} questions`);
+                        
+                    } catch(e) {
+                        addLog(`❌ Batch ${Math.floor(i/BATCH_SIZE)+1} failed: ${e.message}`, 'error');
+                    }
+                }
+                
+                // STEP 4: Batch insert options
+                if (allInsertedQuestions.length > 0) {
+                    updateProgress(insertedQuestions, questionsToInsert.length, '📝 Adding options...');
+                    
+                    // Prepare options for all inserted questions
+                    const optionsData = [];
+                    for (let i = 0; i < allInsertedQuestions.length; i++) {
+                        const qId = allInsertedQuestions[i].id;
+                        const q = currentQuestions[i];
+                        if (!q) continue;
+                        
+                        const options = [
+                            safeString(q.option_a),
+                            safeString(q.option_b),
+                            safeString(q.option_c),
+                            safeString(q.option_d)
+                        ];
+                        
+                        for (let j = 0; j < options.length; j++) {
+                            optionsData.push({
+                                question_id: qId,
+                                option_text: options[j],
+                                option_index: j
+                            });
+                        }
+                    }
+                    
+                    // Insert options in batches
+                    for (let i = 0; i < optionsData.length; i += BATCH_SIZE) {
+                        const batch = optionsData.slice(i, i + BATCH_SIZE);
                         try {
                             const { error } = await supabase
                                 .from('options')
@@ -778,39 +807,44 @@
                             
                             if (error) throw error;
                             
-                            updateProgress(i + batch.length, finalOptions.length, 
-                                `📝 Adding options ${i + 1}-${Math.min(i + batch.length, finalOptions.length)}/${finalOptions.length}`);
+                            const progress = 70 + Math.round((i + batch.length) / optionsData.length * 30);
+                            updateProgress(insertedQuestions, questionsToInsert.length, 
+                                `📝 Added options ${i + 1}-${Math.min(i + batch.length, optionsData.length)}/${optionsData.length}`);
                             
                         } catch(e) {
                             addLog(`❌ Options batch failed: ${e.message}`, 'error');
                         }
                     }
                 }
-            }
-            
-            // Final results
-            const finalMessage = `📊 Upload Complete! Success: ${insertedQuestions}, Failed: ${total - insertedQuestions}`;
-            updateProgress(insertedQuestions, total, finalMessage);
-            addLog(`📊 Complete: ${insertedQuestions} uploaded, ${total - insertedQuestions} failed`, insertedQuestions > 0 ? 'success' : 'error');
-            addLog(`📊 Topics created/linked: ${topicCount}`, 'info');
-            
-            alert(`Upload complete!\n✅ Success: ${insertedQuestions} questions added\n❌ Failed: ${total - insertedQuestions} questions\n📝 Topics created/linked: ${topicCount}\n\nNote: Topics were auto-created from the CSV data.`);
-            
-            if (insertedQuestions > 0) {
-                document.getElementById('previewDiv').style.display = 'none';
-                document.getElementById('uploadBtn').style.display = 'none';
-                document.getElementById('mathPreviewDiv').classList.add('hidden');
-                document.getElementById('fileInput').value = '';
-                currentQuestions = [];
+                
+                // STEP 5: Final results
+                updateProgress(insertedQuestions, questionsToInsert.length, '✅ Upload complete!');
+                addLog(`📊 Complete: ${insertedQuestions} uploaded, ${questionsToInsert.length - insertedQuestions} failed`, 'success');
+                
+                // Show success message with details
+                const successMsg = `Upload complete!\n✅ Success: ${insertedQuestions} questions added\n❌ Failed: ${questionsToInsert.length - insertedQuestions} questions\n📝 Topics created/linked: ${Object.keys(topicMap).length}`;
+                alert(successMsg);
+                
+                if (insertedQuestions > 0) {
+                    document.getElementById('previewDiv').style.display = 'none';
+                    document.getElementById('uploadBtn').style.display = 'none';
+                    document.getElementById('mathPreviewDiv').classList.add('hidden');
+                    document.getElementById('fileInput').value = '';
+                    currentQuestions = [];
+                }
+                
+            } catch(e) {
+                addLog(`❌ Upload error: ${e.message}`, 'error');
+                alert('Upload failed: ' + e.message);
             }
             
             setTimeout(() => {
                 progressSection.style.display = 'none';
-            }, 3000);
+            }, 2000);
         }
         
         // ============================================
-        // 14. SETUP UPLOAD ZONE
+        // 15. SETUP UPLOAD ZONE
         // ============================================
         function setupUploadZone() {
             const uploadZone = document.getElementById('uploadZone');
@@ -846,14 +880,14 @@
         }
         
         // ============================================
-        // 15. EVENT LISTENERS
+        // 16. EVENT LISTENERS
         // ============================================
         document.getElementById('bookSelect').addEventListener('change', loadChapters);
         document.getElementById('downloadBtn').addEventListener('click', downloadTemplate);
         document.getElementById('uploadBtn').addEventListener('click', uploadToDatabase);
         
         // ============================================
-        // 16. INIT
+        // 17. INIT
         // ============================================
         setupUploadZone();
         loadBooks();
