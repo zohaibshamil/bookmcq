@@ -349,6 +349,66 @@
             border-radius: 4px;
             margin: 4px 0;
         }
+
+        /* FIX 1: Multi-select topic styles */
+        .topic-multi-select {
+            width: 100%;
+            padding: 8px 4px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: white;
+            min-height: 60px;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+        .topic-multi-select option {
+            padding: 4px 8px;
+            cursor: pointer;
+        }
+        .topic-multi-select option:checked {
+            background: #8b5cf6;
+            color: white;
+        }
+        .topic-multi-select-container {
+            position: relative;
+        }
+        .topic-multi-select-container .selected-count {
+            font-size: 11px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+        .topic-select-all-btn {
+            font-size: 11px;
+            color: #8b5cf6;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 2px 8px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        .topic-select-all-btn:hover {
+            background: #f3e8ff;
+        }
+        .topic-clear-btn {
+            font-size: 11px;
+            color: #ef4444;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 2px 8px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        .topic-clear-btn:hover {
+            background: #fee2e2;
+        }
+        .topic-controls {
+            display: flex;
+            gap: 8px;
+            margin-top: 4px;
+            flex-wrap: wrap;
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -456,7 +516,7 @@
                 <div id="booksList"><div class="skeleton h-12 w-full mb-2"></div><div class="skeleton h-12 w-full mb-2"></div><div class="skeleton h-12 w-full"></div></div>
             </div>
 
-            <!-- Chapters Tab - FIX 1: Show chapters only after book selection -->
+            <!-- Chapters Tab -->
             <div id="chaptersTab" class="hidden">
                 <h2 class="text-xl font-bold mb-4">📖 Chapters</h2>
                 <div class="mb-4">
@@ -476,7 +536,7 @@
                 <div id="chaptersList"><p class="text-gray-500">Select a book to view chapters</p></div>
             </div>
 
-            <!-- Sub-Topics Tab - FIX 2: Show topics only after book AND chapter selection -->
+            <!-- Sub-Topics Tab -->
             <div id="subtopicsTab" class="hidden">
                 <h2 class="text-xl font-bold mb-4">📝 Topics (Sub-topics inside Chapters)</h2>
                 <p class="text-sm text-gray-600 mb-4">Topics are sub-categories inside chapters. For example: "Introduction to Limits" inside "Chapter 1: Limits & Continuity"</p>
@@ -534,7 +594,7 @@
                 <p class="text-sm text-gray-500 mt-4"><i class="fas fa-info-circle"></i> Categories are used to organize books. You can add, edit, or delete categories as needed.</p>
             </div>
 
-            <!-- Questions Tab - FIX 3: Show questions only after book, chapter, and topic selection -->
+            <!-- Questions Tab - FIX 1: Multi-select topics -->
             <div id="questionsTab" class="hidden">
                 <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
                     <h2 class="text-xl font-bold">Questions</h2>
@@ -553,9 +613,16 @@
                     <select id="filterChapterId" class="p-2 border rounded-lg" disabled>
                         <option value="">Select a book first</option>
                     </select>
-                    <select id="filterTopicId" class="p-2 border rounded-lg" disabled>
-                        <option value="">Select a chapter first</option>
-                    </select>
+                    <div class="topic-multi-select-container">
+                        <select id="filterTopicId" class="topic-multi-select" multiple disabled>
+                            <option value="">Select a chapter first</option>
+                        </select>
+                        <div class="topic-controls">
+                            <button id="topicSelectAllBtn" class="topic-select-all-btn" disabled>Select All</button>
+                            <button id="topicClearAllBtn" class="topic-clear-btn" disabled>Clear All</button>
+                            <span id="topicSelectedCount" class="selected-count">0 topics selected</span>
+                        </div>
+                    </div>
                     <select id="filterDifficulty" class="p-2 border rounded-lg">
                         <option value="">All Difficulties</option>
                         <option value="easy">Easy</option>
@@ -1082,7 +1149,7 @@
     let currentPage = 1;
     const PAGE_SIZE = 15;
     let totalQuestions = 0;
-    let currentFilters = { bookId: '', chapterId: '', topicId: '', difficulty: '' };
+    let currentFilters = { bookId: '', chapterId: '', topicIds: [], difficulty: '' };
     let currentChapterFilter = '';
     let currentSubTopicFilter = { bookId: '', chapterId: '' };
     
@@ -1913,7 +1980,7 @@
         }
     }
 
-    // ============ CACHED CHAPTERS - FIX 1 ============
+    // ============ CACHED CHAPTERS ============
     async function loadChapterFilterBooksCached() {
         if (booksCache !== null) {
             renderChapterFilterBooks(booksCache);
@@ -1941,7 +2008,6 @@
         const container = document.getElementById('chaptersList');
         const selectedBookId = document.getElementById('chapterFilterBookId').value;
         
-        // FIX 1: Show message if no book selected
         if (!selectedBookId || selectedBookId === '') {
             container.innerHTML = '<p class="text-gray-500">Select a book to view chapters</p>';
             return;
@@ -1986,7 +2052,6 @@
     }
     
     async function applyChapterFilter() {
-        // FIX 1: When book selection changes, reload chapters
         const bookId = document.getElementById('chapterFilterBookId').value;
         currentChapterFilter = bookId;
         await loadChaptersCached();
@@ -2134,9 +2199,8 @@
         }
     }
 
-    // ============ SUB-TOPICS - FIX 2 ============
+    // ============ SUB-TOPICS ============
     
-    // Load books for filter
     async function loadSubTopicFilterBooks() {
         if (booksCache !== null) {
             const select = document.getElementById('subTopicFilterBookId');
@@ -2158,7 +2222,6 @@
         }
     }
 
-    // Load chapters for filter - FIX 2: Enable/disable based on book selection
     async function loadSubTopicChapters() {
         const bookId = document.getElementById('subTopicFilterBookId').value;
         const chapterSelect = document.getElementById('subTopicFilterChapterId');
@@ -2188,17 +2251,14 @@
             chapterSelect.innerHTML = '<option value="">No chapters found</option>';
         }
         
-        // Reset topics when book changes
         topicsContainer.innerHTML = '<p class="text-gray-500">Select a chapter to view topics</p>';
     }
 
-    // Load topics list - FIX 2: Only show when both book AND chapter are selected
     async function loadSubTopicsCached() {
         const container = document.getElementById('subTopicsList');
         const bookFilter = document.getElementById('subTopicFilterBookId')?.value;
         const chapterFilter = document.getElementById('subTopicFilterChapterId')?.value;
         
-        // FIX 2: Require both book and chapter selection
         if (!bookFilter || bookFilter === '' || !chapterFilter || chapterFilter === '') {
             container.innerHTML = '<p class="text-gray-500">Select a book and chapter to view topics</p>';
             return;
@@ -2256,7 +2316,6 @@
         }
     };
 
-    // ===== LOAD BOOKS FOR ADD TOPIC FORM =====
     async function loadBookSelectForSubTopic() {
         if (booksCache !== null) {
             renderBookSelectForSubTopic(booksCache);
@@ -2280,7 +2339,6 @@
         }
     }
 
-    // ===== LOAD CHAPTERS FOR ADD TOPIC FORM =====
     async function loadSubTopicChaptersForForm() {
         const bookId = document.getElementById('subTopicBookId').value;
         const chapterSelect = document.getElementById('subTopicChapterId');
@@ -2306,7 +2364,6 @@
         }
     }
 
-    // ===== ADD TOPIC =====
     async function addSubTopic() {
         const bookId = document.getElementById('subTopicBookId').value;
         const chapterId = document.getElementById('subTopicChapterId').value;
@@ -2359,7 +2416,6 @@
     };
 
     async function loadBookAndChapterForEditSubTopic(selectedChapterId = null) {
-        // Load books
         const { data: books } = await _supabase.from('books').select('id, title');
         if (books) {
             const bookSelect = document.getElementById('editSubTopicBookId');
@@ -2369,7 +2425,6 @@
             });
         }
         
-        // Load chapters for the selected book
         const bookId = document.getElementById('editSubTopicBookId')?.value;
         if (bookId) {
             const { data: chapters } = await _supabase.from('chapters').select('id, name, chapter_number').eq('book_id', parseInt(bookId)).order('chapter_number', { ascending: true });
@@ -2419,7 +2474,7 @@
         }
     }
 
-    // ============ CACHED QUESTIONS HELPERS - FIX 3 ============
+    // ============ CACHED QUESTIONS HELPERS - FIX 1: Multi-select topics ============
     async function loadBookSelectsCached() {
         if (booksCache !== null) {
             renderBookSelects(booksCache);
@@ -2480,7 +2535,6 @@
                 chapterSelect.innerHTML += `<option value="${chapter.id}">${escapeHtml(display)}</option>`;
             });
         }
-        // Reset topic dropdown
         const topicSelect = document.getElementById('questionTopicId');
         topicSelect.innerHTML = '<option value="">Select Topic</option>';
         topicSelect.disabled = true;
@@ -2508,7 +2562,7 @@
         }
     }
 
-    // ============ CACHED FILTERS - FIX 3 ============
+    // ============ CACHED FILTERS - FIX 1: Multi-select topics ============
     async function loadFilterBooksCached() {
         if (booksCache !== null) {
             renderFilterBooks(booksCache);
@@ -2542,9 +2596,8 @@
             chapterSelect.disabled = true;
             topicSelect.innerHTML = '<option value="">Select a chapter first</option>';
             topicSelect.disabled = true;
-            currentFilters.chapterId = '';
-            currentFilters.topicId = '';
             document.getElementById('questionsList').innerHTML = '<p class="text-gray-500">Select filters to view questions</p>';
+            updateTopicCount();
             return;
         }
         
@@ -2577,29 +2630,32 @@
                 chapterSelect.innerHTML += `<option value="${chapter.id}">${escapeHtml(display)}</option>`;
             });
         }
-        // Reset topic dropdown
         const topicSelect = document.getElementById('filterTopicId');
         topicSelect.innerHTML = '<option value="">Select a chapter first</option>';
         topicSelect.disabled = true;
-        currentFilters.chapterId = '';
-        currentFilters.topicId = '';
-        chapterSelect.value = '';
+        document.getElementById('questionsList').innerHTML = '<p class="text-gray-500">Select a chapter to view topics</p>';
+        updateTopicCount();
     }
     
+    // FIX 1: Load topics for multi-select filter
     async function loadFilterTopics() {
         const chapterId = document.getElementById('filterChapterId').value;
         const topicSelect = document.getElementById('filterTopicId');
+        const selectAllBtn = document.getElementById('topicSelectAllBtn');
+        const clearAllBtn = document.getElementById('topicClearAllBtn');
         
         if (!chapterId || chapterId === '') {
             topicSelect.innerHTML = '<option value="">Select a chapter first</option>';
             topicSelect.disabled = true;
-            currentFilters.topicId = '';
+            selectAllBtn.disabled = true;
+            clearAllBtn.disabled = true;
             document.getElementById('questionsList').innerHTML = '<p class="text-gray-500">Select a chapter to view topics</p>';
+            updateTopicCount();
             return;
         }
         
         topicSelect.disabled = false;
-        topicSelect.innerHTML = '<option value="">-- Select a Topic --</option>';
+        topicSelect.innerHTML = '';
         
         const { data } = await _supabase.from('subtopics')
             .select('id, name')
@@ -2608,22 +2664,75 @@
         
         if (data && data.length > 0) {
             data.forEach(topic => {
-                topicSelect.innerHTML += `<option value="${topic.id}">${escapeHtml(topic.name)}</option>`;
+                const option = document.createElement('option');
+                option.value = topic.id;
+                option.textContent = topic.name;
+                topicSelect.appendChild(option);
             });
+            selectAllBtn.disabled = false;
+            clearAllBtn.disabled = false;
+        } else {
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'No topics found';
+            topicSelect.appendChild(option);
+            selectAllBtn.disabled = true;
+            clearAllBtn.disabled = true;
         }
-        currentFilters.topicId = '';
-        topicSelect.value = '';
+        
+        // Clear any previous selections
+        for (let opt of topicSelect.options) {
+            opt.selected = false;
+        }
+        updateTopicCount();
+        
+        // Load questions after topics are loaded
+        await applyFilters();
+    }
+    
+    // FIX 1: Update topic count display
+    function updateTopicCount() {
+        const topicSelect = document.getElementById('filterTopicId');
+        const countSpan = document.getElementById('topicSelectedCount');
+        if (!topicSelect) return;
+        const selected = Array.from(topicSelect.selectedOptions).filter(opt => opt.value !== '');
+        const count = selected.length;
+        if (countSpan) {
+            countSpan.textContent = count === 0 ? '0 topics selected' : `${count} topic${count > 1 ? 's' : ''} selected`;
+        }
+    }
+    
+    // FIX 1: Select all topics
+    function selectAllTopics() {
+        const topicSelect = document.getElementById('filterTopicId');
+        for (let opt of topicSelect.options) {
+            if (opt.value !== '') {
+                opt.selected = true;
+            }
+        }
+        updateTopicCount();
+        applyFilters();
+    }
+    
+    // FIX 1: Clear all topics
+    function clearAllTopics() {
+        const topicSelect = document.getElementById('filterTopicId');
+        for (let opt of topicSelect.options) {
+            opt.selected = false;
+        }
+        updateTopicCount();
+        applyFilters();
     }
 
-    // ============ QUESTIONS - FIX 3 ============
+    // ============ QUESTIONS - FIX 1: Multi-select topics ============
     async function loadQuestions() {
         const container = document.getElementById('questionsList');
         const bookId = document.getElementById('filterBookId').value;
         const chapterId = document.getElementById('filterChapterId').value;
-        const topicId = document.getElementById('filterTopicId').value;
+        const topicSelect = document.getElementById('filterTopicId');
+        const selectedTopics = Array.from(topicSelect.selectedOptions).filter(opt => opt.value !== '').map(opt => opt.value);
         const difficulty = document.getElementById('filterDifficulty').value;
         
-        // FIX 3: Require at least book selection
         if (!bookId || bookId === '') {
             container.innerHTML = '<p class="text-gray-500">Select a book to view questions</p>';
             document.getElementById('pageInfo').textContent = 'Page 1 of 1';
@@ -2633,9 +2742,17 @@
             return;
         }
         
-        // FIX 3: If chapter selected, require topic selection
-        if (chapterId && chapterId !== '' && (!topicId || topicId === '')) {
-            container.innerHTML = '<p class="text-gray-500">Select a topic to view questions</p>';
+        if (chapterId && chapterId !== '' && selectedTopics.length === 0) {
+            container.innerHTML = '<p class="text-gray-500">Select at least one topic to view questions</p>';
+            document.getElementById('pageInfo').textContent = 'Page 1 of 1';
+            document.getElementById('prevPageBtn').disabled = true;
+            document.getElementById('nextPageBtn').disabled = true;
+            totalQuestions = 0;
+            return;
+        }
+        
+        if (!chapterId || chapterId === '') {
+            container.innerHTML = '<p class="text-gray-500">Select a chapter to view questions</p>';
             document.getElementById('pageInfo').textContent = 'Page 1 of 1';
             document.getElementById('prevPageBtn').disabled = true;
             document.getElementById('nextPageBtn').disabled = true;
@@ -2645,7 +2762,6 @@
         
         container.innerHTML = '<div class="skeleton h-24 rounded-lg mb-2"></div><div class="skeleton h-24 rounded-lg"></div>';
         
-        // Build query with proper joins
         let query = _supabase
             .from('questions')
             .select(`
@@ -2666,7 +2782,6 @@
                 )
             `, { count: 'exact' });
         
-        // Apply filters
         if (bookId && bookId !== '') {
             query = query.eq('chapters.book_id', parseInt(bookId));
         }
@@ -2675,8 +2790,9 @@
             query = query.eq('chapter_id', parseInt(chapterId));
         }
         
-        if (topicId && topicId !== '') {
-            query = query.eq('topic_id', parseInt(topicId));
+        // FIX 1: Filter by multiple topics
+        if (selectedTopics.length > 0) {
+            query = query.in('topic_id', selectedTopics.map(id => parseInt(id)));
         }
         
         if (difficulty && difficulty !== '') {
@@ -2738,9 +2854,13 @@
     }
     
     async function applyFilters() {
+        // FIX 1: Get selected topic IDs
+        const topicSelect = document.getElementById('filterTopicId');
+        const selectedTopics = Array.from(topicSelect.selectedOptions).filter(opt => opt.value !== '').map(opt => opt.value);
+        
         currentFilters.bookId = document.getElementById('filterBookId').value;
         currentFilters.chapterId = document.getElementById('filterChapterId').value;
-        currentFilters.topicId = document.getElementById('filterTopicId').value;
+        currentFilters.topicIds = selectedTopics;
         currentFilters.difficulty = document.getElementById('filterDifficulty').value;
         currentPage = 1;
         await loadQuestions();
@@ -2785,7 +2905,8 @@
         
         const bookId = document.getElementById('filterBookId').value;
         const chapterId = document.getElementById('filterChapterId').value;
-        const topicId = document.getElementById('filterTopicId').value;
+        const topicSelect = document.getElementById('filterTopicId');
+        const selectedTopics = Array.from(topicSelect.selectedOptions).filter(opt => opt.value !== '').map(opt => opt.value);
         const difficulty = document.getElementById('filterDifficulty').value;
         
         downloadBtn.disabled = true;
@@ -2821,8 +2942,8 @@
             if (chapterId && chapterId !== '') {
                 query = query.eq('chapter_id', parseInt(chapterId));
             }
-            if (topicId && topicId !== '') {
-                query = query.eq('topic_id', parseInt(topicId));
+            if (selectedTopics.length > 0) {
+                query = query.in('topic_id', selectedTopics.map(id => parseInt(id)));
             }
             if (difficulty && difficulty !== '') {
                 query = query.eq('difficulty', difficulty);
@@ -2904,9 +3025,16 @@
                 const chapterName = document.getElementById('filterChapterId').options[document.getElementById('filterChapterId').selectedIndex]?.text || '';
                 if (chapterName && chapterName !== '-- Select a Chapter --') filename += `_${chapterName.replace(/\s+/g, '_')}`;
             }
-            if (topicId) {
-                const topicName = document.getElementById('filterTopicId').options[document.getElementById('filterTopicId').selectedIndex]?.text || '';
-                if (topicName && topicName !== '-- Select a Topic --') filename += `_${topicName.replace(/\s+/g, '_')}`;
+            if (selectedTopics.length > 0 && selectedTopics.length < 5) {
+                const topicNames = selectedTopics.map(id => {
+                    const opt = document.getElementById('filterTopicId').querySelector(`option[value="${id}"]`);
+                    return opt ? opt.textContent : id;
+                });
+                if (topicNames.length === 1) {
+                    filename += `_${topicNames[0].replace(/\s+/g, '_')}`;
+                } else {
+                    filename += `_${topicNames.length}_topics`;
+                }
             }
             filename += `_${new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-')}.csv`;
             
@@ -3363,7 +3491,7 @@
         }
     }
 
-    // ============ SITEMAP GENERATOR - FIX 5 ============
+    // ============ SITEMAP GENERATOR - FIX 3: Topics under chapters ============
     async function generateSitemap() {
         const statusEl = document.getElementById('sitemapStatus');
         const countEl = document.getElementById('sitemapCount');
@@ -3388,7 +3516,6 @@
         logContent.innerHTML += '<div>📦 Fetching books, chapters, and topics...</div>';
         
         try {
-            // Fetch books
             const { data: books, error: booksError } = await _supabase
                 .from('books')
                 .select('id, title, slug, created_at')
@@ -3396,7 +3523,6 @@
             
             if (booksError) throw booksError;
             
-            // Fetch chapters with their book slugs
             const { data: chapters, error: chaptersError } = await _supabase
                 .from('chapters')
                 .select('id, name, slug, book_id, chapter_number, created_at, books(title, slug)')
@@ -3405,10 +3531,9 @@
             
             if (chaptersError) throw chaptersError;
             
-            // Fetch topics with chapter and book info - FIX 5: Get chapter info for topics
             const { data: topics, error: topicsError } = await _supabase
                 .from('subtopics')
-                .select('id, name, slug, chapter_id, created_at, chapters(book_id, name, chapter_number, books(title, slug))')
+                .select('id, name, slug, chapter_id, created_at, chapters(book_id, name, chapter_number, slug, books(title, slug))')
                 .order('chapter_id')
                 .order('name');
             
@@ -3418,7 +3543,6 @@
             statusEl.textContent = '📄 Generating sitemap URLs...';
             progressBar.style.width = '30%';
             
-            // Static pages
             const staticPages = [
                 { url: '/', priority: '1.0', changefreq: 'daily' },
                 { url: '/quiz', priority: '0.9', changefreq: 'weekly' },
@@ -3427,10 +3551,8 @@
                 { url: '/privacy', priority: '0.5', changefreq: 'yearly' }
             ];
             
-            // Build sitemap URLs
             const urls = [];
             
-            // Add static pages
             staticPages.forEach(page => {
                 urls.push({
                     loc: `https://www.bookmcq.com${page.url}`,
@@ -3440,7 +3562,6 @@
                 });
             });
             
-            // Group chapters by book
             const chaptersByBook = {};
             chapters.forEach(chapter => {
                 if (chapter.books && chapter.books.slug) {
@@ -3452,20 +3573,23 @@
                 }
             });
             
-            // Group topics by book slug - FIX 5: Also store chapter info
-            const topicsByBook = {};
+            // FIX 3: Build topics by book and chapter for sitemap
+            const topicsByBookAndChapter = {};
             topics.forEach(topic => {
                 if (topic.chapters && topic.chapters.books && topic.chapters.books.slug) {
                     const bookSlug = topic.chapters.books.slug;
-                    if (!topicsByBook[bookSlug]) {
-                        topicsByBook[bookSlug] = [];
+                    const chapterSlug = topic.chapters.slug;
+                    if (!topicsByBookAndChapter[bookSlug]) {
+                        topicsByBookAndChapter[bookSlug] = {};
                     }
-                    // Store topic with its chapter info
-                    topicsByBook[bookSlug].push({
+                    if (!topicsByBookAndChapter[bookSlug][chapterSlug]) {
+                        topicsByBookAndChapter[bookSlug][chapterSlug] = [];
+                    }
+                    topicsByBookAndChapter[bookSlug][chapterSlug].push({
                         ...topic,
                         chapterName: topic.chapters.name,
                         chapterNumber: topic.chapters.chapter_number,
-                        chapterSlug: topic.chapters.slug
+                        chapterSlug: chapterSlug
                     });
                 }
             });
@@ -3484,7 +3608,6 @@
                 });
             });
             
-            // Add chapter pages
             const sortedBookSlugs = Object.keys(chaptersByBook).sort();
             sortedBookSlugs.forEach(bookSlug => {
                 const bookChapters = chaptersByBook[bookSlug];
@@ -3509,43 +3632,40 @@
                 });
             });
             
-            // Add topic pages - FIX 5: Topics are under their specific chapter
+            // FIX 3: Add topics under their specific chapters in sitemap
             sortedBookSlugs.forEach(bookSlug => {
-                const bookTopics = topicsByBook[bookSlug] || [];
-                // Sort topics by chapter number then by name
-                bookTopics.sort((a, b) => {
-                    const aNum = a.chapterNumber || 999;
-                    const bNum = b.chapterNumber || 999;
-                    if (aNum !== bNum) return aNum - bNum;
-                    return a.name.localeCompare(b.name);
-                });
+                const bookTopicsByChapter = topicsByBookAndChapter[bookSlug] || {};
+                const bookChapters = chaptersByBook[bookSlug] || [];
                 
-                bookTopics.forEach(topic => {
-                    if (topic.slug && topic.chapterSlug) {
-                        // FIX 5: Topic URL is under the chapter, not directly under book
-                        // URL: /books/{bookSlug}/{chapterSlug}/topics/{topicSlug}.html
-                        urls.push({
-                            loc: `https://www.bookmcq.com/books/${bookSlug}/${topic.chapterSlug}/topics/${topic.slug}.html`,
-                            priority: '0.7',
-                            changefreq: 'weekly',
-                            lastmod: topic.created_at ? new Date(topic.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-                            bookSlug: bookSlug,
-                            chapterSlug: topic.chapterSlug,
-                            chapterName: topic.chapterName,
-                            topicName: topic.name,
-                            isTopic: true
+                bookChapters.forEach(chapter => {
+                    if (chapter.slug) {
+                        const chapterTopics = bookTopicsByChapter[chapter.slug] || [];
+                        chapterTopics.sort((a, b) => a.name.localeCompare(b.name));
+                        
+                        chapterTopics.forEach(topic => {
+                            if (topic.slug) {
+                                urls.push({
+                                    loc: `https://www.bookmcq.com/books/${bookSlug}/${chapter.slug}/topics/${topic.slug}.html`,
+                                    priority: '0.7',
+                                    changefreq: 'weekly',
+                                    lastmod: topic.created_at ? new Date(topic.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                                    bookSlug: bookSlug,
+                                    chapterSlug: chapter.slug,
+                                    chapterName: chapter.name,
+                                    topicName: topic.name,
+                                    isTopic: true
+                                });
+                            }
                         });
                     }
                 });
             });
             
-            // Update stats
             document.getElementById('sitemapStaticCount').textContent = staticPages.length;
             document.getElementById('sitemapBookCount').textContent = books.length;
             document.getElementById('sitemapChapterCount').textContent = chapters.length;
             document.getElementById('sitemapTotalCount').textContent = urls.length;
             
-            // Build XML - FIX 5: Group topics by chapter in comments
             let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
@@ -3599,9 +3719,9 @@
     <priority>0.8</priority>
   </url>\n`;
                             
-                            // FIX 5: Add topics under this chapter
-                            const bookTopics = topicsByBook[slug] || [];
-                            const chapterTopics = bookTopics.filter(t => t.chapterSlug === chapter.slug);
+                            // FIX 3: Add topics under this chapter in sitemap XML
+                            const bookTopicsByChapter = topicsByBookAndChapter[slug] || {};
+                            const chapterTopics = bookTopicsByChapter[chapter.slug] || [];
                             if (chapterTopics.length > 0) {
                                 chapterTopics.forEach(topic => {
                                     if (topic.slug) {
@@ -3805,7 +3925,7 @@
         }
     }
 
-    // ============ SEO PAGE GENERATION - FIX 4 ============
+    // ============ SEO PAGE GENERATION - FIX 2: Fix dropdown JSON display ============
     let seoGeneratedFiles = [];
     let seoTotalBooks = 0;
     let seoGeneratedCount = 0;
@@ -3856,7 +3976,6 @@
             const chapterDisplay = chapter.chapter_number ? chapter.chapter_number + '. ' : '';
             const chapterName = escapeHtml(chapter.name);
             
-            // Get topics for this chapter
             const chapterTopics = topics.filter(t => t.chapter_id === chapter.id);
             let topicsHtml = '';
             if (chapterTopics.length > 0) {
@@ -4050,7 +4169,6 @@
         '</html>';
     }
 
-    // Generate topic page - FIX 4: Correct URL path
     function generateTopicPage(book, chapter, topic) {
         const bookSlug = book.slug || createSlug(book.title);
         const bookTitle = escapeHtml(book.title);
@@ -4069,7 +4187,6 @@
         '    <meta name="description" content="Practice ' + topicName + ' from ' + bookTitle + '. Comprehensive MCQs for ' + topicName + ' with detailed explanations.">\n' +
         '    <meta name="keywords" content="' + topicName + ' MCQs, ' + bookTitle + ' ' + topicName + ' questions, ' + topicName + ' practice, ' + bookTitle + ' topics">\n' +
         '    <meta name="robots" content="index, follow">\n' +
-        // FIX 4: Correct canonical URL - topic is under chapter
         '    <link rel="canonical" href="https://bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html">\n' +
         '    <meta property="og:title" content="' + topicName + ' - ' + bookTitle + ' | BookMCQ">\n' +
         '    <meta property="og:type" content="website">\n' +
@@ -4143,7 +4260,7 @@
         '</html>';
     }
 
-    // FIX 4: Toggle dropdown for SEO pages with checkboxes
+    // FIX 2: Toggle dropdown for SEO pages with clean checkboxes - no JSON display
     function toggleSeoDropdown(bookSlug) {
         const menu = document.getElementById(`seoDropdown_${bookSlug}`);
         if (menu) {
@@ -4151,7 +4268,7 @@
         }
     }
 
-    // FIX 4: Select/Deselect all files in a dropdown
+    // FIX 2: Select/Deselect all files in a dropdown
     function selectAllSeoFiles(bookSlug) {
         const checkboxes = document.querySelectorAll(`#seoDropdown_${bookSlug} input[type="checkbox"]`);
         checkboxes.forEach(cb => cb.checked = true);
@@ -4162,13 +4279,21 @@
         checkboxes.forEach(cb => cb.checked = false);
     }
 
-    // FIX 4: Download selected SEO files with clean filenames
+    // FIX 2: Download selected SEO files with clean filenames - using data stored in dataset
     function downloadSelectedSeoFiles(bookSlug) {
         const checkboxes = document.querySelectorAll(`#seoDropdown_${bookSlug} input[type="checkbox"]:checked`);
         const files = [];
         checkboxes.forEach(cb => {
-            const fileData = JSON.parse(cb.dataset.file);
-            files.push(fileData);
+            // FIX 2: Get file data from dataset instead of JSON attribute
+            const fileData = {
+                name: cb.dataset.name || '',
+                content: cb.dataset.content || '',
+                displayName: cb.dataset.displayName || '',
+                bookSlug: cb.dataset.bookSlug || ''
+            };
+            if (fileData.name && fileData.content) {
+                files.push(fileData);
+            }
         });
         
         if (files.length === 0) {
@@ -4180,19 +4305,14 @@
         
         files.forEach((file, index) => {
             setTimeout(() => {
-                // FIX 4: Clean filename - extract just the base name without book prefix
                 let cleanName = file.name;
-                // If filename contains bookSlug, remove it for cleaner download
                 if (cleanName.includes('/')) {
                     const parts = cleanName.split('/');
-                    // Get the last part (actual filename)
                     cleanName = parts[parts.length - 1];
                 }
-                // Remove any book slug prefix if present
                 if (cleanName.startsWith(bookSlug + '-')) {
                     cleanName = cleanName.substring(bookSlug.length + 1);
                 }
-                // For index.html, keep it as is
                 if (cleanName === 'index.html') {
                     cleanName = `${bookSlug}_index.html`;
                 }
@@ -4213,7 +4333,6 @@
             }, index * 300);
         });
         
-        // Close dropdown after download
         const menu = document.getElementById(`seoDropdown_${bookSlug}`);
         if (menu) {
             menu.classList.remove('open');
@@ -4360,7 +4479,6 @@
                     return q.chapter_id && bookChapters.some(function(c) { return c.id === q.chapter_id; });
                 }).length;
                 
-                // Generate book index page with topics
                 var bookIndexHtml = generateBookIndexPage(book, bookChapters, bookTopics, {}, totalQuestionsForBook);
                 tempFiles.push({
                     name: bookSlug + '/index.html',
@@ -4374,7 +4492,6 @@
                     displayName: '📖 Index'
                 });
                 
-                // Generate chapter pages
                 bookChapters.forEach(function(chapter) {
                     var chapterSlug = chapter.slug || createSlug(chapter.name);
                     var chapterDisplay = chapter.chapter_number ? chapter.chapter_number + '. ' : '';
@@ -4394,13 +4511,10 @@
                         displayName: '📄 ' + chapterDisplay + chapter.name
                     });
                     
-                    // FIX 4: Generate topic pages under their specific chapter
                     var chapterTopics = bookTopics.filter(function(t) { return t.chapter_id === chapter.id; });
                     chapterTopics.forEach(function(topic) {
                         var topicSlug = topic.slug || createSlug(topic.name);
-                        
                         var topicHtml = generateTopicPage(book, chapter, topic);
-                        // FIX 4: Topic URL is under the chapter
                         var topicPath = bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html';
                         tempFiles.push({
                             name: topicPath,
@@ -4449,51 +4563,42 @@
                     return f.isTopic === true; 
                 }).length;
                 
-                // Group files by chapter for better organization
-                var chapterGroups = {};
-                bookFiles.forEach(function(f) {
-                    if (f.isTopic) {
-                        var key = f.chapterId || 'unknown';
-                        if (!chapterGroups[key]) {
-                            chapterGroups[key] = {
-                                chapterName: f.chapter || 'Unknown Chapter',
-                                chapterSlug: f.chapterSlug || 'unknown',
-                                files: []
-                            };
-                        }
-                        chapterGroups[key].files.push(f);
-                    }
-                });
-                
-                // Build dropdown items with chapters and topics
                 var dropdownItems = '';
                 
-                // Add index file
+                // FIX 2: Build dropdown items without JSON display - use data attributes
                 var indexFile = bookFiles.find(function(f) { return f.isBook; });
                 if (indexFile) {
+                    // FIX 2: Store data in dataset attributes instead of JSON string
                     dropdownItems += `
                         <div class="seo-dropdown-item">
-                            <input type="checkbox" data-file='${JSON.stringify(indexFile)}'>
+                            <input type="checkbox" 
+                                   data-name="${escapeHtml(indexFile.name)}" 
+                                   data-content="${escapeHtml(indexFile.content)}" 
+                                   data-display-name="${escapeHtml(indexFile.displayName)}"
+                                   data-book-slug="${escapeHtml(indexFile.bookSlug)}">
                             <span class="file-label">📖 ${indexFile.displayName}</span>
                         </div>
                     `;
                 }
                 
-                // Add chapter files and their topics
                 var chapterFiles = bookFiles.filter(function(f) { return f.isBook === false && f.isTopic === false; });
                 chapterFiles.sort(function(a, b) {
                     return (a.chapterNumber || 999) - (b.chapterNumber || 999);
                 });
                 
                 chapterFiles.forEach(function(f) {
+                    // FIX 2: Store data in dataset attributes instead of JSON string
                     dropdownItems += `
                         <div class="seo-dropdown-item">
-                            <input type="checkbox" data-file='${JSON.stringify(f)}'>
+                            <input type="checkbox" 
+                                   data-name="${escapeHtml(f.name)}" 
+                                   data-content="${escapeHtml(f.content)}" 
+                                   data-display-name="${escapeHtml(f.displayName)}"
+                                   data-book-slug="${escapeHtml(f.bookSlug)}">
                             <span class="file-label">${f.displayName}</span>
                         </div>
                     `;
                     
-                    // Add topics under this chapter with indentation
                     var chapterTopics = bookFiles.filter(function(t) { 
                         return t.isTopic && t.chapterId === f.chapterId; 
                     });
@@ -4501,9 +4606,14 @@
                         return a.topic.localeCompare(b.topic);
                     });
                     chapterTopics.forEach(function(t) {
+                        // FIX 2: Store data in dataset attributes instead of JSON string
                         dropdownItems += `
                             <div class="seo-dropdown-item" style="padding-left: 28px;">
-                                <input type="checkbox" data-file='${JSON.stringify(t)}'>
+                                <input type="checkbox" 
+                                       data-name="${escapeHtml(t.name)}" 
+                                       data-content="${escapeHtml(t.content)}" 
+                                       data-display-name="${escapeHtml(t.displayName)}"
+                                       data-book-slug="${escapeHtml(t.bookSlug)}">
                                 <span class="file-label file-indent">${t.displayName}</span>
                             </div>
                         `;
@@ -4618,7 +4728,6 @@
         document.getElementById('showLoginBtn').addEventListener('click', showLoginForm);
         document.getElementById('logoutBtn').addEventListener('click', handleLogout);
         
-        // Tab buttons
         document.getElementById('tabBooksBtn').addEventListener('click', () => showTab('books'));
         document.getElementById('tabChaptersBtn').addEventListener('click', () => showTab('chapters'));
         document.getElementById('tabSubTopicsBtn').addEventListener('click', () => showTab('subtopics'));
@@ -4630,17 +4739,14 @@
         document.getElementById('tabSeoBtn').addEventListener('click', openSEOTab);
         document.getElementById('tabSitemapBtn').addEventListener('click', () => showTab('sitemap'));
         
-        // SEO
         document.getElementById('generateSEOPagesBtn').addEventListener('click', generateSEOPages);
         document.getElementById('downloadAllSEOBtn').addEventListener('click', downloadAllSEOPages);
         
-        // Sitemap
         document.getElementById('generateSitemapBtn').addEventListener('click', generateSitemap);
         document.getElementById('downloadSitemapBtn').addEventListener('click', downloadSitemap);
         document.getElementById('viewSitemapUrlsBtn').addEventListener('click', toggleSitemapUrlPreview);
         document.getElementById('closeUrlPreviewBtn').addEventListener('click', closeUrlPreview);
         
-        // Books
         document.getElementById('showAddBookBtn').addEventListener('click', () => {
             document.getElementById('addBookForm').classList.remove('hidden');
         });
@@ -4649,7 +4755,6 @@
         });
         document.getElementById('saveBookBtn').addEventListener('click', addBook);
         
-        // Categories
         document.getElementById('showAddCategoryBtn').addEventListener('click', () => {
             document.getElementById('addCategoryForm').classList.remove('hidden');
         });
@@ -4659,7 +4764,6 @@
         });
         document.getElementById('saveCategoryBtn').addEventListener('click', addCategory);
         
-        // Chapters - FIX 1
         document.getElementById('showAddChapterBtn').addEventListener('click', async () => {
             await loadBookSelectForChapters();
             document.getElementById('addChapterForm').classList.remove('hidden');
@@ -4670,7 +4774,6 @@
         document.getElementById('saveChapterBtn').addEventListener('click', addChapter);
         document.getElementById('chapterFilterBookId').addEventListener('change', applyChapterFilter);
         
-        // ===== SUB-TOPICS EVENT LISTENERS - FIX 2 =====
         document.getElementById('showAddSubTopicBtn').addEventListener('click', async () => {
             await loadBookSelectForSubTopic();
             document.getElementById('subTopicChapterId').innerHTML = '<option value="">Select Chapter</option>';
@@ -4689,7 +4792,6 @@
         document.getElementById('subTopicFilterBookId').addEventListener('change', loadSubTopicChapters);
         document.getElementById('subTopicFilterChapterId').addEventListener('change', applySubTopicFilter);
         
-        // Questions - FIX 3
         document.getElementById('showAddQuestionBtn').addEventListener('click', async () => {
             await loadBookSelectsCached();
             document.getElementById('addQuestionForm').classList.remove('hidden');
@@ -4701,24 +4803,26 @@
         document.getElementById('questionBookId').addEventListener('change', loadChaptersForQuestion);
         document.getElementById('questionChapterId').addEventListener('change', loadTopicsForQuestion);
         
-        // Filters - FIX 3
+        // FIX 1: Multi-select topic event listeners
         document.getElementById('filterBookId').addEventListener('change', async () => {
             await loadFilterChapters();
             await applyFilters();
         });
         document.getElementById('filterChapterId').addEventListener('change', async () => {
             await loadFilterTopics();
-            await applyFilters();
         });
-        document.getElementById('filterTopicId').addEventListener('change', applyFilters);
+        document.getElementById('filterTopicId').addEventListener('change', () => {
+            updateTopicCount();
+            applyFilters();
+        });
         document.getElementById('filterDifficulty').addEventListener('change', applyFilters);
+        document.getElementById('topicSelectAllBtn').addEventListener('click', selectAllTopics);
+        document.getElementById('topicClearAllBtn').addEventListener('click', clearAllTopics);
         document.getElementById('downloadQuestionsCsvBtn').addEventListener('click', downloadQuestionsCSV);
         
-        // Pagination
         document.getElementById('prevPageBtn').addEventListener('click', goToPrevPage);
         document.getElementById('nextPageBtn').addEventListener('click', goToNextPage);
         
-        // Edit modals
         document.getElementById('updateBookBtn').addEventListener('click', updateBook);
         document.getElementById('closeBookModal').addEventListener('click', () => {
             document.getElementById('editBookModal').classList.add('hidden');
@@ -4744,7 +4848,6 @@
             document.getElementById('editQuestionModal').classList.add('hidden');
         });
         
-        // Bulk Delete
         document.getElementById('bulkDeleteBookId').addEventListener('change', async () => {
             await loadBulkDeleteChapters();
             await refreshBulkDeletePreview();
@@ -4758,17 +4861,15 @@
         document.getElementById('refreshPreviewBtn').addEventListener('click', refreshBulkDeletePreview);
         document.getElementById('bulkDeleteBtn').addEventListener('click', executeBulkDelete);
         
-        // Messages
         document.getElementById('messageStatusFilter').addEventListener('change', loadMessages);
         document.getElementById('refreshMessagesBtn').addEventListener('click', loadMessages);
         document.getElementById('exportMessagesBtn').addEventListener('click', exportMessagesToCSV);
         document.getElementById('deleteAllMessagesBtn').addEventListener('click', deleteAllMessages);
         
-        // Math
         window.toggleMathHelp = toggleMathHelp;
         window.insertMath = insertMath;
         
-        // SEO Dropdown functions - FIX 4
+        // FIX 2: SEO Dropdown functions
         window.toggleSeoDropdown = toggleSeoDropdown;
         window.selectAllSeoFiles = selectAllSeoFiles;
         window.deselectAllSeoFiles = deselectAllSeoFiles;
