@@ -452,17 +452,17 @@
                 </div>
             </div>
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">🏷️ Select Topics (Multiple)</label>
-                <div class="multi-select" id="topicMultiSelect">
-                    <div class="select-btn" data-dropdown="topics">
-                        <span id="topicSelectedText">Select Topics</span>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">📖 Select Chapters (Multiple)</label>
+                <div class="multi-select" id="chapterMultiSelect">
+                    <div class="select-btn" data-dropdown="chapters">
+                        <span id="chapterSelectedText">Select Chapters</span>
                         <i class="fas fa-chevron-down"></i>
                     </div>
-                    <div class="desktop-dropdown-content" id="topicDesktopDropdown">
+                    <div class="desktop-dropdown-content" id="chapterDesktopDropdown">
                         <div class="dropdown-search">
-                            <input type="text" id="topicSearchInput" placeholder="Search topics..." autocomplete="off">
+                            <input type="text" id="chapterSearchInput" placeholder="Search chapters..." autocomplete="off">
                         </div>
-                        <div id="topicDropdownItems" class="dropdown-items">
+                        <div id="chapterDropdownItems" class="dropdown-items">
                             <div class="dropdown-item">Select a book first</div>
                         </div>
                     </div>
@@ -642,12 +642,12 @@
     let timerInterval = null;
     let timeRemaining = 0;
     let isQuizActive = false;
-    let currentTopicIds = [];
-    let currentTopicName = '';
-    let allTopics = [];
+    let currentChapterIds = [];
+    let currentChapterName = '';
+    let allChapters = [];
     let selectedBookId = '';
     let selectedQuestionCount = 20;
-    let topicMcqCounts = {};
+    let chapterMcqCounts = {};
     let currentDropdownType = null;
     let selectedBookTitle = '';
 
@@ -724,7 +724,7 @@
             selectedBookTitle = text;
             document.getElementById('bookSelectedText').textContent = text;
             document.getElementById('bookSelectedText').style.color = '#374151';
-            loadTopics();
+            loadChapters();
         } else if (type === 'count') {
             selectedQuestionCount = parseInt(value);
             document.getElementById('questionCountSelectedText').textContent = text;
@@ -732,32 +732,32 @@
     }
     
     function handleCheckboxChange(type, checkbox) {
-        if (type === 'topics') {
-            if (checkbox.id === 'selectAllTopics') {
-                const allCheckboxes = document.querySelectorAll('#mobileDropdownBody input[type="checkbox"]:not(#selectAllTopics)');
+        if (type === 'chapters') {
+            if (checkbox.id === 'selectAllChapters') {
+                const allCheckboxes = document.querySelectorAll('#mobileDropdownBody input[type="checkbox"]:not(#selectAllChapters)');
                 allCheckboxes.forEach(cb => {
                     cb.checked = checkbox.checked;
                 });
             }
-            updateTopicSelectedTextMobile();
+            updateChapterSelectedTextMobile();
             
             // ALSO SYNC TO DESKTOP CHECKBOXES
-            const desktopSelectAll = document.getElementById('selectAllTopics');
+            const desktopSelectAll = document.getElementById('selectAllChapters');
             if (desktopSelectAll) {
                 desktopSelectAll.checked = checkbox.checked;
             }
             
-            // Sync all topic checkboxes to desktop
-            const mobileCheckboxes = document.querySelectorAll('#mobileDropdownBody input[type="checkbox"]:not(#selectAllTopics)');
+            // Sync all chapter checkboxes to desktop
+            const mobileCheckboxes = document.querySelectorAll('#mobileDropdownBody input[type="checkbox"]:not(#selectAllChapters)');
             mobileCheckboxes.forEach(mcb => {
-                const topicId = mcb.id.replace('topic_', '');
-                const desktopCb = document.getElementById(`topic_${topicId}`);
+                const chapterId = mcb.id.replace('chapter_', '');
+                const desktopCb = document.getElementById(`chapter_${chapterId}`);
                 if (desktopCb) {
                     desktopCb.checked = mcb.checked;
                 }
             });
             
-            updateTopicSelectedText();
+            updateChapterSelectedText();
             
         } else if (type === 'difficulty') {
             // Sync mobile difficulty checkboxes to desktop
@@ -779,32 +779,32 @@
         }
     }
     
-    function updateTopicSelectedTextMobile() {
+    function updateChapterSelectedTextMobile() {
         const selectedCheckboxes = document.querySelectorAll('#mobileDropdownBody input[type="checkbox"]:checked');
-        // Filter out the "selectAllTopics" checkbox value
-        const selectedTopics = Array.from(selectedCheckboxes).map(cb => cb.value).filter(v => v !== 'all' && v !== '');
+        // Filter out the "selectAllChapters" checkbox value
+        const selectedChapters = Array.from(selectedCheckboxes).map(cb => cb.value).filter(v => v !== 'all' && v !== '');
         
-        const selectedText = document.getElementById('topicSelectedText');
-        if (selectedTopics.length === 0) {
-            selectedText.textContent = 'Select Topics';
+        const selectedText = document.getElementById('chapterSelectedText');
+        if (selectedChapters.length === 0) {
+            selectedText.textContent = 'Select Chapters';
             selectedText.style.color = '#6b7280';
-        } else if (selectedTopics.length === allTopics.length && allTopics.length > 0) {
+        } else if (selectedChapters.length === allChapters.length && allChapters.length > 0) {
             selectedText.textContent = 'All Chapters';
             selectedText.style.color = '#374151';
-        } else if (selectedTopics.length <= 2) {
-            const names = selectedTopics.map(t => t.split('|')[0]).join(', ');
+        } else if (selectedChapters.length <= 2) {
+            const names = selectedChapters.map(t => t.split('|')[0]).join(', ');
             selectedText.textContent = names;
             selectedText.style.color = '#374151';
         } else {
-            selectedText.textContent = `${selectedTopics.length} chapters selected`;
+            selectedText.textContent = `${selectedChapters.length} chapters selected`;
             selectedText.style.color = '#374151';
         }
         
         // Update select all checkbox state
-        const selectAll = document.getElementById('selectAllTopics');
+        const selectAll = document.getElementById('selectAllChapters');
         if (selectAll) {
-            const allCheckboxes = document.querySelectorAll('#mobileDropdownBody input[type="checkbox"]:not(#selectAllTopics)');
-            const checkedCheckboxes = document.querySelectorAll('#mobileDropdownBody input[type="checkbox"]:checked:not(#selectAllTopics)');
+            const allCheckboxes = document.querySelectorAll('#mobileDropdownBody input[type="checkbox"]:not(#selectAllChapters)');
+            const checkedCheckboxes = document.querySelectorAll('#mobileDropdownBody input[type="checkbox"]:checked:not(#selectAllChapters)');
             if (allCheckboxes.length > 0 && checkedCheckboxes.length === allCheckboxes.length) {
                 selectAll.checked = true;
                 selectAll.indeterminate = false;
@@ -846,8 +846,8 @@
         const bookWrapper = document.getElementById('bookSelectWrapper');
         if (bookWrapper) bookWrapper.classList.remove('active');
         
-        const topicMultiSelect = document.getElementById('topicMultiSelect');
-        if (topicMultiSelect) topicMultiSelect.classList.remove('active');
+        const chapterMultiSelect = document.getElementById('chapterMultiSelect');
+        if (chapterMultiSelect) chapterMultiSelect.classList.remove('active');
         
         const difficultyMultiSelect = document.getElementById('difficultyMultiSelect');
         if (difficultyMultiSelect) difficultyMultiSelect.classList.remove('active');
@@ -893,32 +893,32 @@
             });
         }
         
-        // Topics dropdown
-        const topicsBtn = document.querySelector('#topicMultiSelect .select-btn');
-        if (topicsBtn) {
-            topicsBtn.addEventListener('click', function(e) {
+        // Chapters dropdown
+        const chaptersBtn = document.querySelector('#chapterMultiSelect .select-btn');
+        if (chaptersBtn) {
+            chaptersBtn.addEventListener('click', function(e) {
                 e.stopPropagation();
                 if (window.innerWidth <= 768) {
                     // Mobile: use overlay
-                    const items = document.querySelectorAll('#topicDropdownItems .dropdown-item');
-                    if (items.length === 0 || items[0].textContent.includes('Select a book first') || items[0].textContent.includes('No topics')) {
+                    const items = document.querySelectorAll('#chapterDropdownItems .dropdown-item');
+                    if (items.length === 0 || items[0].textContent.includes('Select a book first') || items[0].textContent.includes('No chapters')) {
                         showToast('Please select a book first', true);
                         return;
                     }
-                    let html = '<div class="dropdown-search"><input type="text" placeholder="Search topics..." autocomplete="off"></div><div class="dropdown-items">';
+                    let html = '<div class="dropdown-search"><input type="text" placeholder="Search chapters..." autocomplete="off"></div><div class="dropdown-items">';
                     items.forEach(item => {
                         html += item.outerHTML;
                     });
                     html += '</div>';
-                    showMobileDropdown('Select Topics', html, 'topics');
+                    showMobileDropdown('Select Chapters', html, 'chapters');
                 } else {
-                    const container = document.getElementById('topicMultiSelect');
+                    const container = document.getElementById('chapterMultiSelect');
                     if (container.classList.contains('active')) {
                         container.classList.remove('active');
                     } else {
                         closeAllDropdowns();
                         container.classList.add('active');
-                        const searchInput = document.getElementById('topicSearchInput');
+                        const searchInput = document.getElementById('chapterSearchInput');
                         if (searchInput) setTimeout(() => searchInput.focus(), 100);
                     }
                 }
@@ -1101,7 +1101,7 @@
                     document.getElementById('bookSelectedText').textContent = bookTitle;
                     document.getElementById('bookSelectedText').style.color = '#374151';
                     document.getElementById('bookSelectWrapper').classList.remove('active');
-                    loadTopics();
+                    loadChapters();
                 });
             });
             
@@ -1127,15 +1127,15 @@
         }
     }
 
-    async function getMultipleTopicMcqCounts(topicIds) {
-        if (!topicIds || topicIds.length === 0) return {};
+    async function getMultipleChapterMcqCounts(chapterIds) {
+        if (!chapterIds || chapterIds.length === 0) return {};
         
         const results = {};
         const uncachedIds = [];
         
         // Check cache first
-        for (const id of topicIds) {
-            const cacheKey = `topic_mcq_count_${id}`;
+        for (const id of chapterIds) {
+            const cacheKey = `chapter_mcq_count_${id}`;
             const cached = cacheManager.get(cacheKey);
             if (cached !== null && cached !== undefined) {
                 results[id] = cached;
@@ -1144,23 +1144,23 @@
             }
         }
         
-        // Query uncached topics one by one - more reliable
+        // Query uncached chapters one by one - more reliable
         for (const id of uncachedIds) {
             try {
                 const { count, error } = await _supabase
                     .from('questions')
                     .select('*', { count: 'exact', head: true })
-                    .eq('topic_id', id);
+                    .eq('chapter_id', id);
                 
                 if (!error) {
                     results[id] = count || 0;
-                    cacheManager.set(`topic_mcq_count_${id}`, count || 0);
+                    cacheManager.set(`chapter_mcq_count_${id}`, count || 0);
                 } else {
-                    console.error(`Error counting MCQs for topic ${id}:`, error);
+                    console.error(`Error counting MCQs for chapter ${id}:`, error);
                     results[id] = 0;
                 }
             } catch (err) {
-                console.error(`Error counting MCQs for topic ${id}:`, err);
+                console.error(`Error counting MCQs for chapter ${id}:`, err);
                 results[id] = 0;
             }
         }
@@ -1171,11 +1171,11 @@
     // ================================================
     // IMPROVED: FAIR DISTRIBUTION ALGORITHM
     // ================================================
-    async function loadQuestionsFromMultipleTopics(topicIds, difficulties, limit = 15) {
-        // Filter topics that have MCQs
-        const validTopicIds = topicIds.filter(id => (topicMcqCounts[id] || 0) > 0);
+    async function loadQuestionsFromMultipleChapters(chapterIds, difficulties, limit = 15) {
+        // Filter chapters that have MCQs
+        const validChapterIds = chapterIds.filter(id => (chapterMcqCounts[id] || 0) > 0);
         
-        if (!difficulties || difficulties.length === 0 || validTopicIds.length === 0) return [];
+        if (!difficulties || difficulties.length === 0 || validChapterIds.length === 0) return [];
         
         // === STEP 1: Calculate difficulty distribution (global) ===
         let difficultyDistribution = {};
@@ -1232,7 +1232,7 @@
         
         // === STEP 3: For each difficulty, distribute across chapters ===
         const allQuestions = [];
-        const numChapters = validTopicIds.length;
+        const numChapters = validChapterIds.length;
         
         for (const [difficulty, totalCount] of Object.entries(perDifficultyTotal)) {
             if (totalCount <= 0) continue;
@@ -1243,23 +1243,23 @@
             
             // Fetch questions from each chapter for this difficulty
             for (let i = 0; i < numChapters; i++) {
-                const topicId = validTopicIds[i];
+                const chapterId = validChapterIds[i];
                 let perChapter = perChapterBase + (i < remainder ? 1 : 0);
                 
                 if (perChapter <= 0) continue;
                 
-                const cacheKey = `questions_chapter_${topicId}_${difficulty}`;
+                const cacheKey = `questions_chapter_${chapterId}_${difficulty}`;
                 let questionsPool = cacheManager.get(cacheKey);
                 
                 if (!questionsPool) {
                     const { data, error } = await _supabase
                         .from('questions')
                         .select(`id, question_text, difficulty, correct_answer, explanation, options (option_text, option_index)`)
-                        .eq('topic_id', topicId)
+                        .eq('chapter_id', chapterId)
                         .eq('difficulty', difficulty);
                     
                     if (error) {
-                        console.error(`Error fetching questions for topic ${topicId}, difficulty ${difficulty}:`, error);
+                        console.error(`Error fetching questions for chapter ${chapterId}, difficulty ${difficulty}:`, error);
                         continue;
                     }
                     
@@ -1302,82 +1302,86 @@
     // END OF IMPROVED ALGORITHM
     // ================================================
 
-    // Load topics
-    async function loadTopics() {
+    // Load chapters
+    async function loadChapters() {
         if (!selectedBookId) { 
-            document.getElementById('topicDropdownItems').innerHTML = '<div class="dropdown-item">Select a book first</div>';
-            document.getElementById('topicSelectedText').textContent = 'Select Topics';
+            document.getElementById('chapterDropdownItems').innerHTML = '<div class="dropdown-item">Select a book first</div>';
+            document.getElementById('chapterSelectedText').textContent = 'Select Chapters';
             return; 
         }
         
-        document.getElementById('topicDropdownItems').innerHTML = '<div class="dropdown-item">Loading topics...</div>';
+        document.getElementById('chapterDropdownItems').innerHTML = '<div class="dropdown-item">Loading chapters...</div>';
         
         try {
-            const cacheKey = `topics_${selectedBookId}`;
+            const cacheKey = `chapters_${selectedBookId}`;
             const cached = cacheManager.get(cacheKey);
-            let topics;
-            if (cached) topics = cached;
+            let chapters;
+            if (cached) chapters = cached;
             else {
-                const { data, error } = await _supabase.from('topics').select('id, name, chapter_number').eq('book_id', selectedBookId).order('chapter_number');
+                const { data, error } = await _supabase
+                    .from('chapters')
+                    .select('id, name, chapter_number')
+                    .eq('book_id', selectedBookId)
+                    .order('chapter_number');
                 if (error) throw error;
-                topics = data;
-                cacheManager.set(cacheKey, topics);
+                chapters = data;
+                cacheManager.set(cacheKey, chapters);
             }
             
-            const topicIds = topics.map(t => t.id);
-            const mcqCounts = await getMultipleTopicMcqCounts(topicIds);
-            topicMcqCounts = mcqCounts;
+            const chapterIds = chapters.map(c => c.id);
+            const mcqCounts = await getMultipleChapterMcqCounts(chapterIds);
+            chapterMcqCounts = mcqCounts;
             
-            allTopics = topics || [];
+            allChapters = chapters || [];
             
-            if (!topics || topics.length === 0) {
-                document.getElementById('topicDropdownItems').innerHTML = '<div class="dropdown-item">No topics available</div>';
-                document.getElementById('topicSelectedText').textContent = 'Select Topics';
+            if (!chapters || chapters.length === 0) {
+                document.getElementById('chapterDropdownItems').innerHTML = '<div class="dropdown-item">No chapters available</div>';
+                document.getElementById('chapterSelectedText').textContent = 'Select Chapters';
                 return;
             }
             
-            let topicsHtml = `
+            let chaptersHtml = `
                 <div class="dropdown-item select-all-item">
-                    <input type="checkbox" id="selectAllTopics" value="all">
-                    <label for="selectAllTopics">📚 Select All Chapters</label>
+                    <input type="checkbox" id="selectAllChapters" value="all">
+                    <label for="selectAllChapters">📚 Select All Chapters</label>
                 </div>
             `;
             
-            topicsHtml += topics.map(topic => {
-                const display = topic.chapter_number ? `Ch ${topic.chapter_number}: ${escapeHtml(topic.name)}` : escapeHtml(topic.name);
-                const chapterText = topic.chapter_number ? `(Chapter ${topic.chapter_number})` : '';
-                const mcqCount = mcqCounts[topic.id] || 0;
+            chaptersHtml += chapters.map(chapter => {
+                const display = chapter.chapter_number ? `Ch ${chapter.chapter_number}: ${escapeHtml(chapter.name)}` : escapeHtml(chapter.name);
+                const chapterText = chapter.chapter_number ? `(Chapter ${chapter.chapter_number})` : '';
+                const mcqCount = mcqCounts[chapter.id] || 0;
                 const mcqText = mcqCount > 0 ? `${mcqCount} MCQs` : 'No MCQs';
                 const mcqStyle = mcqCount === 0 ? 'color: #ef4444; font-weight: 500;' : '';
                 return `
                     <div class="dropdown-item">
-                        <input type="checkbox" id="topic_${topic.id}" value="${escapeHtml(topic.name)}|${topic.id}">
-                        <label for="topic_${topic.id}">${display} <span class="topic-chapter">${chapterText}</span></label>
+                        <input type="checkbox" id="chapter_${chapter.id}" value="${escapeHtml(chapter.name)}|${chapter.id}">
+                        <label for="chapter_${chapter.id}">${display} <span class="topic-chapter">${chapterText}</span></label>
                         <span class="mcq-count" style="${mcqStyle}">${mcqText}</span>
                     </div>
                 `;
             }).join('');
             
-            document.getElementById('topicDropdownItems').innerHTML = topicsHtml;
-            document.getElementById('topicSearchInput').value = '';
+            document.getElementById('chapterDropdownItems').innerHTML = chaptersHtml;
+            document.getElementById('chapterSearchInput').value = '';
             
-            const selectAllCheckbox = document.getElementById('selectAllTopics');
+            const selectAllCheckbox = document.getElementById('selectAllChapters');
             if (selectAllCheckbox) {
                 selectAllCheckbox.addEventListener('change', function() {
-                    const allCheckboxes = document.querySelectorAll('#topicDropdownItems input[type="checkbox"]:not(#selectAllTopics)');
+                    const allCheckboxes = document.querySelectorAll('#chapterDropdownItems input[type="checkbox"]:not(#selectAllChapters)');
                     allCheckboxes.forEach(cb => {
                         cb.checked = this.checked;
                     });
-                    updateTopicSelectedText();
+                    updateChapterSelectedText();
                 });
             }
             
-            document.querySelectorAll('#topicDropdownItems input[type="checkbox"]:not(#selectAllTopics)').forEach(cb => {
-                cb.addEventListener('change', updateTopicSelectedText);
+            document.querySelectorAll('#chapterDropdownItems input[type="checkbox"]:not(#selectAllChapters)').forEach(cb => {
+                cb.addEventListener('change', updateChapterSelectedText);
             });
             
-            // Auto-select all topics by default
-            const allCheckboxes = document.querySelectorAll('#topicDropdownItems input[type="checkbox"]:not(#selectAllTopics)');
+            // Auto-select all chapters by default
+            const allCheckboxes = document.querySelectorAll('#chapterDropdownItems input[type="checkbox"]:not(#selectAllChapters)');
             allCheckboxes.forEach(cb => {
                 cb.checked = true;
             });
@@ -1385,20 +1389,20 @@
                 selectAllCheckbox.checked = true;
             }
             
-            updateTopicSelectedText();
+            updateChapterSelectedText();
             
         } catch (err) {
-            console.error('Error loading topics:', err);
-            document.getElementById('topicDropdownItems').innerHTML = '<div class="dropdown-item">Error loading topics</div>';
+            console.error('Error loading chapters:', err);
+            document.getElementById('chapterDropdownItems').innerHTML = '<div class="dropdown-item">Error loading chapters</div>';
         }
     }
 
-    function updateTopicSelectedText() {
-        const selectedTopics = Array.from(document.querySelectorAll('#topicDropdownItems input[type="checkbox"]:checked')).map(cb => cb.value);
-        const filteredTopics = selectedTopics.filter(v => v !== 'all' && v !== '');
-        const searchTerm = document.getElementById('topicSearchInput')?.value.toLowerCase() || '';
+    function updateChapterSelectedText() {
+        const selectedChapters = Array.from(document.querySelectorAll('#chapterDropdownItems input[type="checkbox"]:checked')).map(cb => cb.value);
+        const filteredChapters = selectedChapters.filter(v => v !== 'all' && v !== '');
+        const searchTerm = document.getElementById('chapterSearchInput')?.value.toLowerCase() || '';
         
-        const items = document.querySelectorAll('#topicDropdownItems .dropdown-item');
+        const items = document.querySelectorAll('#chapterDropdownItems .dropdown-item');
         items.forEach(item => {
             const label = item.querySelector('label')?.textContent.toLowerCase() || '';
             if (label.includes(searchTerm)) {
@@ -1408,10 +1412,10 @@
             }
         });
         
-        const selectAllCheckbox = document.getElementById('selectAllTopics');
+        const selectAllCheckbox = document.getElementById('selectAllChapters');
         if (selectAllCheckbox) {
-            const allCheckboxes = document.querySelectorAll('#topicDropdownItems input[type="checkbox"]:not(#selectAllTopics)');
-            const checkedCheckboxes = document.querySelectorAll('#topicDropdownItems input[type="checkbox"]:checked:not(#selectAllTopics)');
+            const allCheckboxes = document.querySelectorAll('#chapterDropdownItems input[type="checkbox"]:not(#selectAllChapters)');
+            const checkedCheckboxes = document.querySelectorAll('#chapterDropdownItems input[type="checkbox"]:checked:not(#selectAllChapters)');
             if (allCheckboxes.length > 0 && checkedCheckboxes.length === allCheckboxes.length) {
                 selectAllCheckbox.checked = true;
                 selectAllCheckbox.indeterminate = false;
@@ -1424,26 +1428,26 @@
             }
         }
         
-        const selectedText = document.getElementById('topicSelectedText');
-        if (filteredTopics.length === 0) {
-            selectedText.textContent = 'Select Topics';
+        const selectedText = document.getElementById('chapterSelectedText');
+        if (filteredChapters.length === 0) {
+            selectedText.textContent = 'Select Chapters';
             selectedText.style.color = '#6b7280';
-        } else if (filteredTopics.length === allTopics.length && allTopics.length > 0) {
+        } else if (filteredChapters.length === allChapters.length && allChapters.length > 0) {
             selectedText.textContent = 'All Chapters';
             selectedText.style.color = '#374151';
-        } else if (filteredTopics.length <= 2) {
-            const names = filteredTopics.map(t => t.split('|')[0]).join(', ');
+        } else if (filteredChapters.length <= 2) {
+            const names = filteredChapters.map(t => t.split('|')[0]).join(', ');
             selectedText.textContent = names;
             selectedText.style.color = '#374151';
         } else {
-            selectedText.textContent = `${filteredTopics.length} chapters selected`;
+            selectedText.textContent = `${filteredChapters.length} chapters selected`;
             selectedText.style.color = '#374151';
         }
     }
 
-    function getSelectedTopicIds() {
-        const selectedTopics = Array.from(document.querySelectorAll('#topicDropdownItems input[type="checkbox"]:checked')).map(cb => cb.value);
-        const filtered = selectedTopics.filter(v => v !== 'all' && v !== '');
+    function getSelectedChapterIds() {
+        const selectedChapters = Array.from(document.querySelectorAll('#chapterDropdownItems input[type="checkbox"]:checked')).map(cb => cb.value);
+        const filtered = selectedChapters.filter(v => v !== 'all' && v !== '');
         return filtered.map(t => parseInt(t.split('|')[1]));
     }
 
@@ -1513,18 +1517,18 @@
     document.addEventListener('click', function(e) {
         if (window.innerWidth > 768) {
             const bookWrapper = document.getElementById('bookSelectWrapper');
-            const topicMultiSelect = document.getElementById('topicMultiSelect');
+            const chapterMultiSelect = document.getElementById('chapterMultiSelect');
             const difficultyMultiSelect = document.getElementById('difficultyMultiSelect');
             const questionCountWrapper = document.getElementById('questionCountWrapper');
             
             const isInsideBook = bookWrapper && bookWrapper.contains(e.target);
-            const isInsideTopic = topicMultiSelect && topicMultiSelect.contains(e.target);
+            const isInsideChapter = chapterMultiSelect && chapterMultiSelect.contains(e.target);
             const isInsideDifficulty = difficultyMultiSelect && difficultyMultiSelect.contains(e.target);
             const isInsideQuestionCount = questionCountWrapper && questionCountWrapper.contains(e.target);
             
-            if (!isInsideBook && !isInsideTopic && !isInsideDifficulty && !isInsideQuestionCount) {
+            if (!isInsideBook && !isInsideChapter && !isInsideDifficulty && !isInsideQuestionCount) {
                 bookWrapper?.classList.remove('active');
-                topicMultiSelect?.classList.remove('active');
+                chapterMultiSelect?.classList.remove('active');
                 difficultyMultiSelect?.classList.remove('active');
                 questionCountWrapper?.classList.remove('active');
             }
@@ -1668,20 +1672,20 @@
     }
 
     async function startQuiz() {
-        const selectedTopicIds = getSelectedTopicIds();
+        const selectedChapterIds = getSelectedChapterIds();
         const selectedDifficulties = getSelectedDifficulties();
         
         if (!selectedBookId) { showToast('Please select a book first', true); return; }
-        if (selectedTopicIds.length === 0) { showToast('Please select at least one topic', true); return; }
+        if (selectedChapterIds.length === 0) { showToast('Please select at least one chapter', true); return; }
         if (selectedDifficulties.length === 0) { showToast('Please select at least one difficulty level', true); return; }
         
-        currentTopicIds = selectedTopicIds;
-        const selectedTopicsNames = Array.from(document.querySelectorAll('#topicDropdownItems input[type="checkbox"]:checked')).map(cb => cb.value.split('|')[0]);
-        currentTopicName = selectedTopicsNames.join(', ');
+        currentChapterIds = selectedChapterIds;
+        const selectedChaptersNames = Array.from(document.querySelectorAll('#chapterDropdownItems input[type="checkbox"]:checked')).map(cb => cb.value.split('|')[0]);
+        currentChapterName = selectedChaptersNames.join(', ');
         
         showToast('Loading questions...');
         try {
-            const questions = await loadQuestionsFromMultipleTopics(selectedTopicIds, selectedDifficulties, selectedQuestionCount);
+            const questions = await loadQuestionsFromMultipleChapters(selectedChapterIds, selectedDifficulties, selectedQuestionCount);
             if (!questions || questions.length === 0) { showToast('No questions found. Try different options!', true); return; }
             
             quizQuestions = [...questions];
@@ -1759,7 +1763,7 @@
         doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(139, 92, 246);
-        const wrappedTopic = doc.splitTextToSize(currentTopicName, 200);
+        const wrappedTopic = doc.splitTextToSize(currentChapterName, 200);
         doc.text(wrappedTopic, 148.5, 140, { align: 'center' });
         doc.setFontSize(11);
         doc.setFont('helvetica', 'normal');
@@ -1780,12 +1784,12 @@
         doc.setFontSize(8);
         doc.setTextColor(150, 150, 150);
         doc.text('BookMCQ has confirmed the identity of this individual and their participation in this course.', 148.5, 215, { align: 'center' });
-        doc.save(`BookMCQ_Certificate_${currentTopicName.replace(/\s/g, '_')}.pdf`);
+        doc.save(`BookMCQ_Certificate_${currentChapterName.replace(/\s/g, '_')}.pdf`);
         showToast('Appreciation Certificate downloaded!');
     }
 
     document.getElementById('getProfessionalCertBtn').addEventListener('click', () => {
-        const certificateData = { score: quizScore, total: quizQuestions.length, percentage: (quizScore / quizQuestions.length) * 100, topicName: currentTopicName, date: new Date().toISOString() };
+        const certificateData = { score: quizScore, total: quizQuestions.length, percentage: (quizScore / quizQuestions.length) * 100, topicName: currentChapterName, date: new Date().toISOString() };
         sessionStorage.setItem('quizCertificateData', JSON.stringify(certificateData));
         window.location.href = '/certificate-register.html';
     });
@@ -1813,61 +1817,66 @@
         const navbar = document.querySelector('nav.bg-white\\/10');
         if (navbar) { window.addEventListener('scroll', () => { if (window.scrollY > 50) navbar.classList.add('navbar-scrolled'); else navbar.classList.remove('navbar-scrolled'); }); }
     }
-async function loadTopicFromUrl() {
-    const params = new URLSearchParams(window.location.search);
-    const topicId = params.get('topic');
 
-    if (!topicId) return;
+    async function loadChapterFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        const chapterId = params.get('chapter');
 
-    try {
-        const { data: topic, error } = await _supabase
-            .from('topics')
-            .select('id, name, book_id')
-            .eq('id', topicId)
-            .single();
+        if (!chapterId) return;
 
-        if (error || !topic) return;
+        try {
+            const { data: chapter, error } = await _supabase
+                .from('chapters')
+                .select('id, name, book_id')
+                .eq('id', chapterId)
+                .single();
 
-        // Store selected book
-        selectedBookId = topic.book_id;
+            if (error || !chapter) return;
 
-        // Load topics for this book
-        await loadTopics();
+            // Store selected book
+            selectedBookId = chapter.book_id;
 
-        // Auto-select topic checkbox
-        setTimeout(() => {
-            const topicCheckbox = document.querySelector(
-                `input[data-topic-id="${topic.id}"]`
-            );
+            // Load chapters for this book
+            await loadChapters();
 
-            if (topicCheckbox) {
-                topicCheckbox.checked = true;
-            }
-        }, 300);
+            // Auto-select chapter checkbox
+            setTimeout(() => {
+                const chapterCheckbox = document.querySelector(
+                    `input[id="chapter_${chapter.id}"]`
+                );
 
-        // SEO title
-        document.title = `${topic.name} MCQ Quiz | BookMCQ`;
+                if (chapterCheckbox) {
+                    chapterCheckbox.checked = true;
+                    // Also update the book display
+                    document.getElementById('bookSelectedText').textContent = selectedBookTitle || 'Book selected';
+                    document.getElementById('bookSelectedText').style.color = '#374151';
+                }
+            }, 300);
 
-        console.log('Loaded topic from URL:', topic.name);
+            // SEO title
+            document.title = `${chapter.name} MCQ Quiz | BookMCQ`;
 
-    } catch (err) {
-        console.error('loadTopicFromUrl failed:', err);
+            console.log('Loaded chapter from URL:', chapter.name);
+
+        } catch (err) {
+            console.error('loadChapterFromUrl failed:', err);
+        }
     }
-}
-// Initialize everything
-(async () => {
-    await loadBooks();
-    await loadTopicFromUrl();
 
-    initNavbarScroll();
-    initMobileMenu();
-    initTabSwitchDetection();
-    initDifficultyMultiSelect();
-    initQuestionCountSelector();
-    initDropdowns();
+    // Initialize everything
+    (async () => {
+        await loadBooks();
+        await loadChapterFromUrl();
 
-    console.log('Quiz page initialized - with fair distribution algorithm');
-})();
+        initNavbarScroll();
+        initMobileMenu();
+        initTabSwitchDetection();
+        initDifficultyMultiSelect();
+        initQuestionCountSelector();
+        initDropdowns();
+
+        console.log('Quiz page initialized - with fair distribution algorithm using chapters');
+    })();
 </script>
 </body>
 </html>
