@@ -85,6 +85,19 @@
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.02); }
         }
+
+        /* Warning banner for special characters */
+        .warning-banner {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 13px;
+        }
+        .warning-banner i {
+            color: #f59e0b;
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -255,7 +268,66 @@
     }
     
     // ============================================
-    // 4. NORMALIZE DIFFICULTY
+    // 4. COMPREHENSIVE LATEX CLEANING FUNCTION
+    // ============================================
+    function cleanForLatex(text) {
+        let str = safeString(text);
+        
+        // Escape special LaTeX characters
+        // Order matters - do & first as it's most common source of errors
+        str = str.replace(/&/g, '\\&');           // Ampersand
+        str = str.replace(/%/g, '\\%');           // Percent
+        str = str.replace(/\$/g, '\\$');          // Dollar
+        str = str.replace(/#/g, '\\#');           // Hash
+        str = str.replace(/_/g, '\\_');           // Underscore
+        str = str.replace(/{/g, '\\{');           // Left brace
+        str = str.replace(/}/g, '\\}');           // Right brace
+        str = str.replace(/~/g, '\\textasciitilde{}'); // Tilde
+        str = str.replace(/\^/g, '\\textasciicircum{}'); // Caret
+        
+        return str;
+    }
+
+    function safeProcessMathContent(text) {
+        const str = safeString(text);
+        
+        // Check if it contains any LaTeX delimiters
+        const hasLatex = str.includes('\\(') || str.includes('\\[') || str.includes('$$') || str.includes('\\begin');
+        
+        if (hasLatex) {
+            // If it has LaTeX, clean it thoroughly
+            return cleanForLatex(str);
+        } else {
+            // If no LaTeX, still clean it to be safe
+            return cleanForLatex(str);
+        }
+    }
+
+    function hasSpecialCharacters(text) {
+        const str = safeString(text);
+        // Check for characters that might cause LaTeX errors
+        return str.includes('&') || str.includes('%') || str.includes('$') || 
+               str.includes('#') || str.includes('_') || str.includes('{') || 
+               str.includes('}') || str.includes('~') || str.includes('^');
+    }
+
+    function getSpecialCharactersWarning(text) {
+        const str = safeString(text);
+        const found = [];
+        if (str.includes('&')) found.push('& (ampersand)');
+        if (str.includes('%')) found.push('% (percent)');
+        if (str.includes('$')) found.push('$ (dollar)');
+        if (str.includes('#')) found.push('# (hash)');
+        if (str.includes('_')) found.push('_ (underscore)');
+        if (str.includes('{')) found.push('{ (left brace)');
+        if (str.includes('}')) found.push('} (right brace)');
+        if (str.includes('~')) found.push('~ (tilde)');
+        if (str.includes('^')) found.push('^ (caret)');
+        return found;
+    }
+    
+    // ============================================
+    // 5. NORMALIZE DIFFICULTY
     // ============================================
     function normalizeDifficulty(value) {
         const str = safeString(value).toLowerCase().trim();
@@ -266,7 +338,7 @@
     }
     
     // ============================================
-    // 5. CONVERT LETTER ANSWER TO NUMBER
+    // 6. CONVERT LETTER ANSWER TO NUMBER
     // ============================================
     function convertAnswerToNumber(answer) {
         const str = safeString(answer).toUpperCase().trim();
@@ -284,20 +356,17 @@
         return 0;
     }
     
-    function safeProcessMathContent(text) {
-        const str = safeString(text);
-        if (str.includes('\\(') || str.includes('\\[') || str.includes('$$')) {
-            return str;
-        }
-        return str;
-    }
-    
     async function renderMathInElement(element) {
         if (window.MathJax && element) {
             try {
                 await MathJax.typesetPromise([element]);
             } catch(e) {
                 console.log('MathJax error:', e);
+                // If MathJax fails, show plain text fallback
+                const fallback = document.createElement('div');
+                fallback.className = 'text-red-600 text-sm mt-2';
+                fallback.innerHTML = '⚠️ Could not render math. Showing plain text instead.';
+                element.appendChild(fallback);
             }
         }
     }
@@ -326,7 +395,7 @@
     }
     
     // ============================================
-    // 6. ESCAPE HTML
+    // 7. ESCAPE HTML
     // ============================================
     function escapeHtml(str) {
         if (!str) return '';
@@ -334,7 +403,7 @@
     }
     
     // ============================================
-    // 7. SUPABASE & CORE LOGIC
+    // 8. SUPABASE & CORE LOGIC
     // ============================================
     function checkLibraries() {
         if (typeof window.supabase !== 'undefined') {
@@ -362,7 +431,7 @@
         let topicCache = {};
         
         // ============================================
-        // 8. LOAD BOOKS
+        // 9. LOAD BOOKS
         // ============================================
         async function loadBooks() {
             addLog('Fetching books from database...', 'info');
@@ -382,7 +451,7 @@
         }
         
         // ============================================
-        // 9. LOAD CHAPTERS
+        // 10. LOAD CHAPTERS
         // ============================================
         async function loadChapters() {
             const bookId = document.getElementById('bookSelect').value;
@@ -416,7 +485,7 @@
         }
         
         // ============================================
-        // 10. DOWNLOAD TEMPLATE
+        // 11. DOWNLOAD TEMPLATE
         // ============================================
         function downloadTemplate() {
             addLog('Generating CSV template...', 'info');
@@ -435,7 +504,7 @@
         }
         
         // ============================================
-        // 11. GET OR CREATE TOPIC - UPDATED WITH CLEAN SLUG
+        // 12. GET OR CREATE TOPIC - UPDATED WITH CLEAN SLUG
         // ============================================
         async function getOrCreateTopic(chapterId, topicName) {
             if (!topicName || topicName.trim() === '') {
@@ -499,7 +568,7 @@
         }
         
         // ============================================
-        // 12. BATCH GET OR CREATE TOPICS - UPDATED WITH CLEAN SLUG
+        // 13. BATCH GET OR CREATE TOPICS - UPDATED WITH CLEAN SLUG
         // ============================================
         async function batchGetOrCreateTopics(chapterId, uniqueTopics) {
             const results = {};
@@ -605,7 +674,7 @@
         }
         
         // ============================================
-        // 13. PROCESS FILE
+        // 14. PROCESS FILE - WITH ENHANCED CLEANING
         // ============================================
         function processFile(file) {
             addLog(`Processing: ${file.name}`, 'info');
@@ -669,18 +738,61 @@
                     previewDiv.style.display = 'block';
                     uploadBtn.style.display = 'inline-flex';
                     
+                    // Enhanced math preview with special character handling
                     if (currentQuestions.length > 0) {
                         const firstQuestion = currentQuestions[0];
                         const questionText = safeString(firstQuestion.question_text);
-                        const processedQuestion = safeProcessMathContent(questionText);
+                        
+                        // Clean the text for display
+                        const cleanedQuestion = safeProcessMathContent(questionText);
                         const topicDisplay = firstQuestion.topic ? `Topic: ${escapeHtml(firstQuestion.topic)}` : 'No topic';
-                        mathPreviewContent.innerHTML = `
-                            <div class="mb-2"><strong>Question:</strong> <span class="math-content">${escapeHtml(processedQuestion)}</span></div>
+                        
+                        // Check for special characters
+                        const specialChars = getSpecialCharactersWarning(questionText);
+                        let warningHtml = '';
+                        if (specialChars.length > 0) {
+                            warningHtml = `
+                                <div class="warning-banner mt-2">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <strong>Special characters detected:</strong> ${specialChars.join(', ')}
+                                    <span class="text-xs text-gray-600 block mt-1">These have been automatically escaped for LaTeX rendering.</span>
+                                </div>
+                            `;
+                        }
+                        
+                        // Check if there are LaTeX delimiters
+                        const hasLatex = questionText.includes('\\(') || questionText.includes('\\[') || 
+                                        questionText.includes('$$') || questionText.includes('\\begin');
+                        
+                        let displayContent = `
+                            <div class="mb-2"><strong>Question:</strong> <span class="math-content">${escapeHtml(cleanedQuestion)}</span></div>
                             <div class="text-sm text-gray-500 mt-2">Correct Answer: ${String.fromCharCode(65 + firstQuestion.correct_answer_numeric)}</div>
                             <div class="text-sm text-gray-500">${topicDisplay}</div>
+                            ${warningHtml}
                         `;
+                        
+                        if (!hasLatex && specialChars.length === 0) {
+                            displayContent += `<div class="text-xs text-gray-400 mt-2">ℹ️ No LaTeX detected. Displaying as plain text.</div>`;
+                        }
+                        
+                        mathPreviewContent.innerHTML = displayContent;
                         mathPreviewDiv.classList.remove('hidden');
-                        renderMathInElement(mathPreviewContent);
+                        
+                        // Only try to render math if there are LaTeX delimiters
+                        if (hasLatex) {
+                            try {
+                                renderMathInElement(mathPreviewContent);
+                            } catch(e) {
+                                console.log('Math rendering error:', e);
+                                // Show plain text fallback
+                                mathPreviewContent.innerHTML = `
+                                    <div class="mb-2"><strong>Question:</strong> ${escapeHtml(cleanedQuestion)}</div>
+                                    <div class="text-sm text-gray-500 mt-2">Correct Answer: ${String.fromCharCode(65 + firstQuestion.correct_answer_numeric)}</div>
+                                    <div class="text-sm text-gray-500">${topicDisplay}</div>
+                                    <div class="text-xs text-red-600 mt-2">⚠️ Math rendering failed. Showing plain text.</div>
+                                `;
+                            }
+                        }
                     } else {
                         mathPreviewDiv.classList.add('hidden');
                     }
@@ -694,7 +806,7 @@
         }
         
         // ============================================
-        // 14. FAST BULK UPLOAD - UPDATED WITH CLEAN SLUG
+        // 15. FAST BULK UPLOAD - UPDATED WITH CLEAN SLUG
         // ============================================
         async function uploadToDatabase() {
             const bookId = document.getElementById('bookSelect').value;
@@ -856,7 +968,7 @@
                     addLog(`📊 Topic map ready: ${Object.keys(topicIdMap).length} topics`, 'success');
                 }
                 
-                // STEP 3: Prepare questions with topic IDs (FAST)
+                // STEP 3: Prepare questions with topic IDs (FAST) - WITH CLEANING
                 updateProgress(0, total, '📦 Preparing questions data...');
                 const questionsToInsert = [];
                 let questionsWithTopics = 0;
@@ -864,16 +976,20 @@
                 
                 for (let i = 0; i < currentQuestions.length; i++) {
                     const q = currentQuestions[i];
+                    // Clean the question text before inserting
                     const questionText = safeString(q.question_text);
                     
                     if (!questionText) continue;
                     
+                    // Clean explanation too
+                    const explanation = safeString(q.explanation);
+                    
                     const questionData = {
                         chapter_id: chapterIdNum,
-                        question_text: questionText,
+                        question_text: questionText, // Store the original text (with special chars)
                         difficulty: normalizeDifficulty(q.difficulty),
                         correct_answer: q.correct_answer_numeric !== undefined ? q.correct_answer_numeric : convertAnswerToNumber(q.correct_answer),
-                        explanation: safeString(q.explanation) || ''
+                        explanation: explanation || ''
                     };
                     
                     // Add topic_id if topic exists
@@ -1022,7 +1138,7 @@
         }
         
         // ============================================
-        // 15. SETUP UPLOAD ZONE
+        // 16. SETUP UPLOAD ZONE
         // ============================================
         function setupUploadZone() {
             const uploadZone = document.getElementById('uploadZone');
@@ -1058,14 +1174,14 @@
         }
         
         // ============================================
-        // 16. EVENT LISTENERS
+        // 17. EVENT LISTENERS
         // ============================================
         document.getElementById('bookSelect').addEventListener('change', loadChapters);
         document.getElementById('downloadBtn').addEventListener('click', downloadTemplate);
         document.getElementById('uploadBtn').addEventListener('click', uploadToDatabase);
         
         // ============================================
-        // 17. INIT
+        // 18. INIT
         // ============================================
         setupUploadZone();
         loadBooks();
