@@ -15,7 +15,31 @@
       gtag('config', 'G-5WGZ1P0EV1');
     </script>
     
-    <!-- MathJax for rendering mathematical equations -->
+    <!-- MathJax for rendering mathematical equations - Supports ALL formats -->
+    <script>
+    window.MathJax = {
+        tex: {
+            inlineMath: [
+                ['$', '$'],           // For $f(x) = 2x^2$
+                ['\\(', '\\)']        // For \( \lim_{x \to 0} \)
+            ],
+            displayMath: [
+                ['$$', '$$'],         // For $$ \int_0^1 x^2 dx $$
+                ['\\[', '\\]']        // For \[ \sum_{i=1}^n i \]
+            ],
+            processEscapes: true,      // Handle escaped characters
+            processEnvironments: true  // Handle \begin{...} \end{...}
+        },
+        svg: {
+            fontCache: 'global'
+        },
+        options: {
+            skipHtmlTypes: 'script',   // Skip processing inside script tags
+            ignoreHtmlClass: 'no-mathjax', // Skip elements with this class
+            processHtmlClass: 'math'   // Process elements with this class
+        }
+    };
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async></script>
     
     <!-- Tailwind CSS CDN -->
@@ -250,14 +274,34 @@
         }
     }
     
-    // Function to process text with math delimiters
+    // Function to render all math on page
+    async function renderAllMath() {
+        if (window.MathJax) {
+            try {
+                await MathJax.typesetPromise();
+            } catch(e) {
+                console.log('MathJax error:', e);
+            }
+        }
+    }
+    
+    // Function to process text with math delimiters (supports ALL formats)
     function processMathContent(text) {
         if (!text) return '';
-        // Check if text contains LaTeX delimiters
-        if (text.includes('\\(') || text.includes('\\[') || text.includes('$$')) {
-            return text;
-        }
+        // All formats are supported by MathJax configuration
         return text;
+    }
+
+    // Function to safely escape HTML but preserve math delimiters
+    function escapeHtmlPreserveMath(text) {
+        if (!text) return '';
+        // Escape HTML entities
+        let escaped = text.replace(/&/g, '&amp;')
+                          .replace(/</g, '&lt;')
+                          .replace(/>/g, '&gt;')
+                          .replace(/"/g, '&quot;')
+                          .replace(/'/g, '&#039;');
+        return escaped;
     }
 
     // Cache Manager
@@ -494,9 +538,9 @@
                                       q.difficulty === 'medium' ? 'text-yellow-600 bg-yellow-50' : 
                                       'text-red-600 bg-red-50';
                 
-                const processedQuestion = processMathContent(q.text);
-                const processedOptions = q.options.map(opt => processMathContent(opt));
-                const processedExplanation = processMathContent(q.explanation);
+                const processedQuestion = escapeHtmlPreserveMath(q.text);
+                const processedOptions = q.options.map(opt => escapeHtmlPreserveMath(opt));
+                const processedExplanation = escapeHtmlPreserveMath(q.explanation);
                 
                 return `
                     <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 practice-card">
