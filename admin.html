@@ -1341,68 +1341,108 @@ let selectedTopicIds = [];  // <-- ADD THIS LINE
     }
 
 
-    // ============================================
-    // ADD THESE FUNCTIONS RIGHT HERE ↓
-    // ============================================
-    // SAFE MATH RENDERING - PREVENT MISPLACED & ERRORS
-    // ============================================
+// ============================================
+// SAFE MATH RENDERING - PREVENT MISPLACED & ERRORS
+// ============================================
 
-    function safeRenderMathContent(text) {
-        if (!text) return '';
-        
-        let str = String(text);
-        
-        // First, check if it contains any LaTeX delimiters
-        const hasLatex = str.includes('\\(') || str.includes('\\[') || 
-                         str.includes('$$') || str.includes('\\begin');
-        
-        if (!hasLatex) {
-            // If no LaTeX delimiters, just escape HTML and return
-            return escapeHtml(str);
-        }
-        
-        // If it has LaTeX, clean all special characters
-        // Order matters - do & first as it's the most common source of errors
-        str = str.replace(/&/g, '\\&');           // Ampersand - FIXES "Misplaced &"
-        str = str.replace(/%/g, '\\%');           // Percent
-        str = str.replace(/\$/g, '\\$');          // Dollar
-        str = str.replace(/#/g, '\\#');           // Hash
-        str = str.replace(/_/g, '\\_');           // Underscore
-        str = str.replace(/{/g, '\\{');           // Left brace
-        str = str.replace(/}/g, '\\}');           // Right brace
-        str = str.replace(/~/g, '\\textasciitilde{}'); // Tilde
-        str = str.replace(/\^/g, '\\textasciicircum{}'); // Caret
-        
-        return str;
+function safeRenderMathContent(text) {
+    if (!text) return '';
+    
+    let str = String(text);
+    
+    // Check if it contains any LaTeX delimiters (including $ delimiters)
+    const hasLatex = str.includes('\\(') || str.includes('\\[') || 
+                     str.includes('$$') || str.includes('\\begin') ||
+                     str.includes('\\$') || str.includes('$');
+    
+    if (!hasLatex) {
+        // If no LaTeX delimiters, just escape HTML and return
+        return escapeHtml(str);
     }
+    
+    // Handle cases where $ is used as delimiter (convert to \( and \))
+    // First, handle the escaped \$ (which is how it's stored in database)
+    str = str.replace(/\\\$/g, '\\$'); // Convert \$ to $ for processing
+    
+    // Now handle $ delimiters for inline math
+    // $...$ → \(...\)
+    str = str.replace(/\$(.+?)\$/g, '\\( $1 \\)');
+    
+    // Handle $$...$$ for display math
+    str = str.replace(/\$\$(.+?)\$\$/g, '\\[ $1 \\]');
+    
+    // Now clean ALL special characters for LaTeX
+    // IMPORTANT: Do & first as it's the most common source of errors
+    str = str.replace(/&/g, '\\&');           // Ampersand - FIXES "Misplaced &"
+    str = str.replace(/%/g, '\\%');           // Percent
+    str = str.replace(/#/g, '\\#');           // Hash
+    str = str.replace(/_/g, '\\_');           // Underscore
+    str = str.replace(/{/g, '\\{');           // Left brace
+    str = str.replace(/}/g, '\\}');           // Right brace
+    str = str.replace(/~/g, '\\textasciitilde{}'); // Tilde
+    str = str.replace(/\^/g, '\\textasciicircum{}'); // Caret
+    
+    // Restore properly formatted LaTeX delimiters (don't escape the delimiters themselves)
+    str = str.replace(/\\\(/g, '\\(');
+    str = str.replace(/\\\)/g, '\\)');
+    str = str.replace(/\\\[/g, '\\[');
+    str = str.replace(/\\\]/g, '\\]');
+    
+    return str;
+}
 
-    // Safe rendering function for MathJax
-    async function safeRenderMath(element) {
-        if (!element) return;
-        
-        // First, check if the content contains problematic characters
-        const content = element.textContent || element.innerHTML;
-        
-        // If content contains & and no proper LaTeX delimiters, render as plain text
-        if (content.includes('&') && !content.includes('\\(') && !content.includes('\\[') && !content.includes('$$')) {
-            // Show as plain text with a warning
-            element.innerHTML = `<span class="text-gray-700">${escapeHtml(content)}</span>
-                                <span class="text-xs text-yellow-600 ml-2">(Plain text - contains &)</span>`;
-            return;
-        }
-        
-        try {
-            if (window.MathJax) {
-                await MathJax.typesetPromise([element]);
-            }
-        } catch(e) {
-            console.log('MathJax rendering error:', e);
-            // Fallback: show plain text
-            const plainText = element.textContent || element.innerHTML;
-            element.innerHTML = `<span class="text-gray-700">${escapeHtml(plainText)}</span>
-                                <span class="text-xs text-red-500 ml-2">(Rendering failed - showing plain text)</span>`;
-        }
+// Safe rendering function for MathJax
+async function safeRenderMath(element) {
+    if (!element) return;
+    
+    // Get the raw content
+    let content = element.innerHTML;
+    
+    // Extract just the text content (remove any existing wrapper)
+    const textContent = element.textContent || content;
+    
+    // Clean the content for rendering
+    const cleanedContent = safeRenderMathContent(textContent);
+    
+    // Set the cleaned content
+    element.innerHTML = cleanedContent;
+    
+    // Check if there are any & characters that weren't properly escaped
+    if (cleanedContent.includes('&') && !cleanedContent.includes('\\&')) {
+        // Show as plain text with warning
+        element.innerHTML = `<span class="text-gray-700">${escapeHtml(textContent)}</span>
+                            <span class="text-xs text-yellow-600 ml-2">(Plain text - contains &)</span>`;
+        return;
     }
+    
+    // Check if we have LaTeX content to render
+    const hasLatex = cleanedContent.includes('\\(') || cleanedContent.includes('\\[') || 
+                     cleanedContent.includes('$$') || cleanedContent.includes('\\begin');
+    
+    if (!hasLatex) {
+        // No LaTeX to render, show as plain text
+        return;
+    }
+    
+    try {
+        if (window.MathJax) {
+            // Create a temporary container for rendering
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = cleanedContent;
+            
+            // Render the math
+            await MathJax.typesetPromise([tempDiv]);
+            
+            // Replace the element content with rendered math
+            element.innerHTML = tempDiv.innerHTML;
+        }
+    } catch(e) {
+        console.log('MathJax rendering error:', e);
+        // Fallback: show plain text with the original content
+        element.innerHTML = `<span class="text-gray-700">${escapeHtml(textContent)}</span>
+                            <span class="text-xs text-red-500 ml-2">(Rendering failed - showing plain text)</span>`;
+    }
+}
     // ============================================
     // END OF ADDED FUNCTIONS ↑
     // ============================================
@@ -3201,14 +3241,27 @@ container.innerHTML = data.map((q, index) => {
         escapeHtml(chapterData?.name || 'Unknown');
     const topicName = escapeHtml(topicData?.name || 'No Topic');
     
-    // SAFE RENDER: Clean the question text before displaying
-    const safeQuestionText = safeRenderMathContent(q.question_text);
+    // Get the question text
+    const questionText = q.question_text || '';
+    
+    // Check if it has LaTeX content with & (cases environment)
+    const hasCasesWithAmpersand = questionText.includes('\\begin{cases}') && questionText.includes('&');
+    
+    // For cases with &, we need to handle them specially
+    let displayText;
+    if (hasCasesWithAmpersand) {
+        // Clean the text but keep the cases environment
+        displayText = safeRenderMathContent(questionText);
+    } else {
+        // Regular cleaning
+        displayText = safeRenderMathContent(questionText);
+    }
     
     return `
     <div class="bg-gray-50 p-3 rounded-lg mb-2">
         <div class="flex justify-between items-start">
             <div class="flex-1">
-                <p class="font-bold text-sm math-rendered">Q${sequentialNumber}. <span class="math-content" id="math_${q.id}">${safeQuestionText}</span></p>
+                <p class="font-bold text-sm math-rendered">Q${sequentialNumber}. <span class="math-content" data-question-id="${q.id}">${displayText}</span></p>
                 <p class="text-xs text-gray-600 mt-1">Book: ${escapeHtml(bookTitle)} | Chapter: ${chapterDisplay} | Topic: ${topicName} | Difficulty: ${q.difficulty || 'N/A'}</p>
             </div>
             <div class="flex gap-2 ml-2">
@@ -3226,10 +3279,16 @@ container.innerHTML = data.map((q, index) => {
 
 // After rendering, safely render math for each question
 if (window.MathJax) {
-    const mathElements = container.querySelectorAll('.math-content');
-    mathElements.forEach(async (el) => {
-        await safeRenderMath(el);
-    });
+    setTimeout(async () => {
+        const mathElements = container.querySelectorAll('.math-content');
+        for (const el of mathElements) {
+            try {
+                await safeRenderMath(el);
+            } catch(e) {
+                console.log('Error rendering math for element:', el, e);
+            }
+        }
+    }, 100);
 }
 }
     
