@@ -426,30 +426,40 @@
                 <p class="text-sm text-gray-500 mt-4"><i class="fas fa-info-circle"></i> Categories are used to organize books. You can add, edit, or delete categories as needed.</p>
             </div>
 
-            <!-- Questions Tab -->
-            <div id="questionsTab" class="hidden">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold">Questions</h2>
-                    <button id="showAddQuestionBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg">+ Add Question</button>
-                </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
-                    <select id="filterBookId" class="p-2 border rounded-lg">
-                        <option value="">All Books</option>
-                    </select>
-                    <select id="filterChapterId" class="p-2 border rounded-lg">
-                        <option value="">All Chapters</option>
-                    </select>
-                    <select id="filterTopicId" class="p-2 border rounded-lg">
-                        <option value="">All Topics</option>
-                    </select>
-                    <select id="filterDifficulty" class="p-2 border rounded-lg">
-                        <option value="">All Difficulties</option>
-                        <option value="easy">Easy</option>
-                        <option value="medium">Medium</option>
-                        <option value="hard">Hard</option>
-                    </select>
-                </div>
+<!-- Questions Tab -->
+<div id="questionsTab" class="hidden">
+    <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+        <h2 class="text-xl font-bold">Questions</h2>
+        <div class="flex gap-2">
+            <button id="downloadQuestionsCsvBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 transition">
+                <i class="fas fa-download"></i> Download CSV
+            </button>
+            <button id="showAddQuestionBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg">+ Add Question</button>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+        <select id="filterBookId" class="p-2 border rounded-lg">
+            <option value="">All Books</option>
+        </select>
+        <select id="filterChapterId" class="p-2 border rounded-lg">
+            <option value="">All Chapters</option>
+        </select>
+        <select id="filterTopicId" class="p-2 border rounded-lg">
+            <option value="">All Topics</option>
+        </select>
+        <select id="filterDifficulty" class="p-2 border rounded-lg">
+            <option value="">All Difficulties</option>
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
+        </select>
+    </div>
+    
+    <!-- Download Progress Indicator -->
+    <div id="downloadProgress" class="hidden text-sm text-green-600 mb-2">
+        <i class="fas fa-spinner fa-spin"></i> <span id="downloadStatus">Preparing...</span>
+    </div>
                 
                 <div id="addQuestionForm" class="hidden bg-gray-50 p-4 rounded-lg mb-4">
                     <select id="questionBookId" class="w-full p-2 border rounded mb-2">
@@ -2592,7 +2602,179 @@
             showToast('Question deleted');
         }
     };
-
+    // ============ DOWNLOAD QUESTIONS AS CSV ============
+    async function downloadQuestionsCSV() {
+        const downloadBtn = document.getElementById('downloadQuestionsCsvBtn');
+        const progressEl = document.getElementById('downloadProgress');
+        const statusEl = document.getElementById('downloadStatus');
+        
+        // Get current filters
+        const bookId = document.getElementById('filterBookId').value;
+        const chapterId = document.getElementById('filterChapterId').value;
+        const topicId = document.getElementById('filterTopicId').value;
+        const difficulty = document.getElementById('filterDifficulty').value;
+        
+        // Show progress
+        downloadBtn.disabled = true;
+        downloadBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        progressEl.classList.remove('hidden');
+        statusEl.textContent = 'Fetching questions...';
+        
+        try {
+            // Build query
+            let query = _supabase
+                .from('questions')
+                .select(`
+                    *,
+                    chapters!inner (
+                        id,
+                        name,
+                        chapter_number,
+                        book_id,
+                        books!inner (
+                            id,
+                            title,
+                            author
+                        )
+                    ),
+                    subtopics (
+                        id,
+                        name
+                    )
+                `);
+            
+            // Apply filters
+            if (bookId && bookId !== '') {
+                query = query.eq('chapters.book_id', parseInt(bookId));
+            }
+            if (chapterId && chapterId !== '') {
+                query = query.eq('chapter_id', parseInt(chapterId));
+            }
+            if (topicId && topicId !== '') {
+                query = query.eq('topic_id', parseInt(topicId));
+            }
+            if (difficulty && difficulty !== '') {
+                query = query.eq('difficulty', difficulty);
+            }
+            
+            // Get all questions (no pagination limit for export)
+            const { data: questions, error } = await query.order('id', { ascending: true });
+            
+            if (error) throw error;
+            
+            if (!questions || questions.length === 0) {
+                showToast('No questions found for the selected filters', true);
+                downloadBtn.disabled = false;
+                downloadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                progressEl.classList.add('hidden');
+                return;
+            }
+            
+            statusEl.textContent = `Processing ${questions.length} questions...`;
+            
+            // Fetch options for all questions
+            const questionIds = questions.map(q => q.id);
+            const { data: options, error: optionsError } = await _supabase
+                .from('options')
+                .select('question_id, option_text, option_index')
+                .in('question_id', questionIds)
+                .order('question_id')
+                .order('option_index');
+            
+            if (optionsError) throw optionsError;
+            
+            // Group options by question_id
+            const optionsMap = {};
+            options.forEach(opt => {
+                if (!optionsMap[opt.question_id]) {
+                    optionsMap[opt.question_id] = ['', '', '', ''];
+                }
+                optionsMap[opt.question_id][opt.option_index] = opt.option_text;
+            });
+            
+            statusEl.textContent = 'Generating CSV...';
+            
+            // Prepare CSV data
+            const csvRows = [];
+            const headers = ['topic', 'question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'difficulty', 'explanation'];
+            csvRows.push(headers.join(','));
+            
+            questions.forEach(q => {
+                const chapterData = q.chapters;
+                const topicData = q.subtopics;
+                const topicName = topicData?.name || '';
+                
+                // Get options
+                const opts = optionsMap[q.id] || ['', '', '', ''];
+                
+                // Convert correct_answer number to letter
+                const correctLetter = ['A', 'B', 'C', 'D'][q.correct_answer] || 'A';
+                
+                // Build row - topic name is the topic
+                const row = [
+                    topicName, // topic
+                    q.question_text,
+                    opts[0] || '',
+                    opts[1] || '',
+                    opts[2] || '',
+                    opts[3] || '',
+                    correctLetter,
+                    q.difficulty || 'medium',
+                    q.explanation || ''
+                ];
+                
+                // Escape fields for CSV
+                const escapedRow = row.map(cell => `"${String(cell).replace(/"/g, '""')}"`);
+                csvRows.push(escapedRow.join(','));
+            });
+            
+            // Create and download CSV
+            const csvContent = csvRows.join('\n');
+            const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            
+            // Generate filename with filters
+            let filename = 'bookmcq_questions';
+            if (bookId) {
+                const bookName = document.getElementById('filterBookId').options[document.getElementById('filterBookId').selectedIndex]?.text || '';
+                if (bookName && bookName !== 'All Books') filename += `_${bookName.replace(/\s+/g, '_')}`;
+            }
+            if (chapterId) {
+                const chapterName = document.getElementById('filterChapterId').options[document.getElementById('filterChapterId').selectedIndex]?.text || '';
+                if (chapterName && chapterName !== 'All Chapters') filename += `_${chapterName.replace(/\s+/g, '_')}`;
+            }
+            if (topicId) {
+                const topicName = document.getElementById('filterTopicId').options[document.getElementById('filterTopicId').selectedIndex]?.text || '';
+                if (topicName && topicName !== 'All Topics') filename += `_${topicName.replace(/\s+/g, '_')}`;
+            }
+            filename += `_${new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-')}.csv`;
+            
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showToast(`✅ Downloaded ${questions.length} questions`);
+            statusEl.textContent = `Downloaded ${questions.length} questions ✅`;
+            setTimeout(() => {
+                progressEl.classList.add('hidden');
+            }, 3000);
+            
+        } catch (error) {
+            console.error('Download error:', error);
+            showToast('Error downloading questions: ' + error.message, true);
+            statusEl.textContent = `Error: ${error.message}`;
+            setTimeout(() => {
+                progressEl.classList.add('hidden');
+            }, 5000);
+        } finally {
+            downloadBtn.disabled = false;
+            downloadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    }
     async function addQuestion() {
         const chapterId = document.getElementById('questionChapterId').value;
         const topicId = document.getElementById('questionTopicId').value;
@@ -4220,7 +4402,7 @@
         });
         document.getElementById('filterTopicId').addEventListener('change', applyFilters);
         document.getElementById('filterDifficulty').addEventListener('change', applyFilters);
-        
+         document.getElementById('downloadQuestionsCsvBtn').addEventListener('click', downloadQuestionsCSV);
         // Pagination
         document.getElementById('prevPageBtn').addEventListener('click', goToPrevPage);
         document.getElementById('nextPageBtn').addEventListener('click', goToNextPage);
