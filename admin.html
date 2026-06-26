@@ -2867,7 +2867,7 @@ async function loadFilterTopics() {
                 }
             });
         });
-    }
+    
     
     // Clear any previous selections
     if (topicSelect) {
@@ -2881,62 +2881,6 @@ async function loadFilterTopics() {
     loadQuestions();
 }
 
-// Update topic UI function
-function updateTopicUI() {
-    const topicSelect = document.getElementById('filterTopicId');
-    const label = document.getElementById('topicDropdownLabel');
-    const countSpan = document.getElementById('topicSelectedCount');
-    const tagsContainer = document.getElementById('topicSelectedTags');
-    
-    if (!topicSelect) return;
-    
-    const selected = Array.from(topicSelect.selectedOptions).filter(opt => opt.value !== '');
-    const count = selected.length;
-    
-    if (count === 0) {
-        if (label) {
-            label.textContent = 'Select topics...';
-            label.style.color = '#6b7280';
-        }
-    } else if (count === 1) {
-        if (label) {
-            label.textContent = selected[0].textContent;
-            label.style.color = '#1e293b';
-        }
-    } else {
-        if (label) {
-            label.textContent = `${count} topics selected`;
-            label.style.color = '#1e293b';
-        }
-    }
-    
-    if (countSpan) {
-        countSpan.textContent = `${count} selected`;
-    }
-    
-    // Update tags
-    if (tagsContainer) {
-        tagsContainer.innerHTML = '';
-        selected.forEach(opt => {
-            const tag = document.createElement('span');
-            tag.className = 'topic-selected-tag';
-            tag.innerHTML = `${escapeHtml(opt.textContent)} <span class="remove-topic" data-value="${opt.value}">×</span>`;
-            tag.querySelector('.remove-topic').addEventListener('click', function(e) {
-                e.stopPropagation();
-                const val = this.dataset.value;
-                const option = topicSelect.querySelector(`option[value="${val}"]`);
-                if (option) {
-                    option.selected = false;
-                    const cb = document.querySelector(`#topicDropdownItems input[type="checkbox"][value="${val}"]`);
-                    if (cb) cb.checked = false;
-                    updateTopicUI();
-                    loadQuestions();
-                }
-            });
-            tagsContainer.appendChild(tag);
-        });
-    }
-}
 
 // Select all topics
 function selectAllTopics() {
@@ -2994,63 +2938,6 @@ function clearAllTopics() {
     // Load questions after topics are loaded
     await applyFilters();
 }
-
-// FIX 1: Select all topics
-function selectAllTopics() {
-    const topicSelect = document.getElementById('filterTopicId');
-    const items = document.querySelectorAll('#topicDropdownItems .topic-dropdown-item input[type="checkbox"]');
-    for (let opt of topicSelect.options) {
-        if (opt.value !== '') {
-            opt.selected = true;
-        }
-    }
-    items.forEach(cb => {
-        cb.checked = true;
-    });
-    updateTopicUI();
-    applyFilters();
-}
-
-// FIX 1: Clear all topics
-function clearAllTopics() {
-    const topicSelect = document.getElementById('filterTopicId');
-    const items = document.querySelectorAll('#topicDropdownItems .topic-dropdown-item input[type="checkbox"]');
-    for (let opt of topicSelect.options) {
-        opt.selected = false;
-    }
-    items.forEach(cb => {
-        cb.checked = false;
-    });
-    updateTopicUI();
-    applyFilters();
-}
-
-// FIX 1: Update topic count display
-function updateTopicUI() {
-    const topicSelect = document.getElementById('filterTopicId');
-    const label = document.getElementById('topicDropdownLabel');
-    const countSpan = document.getElementById('topicSelectedCount');
-    const tagsContainer = document.getElementById('topicSelectedTags');
-    
-    if (!topicSelect) return;
-    
-    const selected = Array.from(topicSelect.selectedOptions).filter(opt => opt.value !== '');
-    const count = selected.length;
-    
-    if (count === 0) {
-        label.textContent = 'Select topics...';
-        label.style.color = '#6b7280';
-    } else if (count === 1) {
-        label.textContent = selected[0].textContent;
-        label.style.color = '#1e293b';
-    } else {
-        label.textContent = `${count} topics selected`;
-        label.style.color = '#1e293b';
-    }
-    
-    if (countSpan) {
-        countSpan.textContent = `${count} selected`;
-    }
     
     // Update tags
     if (tagsContainer) {
@@ -3076,18 +2963,6 @@ function updateTopicUI() {
     }
 }
 
-// Modified applyFilters to handle topic selection properly
-async function applyFilters() {
-    const topicSelect = document.getElementById('filterTopicId');
-    const selectedTopics = Array.from(topicSelect.selectedOptions).filter(opt => opt.value !== '').map(opt => opt.value);
-    
-    currentFilters.bookId = document.getElementById('filterBookId').value;
-    currentFilters.chapterId = document.getElementById('filterChapterId').value;
-    currentFilters.topicIds = selectedTopics;
-    currentFilters.difficulty = document.getElementById('filterDifficulty').value;
-    currentPage = 1;
-    await loadQuestions();
-}
 
 // Modified loadQuestions to handle no topics (show all questions for the chapter)
 async function loadQuestions() {
