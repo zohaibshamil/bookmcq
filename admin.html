@@ -3287,6 +3287,7 @@ let isLoadingSubTopics = false;
         if (tabName === 'subtopics') {
             loadSubTopicFilterBooks();
             loadSubTopicsCached();
+            loadBookSelectForSubTopic();
         }
     }
     
@@ -4188,19 +4189,49 @@ async function checkDuplicateSubTopic(name, chapterId, excludeId = null) {
         document.getElementById('saveChapterBtn').addEventListener('click', addChapter);
         document.getElementById('chapterFilterBookId').addEventListener('change', applyChapterFilter);
         
-        // Sub-Topics
-        document.getElementById('showAddSubTopicBtn').addEventListener('click', async () => {
-            await loadSubTopicFilterBooks();
-            document.getElementById('addSubTopicForm').classList.remove('hidden');
-        });
-        document.getElementById('cancelSubTopicBtn').addEventListener('click', () => {
-            document.getElementById('addSubTopicForm').classList.add('hidden');
-            document.getElementById('subTopicName').value = '';
-        });
-        document.getElementById('saveSubTopicBtn').addEventListener('click', addSubTopic);
-        document.getElementById('subTopicBookId').addEventListener('change', loadSubTopicChapterFilters);
-        document.getElementById('subTopicFilterBookId').addEventListener('change', loadSubTopicChapters);
-        document.getElementById('subTopicFilterChapterId').addEventListener('change', applySubTopicFilter);
+// Sub-Topics - FIXED
+document.getElementById('showAddSubTopicBtn').addEventListener('click', async () => {
+    // Load books for the Add Topic form (NOT the filter dropdown)
+    await loadBookSelectForSubTopic();
+    // Show the form
+    document.getElementById('addSubTopicForm').classList.remove('hidden');
+});
+document.getElementById('cancelSubTopicBtn').addEventListener('click', () => {
+    document.getElementById('addSubTopicForm').classList.add('hidden');
+    document.getElementById('subTopicName').value = '';
+});
+document.getElementById('saveSubTopicBtn').addEventListener('click', addSubTopic);
+document.getElementById('subTopicBookId').addEventListener('change', loadSubTopicChapterFilters);
+document.getElementById('subTopicFilterBookId').addEventListener('change', loadSubTopicChapters);
+document.getElementById('subTopicFilterChapterId').addEventListener('change', applySubTopicFilter);
+
+
+        // Load books for the Add Topic form
+async function loadBookSelectForSubTopic() {
+    if (booksCache !== null) {
+        const select = document.getElementById('subTopicBookId');
+        if (select) {
+            select.innerHTML = '<option value="">Select Book</option>';
+            booksCache.forEach(book => {
+                select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+            });
+        }
+        return;
+    }
+    
+    const { data } = await _supabase.from('books').select('id, title');
+    if (data) {
+        booksCache = data;
+        const select = document.getElementById('subTopicBookId');
+        if (select) {
+            select.innerHTML = '<option value="">Select Book</option>';
+            data.forEach(book => {
+                select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+            });
+        }
+    }
+}
+        
         
         // Questions
         document.getElementById('showAddQuestionBtn').addEventListener('click', async () => {
