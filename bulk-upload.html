@@ -701,7 +701,7 @@ async function batchGetOrCreateTopics(chapterId, uniqueTopics) {
         }
         
 // ============================================
-// 14. DEBUG VERSION - Shows exactly what's happening
+// 14. FAST BULK UPLOAD - FINAL WORKING VERSION
 // ============================================
 async function uploadToDatabase() {
     const bookId = document.getElementById('bookSelect').value;
@@ -719,6 +719,7 @@ async function uploadToDatabase() {
         return;
     }
     
+    // Show progress
     const progressSection = document.getElementById('progressSection');
     const uploadBtn = document.getElementById('uploadBtn');
     const previewDiv = document.getElementById('previewDiv');
@@ -732,9 +733,10 @@ async function uploadToDatabase() {
     
     const total = currentQuestions.length;
     const chapterName = document.getElementById('chapterSelect').selectedOptions[0]?.text || chapterId;
+    const chapterIdNum = parseInt(chapterId);
     
-    addLog(`📤 Uploading ${total} questions to chapter: ${chapterName} (ID: ${chapterId})`, 'info');
-    updateProgress(0, total, '🚀 Starting debug upload...');
+    addLog(`📤 Uploading ${total} questions to chapter: ${chapterName} (ID: ${chapterIdNum})`, 'info');
+    updateProgress(0, total, '🚀 Starting fast upload...');
     
     try {
         // STEP 1: Get all unique topics
@@ -748,107 +750,126 @@ async function uploadToDatabase() {
             }
         });
         
-        addLog(`📝 Found ${uniqueTopics.length} unique topics: ${uniqueTopics.join(', ')}`, 'info');
+        addLog(`📝 Found ${uniqueTopics.length} unique topics`, 'info');
         
-        // STEP 2: DEBUG - Test direct insert for each topic individually
+        // STEP 2: Process topics - BATCH MODE (FAST)
         const topicIdMap = {};
-        const chapterIdNum = parseInt(chapterId);
         
-        addLog(`🔍 Chapter ID (numeric): ${chapterIdNum} (type: ${typeof chapterIdNum})`, 'info');
-        
-        // First, check if there are ANY subtopics for this chapter
-        const { data: checkAllTopics, error: checkError } = await supabase
-            .from('subtopics')
-            .select('id, name')
-            .eq('chapter_id', chapterIdNum);
-        
-        if (checkError) {
-            addLog(`❌ Error checking topics: ${checkError.message}`, 'error');
-        } else {
-            addLog(`📊 Found ${checkAllTopics?.length || 0} total subtopics in this chapter`, 'info');
-            if (checkAllTopics && checkAllTopics.length > 0) {
-                checkAllTopics.forEach(t => {
-                    addLog(`   - Topic: "${t.name}" (ID: ${t.id})`, 'info');
-                });
-            }
-        }
-        
-        // STEP 3: Try to create topics one by one with SIMPLE slugs
-        for (let i = 0; i < uniqueTopics.length; i++) {
-            const topicName = uniqueTopics[i];
+        if (uniqueTopics.length > 0) {
+            updateProgress(0, total, `📝 Processing ${uniqueTopics.length} topics...`);
             
-            // First check if this specific topic exists
-            const { data: existingTopic, error: findError } = await supabase
+            // Fetch ALL existing topics for this chapter in ONE query
+            const { data: existingTopics, error: fetchError } = await supabase
                 .from('subtopics')
-                .select('id')
-                .eq('chapter_id', chapterIdNum)
-                .eq('name', topicName)
-                .maybeSingle();
+                .select('id, name')
+                .eq('chapter_id', chapterIdNum);
             
-            if (findError) {
-                addLog(`❌ Error finding topic "${topicName}": ${findError.message}`, 'error');
-                continue;
-            }
-            
-            if (existingTopic) {
-                topicIdMap[topicName] = existingTopic.id;
-                addLog(`✅ Topic already exists: "${topicName}" (ID: ${existingTopic.id})`, 'success');
-                continue;
-            }
-            
-            // Create a VERY SIMPLE slug - just lowercase with dashes and timestamp
-            const simpleSlug = topicName
-                .toLowerCase()
-                .trim()
-                .replace(/[^a-z0-9\s-]/g, '')
-                .replace(/\s+/g, '-')
-                .replace(/-+/g, '-')
-                .substring(0, 30) + `-${Date.now()}-${i}`;
-            
-            addLog(`🔍 Attempting to create topic: "${topicName}" with slug: "${simpleSlug}"`, 'info');
-            
-            // Try to insert
-            const { data: newTopic, error: insertError } = await supabase
-                .from('subtopics')
-                .insert({
-                    chapter_id: chapterIdNum,
-                    name: topicName,
-                    slug: simpleSlug
-                })
-                .select()
-                .single();
-            
-            if (insertError) {
-                addLog(`❌ ERROR creating topic "${topicName}": ${insertError.message}`, 'error');
-                addLog(`   Error details: ${JSON.stringify(insertError)}`, 'error');
-            } else if (newTopic) {
-                topicIdMap[topicName] = newTopic.id;
-                addLog(`✅ SUCCESS! Created topic: "${topicName}" (ID: ${newTopic.id})`, 'success');
-            }
-        }
-        
-        addLog(`📊 Final topic map: ${Object.keys(topicIdMap).length} topics`, 'info');
-        
-        // STEP 4: Check if topics were actually created
-        const { data: verifyTopics, error: verifyError } = await supabase
-            .from('subtopics')
-            .select('id, name')
-            .eq('chapter_id', chapterIdNum);
-        
-        if (verifyError) {
-            addLog(`❌ Error verifying topics: ${verifyError.message}`, 'error');
-        } else {
-            addLog(`📊 VERIFICATION: Now have ${verifyTopics?.length || 0} subtopics in this chapter`, 'info');
-            if (verifyTopics && verifyTopics.length > 0) {
-                verifyTopics.forEach(t => {
-                    addLog(`   - Topic: "${t.name}" (ID: ${t.id})`, 'info');
+            if (fetchError) {
+                addLog(`❌ Error fetching topics: ${fetchError.message}`, 'error');
+            } else {
+                // Build map of existing topics
+                const existingMap = {};
+                if (existingTopics && existingTopics.length > 0) {
+                    existingTopics.forEach(t => {
+                        existingMap[t.name] = t.id;
+                    });
+                    addLog(`📊 Found ${existingTopics.length} existing topics`, 'info');
+                }
+                
+                // Separate existing and new topics
+                const topicsToCreate = [];
+                uniqueTopics.forEach(name => {
+                    if (existingMap[name]) {
+                        topicIdMap[name] = existingMap[name];
+                    } else {
+                        topicsToCreate.push(name);
+                    }
                 });
+                
+                addLog(`📊 ${Object.keys(topicIdMap).length} topics found, ${topicsToCreate.length} to create`, 'info');
+                
+                // BATCH CREATE all new topics at once (FAST)
+                if (topicsToCreate.length > 0) {
+                    addLog(`📝 Creating ${topicsToCreate.length} new topics in batch...`, 'info');
+                    
+                    const topicsData = topicsToCreate.map((name, index) => {
+                        const baseSlug = name
+                            .toLowerCase()
+                            .trim()
+                            .replace(/[^a-z0-9\s-]/g, '')
+                            .replace(/\s+/g, '-')
+                            .replace(/-+/g, '-')
+                            .substring(0, 40);
+                        
+                        // Include chapter ID in slug for uniqueness
+                        const uniqueSlug = `ch${chapterIdNum}-${baseSlug}-${Date.now()}-${index}`;
+                        
+                        return {
+                            chapter_id: chapterIdNum,
+                            name: name,
+                            slug: uniqueSlug
+                        };
+                    });
+                    
+                    // Batch insert all topics
+                    const { data: createdTopics, error: createError } = await supabase
+                        .from('subtopics')
+                        .insert(topicsData)
+                        .select();
+                    
+                    if (createError) {
+                        addLog(`❌ Batch topic creation failed: ${createError.message}`, 'error');
+                        
+                        // Fallback: Create one by one (slower but works)
+                        addLog('🔄 Falling back to individual topic creation...', 'info');
+                        for (let i = 0; i < topicsToCreate.length; i++) {
+                            const name = topicsToCreate[i];
+                            try {
+                                const fallbackSlug = name
+                                    .toLowerCase()
+                                    .trim()
+                                    .replace(/[^a-z0-9\s-]/g, '')
+                                    .replace(/\s+/g, '-')
+                                    .replace(/-+/g, '-')
+                                    .substring(0, 30) + `-${Date.now()}-${i}`;
+                                
+                                const { data: newTopic, error: singleError } = await supabase
+                                    .from('subtopics')
+                                    .insert({
+                                        chapter_id: chapterIdNum,
+                                        name: name,
+                                        slug: fallbackSlug
+                                    })
+                                    .select()
+                                    .single();
+                                
+                                if (!singleError && newTopic) {
+                                    topicIdMap[name] = newTopic.id;
+                                    addLog(`✅ Created topic: "${name}" (ID: ${newTopic.id})`, 'success');
+                                } else {
+                                    addLog(`❌ Failed to create topic "${name}": ${singleError?.message}`, 'error');
+                                }
+                            } catch(e) {
+                                addLog(`❌ Error creating topic "${name}": ${e.message}`, 'error');
+                            }
+                        }
+                    } else if (createdTopics) {
+                        createdTopics.forEach(t => {
+                            topicIdMap[t.name] = t.id;
+                            addLog(`✅ Created topic: "${t.name}" (ID: ${t.id})`, 'success');
+                        });
+                    }
+                }
             }
+            
+            addLog(`📊 Topic map ready: ${Object.keys(topicIdMap).length} topics`, 'success');
         }
         
-        // STEP 5: Prepare questions (even if no topics, still upload questions)
+        // STEP 3: Prepare questions with topic IDs (FAST)
         updateProgress(0, total, '📦 Preparing questions data...');
         const questionsToInsert = [];
+        let questionsWithTopics = 0;
+        let questionsWithoutTopics = 0;
         
         for (let i = 0; i < currentQuestions.length; i++) {
             const q = currentQuestions[i];
@@ -869,34 +890,132 @@ async function uploadToDatabase() {
                 const cleanedTopic = q.topic.trim();
                 if (topicIdMap[cleanedTopic]) {
                     questionData.topic_id = topicIdMap[cleanedTopic];
-                    addLog(`✅ Adding topic_id ${topicIdMap[cleanedTopic]} to question`, 'info');
+                    questionsWithTopics++;
+                } else {
+                    questionsWithoutTopics++;
                 }
+            } else {
+                questionsWithoutTopics++;
             }
             
             questionsToInsert.push(questionData);
         }
         
-        // STEP 6: Insert questions
-        if (questionsToInsert.length > 0) {
-            const { data: insertedQuestions, error: qError } = await supabase
-                .from('questions')
-                .insert(questionsToInsert)
-                .select('id');
+        addLog(`📊 Prepared ${questionsToInsert.length} questions (${questionsWithTopics} with topics, ${questionsWithoutTopics} without)`, 'info');
+        
+        // STEP 4: Batch insert questions (FAST)
+        const BATCH_SIZE = 500;
+        let insertedQuestions = 0;
+        const allInsertedQuestions = [];
+        
+        updateProgress(0, questionsToInsert.length, '💾 Inserting questions in batches...');
+        
+        for (let i = 0; i < questionsToInsert.length; i += BATCH_SIZE) {
+            const batch = questionsToInsert.slice(i, i + BATCH_SIZE);
             
-            if (qError) {
-                addLog(`❌ Question insert error: ${qError.message}`, 'error');
-            } else {
-                addLog(`✅ Inserted ${insertedQuestions?.length || 0} questions`, 'success');
+            try {
+                const { data: inserted, error } = await supabase
+                    .from('questions')
+                    .insert(batch)
+                    .select('id');
+                
+                if (error) {
+                    addLog(`❌ Batch ${Math.floor(i/BATCH_SIZE)+1} error: ${error.message}`, 'error');
+                    
+                    // Try individual inserts for failed batch
+                    for (let j = 0; j < batch.length; j++) {
+                        try {
+                            const { data: singleInsert, error: singleError } = await supabase
+                                .from('questions')
+                                .insert([batch[j]])
+                                .select('id');
+                            
+                            if (!singleError && singleInsert) {
+                                allInsertedQuestions.push(singleInsert[0]);
+                                insertedQuestions++;
+                            }
+                        } catch(e) {
+                            // Skip failed individual inserts
+                        }
+                    }
+                } else if (inserted) {
+                    allInsertedQuestions.push(...inserted);
+                    insertedQuestions += inserted.length;
+                }
+                
+                const progress = Math.round((insertedQuestions / questionsToInsert.length) * 70);
+                updateProgress(insertedQuestions, questionsToInsert.length, 
+                    `✅ ${insertedQuestions}/${questionsToInsert.length} questions inserted`);
+                
+            } catch(e) {
+                addLog(`❌ Batch ${Math.floor(i/BATCH_SIZE)+1} exception: ${e.message}`, 'error');
             }
         }
         
-        // STEP 7: Final message
-        const topicCount = Object.keys(topicIdMap).length;
-        alert(`Upload complete!\n\n✅ ${questionsToInsert.length} questions processed\n📝 ${topicCount} topics created/found\n\nCheck console for detailed logs.`);
+        // STEP 5: Batch insert options (FAST)
+        if (allInsertedQuestions.length > 0) {
+            updateProgress(insertedQuestions, questionsToInsert.length, '📝 Adding options...');
+            
+            const optionsData = [];
+            for (let i = 0; i < allInsertedQuestions.length; i++) {
+                const qId = allInsertedQuestions[i].id;
+                const q = currentQuestions[i];
+                if (!q) continue;
+                
+                const options = [
+                    safeString(q.option_a),
+                    safeString(q.option_b),
+                    safeString(q.option_c),
+                    safeString(q.option_d)
+                ];
+                
+                for (let j = 0; j < options.length; j++) {
+                    if (options[j]) {
+                        optionsData.push({
+                            question_id: qId,
+                            option_text: options[j],
+                            option_index: j
+                        });
+                    }
+                }
+            }
+            
+            if (optionsData.length > 0) {
+                for (let i = 0; i < optionsData.length; i += BATCH_SIZE) {
+                    const batch = optionsData.slice(i, i + BATCH_SIZE);
+                    try {
+                        const { error } = await supabase
+                            .from('options')
+                            .insert(batch);
+                        
+                        if (!error) {
+                            const progress = 70 + Math.round((i + batch.length) / optionsData.length * 30);
+                            updateProgress(insertedQuestions, questionsToInsert.length, 
+                                `📝 Options: ${Math.min(i + batch.length, optionsData.length)}/${optionsData.length}`);
+                        }
+                    } catch(e) {
+                        addLog(`❌ Options batch error: ${e.message}`, 'error');
+                    }
+                }
+            }
+        }
         
-        if (questionsToInsert.length > 0) {
+        // STEP 6: Final results
+        const topicCount = Object.keys(topicIdMap).length;
+        updateProgress(insertedQuestions, questionsToInsert.length, '✅ Upload complete!');
+        
+        addLog(`📊 Complete: ${insertedQuestions} questions uploaded`, 'success');
+        addLog(`📊 Topics: ${topicCount} processed (${uniqueTopics.length} unique)`, 'success');
+        addLog(`📊 Questions with topics: ${questionsWithTopics}, without: ${questionsWithoutTopics}`, 'info');
+        
+        // Show success message
+        const successMsg = `✅ Upload complete!\n\n📊 ${insertedQuestions} questions added\n📝 ${topicCount} topics processed (${uniqueTopics.length} unique)\n📚 Chapter: ${chapterName}\n\n${questionsWithTopics} questions have topics assigned\n${questionsWithoutTopics} questions without topics`;
+        alert(successMsg);
+        
+        if (insertedQuestions > 0) {
             document.getElementById('previewDiv').style.display = 'none';
             document.getElementById('uploadBtn').style.display = 'none';
+            document.getElementById('mathPreviewDiv').classList.add('hidden');
             document.getElementById('fileInput').value = '';
             currentQuestions = [];
         }
