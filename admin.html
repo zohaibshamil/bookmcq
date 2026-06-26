@@ -1339,6 +1339,84 @@ let selectedTopicIds = [];  // <-- ADD THIS LINE
             return m;
         });
     }
+
+
+    // ============================================
+    // ADD THESE FUNCTIONS RIGHT HERE ↓
+    // ============================================
+    // SAFE MATH RENDERING - PREVENT MISPLACED & ERRORS
+    // ============================================
+
+    function safeRenderMathContent(text) {
+        if (!text) return '';
+        
+        let str = String(text);
+        
+        // First, check if it contains any LaTeX delimiters
+        const hasLatex = str.includes('\\(') || str.includes('\\[') || 
+                         str.includes('$$') || str.includes('\\begin');
+        
+        if (!hasLatex) {
+            // If no LaTeX delimiters, just escape HTML and return
+            return escapeHtml(str);
+        }
+        
+        // If it has LaTeX, clean all special characters
+        // Order matters - do & first as it's the most common source of errors
+        str = str.replace(/&/g, '\\&');           // Ampersand - FIXES "Misplaced &"
+        str = str.replace(/%/g, '\\%');           // Percent
+        str = str.replace(/\$/g, '\\$');          // Dollar
+        str = str.replace(/#/g, '\\#');           // Hash
+        str = str.replace(/_/g, '\\_');           // Underscore
+        str = str.replace(/{/g, '\\{');           // Left brace
+        str = str.replace(/}/g, '\\}');           // Right brace
+        str = str.replace(/~/g, '\\textasciitilde{}'); // Tilde
+        str = str.replace(/\^/g, '\\textasciicircum{}'); // Caret
+        
+        return str;
+    }
+
+    // Safe rendering function for MathJax
+    async function safeRenderMath(element) {
+        if (!element) return;
+        
+        // First, check if the content contains problematic characters
+        const content = element.textContent || element.innerHTML;
+        
+        // If content contains & and no proper LaTeX delimiters, render as plain text
+        if (content.includes('&') && !content.includes('\\(') && !content.includes('\\[') && !content.includes('$$')) {
+            // Show as plain text with a warning
+            element.innerHTML = `<span class="text-gray-700">${escapeHtml(content)}</span>
+                                <span class="text-xs text-yellow-600 ml-2">(Plain text - contains &)</span>`;
+            return;
+        }
+        
+        try {
+            if (window.MathJax) {
+                await MathJax.typesetPromise([element]);
+            }
+        } catch(e) {
+            console.log('MathJax rendering error:', e);
+            // Fallback: show plain text
+            const plainText = element.textContent || element.innerHTML;
+            element.innerHTML = `<span class="text-gray-700">${escapeHtml(plainText)}</span>
+                                <span class="text-xs text-red-500 ml-2">(Rendering failed - showing plain text)</span>`;
+        }
+    }
+    // ============================================
+    // END OF ADDED FUNCTIONS ↑
+    // ============================================
+
+    function createSlug(text) {
+        return text
+            .toLowerCase()
+            .trim()
+            .replace(/&/g, 'and')
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-');
+    }
+    
     function createSlug(text) {
         return text
             .toLowerCase()
@@ -3113,37 +3191,46 @@ async function loadQuestions() {
     
     const startNumber = (currentPage - 1) * PAGE_SIZE + 1;
     
-    container.innerHTML = data.map((q, index) => {
-        const sequentialNumber = startNumber + index;
-        const chapterData = q.chapters;
-        const topicData = q.subtopics;
-        const bookTitle = chapterData?.books?.title || 'Unknown';
-        const chapterDisplay = chapterData?.chapter_number ? 
-            `Ch ${chapterData.chapter_number}: ${escapeHtml(chapterData.name)}` : 
-            escapeHtml(chapterData?.name || 'Unknown');
-        const topicName = escapeHtml(topicData?.name || 'No Topic');
-        return `
-        <div class="bg-gray-50 p-3 rounded-lg mb-2">
-            <div class="flex justify-between items-start">
-                <div class="flex-1">
-                    <p class="font-bold text-sm math-rendered">Q${sequentialNumber}. <span class="math-content">${escapeHtml(q.question_text)}</span></p>
-                    <p class="text-xs text-gray-600 mt-1">Book: ${escapeHtml(bookTitle)} | Chapter: ${chapterDisplay} | Topic: ${topicName} | Difficulty: ${q.difficulty || 'N/A'}</p>
-                </div>
-                <div class="flex gap-2 ml-2">
-                    <button onclick="openEditQuestionModal(${q.id})" class="text-blue-600 hover:text-blue-800 text-sm">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button onclick="deleteQuestion(${q.id})" class="text-red-600 hover:text-red-800 text-sm">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
+container.innerHTML = data.map((q, index) => {
+    const sequentialNumber = startNumber + index;
+    const chapterData = q.chapters;
+    const topicData = q.subtopics;
+    const bookTitle = chapterData?.books?.title || 'Unknown';
+    const chapterDisplay = chapterData?.chapter_number ? 
+        `Ch ${chapterData.chapter_number}: ${escapeHtml(chapterData.name)}` : 
+        escapeHtml(chapterData?.name || 'Unknown');
+    const topicName = escapeHtml(topicData?.name || 'No Topic');
+    
+    // SAFE RENDER: Clean the question text before displaying
+    const safeQuestionText = safeRenderMathContent(q.question_text);
+    
+    return `
+    <div class="bg-gray-50 p-3 rounded-lg mb-2">
+        <div class="flex justify-between items-start">
+            <div class="flex-1">
+                <p class="font-bold text-sm math-rendered">Q${sequentialNumber}. <span class="math-content" id="math_${q.id}">${safeQuestionText}</span></p>
+                <p class="text-xs text-gray-600 mt-1">Book: ${escapeHtml(bookTitle)} | Chapter: ${chapterDisplay} | Topic: ${topicName} | Difficulty: ${q.difficulty || 'N/A'}</p>
+            </div>
+            <div class="flex gap-2 ml-2">
+                <button onclick="openEditQuestionModal(${q.id})" class="text-blue-600 hover:text-blue-800 text-sm">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="deleteQuestion(${q.id})" class="text-red-600 hover:text-red-800 text-sm">
+                    <i class="fas fa-trash"></i>
+                </button>
             </div>
         </div>
-    `}).join('');
-    
-    if (window.MathJax) {
-        MathJax.typesetPromise();
-    }
+    </div>
+    `;
+}).join('');
+
+// After rendering, safely render math for each question
+if (window.MathJax) {
+    const mathElements = container.querySelectorAll('.math-content');
+    mathElements.forEach(async (el) => {
+        await safeRenderMath(el);
+    });
+}
 }
     
     async function applyFilters() {
