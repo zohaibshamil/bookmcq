@@ -435,7 +435,7 @@
         }
         
 // ============================================
-// 11. GET OR CREATE TOPIC - FIXED
+// 11. GET OR CREATE TOPIC - FIXED WITH UNIQUE SLUG
 // ============================================
 async function getOrCreateTopic(chapterId, topicName) {
     if (!topicName || topicName.trim() === '') {
@@ -449,7 +449,6 @@ async function getOrCreateTopic(chapterId, topicName) {
         return topicCache[cacheKey];
     }
     
-    // Fix: Ensure chapter_id is parsed as integer
     const chapterIdInt = parseInt(chapterId);
     
     // Try to find existing topic
@@ -470,8 +469,8 @@ async function getOrCreateTopic(chapterId, topicName) {
         return existing.id;
     }
     
-    // Create new topic
-    const slug = trimmedName
+    // Create new topic with guaranteed unique slug
+    const baseSlug = trimmedName
         .toLowerCase()
         .trim()
         .replace(/&/g, 'and')
@@ -479,21 +478,15 @@ async function getOrCreateTopic(chapterId, topicName) {
         .replace(/\s+/g, '-')
         .replace(/-+/g, '-');
     
-    const { data: slugCheck } = await supabase
-        .from('subtopics')
-        .select('id')
-        .eq('slug', slug)
-        .maybeSingle();
+    // Add timestamp and random string for uniqueness
+    const uniqueSlug = `${baseSlug}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
     
-    const finalSlug = slugCheck ? `${slug}-${Date.now()}` : slug;
-    
-    // Fix: Ensure chapter_id is properly passed as integer
     const { data: newTopic, error: createError } = await supabase
         .from('subtopics')
         .insert({
             chapter_id: chapterIdInt,
             name: trimmedName,
-            slug: finalSlug
+            slug: uniqueSlug
         })
         .select()
         .single();
@@ -509,7 +502,7 @@ async function getOrCreateTopic(chapterId, topicName) {
 }
         
 // ============================================
-// 12. BATCH GET OR CREATE TOPICS - FIXED
+// 12. BATCH GET OR CREATE TOPICS - COMPLETELY FIXED
 // ============================================
 async function batchGetOrCreateTopics(chapterId, uniqueTopics) {
     const results = {};
@@ -517,7 +510,6 @@ async function batchGetOrCreateTopics(chapterId, uniqueTopics) {
     
     // First, find all existing topics in one query
     if (uniqueTopics.length > 0) {
-        // Fix: Correctly query with proper column names
         const { data: existingTopics, error } = await supabase
             .from('subtopics')
             .select('id, name')
@@ -543,8 +535,9 @@ async function batchGetOrCreateTopics(chapterId, uniqueTopics) {
     
     // Batch create all missing topics
     if (topicsToCreate.length > 0) {
-        const topicsData = topicsToCreate.map(name => {
-            const slug = name
+        const topicsData = topicsToCreate.map((name, index) => {
+            // Fix: Create a more unique slug with timestamp + index + random
+            const baseSlug = name
                 .toLowerCase()
                 .trim()
                 .replace(/&/g, 'and')
@@ -552,11 +545,14 @@ async function batchGetOrCreateTopics(chapterId, uniqueTopics) {
                 .replace(/\s+/g, '-')
                 .replace(/-+/g, '-');
             
-            // Fix: Ensure chapter_id is properly parsed as integer
+            // Ensure uniqueness with timestamp, index, and random string
+            const uniqueSuffix = `${Date.now()}-${index}-${Math.random().toString(36).substring(2, 8)}`;
+            const finalSlug = `${baseSlug}-${uniqueSuffix}`;
+            
             return {
                 chapter_id: parseInt(chapterId),
                 name: name,
-                slug: `${slug}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`
+                slug: finalSlug
             };
         });
         
@@ -574,6 +570,41 @@ async function batchGetOrCreateTopics(chapterId, uniqueTopics) {
             });
         } else {
             addLog(`❌ Error creating topics: ${error?.message}`, 'error');
+            // If batch fails, try one by one
+            addLog('🔄 Attempting individual topic creation...', 'info');
+            
+            for (const name of topicsToCreate) {
+                try {
+                    const slug = name
+                        .toLowerCase()
+                        .trim()
+                        .replace(/&/g, 'and')
+                        .replace(/[^a-z0-9\s-]/g, '')
+                        .replace(/\s+/g, '-')
+                        .replace(/-+/g, '-') + `-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+                    
+                    const { data: newTopic, error: createError } = await supabase
+                        .from('subtopics')
+                        .insert({
+                            chapter_id: parseInt(chapterId),
+                            name: name,
+                            slug: slug
+                        })
+                        .select()
+                        .single();
+                    
+                    if (!createError && newTopic) {
+                        const key = `${chapterId}_${name}`;
+                        results[key] = newTopic.id;
+                        topicCache[key] = newTopic.id;
+                        addLog(`✅ Created topic individually: "${name}" (ID: ${newTopic.id})`, 'success');
+                    } else {
+                        addLog(`❌ Failed to create topic "${name}": ${createError?.message}`, 'error');
+                    }
+                } catch(e) {
+                    addLog(`❌ Error creating topic "${name}": ${e.message}`, 'error');
+                }
+            }
         }
     }
     
