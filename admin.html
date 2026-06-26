@@ -1820,57 +1820,61 @@
         }
     }
     
-    function renderChapterFilterBooks(books) {
-        const select = document.getElementById('chapterFilterBookId');
-        select.innerHTML = '<option value="">All Books</option>';
-        if (books) {
-            books.forEach(book => {
-                select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
-            });
-        }
+function renderChapterFilterBooks(books) {
+    const select = document.getElementById('chapterFilterBookId');
+    select.innerHTML = '<option value="">📚 Select a Book</option>';
+    if (books) {
+        books.forEach(book => {
+            select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+        });
+    }
+}
+    
+// ============ CHAPTERS - FIXED ============
+async function loadChaptersCached() {
+    const container = document.getElementById('chaptersList');
+    const selectedBookId = document.getElementById('chapterFilterBookId').value;
+    
+    // If no book selected, show message
+    if (!selectedBookId || selectedBookId === '') {
+        container.innerHTML = '<p class="text-gray-500 text-center py-4">📚 Please select a book first to view its chapters.</p>';
+        return;
     }
     
-    async function loadChaptersCached() {
-        let query = _supabase.from('chapters').select('*, books(title)');
-        
-        if (currentChapterFilter && currentChapterFilter !== '') {
-            query = query.eq('book_id', parseInt(currentChapterFilter));
-        }
-        
-        const { data, error } = await query.order('book_id', { ascending: true }).order('chapter_number', { ascending: true, nullsFirst: false }).order('id', { ascending: true });
-        const container = document.getElementById('chaptersList');
-        
-        if (error || !data || data.length === 0) {
-            container.innerHTML = '<p class="text-gray-500">No chapters yet. Add your first chapter!</p>';
-            return;
-        }
-        
-        container.innerHTML = data.map(chapter => {
-            const chapterDisplay = chapter.chapter_number ? `Ch ${chapter.chapter_number}: ` : '';
-            const bookTitle = chapter.books?.title || 'Unknown';
-            return `
-            <div class="bg-gray-50 p-3 rounded-lg mb-2 flex justify-between items-center">
-                <div>
-                    <strong>${chapterDisplay}${escapeHtml(chapter.name)}</strong>
-                    <span class="text-gray-600 text-sm ml-2">(${escapeHtml(bookTitle)})</span>
-                </div>
-                <div class="flex gap-2">
-                    <button onclick="openEditChapterModal(${chapter.id}, '${escapeHtml(chapter.name)}', ${chapter.chapter_number || ''}, ${chapter.book_id})" class="text-blue-600 hover:text-blue-800">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button onclick="deleteChapter(${chapter.id})" class="text-red-600 hover:text-red-800">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
+    let query = _supabase.from('chapters').select('*, books(title)').eq('book_id', parseInt(selectedBookId));
+    
+    const { data, error } = await query.order('chapter_number', { ascending: true, nullsFirst: false }).order('id', { ascending: true });
+    
+    if (error || !data || data.length === 0) {
+        container.innerHTML = '<p class="text-gray-500 text-center py-4">No chapters found for this book. Add your first chapter!</p>';
+        return;
+    }
+    
+    container.innerHTML = data.map(chapter => {
+        const chapterDisplay = chapter.chapter_number ? `Ch ${chapter.chapter_number}: ` : '';
+        const bookTitle = chapter.books?.title || 'Unknown';
+        return `
+        <div class="bg-gray-50 p-3 rounded-lg mb-2 flex justify-between items-center">
+            <div>
+                <strong>${chapterDisplay}${escapeHtml(chapter.name)}</strong>
+                <span class="text-gray-600 text-sm ml-2">(${escapeHtml(bookTitle)})</span>
             </div>
-        `}).join('');
-    }
-    
-    async function applyChapterFilter() {
-        currentChapterFilter = document.getElementById('chapterFilterBookId').value;
-        await loadChaptersCached();
-    }
+            <div class="flex gap-2">
+                <button onclick="openEditChapterModal(${chapter.id}, '${escapeHtml(chapter.name)}', ${chapter.chapter_number || ''}, ${chapter.book_id})" class="text-blue-600 hover:text-blue-800">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="deleteChapter(${chapter.id})" class="text-red-600 hover:text-red-800">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `}).join('');
+}
 
+// Update the filter change event
+async function applyChapterFilter() {
+    await loadChaptersCached();
+}
     window.deleteChapter = async function(id) {
         if (confirm('Delete this chapter? This will also delete all topics and questions in this chapter.')) {
             await _supabase.from('chapters').delete().eq('id', id);
@@ -2066,72 +2070,98 @@
         }
     }
 
-    // Load topics list
-    async function loadSubTopicsCached() {
-        const container = document.getElementById('subTopicsList');
-        container.innerHTML = '<div class="skeleton h-12 w-full mb-2"></div><div class="skeleton h-12 w-full mb-2"></div>';
-        
-        let query = _supabase.from('subtopics').select('*, chapters(id, name, chapter_number, book_id, books(title))');
-        
-        const bookFilter = document.getElementById('subTopicFilterBookId')?.value;
-        const chapterFilter = document.getElementById('subTopicFilterChapterId')?.value;
-        
-        if (bookFilter && bookFilter !== '') {
-            const { data: chaptersInBook } = await _supabase.from('chapters').select('id').eq('book_id', parseInt(bookFilter));
-            if (chaptersInBook && chaptersInBook.length > 0) {
-                const chapterIds = chaptersInBook.map(c => c.id);
-                query = query.in('chapter_id', chapterIds);
-            } else {
-                container.innerHTML = '<p class="text-gray-500">No topics found for this book.</p>';
-                return;
-            }
-        }
-        
-        if (chapterFilter && chapterFilter !== '') {
-            query = query.eq('chapter_id', parseInt(chapterFilter));
-        }
-        
-        const { data, error } = await query.order('chapter_id', { ascending: true }).order('id', { ascending: true });
-        
-        if (error || !data || data.length === 0) {
-            container.innerHTML = '<p class="text-gray-500">No topics yet. Add your first topic!</p>';
-            return;
-        }
-        
-        container.innerHTML = data.map(topic => {
-            const chapterName = topic.chapters?.name || 'Unknown Chapter';
-            const bookTitle = topic.chapters?.books?.title || 'Unknown Book';
-            const chapterDisplay = topic.chapters?.chapter_number ? `Ch ${topic.chapters.chapter_number}: ` : '';
-            return `
-            <div class="bg-gray-50 p-3 rounded-lg mb-2 flex justify-between items-center">
-                <div>
-                    <strong>${escapeHtml(topic.name)}</strong>
-                    <span class="text-gray-600 text-sm ml-2">(${chapterDisplay}${escapeHtml(chapterName)} - ${escapeHtml(bookTitle)})</span>
-                </div>
-                <div class="flex gap-2">
-                    <button onclick="openEditSubTopicModal(${topic.id}, '${escapeHtml(topic.name)}', ${topic.chapter_id})" class="text-blue-600 hover:text-blue-800">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button onclick="deleteSubTopic(${topic.id})" class="text-red-600 hover:text-red-800">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
+// ============ SUB-TOPICS - FIXED ============
+async function loadSubTopicsCached() {
+    const container = document.getElementById('subTopicsList');
+    const bookFilter = document.getElementById('subTopicFilterBookId')?.value;
+    const chapterFilter = document.getElementById('subTopicFilterChapterId')?.value;
+    
+    // If no book selected, show message
+    if (!bookFilter || bookFilter === '') {
+        container.innerHTML = '<p class="text-gray-500 text-center py-4">📚 Please select a book first to view its topics.</p>';
+        return;
+    }
+    
+    // If no chapter selected, show message
+    if (!chapterFilter || chapterFilter === '') {
+        container.innerHTML = '<p class="text-gray-500 text-center py-4">📖 Please select a chapter first to view its topics.</p>';
+        return;
+    }
+    
+    let query = _supabase.from('subtopics').select('*, chapters(id, name, chapter_number, book_id, books(title))')
+        .eq('chapter_id', parseInt(chapterFilter));
+    
+    const { data, error } = await query.order('name', { ascending: true });
+    
+    if (error || !data || data.length === 0) {
+        container.innerHTML = '<p class="text-gray-500 text-center py-4">No topics found for this chapter. Add your first topic!</p>';
+        return;
+    }
+    
+    container.innerHTML = data.map(topic => {
+        const chapterName = topic.chapters?.name || 'Unknown Chapter';
+        const bookTitle = topic.chapters?.books?.title || 'Unknown Book';
+        const chapterDisplay = topic.chapters?.chapter_number ? `Ch ${topic.chapters.chapter_number}: ` : '';
+        return `
+        <div class="bg-gray-50 p-3 rounded-lg mb-2 flex justify-between items-center">
+            <div>
+                <strong>${escapeHtml(topic.name)}</strong>
+                <span class="text-gray-600 text-sm ml-2">(${chapterDisplay}${escapeHtml(chapterName)} - ${escapeHtml(bookTitle)})</span>
             </div>
-        `}).join('');
-    }
+            <div class="flex gap-2">
+                <button onclick="openEditSubTopicModal(${topic.id}, '${escapeHtml(topic.name)}', ${topic.chapter_id})" class="text-blue-600 hover:text-blue-800">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="deleteSubTopic(${topic.id})" class="text-red-600 hover:text-red-800">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `}).join('');
+}
 
-    async function applySubTopicFilter() {
-        await loadSubTopicsCached();
+// Update filter functions
+async function loadSubTopicChapters() {
+    const bookId = document.getElementById('subTopicFilterBookId').value;
+    const chapterSelect = document.getElementById('subTopicFilterChapterId');
+    const topicsContainer = document.getElementById('subTopicsList');
+    
+    // Reset topics
+    topicsContainer.innerHTML = '<p class="text-gray-500 text-center py-4">📖 Please select a chapter first to view its topics.</p>';
+    
+    if (!bookId || bookId === '') {
+        chapterSelect.innerHTML = '<option value="">📖 Select a book first</option>';
+        chapterSelect.disabled = true;
+        return;
     }
+    
+    chapterSelect.innerHTML = '<option value="">📖 Select a Chapter</option>';
+    chapterSelect.disabled = false;
+    
+    const { data } = await _supabase.from('chapters')
+        .select('id, name, chapter_number')
+        .eq('book_id', parseInt(bookId))
+        .order('chapter_number', { ascending: true });
+    
+    if (data && data.length > 0) {
+        data.forEach(chapter => {
+            const display = chapter.chapter_number ? `Ch ${chapter.chapter_number}: ${chapter.name}` : chapter.name;
+            chapterSelect.innerHTML += `<option value="${chapter.id}">${escapeHtml(display)}</option>`;
+        });
+    }
+}
 
-    window.deleteSubTopic = async function(id) {
-        if (confirm('Delete this topic? This will also delete all questions in this topic.')) {
-            await _supabase.from('subtopics').delete().eq('id', id);
-            subTopicsCache = {};
-            await Promise.all([loadSubTopicsCached(), loadQuestions()]);
-            showToast('Topic deleted');
-        }
-    };
+async function applySubTopicFilter() {
+    await loadSubTopicsCached();
+}
+
+// Update the filter book change to reset chapter and topics
+document.getElementById('subTopicFilterBookId').addEventListener('change', function() {
+    document.getElementById('subTopicFilterChapterId').value = '';
+    document.getElementById('subTopicFilterChapterId').innerHTML = '<option value="">📖 Select a Chapter</option>';
+    document.getElementById('subTopicsList').innerHTML = '<p class="text-gray-500 text-center py-4">📖 Please select a chapter first to view its topics.</p>';
+    loadSubTopicChapters();
+});
 
     // ===== LOAD BOOKS FOR ADD TOPIC FORM =====
     async function loadBookSelectForSubTopic() {
@@ -2466,133 +2496,220 @@
     }
 
     // ============ QUESTIONS - UPDATED FOR NEW SCHEMA ============
-    async function loadQuestions() {
-        const container = document.getElementById('questionsList');
-        container.innerHTML = '<div class="skeleton h-24 rounded-lg mb-2"></div><div class="skeleton h-24 rounded-lg"></div>';
-        
-        // Build query with proper joins for the new schema
-        let query = _supabase
-            .from('questions')
-            .select(`
-                *,
-                chapters!inner (
+// ============ QUESTIONS - FIXED ============
+async function loadQuestions() {
+    const container = document.getElementById('questionsList');
+    const bookId = document.getElementById('filterBookId').value;
+    const chapterId = document.getElementById('filterChapterId').value;
+    const topicId = document.getElementById('filterTopicId').value;
+    const difficulty = document.getElementById('filterDifficulty').value;
+    
+    // If no book selected, show message
+    if (!bookId || bookId === '') {
+        container.innerHTML = '<p class="text-gray-500 text-center py-4">📚 Please select a book first to view its questions.</p>';
+        return;
+    }
+    
+    // If no chapter selected, show message
+    if (!chapterId || chapterId === '') {
+        container.innerHTML = '<p class="text-gray-500 text-center py-4">📖 Please select a chapter first to view its questions.</p>';
+        return;
+    }
+    
+    container.innerHTML = '<div class="skeleton h-24 rounded-lg mb-2"></div><div class="skeleton h-24 rounded-lg"></div>';
+    
+    let query = _supabase
+        .from('questions')
+        .select(`
+            *,
+            chapters!inner (
+                id,
+                name,
+                chapter_number,
+                book_id,
+                books!inner (
                     id,
-                    name,
-                    chapter_number,
-                    book_id,
-                    books!inner (
-                        id,
-                        title
-                    )
-                ),
-                subtopics (
-                    id,
-                    name
+                    title
                 )
-            `, { count: 'exact' });
-        
-        // Apply filters
-        if (currentFilters.bookId && currentFilters.bookId !== '') {
-            query = query.eq('chapters.book_id', parseInt(currentFilters.bookId));
-        }
-        
-        if (currentFilters.chapterId && currentFilters.chapterId !== '') {
-            query = query.eq('chapter_id', parseInt(currentFilters.chapterId));
-        }
-        
-        if (currentFilters.topicId && currentFilters.topicId !== '') {
-            query = query.eq('topic_id', parseInt(currentFilters.topicId));
-        }
-        
-        if (currentFilters.difficulty && currentFilters.difficulty !== '') {
-            query = query.eq('difficulty', currentFilters.difficulty);
-        }
-        
-        const from = (currentPage - 1) * PAGE_SIZE;
-        const to = from + PAGE_SIZE - 1;
-        
-        const { data, error, count } = await query.range(from, to).order('id', { ascending: true });
-        
-        if (error) {
-            console.error('Error loading questions:', error);
-            container.innerHTML = '<p class="text-gray-500">Error loading questions: ' + error.message + '</p>';
-            return;
-        }
-        
-        totalQuestions = count || 0;
-        updatePaginationButtons();
-        
-        if (!data || data.length === 0) {
-            container.innerHTML = '<p class="text-gray-500">No questions found for the selected filters.</p>';
-            return;
-        }
-        
-        const startNumber = (currentPage - 1) * PAGE_SIZE + 1;
-        
-        container.innerHTML = data.map((q, index) => {
-            const sequentialNumber = startNumber + index;
-            const chapterData = q.chapters;
-            const topicData = q.subtopics;
-            const bookTitle = chapterData?.books?.title || 'Unknown';
-            const chapterDisplay = chapterData?.chapter_number ? 
-                `Ch ${chapterData.chapter_number}: ${escapeHtml(chapterData.name)}` : 
-                escapeHtml(chapterData?.name || 'Unknown');
-            const topicName = escapeHtml(topicData?.name || 'No Topic');
-            return `
-            <div class="bg-gray-50 p-3 rounded-lg mb-2">
-                <div class="flex justify-between items-start">
-                    <div class="flex-1">
-                        <p class="font-bold text-sm math-rendered">Q${sequentialNumber}. <span class="math-content">${escapeHtml(q.question_text)}</span></p>
-                        <p class="text-xs text-gray-600 mt-1">Book: ${escapeHtml(bookTitle)} | Chapter: ${chapterDisplay} | Topic: ${topicName} | Difficulty: ${q.difficulty || 'N/A'}</p>
-                    </div>
-                    <div class="flex gap-2 ml-2">
-                        <button onclick="openEditQuestionModal(${q.id})" class="text-blue-600 hover:text-blue-800 text-sm">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button onclick="deleteQuestion(${q.id})" class="text-red-600 hover:text-red-800 text-sm">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
+            ),
+            subtopics (
+                id,
+                name
+            )
+        `, { count: 'exact' });
+    
+    // Apply filters - always require chapter
+    query = query.eq('chapter_id', parseInt(chapterId));
+    
+    if (topicId && topicId !== '') {
+        query = query.eq('topic_id', parseInt(topicId));
+    }
+    
+    if (difficulty && difficulty !== '') {
+        query = query.eq('difficulty', difficulty);
+    }
+    
+    const from = (currentPage - 1) * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+    
+    const { data, error, count } = await query.range(from, to).order('id', { ascending: true });
+    
+    if (error) {
+        console.error('Error loading questions:', error);
+        container.innerHTML = '<p class="text-gray-500">Error loading questions: ' + error.message + '</p>';
+        return;
+    }
+    
+    totalQuestions = count || 0;
+    updatePaginationButtons();
+    
+    if (!data || data.length === 0) {
+        container.innerHTML = '<p class="text-gray-500 text-center py-4">No questions found for the selected filters.</p>';
+        return;
+    }
+    
+    const startNumber = (currentPage - 1) * PAGE_SIZE + 1;
+    
+    container.innerHTML = data.map((q, index) => {
+        const sequentialNumber = startNumber + index;
+        const chapterData = q.chapters;
+        const topicData = q.subtopics;
+        const bookTitle = chapterData?.books?.title || 'Unknown';
+        const chapterDisplay = chapterData?.chapter_number ? 
+            `Ch ${chapterData.chapter_number}: ${escapeHtml(chapterData.name)}` : 
+            escapeHtml(chapterData?.name || 'Unknown');
+        const topicName = escapeHtml(topicData?.name || 'No Topic');
+        return `
+        <div class="bg-gray-50 p-3 rounded-lg mb-2">
+            <div class="flex justify-between items-start">
+                <div class="flex-1">
+                    <p class="font-bold text-sm math-rendered">Q${sequentialNumber}. <span class="math-content">${escapeHtml(q.question_text)}</span></p>
+                    <p class="text-xs text-gray-600 mt-1">Book: ${escapeHtml(bookTitle)} | Chapter: ${chapterDisplay} | Topic: ${topicName} | Difficulty: ${q.difficulty || 'N/A'}</p>
+                </div>
+                <div class="flex gap-2 ml-2">
+                    <button onclick="openEditQuestionModal(${q.id})" class="text-blue-600 hover:text-blue-800 text-sm">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="deleteQuestion(${q.id})" class="text-red-600 hover:text-red-800 text-sm">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </div>
             </div>
-        `}).join('');
-        
-        if (window.MathJax) {
-            MathJax.typesetPromise();
-        }
-    }
+        </div>
+    `}).join('');
     
-    async function applyFilters() {
-        currentFilters.bookId = document.getElementById('filterBookId').value;
-        currentFilters.chapterId = document.getElementById('filterChapterId').value;
-        currentFilters.topicId = document.getElementById('filterTopicId').value;
-        currentFilters.difficulty = document.getElementById('filterDifficulty').value;
-        currentPage = 1;
-        await loadQuestions();
+    if (window.MathJax) {
+        MathJax.typesetPromise();
     }
-    
-    function updatePaginationButtons() {
-        const totalPages = Math.ceil(totalQuestions / PAGE_SIZE);
-        document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages || 1}`;
-        document.getElementById('prevPageBtn').disabled = currentPage === 1;
-        document.getElementById('nextPageBtn').disabled = currentPage >= totalPages;
-    }
-    
-    async function goToPrevPage() {
-        if (currentPage > 1) {
-            currentPage--;
-            await loadQuestions();
-        }
-    }
-    
-    async function goToNextPage() {
-        const totalPages = Math.ceil(totalQuestions / PAGE_SIZE);
-        if (currentPage < totalPages) {
-            currentPage++;
-            await loadQuestions();
-        }
-    }
+}
 
+// Update filter functions
+async function loadFilterChapters() {
+    const bookId = document.getElementById('filterBookId').value;
+    const chapterSelect = document.getElementById('filterChapterId');
+    const topicSelect = document.getElementById('filterTopicId');
+    const questionsContainer = document.getElementById('questionsList');
+    
+    // Reset topics and questions
+    topicSelect.innerHTML = '<option value="">All Topics</option>';
+    questionsContainer.innerHTML = '<p class="text-gray-500 text-center py-4">📖 Please select a chapter first to view its questions.</p>';
+    
+    if (!bookId || bookId === '') {
+        chapterSelect.innerHTML = '<option value="">📖 Select a book first</option>';
+        chapterSelect.disabled = true;
+        topicSelect.disabled = true;
+        currentFilters.chapterId = '';
+        currentFilters.topicId = '';
+        return;
+    }
+    
+    chapterSelect.innerHTML = '<option value="">📖 Select a Chapter</option>';
+    chapterSelect.disabled = false;
+    topicSelect.disabled = true;
+    
+    if (chaptersCache[bookId]) {
+        renderFilterChapters(chaptersCache[bookId]);
+        return;
+    }
+    
+    const { data } = await _supabase.from('chapters')
+        .select('id, name, chapter_number')
+        .eq('book_id', parseInt(bookId))
+        .order('chapter_number', { ascending: true });
+    
+    if (data) {
+        chaptersCache[bookId] = data;
+        renderFilterChapters(data);
+    }
+}
+
+function renderFilterChapters(chapters) {
+    const chapterSelect = document.getElementById('filterChapterId');
+    chapterSelect.innerHTML = '<option value="">📖 Select a Chapter</option>';
+    if (chapters && chapters.length > 0) {
+        chapters.forEach(chapter => {
+            const display = chapter.chapter_number ? `Ch ${chapter.chapter_number}: ${chapter.name}` : chapter.name;
+            chapterSelect.innerHTML += `<option value="${chapter.id}">${escapeHtml(display)}</option>`;
+        });
+    }
+    chapterSelect.disabled = false;
+    document.getElementById('filterTopicId').disabled = true;
+}
+
+async function loadFilterTopics() {
+    const chapterId = document.getElementById('filterChapterId').value;
+    const topicSelect = document.getElementById('filterTopicId');
+    const questionsContainer = document.getElementById('questionsList');
+    
+    // Reset questions
+    questionsContainer.innerHTML = '<p class="text-gray-500 text-center py-4">📝 Please select a topic to view its questions.</p>';
+    
+    if (!chapterId || chapterId === '') {
+        topicSelect.innerHTML = '<option value="">📝 Select a chapter first</option>';
+        topicSelect.disabled = true;
+        currentFilters.topicId = '';
+        return;
+    }
+    
+    const { data } = await _supabase.from('subtopics')
+        .select('id, name')
+        .eq('chapter_id', parseInt(chapterId))
+        .order('name', { ascending: true });
+    
+    topicSelect.innerHTML = '<option value="">📝 All Topics</option>';
+    topicSelect.disabled = false;
+    if (data && data.length > 0) {
+        data.forEach(topic => {
+            topicSelect.innerHTML += `<option value="${topic.id}">${escapeHtml(topic.name)}</option>`;
+        });
+    }
+    currentFilters.topicId = '';
+    topicSelect.value = '';
+}
+
+async function applyFilters() {
+    const bookId = document.getElementById('filterBookId').value;
+    const chapterId = document.getElementById('filterChapterId').value;
+    const topicId = document.getElementById('filterTopicId').value;
+    const difficulty = document.getElementById('filterDifficulty').value;
+    
+    // Validate: must have book and chapter
+    if (!bookId || bookId === '') {
+        showToast('Please select a book first', true);
+        return;
+    }
+    if (!chapterId || chapterId === '') {
+        showToast('Please select a chapter first', true);
+        return;
+    }
+    
+    currentFilters.bookId = bookId;
+    currentFilters.chapterId = chapterId;
+    currentFilters.topicId = topicId;
+    currentFilters.difficulty = difficulty;
+    currentPage = 1;
+    await loadQuestions();
+}
     // ============ SINGLE QUESTION ADD - UPDATED FOR NEW SCHEMA ============
     window.deleteQuestion = async function(id) {
         if (confirm('Delete this question?')) {
