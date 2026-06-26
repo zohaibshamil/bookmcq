@@ -2661,18 +2661,29 @@
     }
 
 // ============ CACHED FILTERS - FIX 1: Multi-select topics with checkboxes ============
-let selectedTopicIds = [];
-
-// Toggle topic dropdown
-function toggleTopicDropdown() {
-    const menu = document.getElementById('topicDropdownMenu');
-    const toggle = document.getElementById('topicDropdownToggle');
-    if (menu) {
-        menu.classList.toggle('open');
-        toggle.classList.toggle('active');
+async function loadFilterBooksCached() {
+    if (booksCache !== null) {
+        renderFilterBooks(booksCache);
+        return;
+    }
+    
+    const { data, error } = await _supabase.from('books').select('id, title').order('title');
+    if (!error && data) {
+        booksCache = data;
+        renderFilterBooks(data);
     }
 }
 
+function renderFilterBooks(books) {
+    const select = document.getElementById('filterBookId');
+    if (!select) return;
+    select.innerHTML = '<option value="">-- Select Book --</option>';
+    if (books) {
+        books.forEach(book => {
+            select.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+        });
+    }
+}
 // Close topic dropdown
 function closeTopicDropdown() {
     const menu = document.getElementById('topicDropdownMenu');
@@ -4025,60 +4036,76 @@ async function loadQuestions() {
         document.getElementById('viewSitemapUrlsBtn').textContent = '👁️ View URLs';
     }
 
-    // ============ TAB MANAGEMENT ============
-    function showTab(tabName) {
-        if (tabName === 'bulkupload') {
-            window.openBulkUploadWithSession();
-            return;
-        }
-        
-        document.getElementById('booksTab').classList.add('hidden');
-        document.getElementById('chaptersTab').classList.add('hidden');
-        document.getElementById('subtopicsTab').classList.add('hidden');
-        document.getElementById('questionsTab').classList.add('hidden');
-        document.getElementById('categoriesTab').classList.add('hidden');
-        document.getElementById('bulkUploadTab').classList.add('hidden');
-        document.getElementById('adminsTab').classList.add('hidden');
-        document.getElementById('messagesTab').classList.add('hidden');
-        document.getElementById('seoTab').classList.add('hidden');
-        document.getElementById('sitemapTab').classList.add('hidden');
-        document.getElementById(`${tabName}Tab`).classList.remove('hidden');
-        
-        const buttons = ['Books', 'Chapters', 'SubTopics', 'Questions', 'Categories', 'BulkUpload', 'Admins', 'Messages', 'Seo', 'Sitemap'];
-        buttons.forEach(btn => {
-            const btnElement = document.getElementById(`tab${btn}Btn`);
-            if (btnElement) {
-                if (btn.toLowerCase() === tabName.toLowerCase()) {
-                    btnElement.classList.remove('bg-gray-200');
-                    btnElement.classList.add('bg-purple-600', 'text-white');
-                } else {
-                    btnElement.classList.remove('bg-purple-600', 'text-white');
-                    btnElement.classList.add('bg-gray-200');
-                }
-            }
-        });
-        
-        if (tabName === 'questions') {
-            loadQuestions();
-            loadBulkDeleteBooks();
-        }
-        if (tabName === 'categories') loadCategoriesCached();
-        if (tabName === 'messages') loadMessages();
-        if (tabName === 'seo') {
-            setTimeout(generateSEOPages, 500);
-        }
-        if (tabName === 'sitemap') {
-            document.getElementById('sitemapStaticCount').textContent = '0';
-            document.getElementById('sitemapBookCount').textContent = '0';
-            document.getElementById('sitemapChapterCount').textContent = '0';
-            document.getElementById('sitemapTotalCount').textContent = '0';
-            setTimeout(generateSitemap, 500);
-        }
-        if (tabName === 'subtopics') {
-            loadSubTopicFilterBooks();
-            loadSubTopicsCached();
-        }
+// ============ TAB MANAGEMENT ============
+function showTab(tabName) {
+    if (tabName === 'bulkupload') {
+        window.openBulkUploadWithSession();
+        return;
     }
+    
+    document.getElementById('booksTab').classList.add('hidden');
+    document.getElementById('chaptersTab').classList.add('hidden');
+    document.getElementById('subtopicsTab').classList.add('hidden');
+    document.getElementById('questionsTab').classList.add('hidden');
+    document.getElementById('categoriesTab').classList.add('hidden');
+    document.getElementById('bulkUploadTab').classList.add('hidden');
+    document.getElementById('adminsTab').classList.add('hidden');
+    document.getElementById('messagesTab').classList.add('hidden');
+    document.getElementById('seoTab').classList.add('hidden');
+    document.getElementById('sitemapTab').classList.add('hidden');
+    document.getElementById(`${tabName}Tab`).classList.remove('hidden');
+    
+    const buttons = ['Books', 'Chapters', 'SubTopics', 'Questions', 'Categories', 'BulkUpload', 'Admins', 'Messages', 'Seo', 'Sitemap'];
+    buttons.forEach(btn => {
+        const btnElement = document.getElementById(`tab${btn}Btn`);
+        if (btnElement) {
+            if (btn.toLowerCase() === tabName.toLowerCase()) {
+                btnElement.classList.remove('bg-gray-200');
+                btnElement.classList.add('bg-purple-600', 'text-white');
+            } else {
+                btnElement.classList.remove('bg-purple-600', 'text-white');
+                btnElement.classList.add('bg-gray-200');
+            }
+        }
+    });
+    
+    if (tabName === 'questions') {
+        // FIX: Load books and chapters when questions tab is opened
+        loadFilterBooksCached();
+        // Reset filters
+        document.getElementById('filterBookId').value = '';
+        document.getElementById('filterChapterId').innerHTML = '<option value="">Select a book first</option>';
+        document.getElementById('filterChapterId').disabled = true;
+        document.getElementById('filterTopicId').innerHTML = '';
+        document.getElementById('filterTopicId').disabled = true;
+        document.getElementById('filterDifficulty').value = '';
+        // Clear topic selection UI
+        const label = document.getElementById('topicDropdownLabel');
+        if (label) label.textContent = 'Select topics...';
+        const countSpan = document.getElementById('topicSelectedCount');
+        if (countSpan) countSpan.textContent = '0 selected';
+        const tagsContainer = document.getElementById('topicSelectedTags');
+        if (tagsContainer) tagsContainer.innerHTML = '';
+        loadQuestions();
+        loadBulkDeleteBooks();
+    }
+    if (tabName === 'categories') loadCategoriesCached();
+    if (tabName === 'messages') loadMessages();
+    if (tabName === 'seo') {
+        setTimeout(generateSEOPages, 500);
+    }
+    if (tabName === 'sitemap') {
+        document.getElementById('sitemapStaticCount').textContent = '0';
+        document.getElementById('sitemapBookCount').textContent = '0';
+        document.getElementById('sitemapChapterCount').textContent = '0';
+        document.getElementById('sitemapTotalCount').textContent = '0';
+        setTimeout(generateSitemap, 500);
+    }
+    if (tabName === 'subtopics') {
+        loadSubTopicFilterBooks();
+        loadSubTopicsCached();
+    }
+}
     
     async function checkSession() {
         const { data: { session } } = await _supabase.auth.getSession();
