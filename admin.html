@@ -1380,39 +1380,58 @@ function safeRenderMathContent(text) {
         return escapeHtml(str);
     }
     
-    // STEP 4: CRITICAL FIX - Don't escape & at all if it's inside a cases environment
-    // Instead, we'll handle cases specially by NOT escaping & inside them
+    // STEP 4: SPECIAL HANDLING FOR CASES ENVIRONMENT
+    // The key insight: we need to protect the ENTIRE cases environment
+    // including the & characters, and NOT modify them at all
     
-    // First, check if we have cases environments
-    const hasCases = str.includes('\\begin{cases}');
+    // Check if we have cases environments (handle both with and without escaped backslashes)
+    const hasCases = str.includes('\\begin{cases}') || str.includes('\\begin\\{cases\\}');
     
     if (hasCases) {
-        // Extract and protect cases blocks with proper & handling
+        // First, normalize the cases pattern
+        // Replace any \\begin\\{cases\\} with \\begin{cases}
+        str = str.replace(/\\\\begin\\\\{cases\\\\}/g, '\\begin{cases}');
+        str = str.replace(/\\\\end\\\\{cases\\\\}/g, '\\end{cases}');
+        
+        // Extract and protect cases blocks
         let casesBlocks = [];
-        str = str.replace(/\\begin\{cases\}(.*?)\\end\{cases\}/gs, function(match, content) {
-            const placeholder = `__CASES_BLOCK_${casesBlocks.length}__`;
+        let caseCounter = 0;
+        
+        // Use a more robust regex that handles the cases content properly
+        str = str.replace(/\\begin\{cases\}([\s\S]*?)\\end\{cases\}/g, function(match, content) {
+            const placeholder = `___CASE_BLOCK_${caseCounter}___`;
+            caseCounter++;
             casesBlocks.push({ 
                 placeholder: placeholder, 
-                content: match // Keep the original content with & preserved
+                content: match // Keep the ENTIRE original match
             });
             return placeholder;
         });
         
-        // Now handle $ delimiters for inline math (outside cases)
-        str = str.replace(/\$(.+?)\$/g, '\\( $1 \\)');
-        str = str.replace(/\$\$(.+?)\$\$/g, '\\[ $1 \\]');
+        // Now process the rest of the string (outside cases)
+        // Handle $ delimiters for inline math
+        str = str.replace(/\$(.+?)\$/g, function(match, content) {
+            // Don't process if it contains a placeholder
+            if (match.includes('___CASE_BLOCK_')) return match;
+            return '\\( ' + content + ' \\)';
+        });
+        str = str.replace(/\$\$(.+?)\$\$/g, function(match, content) {
+            if (match.includes('___CASE_BLOCK_')) return match;
+            return '\\[ ' + content + ' \\]';
+        });
         
-        // Escape special characters BUT NOT & (keep & as-is for cases)
+        // Escape special characters EXCEPT & (ampersand is needed for cases alignment)
         str = str.replace(/%/g, '\\%');           // Percent
         str = str.replace(/#/g, '\\#');           // Hash
         str = str.replace(/_/g, '\\_');           // Underscore
         str = str.replace(/{/g, '\\{');           // Left brace
         str = str.replace(/}/g, '\\}');           // Right brace
         str = str.replace(/~/g, '\\textasciitilde{}'); // Tilde
-        // DO NOT escape & here - it will be handled properly inside cases
         
-        // Restore cases blocks with original content (including &)
+        // Restore cases blocks with ORIGINAL content (including &)
         casesBlocks.forEach(function(item) {
+            // Replace the placeholder with the ORIGINAL cases content
+            // The & inside should be preserved as-is
             str = str.replace(item.placeholder, item.content);
         });
         
