@@ -11,32 +11,9 @@
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     
-<!-- MathJax for rendering mathematical equations - Supports ALL formats -->
-<script>
-window.MathJax = {
-    tex: {
-        inlineMath: [
-            ['$', '$'],           // For $f(x) = 2x^2$
-            ['\\(', '\\)']        // For \( \lim_{x \to 0} \)
-        ],
-        displayMath: [
-            ['$$', '$$'],         // For $$ \int_0^1 x^2 dx $$
-            ['\\[', '\\]']        // For \[ \sum_{i=1}^n i \]
-        ],
-        processEscapes: true,      // Handle escaped characters
-        processEnvironments: true  // Handle \begin{...} \end{...}
-    },
-    svg: {
-        fontCache: 'global'
-    },
-    options: {
-        skipHtmlTypes: 'script',   // Skip processing inside script tags
-        ignoreHtmlClass: 'no-mathjax', // Skip elements with this class
-        processHtmlClass: 'math'   // Process elements with this class
-    }
-};
-</script>
-<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async></script>    
+    <!-- MathJax for rendering mathematical equations -->
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async></script>
+    
     <style>
         /* Topic Dropdown with Checkboxes */
 .topic-dropdown-wrapper {
@@ -1339,124 +1316,6 @@ let selectedTopicIds = [];  // <-- ADD THIS LINE
             return m;
         });
     }
-
-
-// ============================================
-// SAFE MATH RENDERING - PREVENT MISPLACED & ERRORS
-// ============================================
-
-function safeRenderMathContent(text) {
-    if (!text) return '';
-    
-    let str = String(text);
-    
-    // Check if it contains any LaTeX delimiters (including $ delimiters)
-    const hasLatex = str.includes('\\(') || str.includes('\\[') || 
-                     str.includes('$$') || str.includes('\\begin') ||
-                     str.includes('\\$') || str.includes('$');
-    
-    if (!hasLatex) {
-        // If no LaTeX delimiters, just escape HTML and return
-        return escapeHtml(str);
-    }
-    
-    // Handle cases where $ is used as delimiter (convert to \( and \))
-    // First, handle the escaped \$ (which is how it's stored in database)
-    str = str.replace(/\\\$/g, '\\$'); // Convert \$ to $ for processing
-    
-    // Now handle $ delimiters for inline math
-    // $...$ → \(...\)
-    str = str.replace(/\$(.+?)\$/g, '\\( $1 \\)');
-    
-    // Handle $$...$$ for display math
-    str = str.replace(/\$\$(.+?)\$\$/g, '\\[ $1 \\]');
-    
-    // Now clean ALL special characters for LaTeX
-    // IMPORTANT: Do & first as it's the most common source of errors
-    str = str.replace(/&/g, '\\&');           // Ampersand - FIXES "Misplaced &"
-    str = str.replace(/%/g, '\\%');           // Percent
-    str = str.replace(/#/g, '\\#');           // Hash
-    str = str.replace(/_/g, '\\_');           // Underscore
-    str = str.replace(/{/g, '\\{');           // Left brace
-    str = str.replace(/}/g, '\\}');           // Right brace
-    str = str.replace(/~/g, '\\textasciitilde{}'); // Tilde
-    str = str.replace(/\^/g, '\\textasciicircum{}'); // Caret
-    
-    // Restore properly formatted LaTeX delimiters (don't escape the delimiters themselves)
-    str = str.replace(/\\\(/g, '\\(');
-    str = str.replace(/\\\)/g, '\\)');
-    str = str.replace(/\\\[/g, '\\[');
-    str = str.replace(/\\\]/g, '\\]');
-    
-    return str;
-}
-
-// Safe rendering function for MathJax
-async function safeRenderMath(element) {
-    if (!element) return;
-    
-    // Get the raw content
-    let content = element.innerHTML;
-    
-    // Extract just the text content (remove any existing wrapper)
-    const textContent = element.textContent || content;
-    
-    // Clean the content for rendering
-    const cleanedContent = safeRenderMathContent(textContent);
-    
-    // Set the cleaned content
-    element.innerHTML = cleanedContent;
-    
-    // Check if there are any & characters that weren't properly escaped
-    if (cleanedContent.includes('&') && !cleanedContent.includes('\\&')) {
-        // Show as plain text with warning
-        element.innerHTML = `<span class="text-gray-700">${escapeHtml(textContent)}</span>
-                            <span class="text-xs text-yellow-600 ml-2">(Plain text - contains &)</span>`;
-        return;
-    }
-    
-    // Check if we have LaTeX content to render
-    const hasLatex = cleanedContent.includes('\\(') || cleanedContent.includes('\\[') || 
-                     cleanedContent.includes('$$') || cleanedContent.includes('\\begin');
-    
-    if (!hasLatex) {
-        // No LaTeX to render, show as plain text
-        return;
-    }
-    
-    try {
-        if (window.MathJax) {
-            // Create a temporary container for rendering
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = cleanedContent;
-            
-            // Render the math
-            await MathJax.typesetPromise([tempDiv]);
-            
-            // Replace the element content with rendered math
-            element.innerHTML = tempDiv.innerHTML;
-        }
-    } catch(e) {
-        console.log('MathJax rendering error:', e);
-        // Fallback: show plain text with the original content
-        element.innerHTML = `<span class="text-gray-700">${escapeHtml(textContent)}</span>
-                            <span class="text-xs text-red-500 ml-2">(Rendering failed - showing plain text)</span>`;
-    }
-}
-    // ============================================
-    // END OF ADDED FUNCTIONS ↑
-    // ============================================
-
-    function createSlug(text) {
-        return text
-            .toLowerCase()
-            .trim()
-            .replace(/&/g, 'and')
-            .replace(/[^a-z0-9\s-]/g, '')
-            .replace(/\s+/g, '-')
-            .replace(/-+/g, '-');
-    }
-    
     function createSlug(text) {
         return text
             .toLowerCase()
@@ -3231,65 +3090,37 @@ async function loadQuestions() {
     
     const startNumber = (currentPage - 1) * PAGE_SIZE + 1;
     
-container.innerHTML = data.map((q, index) => {
-    const sequentialNumber = startNumber + index;
-    const chapterData = q.chapters;
-    const topicData = q.subtopics;
-    const bookTitle = chapterData?.books?.title || 'Unknown';
-    const chapterDisplay = chapterData?.chapter_number ? 
-        `Ch ${chapterData.chapter_number}: ${escapeHtml(chapterData.name)}` : 
-        escapeHtml(chapterData?.name || 'Unknown');
-    const topicName = escapeHtml(topicData?.name || 'No Topic');
-    
-    // Get the question text
-    const questionText = q.question_text || '';
-    
-    // Check if it has LaTeX content with & (cases environment)
-    const hasCasesWithAmpersand = questionText.includes('\\begin{cases}') && questionText.includes('&');
-    
-    // For cases with &, we need to handle them specially
-    let displayText;
-    if (hasCasesWithAmpersand) {
-        // Clean the text but keep the cases environment
-        displayText = safeRenderMathContent(questionText);
-    } else {
-        // Regular cleaning
-        displayText = safeRenderMathContent(questionText);
-    }
-    
-    return `
-    <div class="bg-gray-50 p-3 rounded-lg mb-2">
-        <div class="flex justify-between items-start">
-            <div class="flex-1">
-                <p class="font-bold text-sm math-rendered">Q${sequentialNumber}. <span class="math-content" data-question-id="${q.id}">${displayText}</span></p>
-                <p class="text-xs text-gray-600 mt-1">Book: ${escapeHtml(bookTitle)} | Chapter: ${chapterDisplay} | Topic: ${topicName} | Difficulty: ${q.difficulty || 'N/A'}</p>
-            </div>
-            <div class="flex gap-2 ml-2">
-                <button onclick="openEditQuestionModal(${q.id})" class="text-blue-600 hover:text-blue-800 text-sm">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button onclick="deleteQuestion(${q.id})" class="text-red-600 hover:text-red-800 text-sm">
-                    <i class="fas fa-trash"></i>
-                </button>
+    container.innerHTML = data.map((q, index) => {
+        const sequentialNumber = startNumber + index;
+        const chapterData = q.chapters;
+        const topicData = q.subtopics;
+        const bookTitle = chapterData?.books?.title || 'Unknown';
+        const chapterDisplay = chapterData?.chapter_number ? 
+            `Ch ${chapterData.chapter_number}: ${escapeHtml(chapterData.name)}` : 
+            escapeHtml(chapterData?.name || 'Unknown');
+        const topicName = escapeHtml(topicData?.name || 'No Topic');
+        return `
+        <div class="bg-gray-50 p-3 rounded-lg mb-2">
+            <div class="flex justify-between items-start">
+                <div class="flex-1">
+                    <p class="font-bold text-sm math-rendered">Q${sequentialNumber}. <span class="math-content">${escapeHtml(q.question_text)}</span></p>
+                    <p class="text-xs text-gray-600 mt-1">Book: ${escapeHtml(bookTitle)} | Chapter: ${chapterDisplay} | Topic: ${topicName} | Difficulty: ${q.difficulty || 'N/A'}</p>
+                </div>
+                <div class="flex gap-2 ml-2">
+                    <button onclick="openEditQuestionModal(${q.id})" class="text-blue-600 hover:text-blue-800 text-sm">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="deleteQuestion(${q.id})" class="text-red-600 hover:text-red-800 text-sm">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
             </div>
         </div>
-    </div>
-    `;
-}).join('');
-
-// After rendering, safely render math for each question
-if (window.MathJax) {
-    setTimeout(async () => {
-        const mathElements = container.querySelectorAll('.math-content');
-        for (const el of mathElements) {
-            try {
-                await safeRenderMath(el);
-            } catch(e) {
-                console.log('Error rendering math for element:', el, e);
-            }
-        }
-    }, 100);
-}
+    `}).join('');
+    
+    if (window.MathJax) {
+        MathJax.typesetPromise();
+    }
 }
     
     async function applyFilters() {
