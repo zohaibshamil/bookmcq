@@ -1342,7 +1342,7 @@ let selectedTopicIds = [];  // <-- ADD THIS LINE
 
 
 // ============================================
-// COMPREHENSIVE SAFE MATH RENDERING - FIXES ALL ISSUES
+// SAFE MATH RENDERING - PREVENT MISPLACED & ERRORS
 // ============================================
 
 function safeRenderMathContent(text) {
@@ -1350,152 +1350,74 @@ function safeRenderMathContent(text) {
     
     let str = String(text);
     
-    // STEP 1: Fix common database storage issues
-    // Fix \textasciicircum{} back to ^
-    str = str.replace(/\\textasciicircum\{\}/g, '^');
-    str = str.replace(/\\textasciicircum/g, '^');
-    str = str.replace(/textasciicircum/g, '^');
-    
-    // Fix \textasciitilde{} back to ~
-    str = str.replace(/\\textasciitilde\{\}/g, '~');
-    str = str.replace(/\\textasciitilde/g, '~');
-    
-    // Fix \dfrac to \frac (standardize)
-    str = str.replace(/\\dfrac/g, '\\frac');
-    
-    // STEP 2: Fix HTML entities that might be stored
-    str = str.replace(/&amp;/g, '&');
-    str = str.replace(/&lt;/g, '<');
-    str = str.replace(/&gt;/g, '>');
-    
-    // STEP 3: Handle LaTeX delimiters
-    // Check if it contains any LaTeX content
+    // Check if it contains any LaTeX delimiters (including $ delimiters)
     const hasLatex = str.includes('\\(') || str.includes('\\[') || 
                      str.includes('$$') || str.includes('\\begin') ||
-                     str.includes('\\$') || str.includes('$') ||
-                     str.includes('^') || str.includes('_') ||
-                     str.includes('\\frac') || str.includes('\\sqrt') ||
-                     str.includes('\\\\begin'); // Also check for double backslash
+                     str.includes('\\$') || str.includes('$');
     
     if (!hasLatex) {
+        // If no LaTeX delimiters, just escape HTML and return
         return escapeHtml(str);
     }
     
-    // STEP 4: SPECIAL HANDLING FOR CASES ENVIRONMENT
-    // First, normalize all cases patterns to a standard format
+    // Handle cases where $ is used as delimiter (convert to \( and \))
+    // First, handle the escaped \$ (which is how it's stored in database)
+    str = str.replace(/\\\$/g, '\\$'); // Convert \$ to $ for processing
     
-    // Handle double backslash cases: \\begin{cases} -> \begin{cases}
-    str = str.replace(/\\\\begin\{cases\}/g, '\\begin{cases}');
-    str = str.replace(/\\\\end\{cases\}/g, '\\end{cases}');
+    // Now handle $ delimiters for inline math
+    // $...$ → \(...\)
+    str = str.replace(/\$(.+?)\$/g, '\\( $1 \\)');
     
-    // Handle cases with escaped braces: \\begin\\{cases\\} -> \begin{cases}
-    str = str.replace(/\\\\begin\\\\{cases\\\\}/g, '\\begin{cases}');
-    str = str.replace(/\\\\end\\\\{cases\\\\}/g, '\\end{cases}');
+    // Handle $$...$$ for display math
+    str = str.replace(/\$\$(.+?)\$\$/g, '\\[ $1 \\]');
     
-    // Handle cases with single backslash: \begin{cases} (already correct)
+    // Now clean ALL special characters for LaTeX
+    // IMPORTANT: Do & first as it's the most common source of errors
+    str = str.replace(/&/g, '\\&');           // Ampersand - FIXES "Misplaced &"
+    str = str.replace(/%/g, '\\%');           // Percent
+    str = str.replace(/#/g, '\\#');           // Hash
+    str = str.replace(/_/g, '\\_');           // Underscore
+    str = str.replace(/{/g, '\\{');           // Left brace
+    str = str.replace(/}/g, '\\}');           // Right brace
+    str = str.replace(/~/g, '\\textasciitilde{}'); // Tilde
+    str = str.replace(/\^/g, '\\textasciicircum{}'); // Caret
     
-    // Check if we have cases environments now
-    const hasCases = str.includes('\\begin{cases}');
+    // Restore properly formatted LaTeX delimiters (don't escape the delimiters themselves)
+    str = str.replace(/\\\(/g, '\\(');
+    str = str.replace(/\\\)/g, '\\)');
+    str = str.replace(/\\\[/g, '\\[');
+    str = str.replace(/\\\]/g, '\\]');
     
-    if (hasCases) {
-        // Extract and protect cases blocks
-        let casesBlocks = [];
-        let caseCounter = 0;
-        
-        // Use a robust regex that handles the cases content properly
-        // The [\s\S]*? matches any character (including newlines) lazily
-        str = str.replace(/\\begin\{cases\}([\s\S]*?)\\end\{cases\}/g, function(match, content) {
-            const placeholder = `___CASE_BLOCK_${caseCounter}___`;
-            caseCounter++;
-            casesBlocks.push({ 
-                placeholder: placeholder, 
-                content: match // Keep the ENTIRE original match
-            });
-            return placeholder;
-        });
-        
-        // Now process the rest of the string (outside cases)
-        // Handle $ delimiters for inline math
-        str = str.replace(/\$(.+?)\$/g, function(match, content) {
-            // Don't process if it contains a placeholder
-            if (match.includes('___CASE_BLOCK_')) return match;
-            // Don't process if it's inside a cases block (should already be protected)
-            return '\\( ' + content + ' \\)';
-        });
-        str = str.replace(/\$\$(.+?)\$\$/g, function(match, content) {
-            if (match.includes('___CASE_BLOCK_')) return match;
-            return '\\[ ' + content + ' \\]';
-        });
-        
-        // Escape special characters EXCEPT & (ampersand is needed for cases alignment)
-        str = str.replace(/%/g, '\\%');           // Percent
-        str = str.replace(/#/g, '\\#');           // Hash
-        str = str.replace(/_/g, '\\_');           // Underscore
-        str = str.replace(/{/g, '\\{');           // Left brace
-        str = str.replace(/}/g, '\\}');           // Right brace
-        str = str.replace(/~/g, '\\textasciitilde{}'); // Tilde
-        // DO NOT escape & - keep it as-is for cases alignment
-        
-        // Restore cases blocks with ORIGINAL content (including &)
-        casesBlocks.forEach(function(item) {
-            // Replace the placeholder with the ORIGINAL cases content
-            // The & inside should be preserved as-is
-            str = str.replace(item.placeholder, item.content);
-        });
-        
-        // Clean up any double escaping
-        str = str.replace(/\\\\/g, '\\');
-        str = str.replace(/\\\(/g, '\\(');
-        str = str.replace(/\\\)/g, '\\)');
-        str = str.replace(/\\\[/g, '\\[');
-        str = str.replace(/\\\]/g, '\\]');
-        
-        return str;
-    } else {
-        // No cases environment, handle normally
-        // Handle $ delimiters for inline math
-        str = str.replace(/\$(.+?)\$/g, '\\( $1 \\)');
-        str = str.replace(/\$\$(.+?)\$\$/g, '\\[ $1 \\]');
-        
-        // Escape ALL special characters including &
-        str = str.replace(/&/g, '\\&');           // Ampersand
-        str = str.replace(/%/g, '\\%');           // Percent
-        str = str.replace(/#/g, '\\#');           // Hash
-        str = str.replace(/_/g, '\\_');           // Underscore
-        str = str.replace(/{/g, '\\{');           // Left brace
-        str = str.replace(/}/g, '\\}');           // Right brace
-        str = str.replace(/~/g, '\\textasciitilde{}'); // Tilde
-        
-        // Clean up
-        str = str.replace(/\\\\/g, '\\');
-        str = str.replace(/\\\(/g, '\\(');
-        str = str.replace(/\\\)/g, '\\)');
-        str = str.replace(/\\\[/g, '\\[');
-        str = str.replace(/\\\]/g, '\\]');
-        
-        return str;
-    }
+    return str;
 }
 
-    
 // Safe rendering function for MathJax
 async function safeRenderMath(element) {
     if (!element) return;
     
     // Get the raw content
-    const rawContent = element.textContent || element.innerHTML;
+    let content = element.innerHTML;
+    
+    // Extract just the text content (remove any existing wrapper)
+    const textContent = element.textContent || content;
     
     // Clean the content for rendering
-    const cleanedContent = safeRenderMathContent(rawContent);
+    const cleanedContent = safeRenderMathContent(textContent);
     
     // Set the cleaned content
     element.innerHTML = cleanedContent;
     
+    // Check if there are any & characters that weren't properly escaped
+    if (cleanedContent.includes('&') && !cleanedContent.includes('\\&')) {
+        // Show as plain text with warning
+        element.innerHTML = `<span class="text-gray-700">${escapeHtml(textContent)}</span>
+                            <span class="text-xs text-yellow-600 ml-2">(Plain text - contains &)</span>`;
+        return;
+    }
+    
     // Check if we have LaTeX content to render
     const hasLatex = cleanedContent.includes('\\(') || cleanedContent.includes('\\[') || 
-                     cleanedContent.includes('$$') || cleanedContent.includes('\\begin') ||
-                     cleanedContent.includes('^') || cleanedContent.includes('_') ||
-                     cleanedContent.includes('\\frac') || cleanedContent.includes('\\sqrt');
+                     cleanedContent.includes('$$') || cleanedContent.includes('\\begin');
     
     if (!hasLatex) {
         // No LaTeX to render, show as plain text
@@ -1517,8 +1439,8 @@ async function safeRenderMath(element) {
     } catch(e) {
         console.log('MathJax rendering error:', e);
         // Fallback: show plain text with the original content
-        element.innerHTML = `<span class="text-gray-700">${escapeHtml(rawContent)}</span>
-                            <span class="text-xs text-red-500 ml-2">(Math rendering failed)</span>`;
+        element.innerHTML = `<span class="text-gray-700">${escapeHtml(textContent)}</span>
+                            <span class="text-xs text-red-500 ml-2">(Rendering failed - showing plain text)</span>`;
     }
 }
     // ============================================
@@ -3319,9 +3241,21 @@ container.innerHTML = data.map((q, index) => {
         escapeHtml(chapterData?.name || 'Unknown');
     const topicName = escapeHtml(topicData?.name || 'No Topic');
     
-    // SAFE RENDER: Clean the question text
+    // Get the question text
     const questionText = q.question_text || '';
-    const displayText = safeRenderMathContent(questionText);
+    
+    // Check if it has LaTeX content with & (cases environment)
+    const hasCasesWithAmpersand = questionText.includes('\\begin{cases}') && questionText.includes('&');
+    
+    // For cases with &, we need to handle them specially
+    let displayText;
+    if (hasCasesWithAmpersand) {
+        // Clean the text but keep the cases environment
+        displayText = safeRenderMathContent(questionText);
+    } else {
+        // Regular cleaning
+        displayText = safeRenderMathContent(questionText);
+    }
     
     return `
     <div class="bg-gray-50 p-3 rounded-lg mb-2">
@@ -3356,7 +3290,6 @@ if (window.MathJax) {
         }
     }, 100);
 }
-
 }
     
     async function applyFilters() {
