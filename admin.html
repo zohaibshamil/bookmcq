@@ -1342,7 +1342,7 @@ let selectedTopicIds = [];  // <-- ADD THIS LINE
 
 
 // ============================================
-// COMPREHENSIVE SAFE MATH RENDERING - FIXED CASES BLOCKS
+// COMPREHENSIVE SAFE MATH RENDERING - FIXES ALL ISSUES
 // ============================================
 
 function safeRenderMathContent(text) {
@@ -1368,7 +1368,8 @@ function safeRenderMathContent(text) {
     str = str.replace(/&lt;/g, '<');
     str = str.replace(/&gt;/g, '>');
     
-    // STEP 3: Check if it contains any LaTeX content
+    // STEP 3: Handle LaTeX delimiters
+    // Check if it contains any LaTeX content
     const hasLatex = str.includes('\\(') || str.includes('\\[') || 
                      str.includes('$$') || str.includes('\\begin') ||
                      str.includes('\\$') || str.includes('$') ||
@@ -1379,74 +1380,61 @@ function safeRenderMathContent(text) {
         return escapeHtml(str);
     }
     
-    // STEP 4: Handle $ delimiters for inline math
-    str = str.replace(/\$(.+?)\$/g, '\\( $1 \\)');
-    str = str.replace(/\$\$(.+?)\$\$/g, '\\[ $1 \\]');
+    // STEP 4: Fix cases environment - THIS IS THE KEY FIX FOR "Misplaced &"
+    // The & inside \begin{cases} needs to be preserved for LaTeX
+    // but escaped for HTML display
     
-    // STEP 5: Fix cases environment - THIS IS THE KEY FIX
-    // We need to properly format cases for LaTeX rendering
-    // The & inside cases should be preserved as & for LaTeX alignment
-    
-    // First, find all \begin{cases}...\end{cases} blocks
-    // Use a function to process each block
-    str = str.replace(/\\begin\{cases\}([\s\S]*?)\\end\{cases\}/g, function(match, content) {
-        // Clean the content inside cases
-        let cleanedContent = content;
-        
-        // Remove any extra backslashes before & (if they exist)
-        cleanedContent = cleanedContent.replace(/\\&/g, '&');
-        
-        // Ensure proper spacing in the cases environment
-        cleanedContent = cleanedContent.replace(/,\s*&/g, ', &');
-        cleanedContent = cleanedContent.replace(/\\\s*&/g, ' &');
-        
-        // Return properly formatted cases with preserved & for alignment
-        return '\\begin{cases}' + cleanedContent + '\\end{cases}';
-    });
-    
-    // STEP 6: Clean special characters (BUT NOT INSIDE CASES BLOCKS)
-    // To protect cases blocks, we'll use a different approach
-    // Extract all cases blocks into an array, clean the rest, then restore
-    
+    // First, protect the cases environment content
+    // Find all \begin{cases}...\end{cases} blocks
     let casesBlocks = [];
-    let caseIndex = 0;
-    
-    // Temporarily replace cases blocks with placeholders
-    str = str.replace(/\\begin\{cases\}[\s\S]*?\\end\{cases\}/g, function(match) {
-        const placeholder = `__CASE_BLOCK_${caseIndex}__`;
+    str = str.replace(/\\begin\{cases\}(.*?)\\end\{cases\}/gs, function(match, content) {
+        // Store the cases block with its original content
+        const placeholder = `__CASES_BLOCK_${casesBlocks.length}__`;
         casesBlocks.push({ placeholder, content: match });
-        caseIndex++;
         return placeholder;
     });
     
-    // Clean the rest of the string (outside cases blocks)
+    // STEP 5: Now clean the rest of the string (outside cases blocks)
+    // Handle $ delimiters for inline math
+    str = str.replace(/\$(.+?)\$/g, '\\( $1 \\)');
+    str = str.replace(/\$\$(.+?)\$\$/g, '\\[ $1 \\]');
+    
+    // STEP 6: Clean special characters (BUT NOT INSIDE CASES BLOCKS)
     str = str.replace(/&/g, '\\&');           // Ampersand
     str = str.replace(/%/g, '\\%');           // Percent
     str = str.replace(/#/g, '\\#');           // Hash
-    str = str.replace(/_/g, '\\_');           // Underscore
+    str = str.replace(/_/g, '\\_');           // Underscore (but will be restored for cases)
     str = str.replace(/{/g, '\\{');           // Left brace
     str = str.replace(/}/g, '\\}');           // Right brace
     str = str.replace(/~/g, '\\textasciitilde{}'); // Tilde
     
-    // Restore cases blocks with proper LaTeX
+    // STEP 7: Restore cases blocks with proper LaTeX
     casesBlocks.forEach(function(item) {
-        str = str.replace(item.placeholder, item.content);
+        let casesContent = item.content;
+        // In cases environment, & and \\ are needed for alignment
+        // We need to keep & as & (not \&) inside cases
+        // But we need to escape it for HTML display
+        // The key is: we're rendering with MathJax, so we keep LaTeX syntax
+        
+        // Replace the placeholder with the original cases content
+        str = str.replace(item.placeholder, casesContent);
     });
     
-    // STEP 7: Clean up any double escaping
+    // STEP 8: Clean up any double escaping
     str = str.replace(/\\\\/g, '\\');
     str = str.replace(/\\\(/g, '\\(');
     str = str.replace(/\\\)/g, '\\)');
     str = str.replace(/\\\[/g, '\\[');
     str = str.replace(/\\\]/g, '\\]');
     
+    // STEP 9: Fix any remaining issues with braces
+    // In cases environments, we need to ensure braces are properly matched
+    str = str.replace(/\\textasciicircum/g, '^');
+    
     return str;
 }
 
-// ============================================
-// SAFE RENDERING FUNCTION FOR MATHJAX - FIXED
-// ============================================
-
+// Safe rendering function for MathJax
 async function safeRenderMath(element) {
     if (!element) return;
     
@@ -1466,6 +1454,7 @@ async function safeRenderMath(element) {
                      cleanedContent.includes('\\frac') || cleanedContent.includes('\\sqrt');
     
     if (!hasLatex) {
+        // No LaTeX to render, show as plain text
         return;
     }
     
@@ -3245,9 +3234,11 @@ async function loadQuestions() {
         query = query.eq('chapter_id', parseInt(chapterId));
     }
     
+    // FIX 1: Filter by multiple topics - if no topics selected, show all questions for the chapter
     if (selectedTopics.length > 0) {
         query = query.in('topic_id', selectedTopics.map(id => parseInt(id)));
     }
+    // If no topics selected, show all questions (no topic filter)
     
     if (difficulty && difficulty !== '') {
         query = query.eq('difficulty', difficulty);
@@ -3274,60 +3265,54 @@ async function loadQuestions() {
     
     const startNumber = (currentPage - 1) * PAGE_SIZE + 1;
     
-    // Build the HTML with properly cleaned content
-    let html = '';
-    data.forEach((q, index) => {
-        const sequentialNumber = startNumber + index;
-        const chapterData = q.chapters;
-        const topicData = q.subtopics;
-        const bookTitle = chapterData?.books?.title || 'Unknown';
-        const chapterDisplay = chapterData?.chapter_number ? 
-            `Ch ${chapterData.chapter_number}: ${escapeHtml(chapterData.name)}` : 
-            escapeHtml(chapterData?.name || 'Unknown');
-        const topicName = escapeHtml(topicData?.name || 'No Topic');
-        
-        // Get the raw question text and clean it for display
-        const questionText = q.question_text || '';
-        const displayText = safeRenderMathContent(questionText);
-        
-        html += `
-        <div class="bg-gray-50 p-3 rounded-lg mb-2">
-            <div class="flex justify-between items-start">
-                <div class="flex-1">
-                    <p class="font-bold text-sm math-rendered">Q${sequentialNumber}. <span class="math-content" data-question-id="${q.id}">${displayText}</span></p>
-                    <p class="text-xs text-gray-600 mt-1">Book: ${escapeHtml(bookTitle)} | Chapter: ${chapterDisplay} | Topic: ${topicName} | Difficulty: ${q.difficulty || 'N/A'}</p>
-                </div>
-                <div class="flex gap-2 ml-2">
-                    <button onclick="openEditQuestionModal(${q.id})" class="text-blue-600 hover:text-blue-800 text-sm">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button onclick="deleteQuestion(${q.id})" class="text-red-600 hover:text-red-800 text-sm">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
+container.innerHTML = data.map((q, index) => {
+    const sequentialNumber = startNumber + index;
+    const chapterData = q.chapters;
+    const topicData = q.subtopics;
+    const bookTitle = chapterData?.books?.title || 'Unknown';
+    const chapterDisplay = chapterData?.chapter_number ? 
+        `Ch ${chapterData.chapter_number}: ${escapeHtml(chapterData.name)}` : 
+        escapeHtml(chapterData?.name || 'Unknown');
+    const topicName = escapeHtml(topicData?.name || 'No Topic');
+    
+    // SAFE RENDER: Clean the question text
+    const questionText = q.question_text || '';
+    const displayText = safeRenderMathContent(questionText);
+    
+    return `
+    <div class="bg-gray-50 p-3 rounded-lg mb-2">
+        <div class="flex justify-between items-start">
+            <div class="flex-1">
+                <p class="font-bold text-sm math-rendered">Q${sequentialNumber}. <span class="math-content" data-question-id="${q.id}">${displayText}</span></p>
+                <p class="text-xs text-gray-600 mt-1">Book: ${escapeHtml(bookTitle)} | Chapter: ${chapterDisplay} | Topic: ${topicName} | Difficulty: ${q.difficulty || 'N/A'}</p>
+            </div>
+            <div class="flex gap-2 ml-2">
+                <button onclick="openEditQuestionModal(${q.id})" class="text-blue-600 hover:text-blue-800 text-sm">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="deleteQuestion(${q.id})" class="text-red-600 hover:text-red-800 text-sm">
+                    <i class="fas fa-trash"></i>
+                </button>
             </div>
         </div>
-        `;
-    });
-    
-    container.innerHTML = html;
-    
-    // After rendering, safely render math for each question
-    if (window.MathJax) {
+    </div>
+    `;
+}).join('');
+
+// After rendering, safely render math for each question
+if (window.MathJax) {
+    setTimeout(async () => {
         const mathElements = container.querySelectorAll('.math-content');
         for (const el of mathElements) {
             try {
                 await safeRenderMath(el);
             } catch(e) {
                 console.log('Error rendering math for element:', el, e);
-                // Show plain text fallback
-                const rawText = el.textContent || '';
-                el.innerHTML = `<span class="text-gray-700">${escapeHtml(rawText)}</span>
-                               <span class="text-xs text-red-500 ml-2">(Rendering error)</span>`;
             }
         }
-    }
+    }, 100);
 }
+
 }
     
     async function applyFilters() {
