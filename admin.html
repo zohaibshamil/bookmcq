@@ -1380,52 +1380,77 @@ function safeRenderMathContent(text) {
         return escapeHtml(str);
     }
     
-    // STEP 4: Fix cases environment - PRESERVE & inside cases
-    // First, protect the cases environment content WITH the & preserved
-    let casesBlocks = [];
-    str = str.replace(/\\begin\{cases\}(.*?)\\end\{cases\}/gs, function(match, content) {
-        // Store the cases block with its original content (including &)
-        const placeholder = `__CASES_BLOCK_${casesBlocks.length}__`;
-        // Store the full match including the \begin{cases} and \end{cases}
-        casesBlocks.push({ placeholder, content: match });
-        return placeholder;
-    });
+    // STEP 4: CRITICAL FIX - Don't escape & at all if it's inside a cases environment
+    // Instead, we'll handle cases specially by NOT escaping & inside them
     
-    // STEP 5: Now clean the rest of the string (outside cases blocks)
-    // Handle $ delimiters for inline math (but only if they're not already in cases blocks)
-    str = str.replace(/\$(.+?)\$/g, '\\( $1 \\)');
-    str = str.replace(/\$\$(.+?)\$\$/g, '\\[ $1 \\]');
+    // First, check if we have cases environments
+    const hasCases = str.includes('\\begin{cases}');
     
-    // STEP 6: Clean special characters in the rest of the string
-    // BUT we need to be careful not to escape & inside cases blocks
-    str = str.replace(/&/g, '\\&');           // Ampersand - only for non-cases content
-    str = str.replace(/%/g, '\\%');           // Percent
-    str = str.replace(/#/g, '\\#');           // Hash
-    str = str.replace(/_/g, '\\_');           // Underscore
-    str = str.replace(/{/g, '\\{');           // Left brace
-    str = str.replace(/}/g, '\\}');           // Right brace
-    str = str.replace(/~/g, '\\textasciitilde{}'); // Tilde
-    
-    // STEP 7: Restore cases blocks with their ORIGINAL content (including &)
-    // This is the key fix - we don't modify the cases content
-    casesBlocks.forEach(function(item) {
-        // Replace the placeholder with the original cases content
-        // The & inside cases should remain as & (not \&)
-        str = str.replace(item.placeholder, item.content);
-    });
-    
-    // STEP 8: Clean up any double escaping
-    str = str.replace(/\\\\/g, '\\');
-    str = str.replace(/\\\(/g, '\\(');
-    str = str.replace(/\\\)/g, '\\)');
-    str = str.replace(/\\\[/g, '\\[');
-    str = str.replace(/\\\]/g, '\\]');
-    
-    // STEP 9: Fix any remaining issues
-    str = str.replace(/\\textasciicircum/g, '^');
-    
-    return str;
+    if (hasCases) {
+        // Extract and protect cases blocks with proper & handling
+        let casesBlocks = [];
+        str = str.replace(/\\begin\{cases\}(.*?)\\end\{cases\}/gs, function(match, content) {
+            const placeholder = `__CASES_BLOCK_${casesBlocks.length}__`;
+            casesBlocks.push({ 
+                placeholder: placeholder, 
+                content: match // Keep the original content with & preserved
+            });
+            return placeholder;
+        });
+        
+        // Now handle $ delimiters for inline math (outside cases)
+        str = str.replace(/\$(.+?)\$/g, '\\( $1 \\)');
+        str = str.replace(/\$\$(.+?)\$\$/g, '\\[ $1 \\]');
+        
+        // Escape special characters BUT NOT & (keep & as-is for cases)
+        str = str.replace(/%/g, '\\%');           // Percent
+        str = str.replace(/#/g, '\\#');           // Hash
+        str = str.replace(/_/g, '\\_');           // Underscore
+        str = str.replace(/{/g, '\\{');           // Left brace
+        str = str.replace(/}/g, '\\}');           // Right brace
+        str = str.replace(/~/g, '\\textasciitilde{}'); // Tilde
+        // DO NOT escape & here - it will be handled properly inside cases
+        
+        // Restore cases blocks with original content (including &)
+        casesBlocks.forEach(function(item) {
+            str = str.replace(item.placeholder, item.content);
+        });
+        
+        // Clean up any double escaping
+        str = str.replace(/\\\\/g, '\\');
+        str = str.replace(/\\\(/g, '\\(');
+        str = str.replace(/\\\)/g, '\\)');
+        str = str.replace(/\\\[/g, '\\[');
+        str = str.replace(/\\\]/g, '\\]');
+        
+        return str;
+    } else {
+        // No cases environment, handle normally
+        // Handle $ delimiters for inline math
+        str = str.replace(/\$(.+?)\$/g, '\\( $1 \\)');
+        str = str.replace(/\$\$(.+?)\$\$/g, '\\[ $1 \\]');
+        
+        // Escape ALL special characters including &
+        str = str.replace(/&/g, '\\&');           // Ampersand
+        str = str.replace(/%/g, '\\%');           // Percent
+        str = str.replace(/#/g, '\\#');           // Hash
+        str = str.replace(/_/g, '\\_');           // Underscore
+        str = str.replace(/{/g, '\\{');           // Left brace
+        str = str.replace(/}/g, '\\}');           // Right brace
+        str = str.replace(/~/g, '\\textasciitilde{}'); // Tilde
+        
+        // Clean up
+        str = str.replace(/\\\\/g, '\\');
+        str = str.replace(/\\\(/g, '\\(');
+        str = str.replace(/\\\)/g, '\\)');
+        str = str.replace(/\\\[/g, '\\[');
+        str = str.replace(/\\\]/g, '\\]');
+        
+        return str;
+    }
 }
+
+    
 // Safe rendering function for MathJax
 async function safeRenderMath(element) {
     if (!element) return;
