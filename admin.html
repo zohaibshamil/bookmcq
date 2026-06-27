@@ -1374,30 +1374,36 @@ function safeRenderMathContent(text) {
                      str.includes('$$') || str.includes('\\begin') ||
                      str.includes('\\$') || str.includes('$') ||
                      str.includes('^') || str.includes('_') ||
-                     str.includes('\\frac') || str.includes('\\sqrt');
+                     str.includes('\\frac') || str.includes('\\sqrt') ||
+                     str.includes('\\\\begin'); // Also check for double backslash
     
     if (!hasLatex) {
         return escapeHtml(str);
     }
     
     // STEP 4: SPECIAL HANDLING FOR CASES ENVIRONMENT
-    // The key insight: we need to protect the ENTIRE cases environment
-    // including the & characters, and NOT modify them at all
+    // First, normalize all cases patterns to a standard format
     
-    // Check if we have cases environments (handle both with and without escaped backslashes)
-    const hasCases = str.includes('\\begin{cases}') || str.includes('\\begin\\{cases\\}');
+    // Handle double backslash cases: \\begin{cases} -> \begin{cases}
+    str = str.replace(/\\\\begin\{cases\}/g, '\\begin{cases}');
+    str = str.replace(/\\\\end\{cases\}/g, '\\end{cases}');
+    
+    // Handle cases with escaped braces: \\begin\\{cases\\} -> \begin{cases}
+    str = str.replace(/\\\\begin\\\\{cases\\\\}/g, '\\begin{cases}');
+    str = str.replace(/\\\\end\\\\{cases\\\\}/g, '\\end{cases}');
+    
+    // Handle cases with single backslash: \begin{cases} (already correct)
+    
+    // Check if we have cases environments now
+    const hasCases = str.includes('\\begin{cases}');
     
     if (hasCases) {
-        // First, normalize the cases pattern
-        // Replace any \\begin\\{cases\\} with \\begin{cases}
-        str = str.replace(/\\\\begin\\\\{cases\\\\}/g, '\\begin{cases}');
-        str = str.replace(/\\\\end\\\\{cases\\\\}/g, '\\end{cases}');
-        
         // Extract and protect cases blocks
         let casesBlocks = [];
         let caseCounter = 0;
         
-        // Use a more robust regex that handles the cases content properly
+        // Use a robust regex that handles the cases content properly
+        // The [\s\S]*? matches any character (including newlines) lazily
         str = str.replace(/\\begin\{cases\}([\s\S]*?)\\end\{cases\}/g, function(match, content) {
             const placeholder = `___CASE_BLOCK_${caseCounter}___`;
             caseCounter++;
@@ -1413,6 +1419,7 @@ function safeRenderMathContent(text) {
         str = str.replace(/\$(.+?)\$/g, function(match, content) {
             // Don't process if it contains a placeholder
             if (match.includes('___CASE_BLOCK_')) return match;
+            // Don't process if it's inside a cases block (should already be protected)
             return '\\( ' + content + ' \\)';
         });
         str = str.replace(/\$\$(.+?)\$\$/g, function(match, content) {
@@ -1427,6 +1434,7 @@ function safeRenderMathContent(text) {
         str = str.replace(/{/g, '\\{');           // Left brace
         str = str.replace(/}/g, '\\}');           // Right brace
         str = str.replace(/~/g, '\\textasciitilde{}'); // Tilde
+        // DO NOT escape & - keep it as-is for cases alignment
         
         // Restore cases blocks with ORIGINAL content (including &)
         casesBlocks.forEach(function(item) {
