@@ -1380,44 +1380,38 @@ function safeRenderMathContent(text) {
         return escapeHtml(str);
     }
     
-    // STEP 4: Fix cases environment - THIS IS THE KEY FIX FOR "Misplaced &"
-    // The & inside \begin{cases} needs to be preserved for LaTeX
-    // but escaped for HTML display
-    
-    // First, protect the cases environment content
-    // Find all \begin{cases}...\end{cases} blocks
+    // STEP 4: Fix cases environment - PRESERVE & inside cases
+    // First, protect the cases environment content WITH the & preserved
     let casesBlocks = [];
     str = str.replace(/\\begin\{cases\}(.*?)\\end\{cases\}/gs, function(match, content) {
-        // Store the cases block with its original content
+        // Store the cases block with its original content (including &)
         const placeholder = `__CASES_BLOCK_${casesBlocks.length}__`;
+        // Store the full match including the \begin{cases} and \end{cases}
         casesBlocks.push({ placeholder, content: match });
         return placeholder;
     });
     
     // STEP 5: Now clean the rest of the string (outside cases blocks)
-    // Handle $ delimiters for inline math
+    // Handle $ delimiters for inline math (but only if they're not already in cases blocks)
     str = str.replace(/\$(.+?)\$/g, '\\( $1 \\)');
     str = str.replace(/\$\$(.+?)\$\$/g, '\\[ $1 \\]');
     
-    // STEP 6: Clean special characters (BUT NOT INSIDE CASES BLOCKS)
-    str = str.replace(/&/g, '\\&');           // Ampersand
+    // STEP 6: Clean special characters in the rest of the string
+    // BUT we need to be careful not to escape & inside cases blocks
+    str = str.replace(/&/g, '\\&');           // Ampersand - only for non-cases content
     str = str.replace(/%/g, '\\%');           // Percent
     str = str.replace(/#/g, '\\#');           // Hash
-    str = str.replace(/_/g, '\\_');           // Underscore (but will be restored for cases)
+    str = str.replace(/_/g, '\\_');           // Underscore
     str = str.replace(/{/g, '\\{');           // Left brace
     str = str.replace(/}/g, '\\}');           // Right brace
     str = str.replace(/~/g, '\\textasciitilde{}'); // Tilde
     
-    // STEP 7: Restore cases blocks with proper LaTeX
+    // STEP 7: Restore cases blocks with their ORIGINAL content (including &)
+    // This is the key fix - we don't modify the cases content
     casesBlocks.forEach(function(item) {
-        let casesContent = item.content;
-        // In cases environment, & and \\ are needed for alignment
-        // We need to keep & as & (not \&) inside cases
-        // But we need to escape it for HTML display
-        // The key is: we're rendering with MathJax, so we keep LaTeX syntax
-        
         // Replace the placeholder with the original cases content
-        str = str.replace(item.placeholder, casesContent);
+        // The & inside cases should remain as & (not \&)
+        str = str.replace(item.placeholder, item.content);
     });
     
     // STEP 8: Clean up any double escaping
@@ -1427,13 +1421,11 @@ function safeRenderMathContent(text) {
     str = str.replace(/\\\[/g, '\\[');
     str = str.replace(/\\\]/g, '\\]');
     
-    // STEP 9: Fix any remaining issues with braces
-    // In cases environments, we need to ensure braces are properly matched
+    // STEP 9: Fix any remaining issues
     str = str.replace(/\\textasciicircum/g, '^');
     
     return str;
 }
-
 // Safe rendering function for MathJax
 async function safeRenderMath(element) {
     if (!element) return;
