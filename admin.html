@@ -4571,7 +4571,7 @@ function downloadSelectedSeoFiles(bookSlug) {
     checkboxes.forEach(cb => {
         const fileData = {
             name: cb.dataset.name || '',
-            content: cb.dataset.content || '',
+            content: decodeURIComponent(cb.dataset.content || ''),
             displayName: cb.dataset.displayName || '',
             bookSlug: cb.dataset.bookSlug || ''
         };
@@ -4637,6 +4637,8 @@ function downloadSingleSEOPage(bookSlug) {
     
     files.forEach(function(file, index) {
         setTimeout(function() {
+            // Decode the content before using it
+            const decodedContent = decodeURIComponent(file.content);
             let cleanName = file.name;
             if (cleanName.includes('/')) {
                 const parts = cleanName.split('/');
@@ -4649,7 +4651,7 @@ function downloadSingleSEOPage(bookSlug) {
                 cleanName = `${bookSlug}_index.html`;
             }
             
-            const blob = new Blob([file.content], { type: 'text/html' });
+            const blob = new Blob([decodedContent], { type: 'text/html' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -4854,17 +4856,17 @@ async function generateSEOPages() {
             
             var indexFile = bookFiles.find(function(f) { return f.isBook; });
             if (indexFile) {
-                dropdownItems += `
-                    <div class="seo-dropdown-item" style="display:flex; align-items:center; gap:10px; padding:6px 12px; cursor:pointer; transition:background 0.2s; text-align:left;">
-                        <input type="checkbox" 
-                               data-name="${escapeHtml(indexFile.name)}" 
-                               data-content="${escapeHtml(indexFile.content)}" 
-                               data-display-name="${escapeHtml(indexFile.displayName)}"
-                               data-book-slug="${escapeHtml(indexFile.bookSlug)}"
-                               style="width:16px; height:16px; cursor:pointer; flex-shrink:0;">
-                        <span class="file-label" style="font-size:13px; color:#1e293b; text-align:left;">📖 ${indexFile.displayName}</span>
-                    </div>
-                `;
+dropdownItems += `
+    <div class="seo-dropdown-item" style="display:flex; align-items:center; gap:10px; padding:6px 12px; cursor:pointer; transition:background 0.2s; text-align:left;">
+        <input type="checkbox" 
+               data-name="${escapeHtml(indexFile.name)}" 
+               data-content="${encodeURIComponent(indexFile.content)}" 
+               data-display-name="${escapeHtml(indexFile.displayName)}"
+               data-book-slug="${escapeHtml(indexFile.bookSlug)}"
+               style="width:16px; height:16px; cursor:pointer; flex-shrink:0;">
+        <span class="file-label" style="font-size:13px; color:#1e293b; text-align:left;">📖 ${indexFile.displayName}</span>
+    </div>
+`;
             }
             
             var chapterFiles = bookFiles.filter(function(f) { return f.isBook === false && f.isTopic === false; });
@@ -4872,18 +4874,18 @@ async function generateSEOPages() {
                 return (a.chapterNumber || 999) - (b.chapterNumber || 999);
             });
             
-            chapterFiles.forEach(function(f) {
-                dropdownItems += `
-                    <div class="seo-dropdown-item" style="display:flex; align-items:center; gap:10px; padding:6px 12px; cursor:pointer; transition:background 0.2s; text-align:left;">
-                        <input type="checkbox" 
-                               data-name="${escapeHtml(f.name)}" 
-                               data-content="${escapeHtml(f.content)}" 
-                               data-display-name="${escapeHtml(f.displayName)}"
-                               data-book-slug="${escapeHtml(f.bookSlug)}"
-                               style="width:16px; height:16px; cursor:pointer; flex-shrink:0;">
-                        <span class="file-label" style="font-size:13px; color:#1e293b; text-align:left;">${f.displayName}</span>
-                    </div>
-                `;
+chapterFiles.forEach(function(f) {
+    dropdownItems += `
+        <div class="seo-dropdown-item" style="display:flex; align-items:center; gap:10px; padding:6px 12px; cursor:pointer; transition:background 0.2s; text-align:left;">
+            <input type="checkbox" 
+                   data-name="${escapeHtml(f.name)}" 
+                   data-content="${encodeURIComponent(f.content)}" 
+                   data-display-name="${escapeHtml(f.displayName)}"
+                   data-book-slug="${escapeHtml(f.bookSlug)}"
+                   style="width:16px; height:16px; cursor:pointer; flex-shrink:0;">
+            <span class="file-label" style="font-size:13px; color:#1e293b; text-align:left;">${f.displayName}</span>
+        </div>
+    `;
                 
                 var chapterTopics = bookFiles.filter(function(t) { 
                     return t.isTopic && t.chapterId === f.chapterId; 
@@ -4891,19 +4893,19 @@ async function generateSEOPages() {
                 chapterTopics.sort(function(a, b) {
                     return a.topic.localeCompare(b.topic);
                 });
-                chapterTopics.forEach(function(t) {
-                    dropdownItems += `
-                        <div class="seo-dropdown-item" style="display:flex; align-items:center; gap:10px; padding:6px 12px 6px 28px; cursor:pointer; transition:background 0.2s; text-align:left;">
-                            <input type="checkbox" 
-                                   data-name="${escapeHtml(t.name)}" 
-                                   data-content="${escapeHtml(t.content)}" 
-                                   data-display-name="${escapeHtml(t.displayName)}"
-                                   data-book-slug="${escapeHtml(t.bookSlug)}"
-                                   style="width:16px; height:16px; cursor:pointer; flex-shrink:0;">
-                            <span class="file-label file-indent" style="font-size:12px; color:#64748b; text-align:left;">${t.displayName}</span>
-                        </div>
-                    `;
-                });
+chapterTopics.forEach(function(t) {
+    dropdownItems += `
+        <div class="seo-dropdown-item" style="display:flex; align-items:center; gap:10px; padding:6px 12px 6px 28px; cursor:pointer; transition:background 0.2s; text-align:left;">
+            <input type="checkbox" 
+                   data-name="${escapeHtml(t.name)}" 
+                   data-content="${encodeURIComponent(t.content)}" 
+                   data-display-name="${escapeHtml(t.displayName)}"
+                   data-book-slug="${escapeHtml(t.bookSlug)}"
+                   style="width:16px; height:16px; cursor:pointer; flex-shrink:0;">
+            <span class="file-label file-indent" style="font-size:12px; color:#64748b; text-align:left;">${t.displayName}</span>
+        </div>
+    `;
+});
             });
             
             var totalFiles = bookFiles.length;
