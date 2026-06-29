@@ -4264,6 +4264,33 @@ async function fetchAllQuestionsWithDifficulty() {
     }
     return allQuestions;
 }
+
+async function fetchOptionsForQuestions(questionIds) {
+    if (!questionIds || questionIds.length === 0) return {};
+    
+    const { data, error } = await _supabase
+        .from('options')
+        .select('question_id, option_text, option_index')
+        .in('question_id', questionIds)
+        .order('question_id')
+        .order('option_index');
+    
+    if (error) {
+        console.error('Error fetching options:', error);
+        return {};
+    }
+    
+    const optionsMap = {};
+    data.forEach(function(opt) {
+        if (!optionsMap[opt.question_id]) {
+            optionsMap[opt.question_id] = ['', '', '', ''];
+        }
+        optionsMap[opt.question_id][opt.option_index] = opt.option_text;
+    });
+    
+    return optionsMap;
+}
+    
 async function fetchOptionsForQuestions(questionIds) {
     if (!questionIds || questionIds.length === 0) return {};
     
@@ -4289,7 +4316,7 @@ async function fetchOptionsForQuestions(questionIds) {
     
     return optionsMap;
 }
-function generateBookIndexPage(book, chapters, topics, questionStats, totalQuestions, chapterQuestionCounts, bookDifficultyStats) {
+function generateBookIndexPage(book, chapters, topics, questionStats, totalQuestions, chapterQuestionCounts, bookDifficultyStats, chapterDifficultyStatsByChapter) {
     const bookSlug = book.slug || createSlug(book.title);
     const bookTitle = escapeHtml(book.title);
     const bookAuthor = book.author ? escapeHtml(book.author) : '';
@@ -4324,10 +4351,22 @@ function generateBookIndexPage(book, chapters, topics, questionStats, totalQuest
             topicsHtml += '</div>';
         }
         
-        chaptersHtml += `
+// Generate a preview description for the chapter
+var chapterDescription = 'Practice ' + chapterDisplay + chapterName + ' from ' + bookTitle + '. ' + chapterQCount + ' questions covering key concepts.';
+if (chapterQCount > 0) {
+    var easyInChapter = chapterDifficultyStatsByChapter?.[chapter.id]?.easy || 0;
+    var mediumInChapter = chapterDifficultyStatsByChapter?.[chapter.id]?.medium || 0;
+    var hardInChapter = chapterDifficultyStatsByChapter?.[chapter.id]?.hard || 0;
+    if (easyInChapter > 0 || mediumInChapter > 0 || hardInChapter > 0) {
+        chapterDescription += ' Difficulty: Easy ' + easyInChapter + ', Medium ' + mediumInChapter + ', Hard ' + hardInChapter + '.';
+    }
+}
+
+chaptersHtml += `
         <div class="chapter" onclick="window.location.href='/books/${bookSlug}/${chapterSlug}.html'">
             <div>
                 <div class="title">${chapterDisplay}${chapterName}</div>
+                <div style="font-size:12px; color:#64748b; margin-top:4px;">${chapterDescription}</div>
                 ${topicsHtml}
             </div>
             <div style="display:flex; align-items:center; gap:8px;">
@@ -4358,7 +4397,7 @@ function generateBookIndexPage(book, chapters, topics, questionStats, totalQuest
     
     const metaDescription = `Practice ${bookTitle} MCQs chapter-wise. ${chapters.length} chapters and ${totalQuestions} questions available with ${easyCount} easy, ${mediumCount} medium, and ${hardCount} hard difficulty questions. Perfect for exam preparation.`;
     
-    return '<!DOCTYPE html>\n' +
+return '<!DOCTYPE html>\n' +
     '<html lang="en">\n' +
     '<head>\n' +
     '    <meta charset="UTF-8">\n' +
@@ -4372,6 +4411,40 @@ function generateBookIndexPage(book, chapters, topics, questionStats, totalQuest
     '    <meta property="og:description" content="Chapter-wise MCQs for ' + bookTitle + ' with ' + totalQuestions + ' practice questions. Difficulty: Easy ' + easyCount + ', Medium ' + mediumCount + ', Hard ' + hardCount + '.">\n' +
     '    <meta property="og:type" content="website">\n' +
     '    <meta name="theme-color" content="#7c3aed">\n' +
+    '    <meta name="last-modified" content="' + new Date().toISOString().split('T')[0] + '">\n' +
+    '    <script type="application/ld+json">\n' +
+    '    {\n' +
+    '      "@context": "https://schema.org",\n' +
+    '      "@type": "CollectionPage",\n' +
+    '      "name": "' + bookTitle + ' MCQs",\n' +
+    '      "description": "' + metaDescription.replace(/"/g, '\\"') + '",\n' +
+    '      "url": "https://bookmcq.com/books/' + bookSlug + '/",\n' +
+    '      "about": {\n' +
+    '        "@type": "Book",\n' +
+    '        "name": "' + bookTitle + '",\n' +
+    (bookAuthor ? '        "author": { "@type": "Person", "name": "' + bookAuthor + '" },\n' : '') +
+    '        "numberOfPages": "' + totalQuestions + ' questions",\n' +
+    '        "educationalUse": "Exam Preparation"\n' +
+    '      },\n' +
+    '      "hasPart": [\n' +
+    (chapters.map(function(ch, idx) {
+        var chSlug = ch.slug || createSlug(ch.name);
+        var chDisplay = ch.chapter_number ? ch.chapter_number + '. ' : '';
+        return '        { "@type": "CreativeWork", "name": "' + chDisplay + escapeHtml(ch.name).replace(/"/g, '\\"') + '", "url": "https://bookmcq.com/books/' + bookSlug + '/' + chSlug + '.html" }';
+    }).join(',\n')) +
+    '\n      ],\n' +
+    '      "mainEntity": {\n' +
+    '        "@type": "ItemList",\n' +
+    '        "itemListElement": [\n' +
+    (chapters.map(function(ch, idx) {
+        var chSlug = ch.slug || createSlug(ch.name);
+        var chDisplay = ch.chapter_number ? ch.chapter_number + '. ' : '';
+        return '          { "@type": "ListItem", "position": ' + (idx + 1) + ', "item": { "@type": "CreativeWork", "name": "' + chDisplay + escapeHtml(ch.name).replace(/"/g, '\\"') + '", "url": "https://bookmcq.com/books/' + bookSlug + '/' + chSlug + '.html" } }';
+    }).join(',\n')) +
+    '\n        ]\n' +
+    '      }\n' +
+    '    }\n' +
+    '    </script>\n' +
     '    <script src="https://cdn.tailwindcss.com"><\/script>\n' +
     '    <style>\n' +
     '        body {\n' +
@@ -4444,8 +4517,11 @@ function generateBookIndexPage(book, chapters, topics, questionStats, totalQuest
     '            <span><strong>Total Questions:</strong> ' + totalQuestions + '</span>\n' +
     '            <span><strong>Chapters:</strong> ' + chapters.length + '</span>\n' +
     '        </div>\n' +
+
     '        <p>Practice chapter-wise MCQs for <strong>' + bookTitle + '</strong>. This book contains <strong>' + chapters.length + ' chapters</strong> and <strong>' + totalQuestions + ' questions</strong> across easy, medium, and hard difficulty levels.</p>\n' +
+    '        <p style="font-size:12px; color:#94a3b8; margin-top:4px;">📅 Last updated: ' + new Date().toISOString().split('T')[0] + '</p>\n' +
     difficultyHtml +
+
     '        <h2 style="margin-top:20px;">📚 Chapters</h2>\n' +
     chaptersHtml +
     '    </div>\n' +
@@ -4453,7 +4529,7 @@ function generateBookIndexPage(book, chapters, topics, questionStats, totalQuest
     '</body>\n' +
     '</html>';
 }
-function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, chapterDifficultyStats) {
+function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, chapterDifficultyStats, chapterSampleQuestions) {
     const bookSlug = book.slug || createSlug(book.title);
     const bookTitle = escapeHtml(book.title);
     const chapterSlug = chapter.slug || createSlug(chapter.name);
@@ -4484,28 +4560,27 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
         topicsHtml += '</ul></div>';
     }
     
-    // Build sample MCQs (first 3 questions)
-    let sampleMcqsHtml = '';
-    if (chapterQuestions.length > 0) {
-        const sampleQuestions = chapterQuestions.slice(0, 3);
-        sampleMcqsHtml = '<div style="margin:16px 0; background:#f8fafc; padding:16px; border-radius:12px;">';
-        sampleMcqsHtml += '<h3 style="font-size:16px; color:#1e293b; margin-bottom:12px;">📝 Sample Questions</h3>';
-        sampleQuestions.forEach((q, idx) => {
-            sampleMcqsHtml += `
-                <div style="background:white; padding:12px; border-radius:8px; margin-bottom:10px; border:1px solid #e5e7eb;">
-                    <p style="font-weight:600; margin:0 0 8px 0;">Q${idx + 1}. ${escapeHtml(q.question_text)}</p>
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:13px; color:#64748b;">
-                        <div>🔹 A. ${escapeHtml(q.options?.[0] || '')}</div>
-                        <div>🔹 B. ${escapeHtml(q.options?.[1] || '')}</div>
-                        <div>🔹 C. ${escapeHtml(q.options?.[2] || '')}</div>
-                        <div>🔹 D. ${escapeHtml(q.options?.[3] || '')}</div>
-                    </div>
-                    <p style="font-size:12px; color:#8b5cf6; margin-top:6px;">💡 Difficulty: ${q.difficulty || 'Medium'}</p>
-                </div>`;
-        });
-        sampleMcqsHtml += '<p style="font-size:13px; color:#64748b; margin-top:8px;">⬆️ View all questions in the quiz below</p>';
-        sampleMcqsHtml += '</div>';
-    }
+// Build sample MCQs (first 3 questions with real options)
+let sampleMcqsHtml = '';
+if (chapterSampleQuestions && chapterSampleQuestions.length > 0) {
+    sampleMcqsHtml = '<div style="margin:16px 0; background:#f8fafc; padding:16px; border-radius:12px;">';
+    sampleMcqsHtml += '<h3 style="font-size:16px; color:#1e293b; margin-bottom:12px;">📝 Sample Questions</h3>';
+    chapterSampleQuestions.forEach((q, idx) => {
+        sampleMcqsHtml += `
+            <div style="background:white; padding:12px; border-radius:8px; margin-bottom:10px; border:1px solid #e5e7eb;">
+                <p style="font-weight:600; margin:0 0 8px 0;">Q${idx + 1}. ${escapeHtml(q.question_text)}</p>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:13px; color:#64748b;">
+                    <div>🔹 A. ${escapeHtml(q.options?.[0] || '')}</div>
+                    <div>🔹 B. ${escapeHtml(q.options?.[1] || '')}</div>
+                    <div>🔹 C. ${escapeHtml(q.options?.[2] || '')}</div>
+                    <div>🔹 D. ${escapeHtml(q.options?.[3] || '')}</div>
+                </div>
+                <p style="font-size:12px; color:#8b5cf6; margin-top:6px;">💡 Difficulty: ${q.difficulty || 'Medium'}</p>
+            </div>`;
+    });
+    sampleMcqsHtml += '<p style="font-size:13px; color:#64748b; margin-top:8px;">⬆️ View all questions in the quiz below</p>';
+    sampleMcqsHtml += '</div>';
+}
     
     // Build difficulty breakdown HTML
     let difficultyHtml = '';
@@ -4529,7 +4604,7 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
     
 const metaDescription = `Practice ${chapterDisplay}${chapterName} from ${bookTitle}. ${totalQs} questions with ${easyCount} easy, ${mediumCount} medium, and ${hardCount} hard difficulty levels. Perfect for exam preparation.`;
     
-    return '<!DOCTYPE html>\n' +
+return '<!DOCTYPE html>\n' +
     '<html lang="en">\n' +
     '<head>\n' +
     '    <meta charset="UTF-8">\n' +
@@ -4543,6 +4618,23 @@ const metaDescription = `Practice ${chapterDisplay}${chapterName} from ${bookTit
     '    <meta property="og:description" content="Practice ' + chapterDisplay + chapterName + ' from ' + bookTitle + '. ' + totalQs + ' questions with difficulty breakdown: Easy ' + easyCount + ', Medium ' + mediumCount + ', Hard ' + hardCount + '.">\n' +
     '    <meta property="og:type" content="website">\n' +
     '    <meta name="theme-color" content="#7c3aed">\n' +
+    '    <meta name="last-modified" content="' + new Date().toISOString().split('T')[0] + '">\n' +
+    '    <script type="application/ld+json">\n' +
+    '    {\n' +
+    '      "@context": "https://schema.org",\n' +
+    '      "@type": "CreativeWork",\n' +
+    '      "name": "' + chapterDisplay + escapeHtml(chapterName).replace(/"/g, '\\"') + '",\n' +
+    '      "description": "' + metaDescription.replace(/"/g, '\\"') + '",\n' +
+    '      "url": "https://bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '.html",\n' +
+    '      "about": {\n' +
+    '        "@type": "Book",\n' +
+    '        "name": "' + bookTitle.replace(/"/g, '\\"') + '"\n' +
+    '      },\n' +
+    '      "educationalUse": "Exam Preparation",\n' +
+    '      "learningResourceType": "Quiz",\n' +
+    '      "numberOfQuestions": "' + totalQs + '"\n' +
+    '    }\n' +
+    '    </script>\n' +
     '    <script src="https://cdn.tailwindcss.com"><\/script>\n' +
     '    <style>\n' +
     '        body {\n' +
@@ -4631,7 +4723,8 @@ const metaDescription = `Practice ${chapterDisplay}${chapterName} from ${bookTit
     '        <a href="/books/' + bookSlug + '/" class="back-link">← Back to ' + bookTitle + '</a>\n' +
     '        <h1>' + chapterDisplay + chapterName + ' - ' + bookTitle + '</h1>\n' +
     '        <p class="chapter-info">📖 From <strong>' + bookTitle + '</strong> • ' + totalQs + ' questions available</p>\n' +
-    '        <p>Practice MCQs for ' + chapterDisplay + chapterName + '. Test your knowledge with carefully crafted questions across easy, medium, and hard difficulty levels.</p>\n' +
+'        <p>Practice MCQs for ' + chapterDisplay + chapterName + '. Test your knowledge with carefully crafted questions across easy, medium, and hard difficulty levels.</p>\n' +
+    '        <p style="font-size:12px; color:#94a3b8; margin-top:4px;">📅 Last updated: ' + new Date().toISOString().split('T')[0] + '</p>\n' +
     difficultyHtml +
     topicsHtml +
     sampleMcqsHtml +
@@ -4644,7 +4737,7 @@ const metaDescription = `Practice ${chapterDisplay}${chapterName} from ${bookTit
     '</body>\n' +
     '</html>';
 }
-function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficultyStats, allBookTopics) {
+function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficultyStats, allBookTopics, topicSampleQuestions) {
     const bookSlug = book.slug || createSlug(book.title);
     const bookTitle = escapeHtml(book.title);
     const chapterSlug = chapter.slug || createSlug(chapter.name);
@@ -4659,28 +4752,27 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     const mediumCount = topicDifficultyStats?.medium || 0;
     const hardCount = topicDifficultyStats?.hard || 0;
     
-    // Build sample MCQs (first 3 questions)
-    let sampleMcqsHtml = '';
-    if (topicQuestions.length > 0) {
-        const sampleQuestions = topicQuestions.slice(0, 3);
-        sampleMcqsHtml = '<div style="margin:16px 0; background:#f8fafc; padding:16px; border-radius:12px;">';
-        sampleMcqsHtml += '<h3 style="font-size:16px; color:#1e293b; margin-bottom:12px;">📝 Sample Questions</h3>';
-        sampleQuestions.forEach((q, idx) => {
-            sampleMcqsHtml += `
-                <div style="background:white; padding:12px; border-radius:8px; margin-bottom:10px; border:1px solid #e5e7eb;">
-                    <p style="font-weight:600; margin:0 0 8px 0;">Q${idx + 1}. ${escapeHtml(q.question_text)}</p>
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:13px; color:#64748b;">
-                        <div>🔹 A. ${escapeHtml(q.options?.[0] || '')}</div>
-                        <div>🔹 B. ${escapeHtml(q.options?.[1] || '')}</div>
-                        <div>🔹 C. ${escapeHtml(q.options?.[2] || '')}</div>
-                        <div>🔹 D. ${escapeHtml(q.options?.[3] || '')}</div>
-                    </div>
-                    <p style="font-size:12px; color:#8b5cf6; margin-top:6px;">💡 Difficulty: ${q.difficulty || 'Medium'}</p>
-                </div>`;
-        });
-        sampleMcqsHtml += '<p style="font-size:13px; color:#64748b; margin-top:8px;">⬆️ View all questions in the quiz below</p>';
-        sampleMcqsHtml += '</div>';
-    }
+// Build sample MCQs (first 3 questions with real options)
+let sampleMcqsHtml = '';
+if (topicSampleQuestions && topicSampleQuestions.length > 0) {
+    sampleMcqsHtml = '<div style="margin:16px 0; background:#f8fafc; padding:16px; border-radius:12px;">';
+    sampleMcqsHtml += '<h3 style="font-size:16px; color:#1e293b; margin-bottom:12px;">📝 Sample Questions</h3>';
+    topicSampleQuestions.forEach((q, idx) => {
+        sampleMcqsHtml += `
+            <div style="background:white; padding:12px; border-radius:8px; margin-bottom:10px; border:1px solid #e5e7eb;">
+                <p style="font-weight:600; margin:0 0 8px 0;">Q${idx + 1}. ${escapeHtml(q.question_text)}</p>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:13px; color:#64748b;">
+                    <div>🔹 A. ${escapeHtml(q.options?.[0] || '')}</div>
+                    <div>🔹 B. ${escapeHtml(q.options?.[1] || '')}</div>
+                    <div>🔹 C. ${escapeHtml(q.options?.[2] || '')}</div>
+                    <div>🔹 D. ${escapeHtml(q.options?.[3] || '')}</div>
+                </div>
+                <p style="font-size:12px; color:#8b5cf6; margin-top:6px;">💡 Difficulty: ${q.difficulty || 'Medium'}</p>
+            </div>`;
+    });
+    sampleMcqsHtml += '<p style="font-size:13px; color:#64748b; margin-top:8px;">⬆️ View all questions in the quiz below</p>';
+    sampleMcqsHtml += '</div>';
+}
     
     // Build related topics
     let relatedTopicsHtml = '';
@@ -4723,7 +4815,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     
     const metaDescription = `Practice ${topicName} from ${bookTitle} - ${chapterDisplay}${chapterName}. ${totalQs} MCQs with ${easyCount} easy, ${mediumCount} medium, and ${hardCount} hard questions. Perfect for exam preparation.`;
     
-    return '<!DOCTYPE html>\n' +
+return '<!DOCTYPE html>\n' +
     '<html lang="en">\n' +
     '<head>\n' +
     '    <meta charset="UTF-8">\n' +
@@ -4737,6 +4829,23 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     '    <meta property="og:description" content="Practice ' + topicName + ' from ' + bookTitle + '. ' + totalQs + ' questions with difficulty breakdown: Easy ' + easyCount + ', Medium ' + mediumCount + ', Hard ' + hardCount + '.">\n' +
     '    <meta property="og:type" content="website">\n' +
     '    <meta name="theme-color" content="#7c3aed">\n' +
+        '    <meta name="last-modified" content="' + new Date().toISOString().split('T')[0] + '">\n' +
+    '    <script type="application/ld+json">\n' +
+    '    {\n' +
+    '      "@context": "https://schema.org",\n' +
+    '      "@type": "CreativeWork",\n' +
+    '      "name": "' + topicName.replace(/"/g, '\\"') + '",\n' +
+    '      "description": "' + metaDescription.replace(/"/g, '\\"') + '",\n' +
+    '      "url": "https://bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html",\n' +
+    '      "about": {\n' +
+    '        "@type": "Book",\n' +
+    '        "name": "' + bookTitle.replace(/"/g, '\\"') + '"\n' +
+    '      },\n' +
+    '      "educationalUse": "Exam Preparation",\n' +
+    '      "learningResourceType": "Quiz",\n' +
+    '      "numberOfQuestions": "' + totalQs + '"\n' +
+    '    }\n' +
+    '    </script>\n' +
     '    <script src="https://cdn.tailwindcss.com"><\/script>\n' +
     '    <style>\n' +
     '        body {\n' +
@@ -4825,8 +4934,8 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     '        <a href="/books/' + bookSlug + '/' + chapterSlug + '.html" class="back-link">← Back to ' + chapterDisplay + chapterName + '</a>\n' +
     '        <h1>📝 ' + topicName + '</h1>\n' +
     '        <p class="topic-info">📖 From <strong>' + bookTitle + '</strong> • ' + chapterDisplay + chapterName + ' • ' + totalQs + ' questions available</p>\n' +
-    '        <p>Practice MCQs for <strong>' + topicName + '</strong>. Test your knowledge with carefully crafted questions across easy, medium, and hard difficulty levels.</p>\n' +
-    difficultyHtml +
+ '        <p>Practice MCQs for <strong>' + topicName + '</strong>. Test your knowledge with carefully crafted questions across easy, medium, and hard difficulty levels.</p>\n' +
+    '        <p style="font-size:12px; color:#94a3b8; margin-top:4px;">📅 Last updated: ' + new Date().toISOString().split('T')[0] + '</p>\n' +    difficultyHtml +
     sampleMcqsHtml +
     relatedTopicsHtml +
     '        <div style="text-align: center; margin-top: 20px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">\n' +
@@ -5070,7 +5179,24 @@ bookQuestionIds.forEach(function(q) {
     else if (q.difficulty === 'hard' || q.difficulty === 'Hard') bookDifficultyStats.hard++;
 });
             
-var bookIndexHtml = generateBookIndexPage(book, bookChapters, bookTopics, {}, totalQuestionsForBook, chapterQuestionCounts, bookDifficultyStats);
+// Build chapter difficulty stats for descriptions
+var chapterDifficultyStatsByChapter = {};
+bookChapters.forEach(function(ch) {
+    var chIdNum = Number(ch.id);
+    var chQuestions = allQuestions.filter(function(q) {
+        var qChapterId = q.chapter_id ? Number(q.chapter_id) : null;
+        return qChapterId === chIdNum;
+    });
+    var stats = { easy: 0, medium: 0, hard: 0 };
+    chQuestions.forEach(function(q) {
+        if (q.difficulty === 'easy' || q.difficulty === 'Easy') stats.easy++;
+        else if (q.difficulty === 'medium' || q.difficulty === 'Medium') stats.medium++;
+        else if (q.difficulty === 'hard' || q.difficulty === 'Hard') stats.hard++;
+    });
+    chapterDifficultyStatsByChapter[ch.id] = stats;
+});
+
+var bookIndexHtml = generateBookIndexPage(book, bookChapters, bookTopics, {}, totalQuestionsForBook, chapterQuestionCounts, bookDifficultyStats, chapterDifficultyStatsByChapter);
             tempFiles.push({
                 name: bookSlug + '/index.html',
                 content: bookIndexHtml,
@@ -5107,20 +5233,21 @@ chapterQuestions.forEach(function(q) {
     else if (q.difficulty === 'hard' || q.difficulty === 'Hard') chapterDifficultyStats.hard++;
 });
                 
-// Get options for sample questions
-var chapterQuestionsWithOptions = [];
+// Get actual options for sample questions
+var chapterSampleQuestions = [];
 if (chapterQuestions.length > 0) {
-    var qIds = chapterQuestions.slice(0, 3).map(function(q) { return q.id; });
-    // We need to fetch options - we'll simplify by using the question objects
-    chapterQuestionsWithOptions = chapterQuestions.slice(0, 3).map(function(q) {
+    var sampleIds = chapterQuestions.slice(0, 3).map(function(q) { return q.id; });
+    var optionsMap = await fetchOptionsForQuestions(sampleIds);
+    
+    chapterSampleQuestions = chapterQuestions.slice(0, 3).map(function(q) {
         return {
             ...q,
-            options: ['Option A', 'Option B', 'Option C', 'Option D'] // Placeholder, will be replaced with actual options
+            options: optionsMap[q.id] || ['Option A', 'Option B', 'Option C', 'Option D']
         };
     });
 }
 
-var chapterHtml = generateChapterPage(book, chapter, chapterTopics, chapterQuestions, chapterDifficultyStats);
+var chapterHtml = generateChapterPage(book, chapter, chapterTopics, chapterQuestions, chapterDifficultyStats, chapterSampleQuestions);
                 tempFiles.push({
                     name: bookSlug + '/' + chapterSlug + '.html',
                     content: chapterHtml,
@@ -5146,15 +5273,16 @@ var topicQuestions = allQuestions.filter(function(q) {
     return qTopicId === topicIdNum;
 });
                     
-// Get options for sample questions
-var topicQuestionsWithOptions = [];
+// Get actual options for sample questions
+var topicSampleQuestions = [];
 if (topicQuestions.length > 0) {
-    // Get the actual questions with options
-    // Since we can't fetch options easily here, we'll use the question objects
-    topicQuestionsWithOptions = topicQuestions.slice(0, 3).map(function(q) {
+    var sampleIds = topicQuestions.slice(0, 3).map(function(q) { return q.id; });
+    var optionsMap = await fetchOptionsForQuestions(sampleIds);
+    
+    topicSampleQuestions = topicQuestions.slice(0, 3).map(function(q) {
         return {
             ...q,
-            options: ['Option A', 'Option B', 'Option C', 'Option D'] // Placeholder
+            options: optionsMap[q.id] || ['Option A', 'Option B', 'Option C', 'Option D']
         };
     });
 }
@@ -5166,8 +5294,8 @@ topicQuestions.forEach(function(q) {
     else if (q.difficulty === 'medium' || q.difficulty === 'Medium') topicDifficultyStats.medium++;
     else if (q.difficulty === 'hard' || q.difficulty === 'Hard') topicDifficultyStats.hard++;
 });
-                    
-var topicHtml = generateTopicPage(book, chapter, topic, topicQuestions, topicDifficultyStats, bookTopics);
+
+var topicHtml = generateTopicPage(book, chapter, topic, topicQuestions, topicDifficultyStats, bookTopics, topicSampleQuestions);
                     var topicPath = bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html';
                     tempFiles.push({
                         name: topicPath,
