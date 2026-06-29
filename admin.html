@@ -4228,71 +4228,49 @@ function showTab(tabName) {
     let seoBooksData = [];
 
     // ============ FIX 1: Modified to fetch question_text too ============
-    async function fetchAllQuestionsWithDifficulty() {
-        let allQuestions = [];
-        let page = 0;
-        const pageSize = 1000;
-        let hasMore = true;
-        
-        while (hasMore) {
-            const from = page * pageSize;
-            const to = from + pageSize - 1;
-            
-            const { data, error } = await _supabase
-                .from('questions')
-                .select('id, chapter_id, topic_id, difficulty, question_text, created_at')
-                .range(from, to);
-            
-            if (error) {
-                console.error('Error fetching questions:', error);
-                break;
-            }
-            
-            if (!data || data.length === 0) {
-                hasMore = false;
-            } else {
-                // Convert IDs to numbers for consistent comparison
-                data.forEach(function(q) {
-                    q.chapter_id = q.chapter_id ? Number(q.chapter_id) : null;
-                    q.topic_id = q.topic_id ? Number(q.topic_id) : null;
-                });
-                allQuestions = allQuestions.concat(data);
-                page++;
-                if (data.length < pageSize) {
-                    hasMore = false;
-                }
-            }
-        }
-        return allQuestions;
-    }
-
-    // ============ FIX 2: NEW FUNCTION to fetch options for questions ============
-    async function fetchOptionsForQuestions(questionIds) {
-        if (!questionIds || questionIds.length === 0) return {};
+async function fetchAllQuestionsWithDifficulty() {
+    let allQuestions = [];
+    let page = 0;
+    const pageSize = 1000;
+    let hasMore = true;
+    
+    while (hasMore) {
+        const from = page * pageSize;
+        const to = from + pageSize - 1;
         
         const { data, error } = await _supabase
-            .from('options')
-            .select('question_id, option_text, option_index')
-            .in('question_id', questionIds)
-            .order('question_id')
-            .order('option_index');
+            .from('questions')
+            .select('id, chapter_id, topic_id, difficulty, question_text, created_at, correct_answer, options (option_text, option_index)')
+            .range(from, to);
         
         if (error) {
-            console.error('Error fetching options:', error);
-            return {};
+            console.error('Error fetching questions:', error);
+            break;
         }
         
-        const optionsMap = {};
-        data.forEach(opt => {
-            if (!optionsMap[opt.question_id]) {
-                optionsMap[opt.question_id] = ['', '', '', ''];
+        if (!data || data.length === 0) {
+            hasMore = false;
+        } else {
+            data.forEach(function(q) {
+                q.chapter_id = q.chapter_id ? Number(q.chapter_id) : null;
+                q.topic_id = q.topic_id ? Number(q.topic_id) : null;
+                // Format options into array
+                if (q.options && q.options.length > 0) {
+                    var opts = q.options.sort(function(a, b) { return a.option_index - b.option_index; });
+                    q.options_array = opts.map(function(o) { return o.option_text; });
+                } else {
+                    q.options_array = ['', '', '', ''];
+                }
+            });
+            allQuestions = allQuestions.concat(data);
+            page++;
+            if (data.length < pageSize) {
+                hasMore = false;
             }
-            optionsMap[opt.question_id][opt.option_index] = opt.option_text;
-        });
-        
-        return optionsMap;
+        }
     }
-
+    return allQuestions;
+}
     // ============ FIX 3: Book Index Page (unchanged but kept for completeness) ============
 function generateBookIndexPage(book, chapters, topics, questionStats, totalQuestions, chapterQuestionCounts, bookDifficultyStats) {
     var bookSlug = book.slug || createSlug(book.title);
@@ -5070,13 +5048,16 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
             var tempFiles = [];
             var allOptionsMap = {};
             
-            // Collect all question IDs to fetch options
-            var allQuestionIds = allQuestions.map(function(q) { return q.id; });
-            
-            // FIX: Fetch options for all questions
-            if (allQuestionIds.length > 0) {
-                allOptionsMap = await fetchOptionsForQuestions(allQuestionIds);
-            }
+// Options are already included in allQuestions via nested select
+// No separate fetch needed - allOptionsMap will be built from the data
+var allOptionsMap = {};
+allQuestions.forEach(function(q) {
+    if (q.options_array && q.options_array.length > 0) {
+        allOptionsMap[q.id] = q.options_array;
+    } else {
+        allOptionsMap[q.id] = ['', '', '', ''];
+    }
+});
             
             var bookProgress = 0;
             var totalBooks = books.length;
