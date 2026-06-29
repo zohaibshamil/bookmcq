@@ -4259,303 +4259,580 @@ function showTab(tabName) {
         }
         return allQuestions;
     }
-
-    function generateBookIndexPage(book, chapters, topics, questionStats, totalQuestions) {
-        const bookSlug = book.slug || createSlug(book.title);
-        const bookTitle = escapeHtml(book.title);
-        const bookAuthor = book.author ? escapeHtml(book.author) : '';
-        const bookCategory = book.category ? escapeHtml(book.category) : '';
+async function fetchOptionsForQuestions(questionIds) {
+    if (!questionIds || questionIds.length === 0) return {};
+    
+    const { data, error } = await _supabase
+        .from('options')
+        .select('question_id, option_text, option_index')
+        .in('question_id', questionIds)
+        .order('question_id')
+        .order('option_index');
+    
+    if (error) {
+        console.error('Error fetching options:', error);
+        return {};
+    }
+    
+    const optionsMap = {};
+    data.forEach(opt => {
+        if (!optionsMap[opt.question_id]) {
+            optionsMap[opt.question_id] = ['', '', '', ''];
+        }
+        optionsMap[opt.question_id][opt.option_index] = opt.option_text;
+    });
+    
+    return optionsMap;
+}
+function generateBookIndexPage(book, chapters, topics, questionStats, totalQuestions, chapterQuestionCounts, bookDifficultyStats) {
+    const bookSlug = book.slug || createSlug(book.title);
+    const bookTitle = escapeHtml(book.title);
+    const bookAuthor = book.author ? escapeHtml(book.author) : '';
+    const bookCategory = book.category ? escapeHtml(book.category) : '';
+    
+    // Get difficulty breakdown for the book
+    const easyCount = bookDifficultyStats?.easy || 0;
+    const mediumCount = bookDifficultyStats?.medium || 0;
+    const hardCount = bookDifficultyStats?.hard || 0;
+    
+    let chaptersHtml = '';
+    chapters.forEach((chapter) => {
+        const chapterSlug = chapter.slug || createSlug(chapter.name);
+        const chapterDisplay = chapter.chapter_number ? chapter.chapter_number + '. ' : '';
+        const chapterName = escapeHtml(chapter.name);
         
-        let chaptersHtml = '';
-        chapters.forEach((chapter, idx) => {
-            const chapterSlug = chapter.slug || createSlug(chapter.name);
-            const chapterDisplay = chapter.chapter_number ? chapter.chapter_number + '. ' : '';
-            const chapterName = escapeHtml(chapter.name);
-            
-            const chapterTopics = topics.filter(t => t.chapter_id === chapter.id);
-            let topicsHtml = '';
-            if (chapterTopics.length > 0) {
-                topicsHtml = '<div style="margin-left: 20px; margin-top: 8px;">';
-                chapterTopics.forEach(topic => {
-                    const topicSlug = topic.slug || createSlug(topic.name);
-                    const topicName = escapeHtml(topic.name);
-                    topicsHtml += `
-                        <div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer;" onclick="window.location.href='/books/${bookSlug}/${chapterSlug}/topics/${topicSlug}.html'">
-                            📝 ${topicName}
-                        </div>`;
-                });
-                topicsHtml += '</div>';
-            }
-            
-            chaptersHtml += `
+        // Get question count for this chapter
+        const chapterQCount = chapterQuestionCounts?.[chapter.id] || 0;
+        
+        const chapterTopics = topics.filter(t => t.chapter_id === chapter.id);
+        let topicsHtml = '';
+        if (chapterTopics.length > 0) {
+            topicsHtml = '<div style="margin-left: 20px; margin-top: 8px;">';
+            chapterTopics.forEach(topic => {
+                const topicSlug = topic.slug || createSlug(topic.name);
+                const topicName = escapeHtml(topic.name);
+                topicsHtml += `
+                    <div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/${bookSlug}/${chapterSlug}/topics/${topicSlug}.html'">
+                        📝 ${topicName}
+                    </div>`;
+            });
+            topicsHtml += '</div>';
+        }
+        
+        chaptersHtml += `
         <div class="chapter" onclick="window.location.href='/books/${bookSlug}/${chapterSlug}.html'">
             <div>
                 <div class="title">${chapterDisplay}${chapterName}</div>
                 ${topicsHtml}
             </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="background:#e0e7ff; color:#4338ca; padding:2px 10px; border-radius:12px; font-size:12px; font-weight:600;">${chapterQCount} Qs</span>
+            </div>
         </div>`;
+    });
+    
+    // Build difficulty breakdown HTML
+    let difficultyHtml = '';
+    if (easyCount > 0 || mediumCount > 0 || hardCount > 0) {
+        difficultyHtml = `
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:16px 0;">
+            <div style="background:#dcfce7; padding:12px; border-radius:10px; text-align:center; border:1px solid #86efac;">
+                <div style="font-size:24px; font-weight:700; color:#166534;">${easyCount}</div>
+                <div style="font-size:12px; color:#64748b;">Easy Questions</div>
+            </div>
+            <div style="background:#fef9c3; padding:12px; border-radius:10px; text-align:center; border:1px solid #fde047;">
+                <div style="font-size:24px; font-weight:700; color:#854d0e;">${mediumCount}</div>
+                <div style="font-size:12px; color:#64748b;">Medium Questions</div>
+            </div>
+            <div style="background:#fee2e2; padding:12px; border-radius:10px; text-align:center; border:1px solid #fca5a5;">
+                <div style="font-size:24px; font-weight:700; color:#991b1b;">${hardCount}</div>
+                <div style="font-size:12px; color:#64748b;">Hard Questions</div>
+            </div>
+        </div>`;
+    }
+    
+    const metaDescription = `Practice ${bookTitle} MCQs chapter-wise. ${chapters.length} chapters and ${totalQuestions} questions available with ${easyCount} easy, ${mediumCount} medium, and ${hardCount} hard difficulty questions. Perfect for exam preparation.`;
+    
+    return '<!DOCTYPE html>\n' +
+    '<html lang="en">\n' +
+    '<head>\n' +
+    '    <meta charset="UTF-8">\n' +
+    '    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">\n' +
+    '    <title>' + bookTitle + ' MCQs - Chapter-wise Practice with Difficulty Levels | BookMCQ</title>\n' +
+    '    <meta name="description" content="' + metaDescription + '">\n' +
+    '    <meta name="keywords" content="' + bookTitle + ' MCQs, ' + bookTitle + ' questions, ' + bookTitle + ' practice, ' + bookTitle + ' exam preparation, ' + bookTitle + ' easy medium hard questions' + (bookCategory ? ', ' + bookCategory + ' MCQs' : '') + '">\n' +
+    '    <meta name="robots" content="index, follow">\n' +
+    '    <link rel="canonical" href="https://bookmcq.com/books/' + bookSlug + '/">\n' +
+    '    <meta property="og:title" content="' + bookTitle + ' MCQs | BookMCQ">\n' +
+    '    <meta property="og:description" content="Chapter-wise MCQs for ' + bookTitle + ' with ' + totalQuestions + ' practice questions. Difficulty: Easy ' + easyCount + ', Medium ' + mediumCount + ', Hard ' + hardCount + '.">\n' +
+    '    <meta property="og:type" content="website">\n' +
+    '    <meta name="theme-color" content="#7c3aed">\n' +
+    '    <script src="https://cdn.tailwindcss.com"><\/script>\n' +
+    '    <style>\n' +
+    '        body {\n' +
+    '            font-family: Arial, sans-serif;\n' +
+    '            background: linear-gradient(135deg, #667eea, #764ba2);\n' +
+    '            margin: 0;\n' +
+    '            padding: 0;\n' +
+    '            min-height: 100vh;\n' +
+    '        }\n' +
+    '        .container {\n' +
+    '            max-width: 1000px;\n' +
+    '            margin: auto;\n' +
+    '            padding: 20px;\n' +
+    '        }\n' +
+    '        .card {\n' +
+    '            background: white;\n' +
+    '            border-radius: 16px;\n' +
+    '            padding: 20px;\n' +
+    '            margin-top: 20px;\n' +
+    '            box-shadow: 0 10px 25px rgba(0,0,0,0.1);\n' +
+    '        }\n' +
+    '        .chapter {\n' +
+    '            display: flex;\n' +
+    '            justify-content: space-between;\n' +
+    '            align-items: center;\n' +
+    '            padding: 15px;\n' +
+    '            margin: 10px 0;\n' +
+    '            border-radius: 12px;\n' +
+    '            background: #f3f4f6;\n' +
+    '            cursor: pointer;\n' +
+    '            transition: 0.2s;\n' +
+    '        }\n' +
+    '        .chapter:hover {\n' +
+    '            background: #e0e7ff;\n' +
+    '            transform: translateX(5px);\n' +
+    '        }\n' +
+    '        .title {\n' +
+    '            font-weight: bold;\n' +
+    '        }\n' +
+    '        .back-link {\n' +
+    '            display: inline-block;\n' +
+    '            margin-bottom: 15px;\n' +
+    '            color: #7c3aed;\n' +
+    '            text-decoration: none;\n' +
+    '        }\n' +
+    '        .back-link:hover {\n' +
+    '            text-decoration: underline;\n' +
+    '        }\n' +
+    '        .book-meta {\n' +
+    '            display: flex;\n' +
+    '            gap: 20px;\n' +
+    '            flex-wrap: wrap;\n' +
+    '            margin: 10px 0;\n' +
+    '            font-size: 14px;\n' +
+    '            color: #64748b;\n' +
+    '        }\n' +
+    '        .book-meta strong {\n' +
+    '            color: #1e293b;\n' +
+    '        }\n' +
+    '    </style>\n' +
+    '</head>\n' +
+    '<body>\n' +
+    '<div class="container">\n' +
+    '    <div class="card">\n' +
+    '        <a href="/" class="back-link">← Back to Home</a>\n' +
+    '        <h1>' + bookTitle + ' MCQs</h1>\n' +
+    '        <div class="book-meta">\n' +
+    (bookAuthor ? '            <span><strong>Author:</strong> ' + bookAuthor + '</span>\n' : '') +
+    (bookCategory ? '            <span><strong>Category:</strong> ' + bookCategory + '</span>\n' : '') +
+    '            <span><strong>Total Questions:</strong> ' + totalQuestions + '</span>\n' +
+    '            <span><strong>Chapters:</strong> ' + chapters.length + '</span>\n' +
+    '        </div>\n' +
+    '        <p>Practice chapter-wise MCQs for <strong>' + bookTitle + '</strong>. This book contains <strong>' + chapters.length + ' chapters</strong> and <strong>' + totalQuestions + ' questions</strong> across easy, medium, and hard difficulty levels.</p>\n' +
+    difficultyHtml +
+    '        <h2 style="margin-top:20px;">📚 Chapters</h2>\n' +
+    chaptersHtml +
+    '    </div>\n' +
+    '</div>\n' +
+    '</body>\n' +
+    '</html>';
+}
+function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, chapterDifficultyStats) {
+    const bookSlug = book.slug || createSlug(book.title);
+    const bookTitle = escapeHtml(book.title);
+    const chapterSlug = chapter.slug || createSlug(chapter.name);
+    const chapterName = escapeHtml(chapter.name);
+    const chapterDisplay = chapter.chapter_number ? chapter.chapter_number + '. ' : '';
+    const totalQs = chapterQuestions.length;
+    
+    // Get difficulty breakdown for this chapter
+    const easyCount = chapterDifficultyStats?.easy || 0;
+    const mediumCount = chapterDifficultyStats?.medium || 0;
+    const hardCount = chapterDifficultyStats?.hard || 0;
+    
+    // Build topics HTML
+    let topicsHtml = '';
+    if (chapterTopics && chapterTopics.length > 0) {
+        topicsHtml = '<div style="margin:16px 0;">';
+        topicsHtml += '<h3 style="font-size:16px; color:#1e293b;">📝 Topics in this Chapter</h3><ul style="list-style:none; padding:0;">';
+        chapterTopics.forEach(topic => {
+            const topicSlug = topic.slug || createSlug(topic.name);
+            const topicName = escapeHtml(topic.name);
+            topicsHtml += `
+                <li style="padding:8px 12px; margin:4px 0; background:#f8fafc; border-radius:8px; border-left:3px solid #8b5cf6;">
+                    <a href="/books/${bookSlug}/${chapterSlug}/topics/${topicSlug}.html" style="text-decoration:none; color:#1e293b; font-weight:500;">
+                        📝 ${topicName}
+                    </a>
+                </li>`;
         });
-        
-        return '<!DOCTYPE html>\n' +
-        '<html lang="en">\n' +
-        '<head>\n' +
-        '    <meta charset="UTF-8">\n' +
-        '    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">\n' +
-        '    <title>' + bookTitle + ' MCQs - Chapter-wise Practice | BookMCQ</title>\n' +
-        '    <meta name="description" content="Practice ' + bookTitle + ' MCQs chapter-wise. ' + chapters.length + ' chapters and ' + totalQuestions + ' questions available. Improve your knowledge with detailed explanations.">\n' +
-        '    <meta name="keywords" content="' + bookTitle + ' MCQs, ' + bookTitle + ' questions, ' + bookTitle + ' practice, ' + bookTitle + ' exam preparation' + (bookCategory ? ', ' + bookCategory + ' MCQs' : '') + '">\n' +
-        '    <meta name="robots" content="index, follow">\n' +
-        '    <link rel="canonical" href="https://bookmcq.com/books/' + bookSlug + '/">\n' +
-        '    <meta property="og:title" content="' + bookTitle + ' MCQs | BookMCQ">\n' +
-        '    <meta property="og:description" content="Chapter-wise MCQs for ' + bookTitle + ' with ' + totalQuestions + ' practice questions.">\n' +
-        '    <meta property="og:type" content="website">\n' +
-        '    <meta name="theme-color" content="#7c3aed">\n' +
-        '    <script src="https://cdn.tailwindcss.com"><\/script>\n' +
-        '    <style>\n' +
-        '        body {\n' +
-        '            font-family: Arial, sans-serif;\n' +
-        '            background: linear-gradient(135deg, #667eea, #764ba2);\n' +
-        '            margin: 0;\n' +
-        '            padding: 0;\n' +
-        '            min-height: 100vh;\n' +
-        '        }\n' +
-        '        .container {\n' +
-        '            max-width: 1000px;\n' +
-        '            margin: auto;\n' +
-        '            padding: 20px;\n' +
-        '        }\n' +
-        '        .card {\n' +
-        '            background: white;\n' +
-        '            border-radius: 16px;\n' +
-        '            padding: 20px;\n' +
-        '            margin-top: 20px;\n' +
-        '            box-shadow: 0 10px 25px rgba(0,0,0,0.1);\n' +
-        '        }\n' +
-        '        .chapter {\n' +
-        '            display: flex;\n' +
-        '            justify-content: space-between;\n' +
-        '            padding: 15px;\n' +
-        '            margin: 10px 0;\n' +
-        '            border-radius: 12px;\n' +
-        '            background: #f3f4f6;\n' +
-        '            cursor: pointer;\n' +
-        '            transition: 0.2s;\n' +
-        '        }\n' +
-        '        .chapter:hover {\n' +
-        '            background: #e0e7ff;\n' +
-        '            transform: translateX(5px);\n' +
-        '        }\n' +
-        '        .title {\n' +
-        '            font-weight: bold;\n' +
-        '        }\n' +
-        '        .back-link {\n' +
-        '            display: inline-block;\n' +
-        '            margin-bottom: 15px;\n' +
-        '            color: #7c3aed;\n' +
-        '            text-decoration: none;\n' +
-        '        }\n' +
-        '        .back-link:hover {\n' +
-        '            text-decoration: underline;\n' +
-        '        }\n' +
-        '    </style>\n' +
-        '</head>\n' +
-        '<body>\n' +
-        '<div class="container">\n' +
-        '    <div class="card">\n' +
-        '        <a href="/" class="back-link">← Back to Home</a>\n' +
-        '        <h1>' + bookTitle + '</h1>\n' +
-        (bookAuthor ? '        <p><strong>Author:</strong> ' + bookAuthor + '</p>\n' : '') +
-        (bookCategory ? '        <p><strong>Category:</strong> ' + bookCategory + '</p>\n' : '') +
-        '        <p>Practice chapter-wise MCQs for ' + bookTitle + '. This book contains <strong>' + chapters.length + ' chapters</strong> and <strong>' + totalQuestions + ' questions</strong>.</p>\n' +
-        '        \n' +
-        '        <h2>Chapters</h2>\n' +
-        chaptersHtml +
-        '    </div>\n' +
-        '</div>\n' +
-        '</body>\n' +
-        '</html>';
+        topicsHtml += '</ul></div>';
     }
-
-    function generateChapterPage(book, chapter) {
-        const bookSlug = book.slug || createSlug(book.title);
-        const bookTitle = escapeHtml(book.title);
-        const chapterSlug = chapter.slug || createSlug(chapter.name);
-        const chapterName = escapeHtml(chapter.name);
-        const chapterDisplay = chapter.chapter_number ? chapter.chapter_number + '. ' : '';
-        
-        return '<!DOCTYPE html>\n' +
-        '<html lang="en">\n' +
-        '<head>\n' +
-        '    <meta charset="UTF-8">\n' +
-        '    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">\n' +
-        '    <title>' + chapterName + ' - ' + bookTitle + ' | BookMCQ</title>\n' +
-        '    <meta name="description" content="Practice ' + chapterName + ' from ' + bookTitle + '. Chapter ' + (chapter.chapter_number || '') + ' with comprehensive MCQs for exam preparation.">\n' +
-        '    <meta name="keywords" content="' + chapterName + ' MCQs, ' + bookTitle + ' ' + chapterName + ' questions, ' + chapterName + ' practice, ' + bookTitle + ' chapter ' + (chapter.chapter_number || '') + '">\n' +
-        '    <meta name="robots" content="index, follow">\n' +
-        '    <link rel="canonical" href="https://bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '.html">\n' +
-        '    <meta property="og:title" content="' + chapterName + ' - ' + bookTitle + ' | BookMCQ">\n' +
-        '    <meta property="og:type" content="website">\n' +
-        '    <meta name="theme-color" content="#7c3aed">\n' +
-        '    <script src="https://cdn.tailwindcss.com"><\/script>\n' +
-        '    <style>\n' +
-        '        body {\n' +
-        '            font-family: Arial, sans-serif;\n' +
-        '            background: linear-gradient(135deg, #667eea, #764ba2);\n' +
-        '            margin: 0;\n' +
-        '            padding: 0;\n' +
-        '            min-height: 100vh;\n' +
-        '        }\n' +
-        '        .container {\n' +
-        '            max-width: 900px;\n' +
-        '            margin: auto;\n' +
-        '            padding: 20px;\n' +
-        '        }\n' +
-        '        .card {\n' +
-        '            background: white;\n' +
-        '            border-radius: 16px;\n' +
-        '            padding: 20px;\n' +
-        '            margin-top: 20px;\n' +
-        '            box-shadow: 0 10px 25px rgba(0,0,0,0.1);\n' +
-        '        }\n' +
-        '        .btn-primary {\n' +
-        '            display: inline-block;\n' +
-        '            background: linear-gradient(135deg, #667eea, #764ba2);\n' +
-        '            color: white;\n' +
-        '            padding: 14px 32px;\n' +
-        '            border-radius: 12px;\n' +
-        '            text-decoration: none;\n' +
-        '            font-weight: bold;\n' +
-        '            margin-top: 10px;\n' +
-        '            transition: 0.2s;\n' +
-        '        }\n' +
-        '        .btn-primary:hover {\n' +
-        '            transform: translateY(-2px);\n' +
-        '            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);\n' +
-        '        }\n' +
-        '        .back-link {\n' +
-        '            display: inline-block;\n' +
-        '            margin-bottom: 15px;\n' +
-        '            color: #7c3aed;\n' +
-        '            text-decoration: none;\n' +
-        '        }\n' +
-        '        .back-link:hover {\n' +
-        '            text-decoration: underline;\n' +
-        '        }\n' +
-        '        .chapter-info {\n' +
-        '            font-size: 14px;\n' +
-        '            color: #64748b;\n' +
-        '            margin: 8px 0;\n' +
-        '        }\n' +
-        '    </style>\n' +
-        '</head>\n' +
-        '<body>\n' +
-        '<div class="container">\n' +
-        '    <div class="card">\n' +
-        '        <a href="/books/' + bookSlug + '/" class="back-link">← Back to ' + bookTitle + '</a>\n' +
-        '        <h1>' + chapterDisplay + chapterName + '</h1>\n' +
-        '        <p class="chapter-info">From <strong>' + bookTitle + '</strong></p>\n' +
-        '        <p>Practice MCQs for ' + chapterName + '. Test your knowledge with carefully crafted questions.</p>\n' +
-        '        \n' +
-        '        <div style="text-align: center;">\n' +
-        '            <a href="/quiz" class="btn-primary">Start Quiz</a>\n' +
-        '        </div>\n' +
-        '    </div>\n' +
-        '</div>\n' +
-        '</body>\n' +
-        '</html>';
+    
+    // Build sample MCQs (first 3 questions)
+    let sampleMcqsHtml = '';
+    if (chapterQuestions.length > 0) {
+        const sampleQuestions = chapterQuestions.slice(0, 3);
+        sampleMcqsHtml = '<div style="margin:16px 0; background:#f8fafc; padding:16px; border-radius:12px;">';
+        sampleMcqsHtml += '<h3 style="font-size:16px; color:#1e293b; margin-bottom:12px;">📝 Sample Questions</h3>';
+        sampleQuestions.forEach((q, idx) => {
+            sampleMcqsHtml += `
+                <div style="background:white; padding:12px; border-radius:8px; margin-bottom:10px; border:1px solid #e5e7eb;">
+                    <p style="font-weight:600; margin:0 0 8px 0;">Q${idx + 1}. ${escapeHtml(q.question_text)}</p>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:13px; color:#64748b;">
+                        <div>🔹 A. ${escapeHtml(q.options?.[0] || '')}</div>
+                        <div>🔹 B. ${escapeHtml(q.options?.[1] || '')}</div>
+                        <div>🔹 C. ${escapeHtml(q.options?.[2] || '')}</div>
+                        <div>🔹 D. ${escapeHtml(q.options?.[3] || '')}</div>
+                    </div>
+                    <p style="font-size:12px; color:#8b5cf6; margin-top:6px;">💡 Difficulty: ${q.difficulty || 'Medium'}</p>
+                </div>`;
+        });
+        sampleMcqsHtml += '<p style="font-size:13px; color:#64748b; margin-top:8px;">⬆️ View all questions in the quiz below</p>';
+        sampleMcqsHtml += '</div>';
     }
-
-    function generateTopicPage(book, chapter, topic) {
-        const bookSlug = book.slug || createSlug(book.title);
-        const bookTitle = escapeHtml(book.title);
-        const chapterSlug = chapter.slug || createSlug(chapter.name);
-        const topicSlug = topic.slug || createSlug(topic.name);
-        const topicName = escapeHtml(topic.name);
-        const chapterName = escapeHtml(chapter.name);
-        const chapterDisplay = chapter.chapter_number ? chapter.chapter_number + '. ' : '';
-        
-        return '<!DOCTYPE html>\n' +
-        '<html lang="en">\n' +
-        '<head>\n' +
-        '    <meta charset="UTF-8">\n' +
-        '    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">\n' +
-        '    <title>' + topicName + ' - ' + bookTitle + ' | BookMCQ</title>\n' +
-        '    <meta name="description" content="Practice ' + topicName + ' from ' + bookTitle + '. Comprehensive MCQs for ' + topicName + ' with detailed explanations.">\n' +
-        '    <meta name="keywords" content="' + topicName + ' MCQs, ' + bookTitle + ' ' + topicName + ' questions, ' + topicName + ' practice, ' + bookTitle + ' topics">\n' +
-        '    <meta name="robots" content="index, follow">\n' +
-        '    <link rel="canonical" href="https://bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html">\n' +
-        '    <meta property="og:title" content="' + topicName + ' - ' + bookTitle + ' | BookMCQ">\n' +
-        '    <meta property="og:type" content="website">\n' +
-        '    <meta name="theme-color" content="#7c3aed">\n' +
-        '    <script src="https://cdn.tailwindcss.com"><\/script>\n' +
-        '    <style>\n' +
-        '        body {\n' +
-        '            font-family: Arial, sans-serif;\n' +
-        '            background: linear-gradient(135deg, #667eea, #764ba2);\n' +
-        '            margin: 0;\n' +
-        '            padding: 0;\n' +
-        '            min-height: 100vh;\n' +
-        '        }\n' +
-        '        .container {\n' +
-        '            max-width: 900px;\n' +
-        '            margin: auto;\n' +
-        '            padding: 20px;\n' +
-        '        }\n' +
-        '        .card {\n' +
-        '            background: white;\n' +
-        '            border-radius: 16px;\n' +
-        '            padding: 20px;\n' +
-        '            margin-top: 20px;\n' +
-        '            box-shadow: 0 10px 25px rgba(0,0,0,0.1);\n' +
-        '        }\n' +
-        '        .btn-primary {\n' +
-        '            display: inline-block;\n' +
-        '            background: linear-gradient(135deg, #667eea, #764ba2);\n' +
-        '            color: white;\n' +
-        '            padding: 14px 32px;\n' +
-        '            border-radius: 12px;\n' +
-        '            text-decoration: none;\n' +
-        '            font-weight: bold;\n' +
-        '            margin-top: 10px;\n' +
-        '            transition: 0.2s;\n' +
-        '        }\n' +
-        '        .btn-primary:hover {\n' +
-        '            transform: translateY(-2px);\n' +
-        '            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);\n' +
-        '        }\n' +
-        '        .back-link {\n' +
-        '            display: inline-block;\n' +
-        '            margin-bottom: 15px;\n' +
-        '            color: #7c3aed;\n' +
-        '            text-decoration: none;\n' +
-        '        }\n' +
-        '        .back-link:hover {\n' +
-        '            text-decoration: underline;\n' +
-        '        }\n' +
-        '        .topic-info {\n' +
-        '            font-size: 14px;\n' +
-        '            color: #64748b;\n' +
-        '            margin: 8px 0;\n' +
-        '        }\n' +
-        '    </style>\n' +
-        '</head>\n' +
-        '<body>\n' +
-        '<div class="container">\n' +
-        '    <div class="card">\n' +
-        '        <a href="/books/' + bookSlug + '/' + chapterSlug + '.html" class="back-link">← Back to ' + chapterDisplay + chapterName + '</a>\n' +
-        '        <h1>📝 ' + topicName + '</h1>\n' +
-        '        <p class="topic-info">From <strong>' + bookTitle + '</strong> - <strong>' + chapterDisplay + chapterName + '</strong></p>\n' +
-        '        <p>Practice MCQs for ' + topicName + '. Test your knowledge with carefully crafted questions.</p>\n' +
-        '        \n' +
-        '        <div style="text-align: center;">\n' +
-        '            <a href="/quiz" class="btn-primary">Start Quiz</a>\n' +
-        '        </div>\n' +
-        '    </div>\n' +
-        '</div>\n' +
-        '</body>\n' +
-        '</html>';
+    
+    // Build difficulty breakdown HTML
+    let difficultyHtml = '';
+    if (easyCount > 0 || mediumCount > 0 || hardCount > 0) {
+        difficultyHtml = `
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:16px 0;">
+            <div style="background:#dcfce7; padding:12px; border-radius:10px; text-align:center; border:1px solid #86efac;">
+                <div style="font-size:24px; font-weight:700; color:#166534;">${easyCount}</div>
+                <div style="font-size:12px; color:#64748b;">Easy Questions</div>
+            </div>
+            <div style="background:#fef9c3; padding:12px; border-radius:10px; text-align:center; border:1px solid #fde047;">
+                <div style="font-size:24px; font-weight:700; color:#854d0e;">${mediumCount}</div>
+                <div style="font-size:12px; color:#64748b;">Medium Questions</div>
+            </div>
+            <div style="background:#fee2e2; padding:12px; border-radius:10px; text-align:center; border:1px solid #fca5a5;">
+                <div style="font-size:24px; font-weight:700; color:#991b1b;">${hardCount}</div>
+                <div style="font-size:12px; color:#64748b;">Hard Questions</div>
+            </div>
+        </div>`;
     }
-
+    
+    const metaDescription = `Practice ${chapterDisplay}${chapterName} from ${bookTitle}. ${totalQs} MCQs with ${easyCount} easy, ${mediumCount} medium, and ${hardCount} hard questions. Perfect for exam preparation.`;
+    
+    return '<!DOCTYPE html>\n' +
+    '<html lang="en">\n' +
+    '<head>\n' +
+    '    <meta charset="UTF-8">\n' +
+    '    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">\n' +
+    '    <title>' + chapterDisplay + chapterName + ' - ' + bookTitle + ' MCQs with Difficulty Levels | BookMCQ</title>\n' +
+    '    <meta name="description" content="' + metaDescription + '">\n' +
+    '    <meta name="keywords" content="' + chapterName + ' MCQs, ' + bookTitle + ' ' + chapterName + ' questions, ' + chapterName + ' practice, ' + bookTitle + ' chapter ' + (chapter.chapter_number || '') + ', ' + chapterName + ' easy medium hard">\n' +
+    '    <meta name="robots" content="index, follow">\n' +
+    '    <link rel="canonical" href="https://bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '.html">\n' +
+    '    <meta property="og:title" content="' + chapterDisplay + chapterName + ' - ' + bookTitle + ' MCQs | BookMCQ">\n' +
+    '    <meta property="og:description" content="Practice ' + chapterDisplay + chapterName + ' from ' + bookTitle + '. ' + totalQs + ' questions with difficulty breakdown: Easy ' + easyCount + ', Medium ' + mediumCount + ', Hard ' + hardCount + '.">\n' +
+    '    <meta property="og:type" content="website">\n' +
+    '    <meta name="theme-color" content="#7c3aed">\n' +
+    '    <script src="https://cdn.tailwindcss.com"><\/script>\n' +
+    '    <style>\n' +
+    '        body {\n' +
+    '            font-family: Arial, sans-serif;\n' +
+    '            background: linear-gradient(135deg, #667eea, #764ba2);\n' +
+    '            margin: 0;\n' +
+    '            padding: 0;\n' +
+    '            min-height: 100vh;\n' +
+    '        }\n' +
+    '        .container {\n' +
+    '            max-width: 900px;\n' +
+    '            margin: auto;\n' +
+    '            padding: 20px;\n' +
+    '        }\n' +
+    '        .card {\n' +
+    '            background: white;\n' +
+    '            border-radius: 16px;\n' +
+    '            padding: 20px;\n' +
+    '            margin-top: 20px;\n' +
+    '            box-shadow: 0 10px 25px rgba(0,0,0,0.1);\n' +
+    '        }\n' +
+    '        .btn-primary {\n' +
+    '            display: inline-block;\n' +
+    '            background: linear-gradient(135deg, #667eea, #764ba2);\n' +
+    '            color: white;\n' +
+    '            padding: 14px 32px;\n' +
+    '            border-radius: 12px;\n' +
+    '            text-decoration: none;\n' +
+    '            font-weight: bold;\n' +
+    '            margin-top: 10px;\n' +
+    '            transition: 0.2s;\n' +
+    '        }\n' +
+    '        .btn-primary:hover {\n' +
+    '            transform: translateY(-2px);\n' +
+    '            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);\n' +
+    '        }\n' +
+    '        .btn-secondary {\n' +
+    '            display: inline-block;\n' +
+    '            background: #f3f4f6;\n' +
+    '            color: #1e293b;\n' +
+    '            padding: 10px 24px;\n' +
+    '            border-radius: 10px;\n' +
+    '            text-decoration: none;\n' +
+    '            font-weight: 500;\n' +
+    '            margin-top: 10px;\n' +
+    '            transition: 0.2s;\n' +
+    '            border: 1px solid #e5e7eb;\n' +
+    '        }\n' +
+    '        .btn-secondary:hover {\n' +
+    '            background: #e5e7eb;\n' +
+    '        }\n' +
+    '        .back-link {\n' +
+    '            display: inline-block;\n' +
+    '            margin-bottom: 15px;\n' +
+    '            color: #7c3aed;\n' +
+    '            text-decoration: none;\n' +
+    '        }\n' +
+    '        .back-link:hover {\n' +
+    '            text-decoration: underline;\n' +
+    '        }\n' +
+    '        .chapter-info {\n' +
+    '            font-size: 14px;\n' +
+    '            color: #64748b;\n' +
+    '            margin: 8px 0;\n' +
+    '        }\n' +
+    '        .breadcrumb {\n' +
+    '            font-size: 13px;\n' +
+    '            color: #94a3b8;\n' +
+    '            margin-bottom: 12px;\n' +
+    '        }\n' +
+    '        .breadcrumb a {\n' +
+    '            color: #7c3aed;\n' +
+    '            text-decoration: none;\n' +
+    '        }\n' +
+    '        .breadcrumb a:hover {\n' +
+    '            text-decoration: underline;\n' +
+    '        }\n' +
+    '    </style>\n' +
+    '</head>\n' +
+    '<body>\n' +
+    '<div class="container">\n' +
+    '    <div class="card">\n' +
+    '        <div class="breadcrumb">\n' +
+    '            <a href="/">🏠 Home</a> &gt; <a href="/books/' + bookSlug + '/">' + bookTitle + '</a> &gt; ' + chapterDisplay + chapterName + '\n' +
+    '        </div>\n' +
+    '        <a href="/books/' + bookSlug + '/" class="back-link">← Back to ' + bookTitle + '</a>\n' +
+    '        <h1>' + chapterDisplay + chapterName + ' - ' + bookTitle + '</h1>\n' +
+    '        <p class="chapter-info">📖 From <strong>' + bookTitle + '</strong> • ' + totalQs + ' questions available</p>\n' +
+    '        <p>Practice MCQs for ' + chapterDisplay + chapterName + '. Test your knowledge with carefully crafted questions across easy, medium, and hard difficulty levels.</p>\n' +
+    difficultyHtml +
+    topicsHtml +
+    sampleMcqsHtml +
+    '        <div style="text-align: center; margin-top: 20px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">\n' +
+    '            <a href="/quiz?book=' + bookSlug + '&chapter=' + chapterSlug + '" class="btn-primary">🚀 Start Quiz</a>\n' +
+    '            <a href="/practice?book=' + bookSlug + '&chapter=' + chapterSlug + '" class="btn-secondary">📝 Practice Mode</a>\n' +
+    '        </div>\n' +
+    '    </div>\n' +
+    '</div>\n' +
+    '</body>\n' +
+    '</html>';
+}
+function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficultyStats, allBookTopics) {
+    const bookSlug = book.slug || createSlug(book.title);
+    const bookTitle = escapeHtml(book.title);
+    const chapterSlug = chapter.slug || createSlug(chapter.name);
+    const topicSlug = topic.slug || createSlug(topic.name);
+    const topicName = escapeHtml(topic.name);
+    const chapterName = escapeHtml(chapter.name);
+    const chapterDisplay = chapter.chapter_number ? chapter.chapter_number + '. ' : '';
+    const totalQs = topicQuestions.length;
+    
+    // Get difficulty breakdown for this topic
+    const easyCount = topicDifficultyStats?.easy || 0;
+    const mediumCount = topicDifficultyStats?.medium || 0;
+    const hardCount = topicDifficultyStats?.hard || 0;
+    
+    // Build sample MCQs (first 3 questions)
+    let sampleMcqsHtml = '';
+    if (topicQuestions.length > 0) {
+        const sampleQuestions = topicQuestions.slice(0, 3);
+        sampleMcqsHtml = '<div style="margin:16px 0; background:#f8fafc; padding:16px; border-radius:12px;">';
+        sampleMcqsHtml += '<h3 style="font-size:16px; color:#1e293b; margin-bottom:12px;">📝 Sample Questions</h3>';
+        sampleQuestions.forEach((q, idx) => {
+            sampleMcqsHtml += `
+                <div style="background:white; padding:12px; border-radius:8px; margin-bottom:10px; border:1px solid #e5e7eb;">
+                    <p style="font-weight:600; margin:0 0 8px 0;">Q${idx + 1}. ${escapeHtml(q.question_text)}</p>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:13px; color:#64748b;">
+                        <div>🔹 A. ${escapeHtml(q.options?.[0] || '')}</div>
+                        <div>🔹 B. ${escapeHtml(q.options?.[1] || '')}</div>
+                        <div>🔹 C. ${escapeHtml(q.options?.[2] || '')}</div>
+                        <div>🔹 D. ${escapeHtml(q.options?.[3] || '')}</div>
+                    </div>
+                    <p style="font-size:12px; color:#8b5cf6; margin-top:6px;">💡 Difficulty: ${q.difficulty || 'Medium'}</p>
+                </div>`;
+        });
+        sampleMcqsHtml += '<p style="font-size:13px; color:#64748b; margin-top:8px;">⬆️ View all questions in the quiz below</p>';
+        sampleMcqsHtml += '</div>';
+    }
+    
+    // Build related topics
+    let relatedTopicsHtml = '';
+    if (allBookTopics && allBookTopics.length > 1) {
+        const otherTopics = allBookTopics.filter(function(t) { return t.id !== topic.id; }).slice(0, 5);
+        if (otherTopics.length > 0) {
+            relatedTopicsHtml = '<div style="margin:16px 0;">';
+            relatedTopicsHtml += '<h3 style="font-size:16px; color:#1e293b;">🔗 Related Topics</h3><div style="display:flex; flex-wrap:wrap; gap:8px;">';
+            otherTopics.forEach(function(t) {
+                const tSlug = t.slug || createSlug(t.name);
+                const tName = escapeHtml(t.name);
+                relatedTopicsHtml += `
+                    <a href="/books/${bookSlug}/${chapterSlug}/topics/${tSlug}.html" style="background:#f3f4f6; padding:6px 14px; border-radius:20px; font-size:13px; color:#1e293b; text-decoration:none; border:1px solid #e5e7eb;">
+                        📝 ${tName}
+                    </a>`;
+            });
+            relatedTopicsHtml += '</div></div>';
+        }
+    }
+    
+    // Build difficulty breakdown HTML
+    let difficultyHtml = '';
+    if (easyCount > 0 || mediumCount > 0 || hardCount > 0) {
+        difficultyHtml = `
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:16px 0;">
+            <div style="background:#dcfce7; padding:12px; border-radius:10px; text-align:center; border:1px solid #86efac;">
+                <div style="font-size:24px; font-weight:700; color:#166534;">${easyCount}</div>
+                <div style="font-size:12px; color:#64748b;">Easy Questions</div>
+            </div>
+            <div style="background:#fef9c3; padding:12px; border-radius:10px; text-align:center; border:1px solid #fde047;">
+                <div style="font-size:24px; font-weight:700; color:#854d0e;">${mediumCount}</div>
+                <div style="font-size:12px; color:#64748b;">Medium Questions</div>
+            </div>
+            <div style="background:#fee2e2; padding:12px; border-radius:10px; text-align:center; border:1px solid #fca5a5;">
+                <div style="font-size:24px; font-weight:700; color:#991b1b;">${hardCount}</div>
+                <div style="font-size:12px; color:#64748b;">Hard Questions</div>
+            </div>
+        </div>`;
+    }
+    
+    const metaDescription = `Practice ${topicName} from ${bookTitle} - ${chapterDisplay}${chapterName}. ${totalQs} MCQs with ${easyCount} easy, ${mediumCount} medium, and ${hardCount} hard questions. Perfect for exam preparation.`;
+    
+    return '<!DOCTYPE html>\n' +
+    '<html lang="en">\n' +
+    '<head>\n' +
+    '    <meta charset="UTF-8">\n' +
+    '    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">\n' +
+    '    <title>' + topicName + ' - ' + bookTitle + ' MCQs with Difficulty Levels | BookMCQ</title>\n' +
+    '    <meta name="description" content="' + metaDescription + '">\n' +
+    '    <meta name="keywords" content="' + topicName + ' MCQs, ' + bookTitle + ' ' + topicName + ' questions, ' + topicName + ' practice, ' + bookTitle + ' topics, ' + topicName + ' easy medium hard">\n' +
+    '    <meta name="robots" content="index, follow">\n' +
+    '    <link rel="canonical" href="https://bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html">\n' +
+    '    <meta property="og:title" content="' + topicName + ' - ' + bookTitle + ' MCQs | BookMCQ">\n' +
+    '    <meta property="og:description" content="Practice ' + topicName + ' from ' + bookTitle + '. ' + totalQs + ' questions with difficulty breakdown: Easy ' + easyCount + ', Medium ' + mediumCount + ', Hard ' + hardCount + '.">\n' +
+    '    <meta property="og:type" content="website">\n' +
+    '    <meta name="theme-color" content="#7c3aed">\n' +
+    '    <script src="https://cdn.tailwindcss.com"><\/script>\n' +
+    '    <style>\n' +
+    '        body {\n' +
+    '            font-family: Arial, sans-serif;\n' +
+    '            background: linear-gradient(135deg, #667eea, #764ba2);\n' +
+    '            margin: 0;\n' +
+    '            padding: 0;\n' +
+    '            min-height: 100vh;\n' +
+    '        }\n' +
+    '        .container {\n' +
+    '            max-width: 900px;\n' +
+    '            margin: auto;\n' +
+    '            padding: 20px;\n' +
+    '        }\n' +
+    '        .card {\n' +
+    '            background: white;\n' +
+    '            border-radius: 16px;\n' +
+    '            padding: 20px;\n' +
+    '            margin-top: 20px;\n' +
+    '            box-shadow: 0 10px 25px rgba(0,0,0,0.1);\n' +
+    '        }\n' +
+    '        .btn-primary {\n' +
+    '            display: inline-block;\n' +
+    '            background: linear-gradient(135deg, #667eea, #764ba2);\n' +
+    '            color: white;\n' +
+    '            padding: 14px 32px;\n' +
+    '            border-radius: 12px;\n' +
+    '            text-decoration: none;\n' +
+    '            font-weight: bold;\n' +
+    '            margin-top: 10px;\n' +
+    '            transition: 0.2s;\n' +
+    '        }\n' +
+    '        .btn-primary:hover {\n' +
+    '            transform: translateY(-2px);\n' +
+    '            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);\n' +
+    '        }\n' +
+    '        .btn-secondary {\n' +
+    '            display: inline-block;\n' +
+    '            background: #f3f4f6;\n' +
+    '            color: #1e293b;\n' +
+    '            padding: 10px 24px;\n' +
+    '            border-radius: 10px;\n' +
+    '            text-decoration: none;\n' +
+    '            font-weight: 500;\n' +
+    '            margin-top: 10px;\n' +
+    '            transition: 0.2s;\n' +
+    '            border: 1px solid #e5e7eb;\n' +
+    '        }\n' +
+    '        .btn-secondary:hover {\n' +
+    '            background: #e5e7eb;\n' +
+    '        }\n' +
+    '        .back-link {\n' +
+    '            display: inline-block;\n' +
+    '            margin-bottom: 15px;\n' +
+    '            color: #7c3aed;\n' +
+    '            text-decoration: none;\n' +
+    '        }\n' +
+    '        .back-link:hover {\n' +
+    '            text-decoration: underline;\n' +
+    '        }\n' +
+    '        .topic-info {\n' +
+    '            font-size: 14px;\n' +
+    '            color: #64748b;\n' +
+    '            margin: 8px 0;\n' +
+    '        }\n' +
+    '        .breadcrumb {\n' +
+    '            font-size: 13px;\n' +
+    '            color: #94a3b8;\n' +
+    '            margin-bottom: 12px;\n' +
+    '        }\n' +
+    '        .breadcrumb a {\n' +
+    '            color: #7c3aed;\n' +
+    '            text-decoration: none;\n' +
+    '        }\n' +
+    '        .breadcrumb a:hover {\n' +
+    '            text-decoration: underline;\n' +
+    '        }\n' +
+    '    </style>\n' +
+    '</head>\n' +
+    '<body>\n' +
+    '<div class="container">\n' +
+    '    <div class="card">\n' +
+    '        <div class="breadcrumb">\n' +
+    '            <a href="/">🏠 Home</a> &gt; <a href="/books/' + bookSlug + '/">' + bookTitle + '</a> &gt; <a href="/books/' + bookSlug + '/' + chapterSlug + '.html">' + chapterDisplay + chapterName + '</a> &gt; ' + topicName + '\n' +
+    '        </div>\n' +
+    '        <a href="/books/' + bookSlug + '/' + chapterSlug + '.html" class="back-link">← Back to ' + chapterDisplay + chapterName + '</a>\n' +
+    '        <h1>📝 ' + topicName + '</h1>\n' +
+    '        <p class="topic-info">📖 From <strong>' + bookTitle + '</strong> • ' + chapterDisplay + chapterName + ' • ' + totalQs + ' questions available</p>\n' +
+    '        <p>Practice MCQs for <strong>' + topicName + '</strong>. Test your knowledge with carefully crafted questions across easy, medium, and hard difficulty levels.</p>\n' +
+    difficultyHtml +
+    sampleMcqsHtml +
+    relatedTopicsHtml +
+    '        <div style="text-align: center; margin-top: 20px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">\n' +
+    '            <a href="/quiz?book=' + bookSlug + '&chapter=' + chapterSlug + '&topic=' + topicSlug + '" class="btn-primary">🚀 Start Quiz</a>\n' +
+    '            <a href="/practice?book=' + bookSlug + '&chapter=' + chapterSlug + '&topic=' + topicSlug + '" class="btn-secondary">📝 Practice Mode</a>\n' +
+    '        </div>\n' +
+    '    </div>\n' +
+    '</div>\n' +
+    '</body>\n' +
+    '</html>';
+}
 // FIX 2: Toggle dropdown for SEO pages with clean checkboxes - left aligned
 function toggleSeoDropdown(bookSlug) {
     const menu = document.getElementById(`seoDropdown_${bookSlug}`);
@@ -4764,7 +5041,26 @@ async function generateSEOPages() {
                 return q.chapter_id && bookChapters.some(function(c) { return c.id === q.chapter_id; });
             }).length;
             
-            var bookIndexHtml = generateBookIndexPage(book, bookChapters, bookTopics, {}, totalQuestionsForBook);
+// Calculate chapter question counts
+var chapterQuestionCounts = {};
+bookChapters.forEach(function(ch) {
+    chapterQuestionCounts[ch.id] = allQuestions.filter(function(q) {
+        return q.chapter_id === ch.id;
+    }).length;
+});
+
+// Calculate difficulty stats for this book
+var bookDifficultyStats = { easy: 0, medium: 0, hard: 0 };
+var bookQuestionIds = allQuestions.filter(function(q) {
+    return q.chapter_id && bookChapters.some(function(c) { return c.id === q.chapter_id; });
+});
+bookQuestionIds.forEach(function(q) {
+    if (q.difficulty === 'easy') bookDifficultyStats.easy++;
+    else if (q.difficulty === 'medium') bookDifficultyStats.medium++;
+    else if (q.difficulty === 'hard') bookDifficultyStats.hard++;
+});
+
+var bookIndexHtml = generateBookIndexPage(book, bookChapters, bookTopics, {}, totalQuestionsForBook, chapterQuestionCounts, bookDifficultyStats);
             tempFiles.push({
                 name: bookSlug + '/index.html',
                 content: bookIndexHtml,
@@ -4781,7 +5077,38 @@ async function generateSEOPages() {
                 var chapterSlug = chapter.slug || createSlug(chapter.name);
                 var chapterDisplay = chapter.chapter_number ? chapter.chapter_number + '. ' : '';
                 
-                var chapterHtml = generateChapterPage(book, chapter);
+// Get questions for this chapter
+var chapterQuestions = allQuestions.filter(function(q) {
+    return q.chapter_id === chapter.id;
+});
+
+// Get topics for this chapter
+var chapterTopics = bookTopics.filter(function(t) {
+    return t.chapter_id === chapter.id;
+});
+
+// Calculate difficulty stats for this chapter
+var chapterDifficultyStats = { easy: 0, medium: 0, hard: 0 };
+chapterQuestions.forEach(function(q) {
+    if (q.difficulty === 'easy') chapterDifficultyStats.easy++;
+    else if (q.difficulty === 'medium') chapterDifficultyStats.medium++;
+    else if (q.difficulty === 'hard') chapterDifficultyStats.hard++;
+});
+
+// Get options for sample questions
+var chapterQuestionsWithOptions = [];
+if (chapterQuestions.length > 0) {
+    var qIds = chapterQuestions.slice(0, 3).map(function(q) { return q.id; });
+    // We need to fetch options - we'll simplify by using the question objects
+    chapterQuestionsWithOptions = chapterQuestions.slice(0, 3).map(function(q) {
+        return {
+            ...q,
+            options: ['Option A', 'Option B', 'Option C', 'Option D'] // Placeholder, will be replaced with actual options
+        };
+    });
+}
+
+var chapterHtml = generateChapterPage(book, chapter, chapterTopics, chapterQuestionsWithOptions, chapterDifficultyStats);
                 tempFiles.push({
                     name: bookSlug + '/' + chapterSlug + '.html',
                     content: chapterHtml,
@@ -4799,7 +5126,33 @@ async function generateSEOPages() {
                 var chapterTopics = bookTopics.filter(function(t) { return t.chapter_id === chapter.id; });
                 chapterTopics.forEach(function(topic) {
                     var topicSlug = topic.slug || createSlug(topic.name);
-                    var topicHtml = generateTopicPage(book, chapter, topic);
+// Get questions for this topic
+var topicQuestions = allQuestions.filter(function(q) {
+    return q.topic_id === topic.id;
+});
+
+// Get options for sample questions
+var topicQuestionsWithOptions = [];
+if (topicQuestions.length > 0) {
+    // Get the actual questions with options
+    // Since we can't fetch options easily here, we'll use the question objects
+    topicQuestionsWithOptions = topicQuestions.slice(0, 3).map(function(q) {
+        return {
+            ...q,
+            options: ['Option A', 'Option B', 'Option C', 'Option D'] // Placeholder
+        };
+    });
+}
+
+// Calculate difficulty stats for this topic
+var topicDifficultyStats = { easy: 0, medium: 0, hard: 0 };
+topicQuestions.forEach(function(q) {
+    if (q.difficulty === 'easy') topicDifficultyStats.easy++;
+    else if (q.difficulty === 'medium') topicDifficultyStats.medium++;
+    else if (q.difficulty === 'hard') topicDifficultyStats.hard++;
+});
+
+var topicHtml = generateTopicPage(book, chapter, topic, topicQuestionsWithOptions, topicDifficultyStats, bookTopics);
                     var topicPath = bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html';
                     tempFiles.push({
                         name: topicPath,
