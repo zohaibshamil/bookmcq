@@ -4291,31 +4291,6 @@ async function fetchOptionsForQuestions(questionIds) {
     return optionsMap;
 }
     
-async function fetchOptionsForQuestions(questionIds) {
-    if (!questionIds || questionIds.length === 0) return {};
-    
-    const { data, error } = await _supabase
-        .from('options')
-        .select('question_id, option_text, option_index')
-        .in('question_id', questionIds)
-        .order('question_id')
-        .order('option_index');
-    
-    if (error) {
-        console.error('Error fetching options:', error);
-        return {};
-    }
-    
-    const optionsMap = {};
-    data.forEach(opt => {
-        if (!optionsMap[opt.question_id]) {
-            optionsMap[opt.question_id] = ['', '', '', ''];
-        }
-        optionsMap[opt.question_id][opt.option_index] = opt.option_text;
-    });
-    
-    return optionsMap;
-}
 function generateBookIndexPage(book, chapters, topics, questionStats, totalQuestions, chapterQuestionCounts, bookDifficultyStats, chapterDifficultyStatsByChapter) {
     const bookSlug = book.slug || createSlug(book.title);
     const bookTitle = escapeHtml(book.title);
