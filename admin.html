@@ -4227,38 +4227,38 @@ function showTab(tabName) {
     let seoGeneratedCount = 0;
     let seoBooksData = [];
 
-    async function fetchAllQuestionsWithDifficulty() {
-        let allQuestions = [];
-        let page = 0;
-        const pageSize = 1000;
-        let hasMore = true;
+async function fetchAllQuestionsWithDifficulty() {
+    let allQuestions = [];
+    let page = 0;
+    const pageSize = 1000;
+    let hasMore = true;
+    
+    while (hasMore) {
+        const from = page * pageSize;
+        const to = from + pageSize - 1;
         
-        while (hasMore) {
-            const from = page * pageSize;
-            const to = from + pageSize - 1;
-            
-            const { data, error } = await _supabase
-                .from('questions')
-                .select('id, chapter_id, difficulty')
-                .range(from, to);
-            
-            if (error) {
-                console.error('Error fetching questions:', error);
-                break;
-            }
-            
-            if (!data || data.length === 0) {
+        const { data, error } = await _supabase
+            .from('questions')
+            .select('id, chapter_id, topic_id, difficulty')
+            .range(from, to);
+        
+        if (error) {
+            console.error('Error fetching questions:', error);
+            break;
+        }
+        
+        if (!data || data.length === 0) {
+            hasMore = false;
+        } else {
+            allQuestions = allQuestions.concat(data);
+            page++;
+            if (data.length < pageSize) {
                 hasMore = false;
-            } else {
-                allQuestions = allQuestions.concat(data);
-                page++;
-                if (data.length < pageSize) {
-                    hasMore = false;
-                }
             }
         }
-        return allQuestions;
     }
+    return allQuestions;
+}
 async function fetchOptionsForQuestions(questionIds) {
     if (!questionIds || questionIds.length === 0) return {};
     
@@ -4522,14 +4522,14 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
         </div>`;
     }
     
-    const metaDescription = `Practice ${chapterDisplay}${chapterName} from ${bookTitle}. ${totalQs} MCQs with ${easyCount} easy, ${mediumCount} medium, and ${hardCount} hard questions. Perfect for exam preparation.`;
+const metaDescription = `Practice ${chapterDisplay}${chapterName} from ${bookTitle}. ${totalQs} questions with ${easyCount} easy, ${mediumCount} medium, and ${hardCount} hard difficulty levels. Perfect for exam preparation.`;
     
     return '<!DOCTYPE html>\n' +
     '<html lang="en">\n' +
     '<head>\n' +
     '    <meta charset="UTF-8">\n' +
     '    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">\n' +
-    '    <title>' + chapterDisplay + chapterName + ' - ' + bookTitle + ' MCQs with Difficulty Levels | BookMCQ</title>\n' +
+    '    <title>' + chapterDisplay + chapterName + ' - ' + bookTitle + ' Practice Questions with Difficulty Levels | BookMCQ</title>\n' +
     '    <meta name="description" content="' + metaDescription + '">\n' +
     '    <meta name="keywords" content="' + chapterName + ' MCQs, ' + bookTitle + ' ' + chapterName + ' questions, ' + chapterName + ' practice, ' + bookTitle + ' chapter ' + (chapter.chapter_number || '') + ', ' + chapterName + ' easy medium hard">\n' +
     '    <meta name="robots" content="index, follow">\n' +
@@ -5055,11 +5055,12 @@ var bookQuestionIds = allQuestions.filter(function(q) {
     return q.chapter_id && bookChapters.some(function(c) { return c.id === q.chapter_id; });
 });
 bookQuestionIds.forEach(function(q) {
-    if (q.difficulty === 'easy') bookDifficultyStats.easy++;
-    else if (q.difficulty === 'medium') bookDifficultyStats.medium++;
-    else if (q.difficulty === 'hard') bookDifficultyStats.hard++;
+    if (q.difficulty === 'easy' || q.difficulty === 'Easy') bookDifficultyStats.easy++;
+    else if (q.difficulty === 'medium' || q.difficulty === 'Medium') bookDifficultyStats.medium++;
+    else if (q.difficulty === 'hard' || q.difficulty === 'Hard') bookDifficultyStats.hard++;
 });
 
+            
 var bookIndexHtml = generateBookIndexPage(book, bookChapters, bookTopics, {}, totalQuestionsForBook, chapterQuestionCounts, bookDifficultyStats);
             tempFiles.push({
                 name: bookSlug + '/index.html',
@@ -5079,9 +5080,9 @@ var bookIndexHtml = generateBookIndexPage(book, bookChapters, bookTopics, {}, to
                 
 // Get questions for this chapter
 var chapterQuestions = allQuestions.filter(function(q) {
-    return q.chapter_id === chapter.id;
+    return q.chapter_id === chapter.id || (q.chapter_id && q.chapter_id == chapter.id);
 });
-
+                
 // Get topics for this chapter
 var chapterTopics = bookTopics.filter(function(t) {
     return t.chapter_id === chapter.id;
@@ -5090,11 +5091,11 @@ var chapterTopics = bookTopics.filter(function(t) {
 // Calculate difficulty stats for this chapter
 var chapterDifficultyStats = { easy: 0, medium: 0, hard: 0 };
 chapterQuestions.forEach(function(q) {
-    if (q.difficulty === 'easy') chapterDifficultyStats.easy++;
-    else if (q.difficulty === 'medium') chapterDifficultyStats.medium++;
-    else if (q.difficulty === 'hard') chapterDifficultyStats.hard++;
+    if (q.difficulty === 'easy' || q.difficulty === 'Easy') chapterDifficultyStats.easy++;
+    else if (q.difficulty === 'medium' || q.difficulty === 'Medium') chapterDifficultyStats.medium++;
+    else if (q.difficulty === 'hard' || q.difficulty === 'Hard') chapterDifficultyStats.hard++;
 });
-
+                
 // Get options for sample questions
 var chapterQuestionsWithOptions = [];
 if (chapterQuestions.length > 0) {
@@ -5128,7 +5129,7 @@ var chapterHtml = generateChapterPage(book, chapter, chapterTopics, chapterQuest
                     var topicSlug = topic.slug || createSlug(topic.name);
 // Get questions for this topic
 var topicQuestions = allQuestions.filter(function(q) {
-    return q.topic_id === topic.id;
+    return q.topic_id === topic.id || (q.topic_id && q.topic_id == topic.id);
 });
 
 // Get options for sample questions
@@ -5147,11 +5148,11 @@ if (topicQuestions.length > 0) {
 // Calculate difficulty stats for this topic
 var topicDifficultyStats = { easy: 0, medium: 0, hard: 0 };
 topicQuestions.forEach(function(q) {
-    if (q.difficulty === 'easy') topicDifficultyStats.easy++;
-    else if (q.difficulty === 'medium') topicDifficultyStats.medium++;
-    else if (q.difficulty === 'hard') topicDifficultyStats.hard++;
+    if (q.difficulty === 'easy' || q.difficulty === 'Easy') topicDifficultyStats.easy++;
+    else if (q.difficulty === 'medium' || q.difficulty === 'Medium') topicDifficultyStats.medium++;
+    else if (q.difficulty === 'hard' || q.difficulty === 'Hard') topicDifficultyStats.hard++;
 });
-
+                    
 var topicHtml = generateTopicPage(book, chapter, topic, topicQuestionsWithOptions, topicDifficultyStats, bookTopics);
                     var topicPath = bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html';
                     tempFiles.push({
