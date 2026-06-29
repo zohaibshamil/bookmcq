@@ -4250,6 +4250,11 @@ async function fetchAllQuestionsWithDifficulty() {
         if (!data || data.length === 0) {
             hasMore = false;
         } else {
+            // Convert IDs to numbers for consistent comparison
+            data.forEach(function(q) {
+                q.chapter_id = q.chapter_id ? Number(q.chapter_id) : null;
+                q.topic_id = q.topic_id ? Number(q.topic_id) : null;
+            });
             allQuestions = allQuestions.concat(data);
             page++;
             if (data.length < pageSize) {
@@ -5041,25 +5046,29 @@ async function generateSEOPages() {
                 return q.chapter_id && bookChapters.some(function(c) { return c.id === q.chapter_id; });
             }).length;
             
-// Calculate chapter question counts
+// Calculate chapter question counts - ensure both are numbers
 var chapterQuestionCounts = {};
 bookChapters.forEach(function(ch) {
+    var chIdNum = Number(ch.id);
     chapterQuestionCounts[ch.id] = allQuestions.filter(function(q) {
-        return q.chapter_id === ch.id;
+        var qChapterId = q.chapter_id ? Number(q.chapter_id) : null;
+        return qChapterId === chIdNum;
     }).length;
 });
 
 // Calculate difficulty stats for this book
+// Calculate difficulty stats for this book
 var bookDifficultyStats = { easy: 0, medium: 0, hard: 0 };
+var bookChapterIds = bookChapters.map(function(c) { return Number(c.id); });
 var bookQuestionIds = allQuestions.filter(function(q) {
-    return q.chapter_id && bookChapters.some(function(c) { return c.id === q.chapter_id; });
+    var qChapterId = q.chapter_id ? Number(q.chapter_id) : null;
+    return qChapterId && bookChapterIds.indexOf(qChapterId) !== -1;
 });
 bookQuestionIds.forEach(function(q) {
     if (q.difficulty === 'easy' || q.difficulty === 'Easy') bookDifficultyStats.easy++;
     else if (q.difficulty === 'medium' || q.difficulty === 'Medium') bookDifficultyStats.medium++;
     else if (q.difficulty === 'hard' || q.difficulty === 'Hard') bookDifficultyStats.hard++;
 });
-
             
 var bookIndexHtml = generateBookIndexPage(book, bookChapters, bookTopics, {}, totalQuestionsForBook, chapterQuestionCounts, bookDifficultyStats);
             tempFiles.push({
@@ -5078,9 +5087,11 @@ var bookIndexHtml = generateBookIndexPage(book, bookChapters, bookTopics, {}, to
                 var chapterSlug = chapter.slug || createSlug(chapter.name);
                 var chapterDisplay = chapter.chapter_number ? chapter.chapter_number + '. ' : '';
                 
-// Get questions for this chapter
+// Get questions for this chapter - ensure both are numbers
+var chapterIdNum = Number(chapter.id);
 var chapterQuestions = allQuestions.filter(function(q) {
-    return q.chapter_id === chapter.id || (q.chapter_id && q.chapter_id == chapter.id);
+    var qChapterId = q.chapter_id ? Number(q.chapter_id) : null;
+    return qChapterId === chapterIdNum;
 });
                 
 // Get topics for this chapter
@@ -5127,11 +5138,14 @@ var chapterHtml = generateChapterPage(book, chapter, chapterTopics, chapterQuest
                 var chapterTopics = bookTopics.filter(function(t) { return t.chapter_id === chapter.id; });
                 chapterTopics.forEach(function(topic) {
                     var topicSlug = topic.slug || createSlug(topic.name);
-// Get questions for this topic
-var topicQuestions = allQuestions.filter(function(q) {
-    return q.topic_id === topic.id || (q.topic_id && q.topic_id == topic.id);
-});
 
+                    // Get questions for this topic - ensure both are numbers
+var topicIdNum = Number(topic.id);
+var topicQuestions = allQuestions.filter(function(q) {
+    var qTopicId = q.topic_id ? Number(q.topic_id) : null;
+    return qTopicId === topicIdNum;
+});
+                    
 // Get options for sample questions
 var topicQuestionsWithOptions = [];
 if (topicQuestions.length > 0) {
