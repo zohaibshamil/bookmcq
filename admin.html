@@ -3780,6 +3780,25 @@ async function loadQuestions() {
         }
     }
 
+// ============ GOOGLE TAG MANAGER HELPER FUNCTIONS ============
+// 👇👇👇 ADD THESE FUNCTIONS HERE 👇👇👇
+function getGTMHeadCode() {
+    return `<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-PT363CT7');</script>
+<!-- End Google Tag Manager -->`;
+}
+
+function getGTMBodyCode() {
+    return `<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PT363CT7"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->`;
+}
+    
     // ============ SITEMAP GENERATOR - FIX 3: Topics under chapters ============
     async function generateSitemap() {
         const statusEl = document.getElementById('sitemapStatus');
@@ -4342,6 +4361,9 @@ function generateBookIndexPage(book, chapters, topics, questionStats, totalQuest
     '<head>\n' +
     '    <meta charset="UTF-8">\n' +
     '    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">\n' +
+    // ========== GOOGLE TAG MANAGER - HEAD ==========
+    getGTMHeadCode() + '\n' +
+    // ===============================================
     '    <title>' + bookTitle + ' MCQs - Chapter-wise Practice with Difficulty Levels | BookMCQ</title>\n' +
     '    <meta name="description" content="' + metaDescription + '">\n' +
     '    <meta name="keywords" content="' + bookTitle + ' MCQs, ' + bookTitle + ' questions, ' + bookTitle + ' practice, ' + bookTitle + ' exam preparation, ' + bookTitle + ' easy medium hard questions' + (bookCategory ? ', ' + bookCategory + ' MCQs' : '') + '">\n' +
@@ -4413,6 +4435,9 @@ function generateBookIndexPage(book, chapters, topics, questionStats, totalQuest
     '    </style>\n' +
     '</head>\n' +
     '<body>\n' +
+    // ========== GOOGLE TAG MANAGER - BODY (NOSCRIPT) ==========
+    getGTMBodyCode() + '\n' +
+    // ===========================================================
     '<div class="container">\n' +
     '    <div class="card">\n' +
     '        <a href="/" class="back-link">← Back to Home</a>\n' +
@@ -4537,6 +4562,9 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
     '<head>\n' +
     '    <meta charset="UTF-8">\n' +
     '    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">\n' +
+    // ========== GOOGLE TAG MANAGER - HEAD ==========
+    getGTMHeadCode() + '\n' +
+    // ===============================================
     '    <title>' + chapterDisplay + chapterName + ' - ' + bookTitle + ' Practice Questions with Difficulty Levels | BookMCQ</title>\n' +
     '    <meta name="description" content="' + metaDescription + '">\n' +
     '    <meta name="keywords" content="' + chapterName + ' MCQs, ' + bookTitle + ' ' + chapterName + ' questions, ' + chapterName + ' practice, ' + bookTitle + ' chapter ' + (chapter.chapter_number || '') + ', ' + chapterName + ' easy medium hard">\n' +
@@ -4628,6 +4656,9 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
     '    </style>\n' +
     '</head>\n' +
     '<body>\n' +
+    // ========== GOOGLE TAG MANAGER - BODY (NOSCRIPT) ==========
+    getGTMBodyCode() + '\n' +
+    // ===========================================================
     '<div class="container">\n' +
     '    <div class="card">\n' +
     '        <div class="breadcrumb">\n' +
@@ -4757,6 +4788,9 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     '<head>\n' +
     '    <meta charset="UTF-8">\n' +
     '    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">\n' +
+    // ========== GOOGLE TAG MANAGER - HEAD ==========
+    getGTMHeadCode() + '\n' +
+    // ===============================================
     '    <title>' + topicName + ' - ' + bookTitle + ' MCQs with Difficulty Levels | BookMCQ</title>\n' +
     '    <meta name="description" content="' + metaDescription + '">\n' +
     '    <meta name="keywords" content="' + topicName + ' MCQs, ' + bookTitle + ' ' + topicName + ' questions, ' + topicName + ' practice, ' + bookTitle + ' topics, ' + topicName + ' easy medium hard">\n' +
@@ -4848,6 +4882,9 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     '    </style>\n' +
     '</head>\n' +
     '<body>\n' +
+    // ========== GOOGLE TAG MANAGER - BODY (NOSCRIPT) ==========
+    getGTMBodyCode() + '\n' +
+    // ===========================================================
     '<div class="container">\n' +
     '    <div class="card">\n' +
     '        <div class="breadcrumb">\n' +
