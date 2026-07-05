@@ -4310,6 +4310,7 @@ async function fetchAllQuestionsWithDifficulty() {
 }
     // ============ FIX 3: Book Index Page (unchanged but kept for completeness) ============
 function generateBookIndexPage(book, chapters, topics, questionStats, totalQuestions, chapterQuestionCounts, bookDifficultyStats) {
+    // ✅ USE DATABASE SLUG with fallback
     var bookSlug = book.slug || createSlug(book.title);
     var bookTitle = escapeHtml(book.title);
     var bookAuthor = book.author ? escapeHtml(book.author) : '';
@@ -4321,6 +4322,7 @@ function generateBookIndexPage(book, chapters, topics, questionStats, totalQuest
     
     var chaptersHtml = '';
     chapters.forEach(function(chapter) {
+        // ✅ USE DATABASE SLUG for chapter
         var chapterSlug = chapter.slug || createSlug(chapter.name);
         var chapterDisplay = chapter.chapter_number ? chapter.chapter_number + '. ' : '';
         var chapterName = escapeHtml(chapter.name);
@@ -4331,6 +4333,7 @@ function generateBookIndexPage(book, chapters, topics, questionStats, totalQuest
         if (chapterTopics.length > 0) {
             topicsHtml = '<div style="margin-left: 20px; margin-top: 8px;">';
             chapterTopics.forEach(function(topic) {
+                // ✅ USE DATABASE SLUG for topic
                 var topicSlug = topic.slug || createSlug(topic.name);
                 var topicName = escapeHtml(topic.name);
                 topicsHtml += '<div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href=\'/books/' + bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html\'">📝 ' + topicName + '</div>';
@@ -4458,6 +4461,7 @@ function generateBookIndexPage(book, chapters, topics, questionStats, totalQuest
 }
     // ============ FIX 4: Modified Chapter Page with actual questions and options ============
 function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, chapterDifficultyStats, optionsMap) {
+    // ✅ USE DATABASE SLUGS with fallback
     var bookSlug = book.slug || createSlug(book.title);
     var bookTitle = escapeHtml(book.title);
     var chapterSlug = chapter.slug || createSlug(chapter.name);
@@ -4474,6 +4478,7 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
         topicsHtml = '<div style="margin:16px 0;">';
         topicsHtml += '<h3 style="font-size:16px; color:#1e293b;">📝 Topics in this Chapter</h3><ul style="list-style:none; padding:0;">';
         chapterTopics.forEach(function(topic) {
+            // ✅ USE DATABASE SLUG for topic
             var topicSlug = topic.slug || createSlug(topic.name);
             var topicName = escapeHtml(topic.name);
             topicsHtml += '<li style="padding:8px 12px; margin:4px 0; background:#f8fafc; border-radius:8px; border-left:3px solid #8b5cf6;">';
@@ -4682,6 +4687,7 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
 }
     // ============ FIX 5: Modified Topic Page with actual questions and options ============
 function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficultyStats, allBookTopics, optionsMap) {
+    // ✅ USE DATABASE SLUGS with fallback
     var bookSlug = book.slug || createSlug(book.title);
     var bookTitle = escapeHtml(book.title);
     var chapterSlug = chapter.slug || createSlug(chapter.name);
@@ -4945,13 +4951,13 @@ function downloadSelectedSeoFiles(bookSlug) {
         setTimeout(() => {
             let cleanName;
             
-            // Build filename from database slugs
             if (file.isBook) {
-                cleanName = `index.html`;  // ← CHANGED: just index.html
+                cleanName = `index.html`;
             } else if (file.isTopic) {
-                cleanName = `${file.topicSlug}.html`;  // ← CHANGED: just topic slug
+                // ✅ USE DATABASE SLUG from data attribute
+                cleanName = `${file.topicSlug}.html`;
             } else {
-                // Chapter: chapter_slug.html
+                // ✅ USE DATABASE SLUG from data attribute
                 cleanName = `${file.chapterSlug}.html`;
             }
             
@@ -4994,13 +5000,13 @@ function downloadSingleSEOPage(bookSlug) {
             const decodedContent = decodeURIComponent(file.content);
             let cleanName;
             
-            // Build filename from database slugs
             if (file.isBook) {
-                cleanName = `index.html`;  // ← CHANGED: just index.html
+                cleanName = `index.html`;
             } else if (file.isTopic) {
-                cleanName = `${file.topicSlug}.html`;  // ← CHANGED: just topic slug
+                // ✅ USE DATABASE SLUG
+                cleanName = `${file.topicSlug}.html`;
             } else {
-                // Chapter
+                // ✅ USE DATABASE SLUG
                 cleanName = `${file.chapterSlug}.html`;
             }
             
@@ -5021,388 +5027,388 @@ function downloadSingleSEOPage(bookSlug) {
     });
 }
     // ============ FIX 9: Modified Main SEO Generation Function ============
-    async function generateSEOPages() {
-        const statusEl = document.getElementById('seoStatus');
-        const countEl = document.getElementById('seoCount');
-        const progressBar = document.getElementById('seoProgressBar');
-        const logEl = document.getElementById('seoLog');
-        const logContent = document.getElementById('seoLogContent');
-        const resultEl = document.getElementById('seoResult');
-        const downloadAllBtn = document.getElementById('downloadAllSEOBtn');
-        const bookListEl = document.getElementById('seoBookList');
+async function generateSEOPages() {
+    const statusEl = document.getElementById('seoStatus');
+    const countEl = document.getElementById('seoCount');
+    const progressBar = document.getElementById('seoProgressBar');
+    const logEl = document.getElementById('seoLog');
+    const logContent = document.getElementById('seoLogContent');
+    const resultEl = document.getElementById('seoResult');
+    const downloadAllBtn = document.getElementById('downloadAllSEOBtn');
+    const bookListEl = document.getElementById('seoBookList');
+    
+    seoGeneratedFiles = [];
+    seoGeneratedCount = 0;
+    seoBooksData = [];
+    logEl.classList.remove('hidden');
+    logContent.innerHTML = '';
+    resultEl.classList.add('hidden');
+    downloadAllBtn.classList.add('hidden');
+    
+    statusEl.textContent = '📦 Fetching data from database...';
+    progressBar.style.width = '10%';
+    logContent.innerHTML += '<div>📦 Fetching books, chapters, topics, and questions...</div>';
+    bookListEl.innerHTML = '<div class="text-gray-500 text-sm">Loading books...</div>';
+    
+    try {
+        const { data: books, error: booksError } = await _supabase
+            .from('books')
+            .select('*')
+            .order('title');
         
-        seoGeneratedFiles = [];
-        seoGeneratedCount = 0;
-        seoBooksData = [];
-        logEl.classList.remove('hidden');
-        logContent.innerHTML = '';
-        resultEl.classList.add('hidden');
-        downloadAllBtn.classList.add('hidden');
+        if (booksError) throw booksError;
         
-        statusEl.textContent = '📦 Fetching data from database...';
-        progressBar.style.width = '10%';
-        logContent.innerHTML += '<div>📦 Fetching books, chapters, topics, and questions...</div>';
-        bookListEl.innerHTML = '<div class="text-gray-500 text-sm">Loading books...</div>';
+        const { data: chapters, error: chaptersError } = await _supabase
+            .from('chapters')
+            .select('*, books(title, slug)')
+            .order('book_id')
+            .order('chapter_number', { ascending: true, nullsFirst: false });
         
-        try {
-            const { data: books, error: booksError } = await _supabase
-                .from('books')
-                .select('*')
-                .order('title');
-            
-            if (booksError) throw booksError;
-            
-            const { data: chapters, error: chaptersError } = await _supabase
-                .from('chapters')
-                .select('*, books(title, slug)')
-                .order('book_id')
-                .order('chapter_number', { ascending: true, nullsFirst: false });
-            
-            if (chaptersError) throw chaptersError;
-            
-            const { data: topics, error: topicsError } = await _supabase
-                .from('subtopics')
-                .select('*, chapters(book_id, name, chapter_number, slug, books(title, slug))')
-                .order('chapter_id')
-                .order('name');
-            
-            if (topicsError) throw topicsError;
-            
-            // FIX: Fetch all questions with question_text
-            const allQuestions = await fetchAllQuestionsWithDifficulty();
-            
-            logContent.innerHTML += '<div>📚 Found ' + books.length + ' books, ' + chapters.length + ' chapters, ' + topics.length + ' topics, ' + allQuestions.length + ' total questions</div>';
-            statusEl.textContent = '📄 Generating SEO pages...';
-            progressBar.style.width = '20%';
-            
-            if (books.length === 0) {
-                statusEl.textContent = '⚠️ No books found to generate pages';
-                logContent.innerHTML += '<div class="text-red-500">⚠️ No books found in database.</div>';
-                bookListEl.innerHTML = '<div class="text-gray-500 text-sm">No books available</div>';
-                return;
+        if (chaptersError) throw chaptersError;
+        
+        const { data: topics, error: topicsError } = await _supabase
+            .from('subtopics')
+            .select('*, chapters(book_id, name, chapter_number, slug, books(title, slug))')
+            .order('chapter_id')
+            .order('name');
+        
+        if (topicsError) throw topicsError;
+        
+        // Fetch all questions with question_text
+        const allQuestions = await fetchAllQuestionsWithDifficulty();
+        
+        logContent.innerHTML += '<div>📚 Found ' + books.length + ' books, ' + chapters.length + ' chapters, ' + topics.length + ' topics, ' + allQuestions.length + ' total questions</div>';
+        statusEl.textContent = '📄 Generating SEO pages...';
+        progressBar.style.width = '20%';
+        
+        if (books.length === 0) {
+            statusEl.textContent = '⚠️ No books found to generate pages';
+            logContent.innerHTML += '<div class="text-red-500">⚠️ No books found in database.</div>';
+            bookListEl.innerHTML = '<div class="text-gray-500 text-sm">No books available</div>';
+            return;
+        }
+        
+        var chaptersByBook = {};
+        chapters.forEach(function(chapter) {
+            if (chapter.book_id) {
+                if (!chaptersByBook[chapter.book_id]) {
+                    chaptersByBook[chapter.book_id] = [];
+                }
+                chaptersByBook[chapter.book_id].push(chapter);
             }
-            
-            var chaptersByBook = {};
-            chapters.forEach(function(chapter) {
-                if (chapter.book_id) {
-                    if (!chaptersByBook[chapter.book_id]) {
-                        chaptersByBook[chapter.book_id] = [];
-                    }
-                    chaptersByBook[chapter.book_id].push(chapter);
+        });
+        
+        var topicsByBook = {};
+        topics.forEach(function(topic) {
+            if (topic.chapters && topic.chapters.book_id) {
+                if (!topicsByBook[topic.chapters.book_id]) {
+                    topicsByBook[topic.chapters.book_id] = [];
                 }
+                topicsByBook[topic.chapters.book_id].push(topic);
+            }
+        });
+        
+        var tempFiles = [];
+        var allOptionsMap = {};
+        allQuestions.forEach(function(q) {
+            if (q.options_array && q.options_array.length > 0) {
+                allOptionsMap[q.id] = q.options_array;
+            } else {
+                allOptionsMap[q.id] = ['', '', '', ''];
+            }
+        });
+        
+        var bookProgress = 0;
+        var totalBooks = books.length;
+        
+        books.forEach(function(book) {
+            bookProgress++;
+            // ✅ USE DATABASE SLUG
+            var bookSlug = book.slug || createSlug(book.title);
+            var bookChapters = chaptersByBook[book.id] || [];
+            var bookTopics = topicsByBook[book.id] || [];
+            
+            bookChapters.sort(function(a, b) {
+                var aNum = a.chapter_number || 999;
+                var bNum = b.chapter_number || 999;
+                return aNum - bNum;
             });
             
-            var topicsByBook = {};
-            topics.forEach(function(topic) {
-                if (topic.chapters && topic.chapters.book_id) {
-                    if (!topicsByBook[topic.chapters.book_id]) {
-                        topicsByBook[topic.chapters.book_id] = [];
-                    }
-                    topicsByBook[topic.chapters.book_id].push(topic);
-                }
-            });
+            var totalQuestionsForBook = allQuestions.filter(function(q) {
+                return q.chapter_id && bookChapters.some(function(c) { return c.id === q.chapter_id; });
+            }).length;
             
-            var tempFiles = [];
-            var allOptionsMap = {};
-            
-// Options are already included in allQuestions via nested select
-// No separate fetch needed - allOptionsMap will be built from the data
-var allOptionsMap = {};
-allQuestions.forEach(function(q) {
-    if (q.options_array && q.options_array.length > 0) {
-        allOptionsMap[q.id] = q.options_array;
-    } else {
-        allOptionsMap[q.id] = ['', '', '', ''];
-    }
-});
-            
-            var bookProgress = 0;
-            var totalBooks = books.length;
-            
-            books.forEach(function(book) {
-                bookProgress++;
-                var bookSlug = book.slug || createSlug(book.title);
-                var bookChapters = chaptersByBook[book.id] || [];
-                var bookTopics = topicsByBook[book.id] || [];
-                
-                bookChapters.sort(function(a, b) {
-                    var aNum = a.chapter_number || 999;
-                    var bNum = b.chapter_number || 999;
-                    return aNum - bNum;
-                });
-                
-                var totalQuestionsForBook = allQuestions.filter(function(q) {
-                    return q.chapter_id && bookChapters.some(function(c) { return c.id === q.chapter_id; });
-                }).length;
-                
-                // Calculate chapter question counts
-                var chapterQuestionCounts = {};
-                bookChapters.forEach(function(ch) {
-                    var chIdNum = Number(ch.id);
-                    chapterQuestionCounts[ch.id] = allQuestions.filter(function(q) {
-                        var qChapterId = q.chapter_id ? Number(q.chapter_id) : null;
-                        return qChapterId === chIdNum;
-                    }).length;
-                });
-                
-                // Calculate difficulty stats for this book
-                var bookDifficultyStats = { easy: 0, medium: 0, hard: 0 };
-                var bookChapterIds = bookChapters.map(function(c) { return Number(c.id); });
-                var bookQuestionIds = allQuestions.filter(function(q) {
+            // Calculate chapter question counts
+            var chapterQuestionCounts = {};
+            bookChapters.forEach(function(ch) {
+                var chIdNum = Number(ch.id);
+                chapterQuestionCounts[ch.id] = allQuestions.filter(function(q) {
                     var qChapterId = q.chapter_id ? Number(q.chapter_id) : null;
-                    return qChapterId && bookChapterIds.indexOf(qChapterId) !== -1;
-                });
-                bookQuestionIds.forEach(function(q) {
-                    if (q.difficulty === 'easy' || q.difficulty === 'Easy') bookDifficultyStats.easy++;
-                    else if (q.difficulty === 'medium' || q.difficulty === 'Medium') bookDifficultyStats.medium++;
-                    else if (q.difficulty === 'hard' || q.difficulty === 'Hard') bookDifficultyStats.hard++;
+                    return qChapterId === chIdNum;
+                }).length;
+            });
+            
+            // Calculate difficulty stats for this book
+            var bookDifficultyStats = { easy: 0, medium: 0, hard: 0 };
+            var bookChapterIds = bookChapters.map(function(c) { return Number(c.id); });
+            var bookQuestionIds = allQuestions.filter(function(q) {
+                var qChapterId = q.chapter_id ? Number(q.chapter_id) : null;
+                return qChapterId && bookChapterIds.indexOf(qChapterId) !== -1;
+            });
+            bookQuestionIds.forEach(function(q) {
+                if (q.difficulty === 'easy' || q.difficulty === 'Easy') bookDifficultyStats.easy++;
+                else if (q.difficulty === 'medium' || q.difficulty === 'Medium') bookDifficultyStats.medium++;
+                else if (q.difficulty === 'hard' || q.difficulty === 'Hard') bookDifficultyStats.hard++;
+            });
+            
+            // Generate book index page
+            var bookIndexHtml = generateBookIndexPage(book, bookChapters, bookTopics, {}, totalQuestionsForBook, chapterQuestionCounts, bookDifficultyStats);
+            tempFiles.push({
+                name: bookSlug + '/index.html',
+                content: bookIndexHtml,
+                book: book.title,
+                bookSlug: bookSlug,
+                chapters: bookChapters.length,
+                topics: bookTopics.length,
+                questions: totalQuestionsForBook,
+                isBook: true,
+                displayName: '📖 Index'
+            });
+            
+            // Generate chapter pages
+            bookChapters.forEach(function(chapter) {
+                // ✅ USE DATABASE SLUG
+                var chapterSlug = chapter.slug || createSlug(chapter.name);
+                var chapterDisplay = chapter.chapter_number ? chapter.chapter_number + '. ' : '';
+                
+                // Get questions for this chapter
+                var chapterIdNum = Number(chapter.id);
+                var chapterQuestions = allQuestions.filter(function(q) {
+                    var qChapterId = q.chapter_id ? Number(q.chapter_id) : null;
+                    return qChapterId === chapterIdNum;
                 });
                 
-                var bookIndexHtml = generateBookIndexPage(book, bookChapters, bookTopics, {}, totalQuestionsForBook, chapterQuestionCounts, bookDifficultyStats);
+                // Get topics for this chapter
+                var chapterTopics = bookTopics.filter(function(t) {
+                    return t.chapter_id === chapter.id;
+                });
+                
+                // Calculate difficulty stats for this chapter
+                var chapterDifficultyStats = { easy: 0, medium: 0, hard: 0 };
+                chapterQuestions.forEach(function(q) {
+                    if (q.difficulty === 'easy' || q.difficulty === 'Easy') chapterDifficultyStats.easy++;
+                    else if (q.difficulty === 'medium' || q.difficulty === 'Medium') chapterDifficultyStats.medium++;
+                    else if (q.difficulty === 'hard' || q.difficulty === 'Hard') chapterDifficultyStats.hard++;
+                });
+                
+                var chapterHtml = generateChapterPage(book, chapter, chapterTopics, chapterQuestions, chapterDifficultyStats, allOptionsMap);
                 tempFiles.push({
-                    name: bookSlug + '/index.html',
-                    content: bookIndexHtml,
+                    name: bookSlug + '/' + chapterSlug + '.html',
+                    content: chapterHtml,
                     book: book.title,
                     bookSlug: bookSlug,
-                    chapters: bookChapters.length,
-                    topics: bookTopics.length,
-                    questions: totalQuestionsForBook,
-                    isBook: true,
-                    displayName: '📖 Index'
+                    chapter: chapter.name,
+                    chapterId: chapter.id,
+                    chapterNumber: chapter.chapter_number,
+                    chapterSlug: chapterSlug,  // ← Store database slug
+                    isBook: false,
+                    isTopic: false,
+                    displayName: '📄 ' + chapterDisplay + chapter.name
                 });
                 
-                bookChapters.forEach(function(chapter) {
-                    var chapterSlug = chapter.slug || createSlug(chapter.name);
-                    var chapterDisplay = chapter.chapter_number ? chapter.chapter_number + '. ' : '';
-                    
-                    // Get questions for this chapter
-                    var chapterIdNum = Number(chapter.id);
-                    var chapterQuestions = allQuestions.filter(function(q) {
-                        var qChapterId = q.chapter_id ? Number(q.chapter_id) : null;
-                        return qChapterId === chapterIdNum;
+                // Generate topic pages
+                chapterTopics.forEach(function(topic) {
+                    // ✅ USE DATABASE SLUG
+                    var topicSlug = topic.slug || createSlug(topic.name);
+                    var topicIdNum = Number(topic.id);
+                    var topicQuestions = allQuestions.filter(function(q) {
+                        var qTopicId = q.topic_id ? Number(q.topic_id) : null;
+                        return qTopicId === topicIdNum;
                     });
                     
-                    // Get topics for this chapter
-                    var chapterTopics = bookTopics.filter(function(t) {
-                        return t.chapter_id === chapter.id;
+                    // Calculate difficulty stats for this topic
+                    var topicDifficultyStats = { easy: 0, medium: 0, hard: 0 };
+                    topicQuestions.forEach(function(q) {
+                        if (q.difficulty === 'easy' || q.difficulty === 'Easy') topicDifficultyStats.easy++;
+                        else if (q.difficulty === 'medium' || q.difficulty === 'Medium') topicDifficultyStats.medium++;
+                        else if (q.difficulty === 'hard' || q.difficulty === 'Hard') topicDifficultyStats.hard++;
                     });
                     
-                    // Calculate difficulty stats for this chapter
-                    var chapterDifficultyStats = { easy: 0, medium: 0, hard: 0 };
-                    chapterQuestions.forEach(function(q) {
-                        if (q.difficulty === 'easy' || q.difficulty === 'Easy') chapterDifficultyStats.easy++;
-                        else if (q.difficulty === 'medium' || q.difficulty === 'Medium') chapterDifficultyStats.medium++;
-                        else if (q.difficulty === 'hard' || q.difficulty === 'Hard') chapterDifficultyStats.hard++;
-                    });
-                    
-                    // FIX: Pass optionsMap to generateChapterPage
-                    var chapterHtml = generateChapterPage(book, chapter, chapterTopics, chapterQuestions, chapterDifficultyStats, allOptionsMap);
-tempFiles.push({
-    name: bookSlug + '/' + chapterSlug + '.html',
-    content: chapterHtml,
-    book: book.title,
-    bookSlug: bookSlug,
-    chapter: chapter.name,
-    chapterId: chapter.id,
-    chapterNumber: chapter.chapter_number,
-    chapterSlug: chapterSlug,  // ← From database chapter.slug
-    isBook: false,
-    isTopic: false,
-    displayName: '📄 ' + chapterDisplay + chapter.name
-});
-                    
-                    // Generate topic pages
-                    chapterTopics.forEach(function(topic) {
-                        var topicSlug = topic.slug || createSlug(topic.name);
-                        var topicIdNum = Number(topic.id);
-                        var topicQuestions = allQuestions.filter(function(q) {
-                            var qTopicId = q.topic_id ? Number(q.topic_id) : null;
-                            return qTopicId === topicIdNum;
-                        });
-                        
-                        // Calculate difficulty stats for this topic
-                        var topicDifficultyStats = { easy: 0, medium: 0, hard: 0 };
-                        topicQuestions.forEach(function(q) {
-                            if (q.difficulty === 'easy' || q.difficulty === 'Easy') topicDifficultyStats.easy++;
-                            else if (q.difficulty === 'medium' || q.difficulty === 'Medium') topicDifficultyStats.medium++;
-                            else if (q.difficulty === 'hard' || q.difficulty === 'Hard') topicDifficultyStats.hard++;
-                        });
-                        
-                        // FIX: Pass optionsMap to generateTopicPage
-                        var topicHtml = generateTopicPage(book, chapter, topic, topicQuestions, topicDifficultyStats, bookTopics, allOptionsMap);
-                        var topicPath = bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html';
-tempFiles.push({
-    name: topicPath,
-    content: topicHtml,
-    book: book.title,
-    bookSlug: bookSlug,
-    chapter: chapter.name,
-    chapterId: chapter.id,
-    chapterSlug: chapterSlug,  // ← From database chapter.slug
-    topic: topic.name,
-    topicId: topic.id,
-    topicSlug: topicSlug,      // ← From database topic.slug
-    isBook: false,
-    isTopic: true,
-    displayName: '📝 ' + topic.name
-});
+                    var topicHtml = generateTopicPage(book, chapter, topic, topicQuestions, topicDifficultyStats, bookTopics, allOptionsMap);
+                    var topicPath = bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html';
+                    tempFiles.push({
+                        name: topicPath,
+                        content: topicHtml,
+                        book: book.title,
+                        bookSlug: bookSlug,
+                        chapter: chapter.name,
+                        chapterId: chapter.id,
+                        chapterSlug: chapterSlug,  // ← Store database slug
+                        topic: topic.name,
+                        topicId: topic.id,
+                        topicSlug: topicSlug,      // ← Store database slug
+                        isBook: false,
+                        isTopic: true,
+                        displayName: '📝 ' + topic.name
                     });
                 });
-                
-                // Update progress
-                var progressPercent = 20 + (bookProgress / totalBooks) * 70;
-                progressBar.style.width = progressPercent + '%';
-                statusEl.textContent = '📄 Generating pages for ' + book.title + '...';
             });
             
-            seoGeneratedFiles = tempFiles;
-            
-            // Build book list with dropdowns
-            var bookListHtml = '';
-            var uniqueBookSlugs = [];
-            seoGeneratedFiles.forEach(function(f) {
-                if (uniqueBookSlugs.indexOf(f.bookSlug) === -1) {
-                    uniqueBookSlugs.push(f.bookSlug);
-                }
+            // Update progress
+            var progressPercent = 20 + (bookProgress / totalBooks) * 70;
+            progressBar.style.width = progressPercent + '%';
+            statusEl.textContent = '📄 Generating pages for ' + book.title + '...';
+        });
+        
+        seoGeneratedFiles = tempFiles;
+        
+        // Build book list with dropdowns (same as before)
+        var bookListHtml = '';
+        var uniqueBookSlugs = [];
+        seoGeneratedFiles.forEach(function(f) {
+            if (uniqueBookSlugs.indexOf(f.bookSlug) === -1) {
+                uniqueBookSlugs.push(f.bookSlug);
+            }
+        });
+        
+        var processedBooks = {};
+        
+        uniqueBookSlugs.forEach(function(bookSlug) {
+            var bookFiles = seoGeneratedFiles.filter(function(f) { 
+                return f.bookSlug === bookSlug; 
             });
             
-            var processedBooks = {};
+            if (bookFiles.length === 0 || processedBooks[bookSlug]) return;
+            processedBooks[bookSlug] = true;
             
-            uniqueBookSlugs.forEach(function(bookSlug) {
-                var bookFiles = seoGeneratedFiles.filter(function(f) { 
-                    return f.bookSlug === bookSlug; 
-                });
-                
-                if (bookFiles.length === 0 || processedBooks[bookSlug]) return;
-                processedBooks[bookSlug] = true;
-                
-                var firstFile = bookFiles[0];
-                var bookTitle = firstFile.book;
-                var totalChapters = bookFiles.filter(function(f) { 
-                    return f.isBook === false && f.isTopic === false; 
-                }).length;
-                var totalTopics = bookFiles.filter(function(f) { 
-                    return f.isTopic === true; 
-                }).length;
-                
-                // Build dropdown items
-                var dropdownItems = '';
-                
-                var indexFile = bookFiles.find(function(f) { return f.isBook; });
-if (indexFile) {
-    dropdownItems += `
-        <div class="seo-dropdown-item" style="display:flex; align-items:center; gap:10px; padding:6px 12px; cursor:pointer; transition:background 0.2s; text-align:left;">
-            <input type="checkbox" 
-                   data-name="${escapeHtml(indexFile.name)}" 
-                   data-content="${encodeURIComponent(indexFile.content)}" 
-                   data-display-name="${escapeHtml(indexFile.displayName)}"
-                   data-book-slug="${escapeHtml(indexFile.bookSlug)}"
-                   data-is-book="true"
-                   style="width:16px; height:16px; cursor:pointer; flex-shrink:0;">
-            <span class="file-label" style="font-size:13px; color:#1e293b; text-align:left;">📖 ${indexFile.displayName}</span>
-        </div>
-    `;
-}
-                
-                var chapterFiles = bookFiles.filter(function(f) { return f.isBook === false && f.isTopic === false; });
-                chapterFiles.sort(function(a, b) {
-                    return (a.chapterNumber || 999) - (b.chapterNumber || 999);
-                });
-                
-chapterFiles.forEach(function(f) {
-    dropdownItems += `
-        <div class="seo-dropdown-item" style="display:flex; align-items:center; gap:10px; padding:6px 12px; cursor:pointer; transition:background 0.2s; text-align:left;">
-            <input type="checkbox" 
-                   data-name="${escapeHtml(f.name)}" 
-                   data-content="${encodeURIComponent(f.content)}" 
-                   data-display-name="${escapeHtml(f.displayName)}"
-                   data-book-slug="${escapeHtml(f.bookSlug)}"
-                   data-chapter-slug="${escapeHtml(f.chapterSlug)}"
-                   data-is-topic="false"
-                   data-is-book="false"
-                   style="width:16px; height:16px; cursor:pointer; flex-shrink:0;">
-            <span class="file-label" style="font-size:13px; color:#1e293b; text-align:left;">${f.displayName}</span>
-        </div>
-    `;
-                    
-    var chapterTopics = bookFiles.filter(function(t) { 
-        return t.isTopic && t.chapterId === f.chapterId; 
-    });
-    chapterTopics.sort(function(a, b) {
-        return a.topic.localeCompare(b.topic);
-    });
-    chapterTopics.forEach(function(t) {
-        dropdownItems += `
-            <div class="seo-dropdown-item" style="display:flex; align-items:center; gap:10px; padding:6px 12px 6px 28px; cursor:pointer; transition:background 0.2s; text-align:left;">
-                <input type="checkbox" 
-                       data-name="${escapeHtml(t.name)}" 
-                       data-content="${encodeURIComponent(t.content)}" 
-                       data-display-name="${escapeHtml(t.displayName)}"
-                       data-book-slug="${escapeHtml(t.bookSlug)}"
-                       data-chapter-slug="${escapeHtml(t.chapterSlug)}"
-                       data-topic-slug="${escapeHtml(t.topicSlug)}"
-                       data-is-topic="true"
-                       data-is-book="false"
-                       style="width:16px; height:16px; cursor:pointer; flex-shrink:0;">
-                <span class="file-label file-indent" style="font-size:12px; color:#64748b; text-align:left;">${t.displayName}</span>
-            </div>
-        `;
-    });
-});
-                
-                var totalFiles = bookFiles.length;
-                
-                bookListHtml += `
-                    <div class="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-200 hover:border-purple-300 transition">
-                        <div class="flex items-center gap-3">
-                            <span class="font-medium text-gray-800">${escapeHtml(bookTitle)}</span>
-                            <span class="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full">${totalChapters} chapters</span>
-                            ${totalTopics > 0 ? `<span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">${totalTopics} topics</span>` : ''}
-                            <span class="text-xs text-gray-400">${totalFiles} files</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <button onclick="downloadSelectedSeoFiles('${bookSlug}')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm transition flex items-center gap-1">
-                                <i class="fas fa-download"></i> Download Selected
-                            </button>
-                            <div class="seo-dropdown-container">
-                                <div class="seo-dropdown-toggle" onclick="toggleSeoDropdown('${bookSlug}')">
-                                    <span>Select Files</span>
-                                    <i class="fas fa-chevron-down"></i>
-                                </div>
-                                <div id="seoDropdown_${bookSlug}" class="seo-dropdown-menu">
-                                    ${dropdownItems}
-                                </div>
-                            </div>
-                            <button onclick="downloadSingleSEOPage('${bookSlug}')" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm transition flex items-center gap-1">
-                                <i class="fas fa-folder-open"></i> All (${totalFiles})
-                            </button>
-                        </div>
+            var firstFile = bookFiles[0];
+            var bookTitle = firstFile.book;
+            var totalChapters = bookFiles.filter(function(f) { 
+                return f.isBook === false && f.isTopic === false; 
+            }).length;
+            var totalTopics = bookFiles.filter(function(f) { 
+                return f.isTopic === true; 
+            }).length;
+            
+            // Build dropdown items
+            var dropdownItems = '';
+            
+            var indexFile = bookFiles.find(function(f) { return f.isBook; });
+            if (indexFile) {
+                dropdownItems += `
+                    <div class="seo-dropdown-item" style="display:flex; align-items:center; gap:10px; padding:6px 12px; cursor:pointer; transition:background 0.2s; text-align:left;">
+                        <input type="checkbox" 
+                               data-name="${escapeHtml(indexFile.name)}" 
+                               data-content="${encodeURIComponent(indexFile.content)}" 
+                               data-display-name="${escapeHtml(indexFile.displayName)}"
+                               data-book-slug="${escapeHtml(indexFile.bookSlug)}"
+                               data-is-book="true"
+                               style="width:16px; height:16px; cursor:pointer; flex-shrink:0;">
+                        <span class="file-label" style="font-size:13px; color:#1e293b; text-align:left;">📖 ${indexFile.displayName}</span>
                     </div>
                 `;
+            }
+            
+            var chapterFiles = bookFiles.filter(function(f) { return f.isBook === false && f.isTopic === false; });
+            chapterFiles.sort(function(a, b) {
+                return (a.chapterNumber || 999) - (b.chapterNumber || 999);
             });
             
-            bookListEl.innerHTML = bookListHtml;
+            chapterFiles.forEach(function(f) {
+                dropdownItems += `
+                    <div class="seo-dropdown-item" style="display:flex; align-items:center; gap:10px; padding:6px 12px; cursor:pointer; transition:background 0.2s; text-align:left;">
+                        <input type="checkbox" 
+                               data-name="${escapeHtml(f.name)}" 
+                               data-content="${encodeURIComponent(f.content)}" 
+                               data-display-name="${escapeHtml(f.displayName)}"
+                               data-book-slug="${escapeHtml(f.bookSlug)}"
+                               data-chapter-slug="${escapeHtml(f.chapterSlug)}"
+                               data-is-topic="false"
+                               data-is-book="false"
+                               style="width:16px; height:16px; cursor:pointer; flex-shrink:0;">
+                        <span class="file-label" style="font-size:13px; color:#1e293b; text-align:left;">${f.displayName}</span>
+                    </div>
+                `;
+                    
+                var chapterTopics = bookFiles.filter(function(t) { 
+                    return t.isTopic && t.chapterId === f.chapterId; 
+                });
+                chapterTopics.sort(function(a, b) {
+                    return a.topic.localeCompare(b.topic);
+                });
+                chapterTopics.forEach(function(t) {
+                    dropdownItems += `
+                        <div class="seo-dropdown-item" style="display:flex; align-items:center; gap:10px; padding:6px 12px 6px 28px; cursor:pointer; transition:background 0.2s; text-align:left;">
+                            <input type="checkbox" 
+                                   data-name="${escapeHtml(t.name)}" 
+                                   data-content="${encodeURIComponent(t.content)}" 
+                                   data-display-name="${escapeHtml(t.displayName)}"
+                                   data-book-slug="${escapeHtml(t.bookSlug)}"
+                                   data-chapter-slug="${escapeHtml(t.chapterSlug)}"
+                                   data-topic-slug="${escapeHtml(t.topicSlug)}"
+                                   data-is-topic="true"
+                                   data-is-book="false"
+                                   style="width:16px; height:16px; cursor:pointer; flex-shrink:0;">
+                            <span class="file-label file-indent" style="font-size:12px; color:#64748b; text-align:left;">${t.displayName}</span>
+                        </div>
+                    `;
+                });
+            });
             
-            progressBar.style.width = '95%';
-            statusEl.textContent = '🎉 All ' + uniqueBookSlugs.length + ' book pages generated!';
-            countEl.textContent = seoGeneratedFiles.length + ' pages (' + uniqueBookSlugs.length + ' books)';
+            var totalFiles = bookFiles.length;
             
-            resultEl.classList.remove('hidden');
-            downloadAllBtn.classList.remove('hidden');
-            
-            logContent.innerHTML += '<div class="text-green-600 font-bold">🎉 Successfully generated ' + seoGeneratedFiles.length + ' SEO pages with actual questions and options!</div>';
-            logEl.scrollTop = logEl.scrollHeight;
-            
-            progressBar.style.width = '100%';
-            
-        } catch (error) {
-            console.error('SEO Generation Error:', error);
-            statusEl.textContent = '❌ Error: ' + error.message;
-            logContent.innerHTML += '<div class="text-red-500">❌ Error: ' + error.message + '</div>';
-            document.getElementById('seoBookList').innerHTML = '<div class="text-red-500 text-sm">Error: ' + error.message + '</div>';
-        }
+            bookListHtml += `
+                <div class="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-200 hover:border-purple-300 transition">
+                    <div class="flex items-center gap-3">
+                        <span class="font-medium text-gray-800">${escapeHtml(bookTitle)}</span>
+                        <span class="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full">${totalChapters} chapters</span>
+                        ${totalTopics > 0 ? `<span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">${totalTopics} topics</span>` : ''}
+                        <span class="text-xs text-gray-400">${totalFiles} files</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="downloadSelectedSeoFiles('${bookSlug}')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm transition flex items-center gap-1">
+                            <i class="fas fa-download"></i> Download Selected
+                        </button>
+                        <div class="seo-dropdown-container">
+                            <div class="seo-dropdown-toggle" onclick="toggleSeoDropdown('${bookSlug}')">
+                                <span>Select Files</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                            <div id="seoDropdown_${bookSlug}" class="seo-dropdown-menu">
+                                ${dropdownItems}
+                            </div>
+                        </div>
+                        <button onclick="downloadSingleSEOPage('${bookSlug}')" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm transition flex items-center gap-1">
+                            <i class="fas fa-folder-open"></i> All (${totalFiles})
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+        
+        bookListEl.innerHTML = bookListHtml;
+        
+        progressBar.style.width = '95%';
+        statusEl.textContent = '🎉 All ' + uniqueBookSlugs.length + ' book pages generated!';
+        countEl.textContent = seoGeneratedFiles.length + ' pages (' + uniqueBookSlugs.length + ' books)';
+        
+        resultEl.classList.remove('hidden');
+        downloadAllBtn.classList.remove('hidden');
+        
+        logContent.innerHTML += '<div class="text-green-600 font-bold">🎉 Successfully generated ' + seoGeneratedFiles.length + ' SEO pages with actual questions and options!</div>';
+        logEl.scrollTop = logEl.scrollHeight;
+        
+        progressBar.style.width = '100%';
+        
+    } catch (error) {
+        console.error('SEO Generation Error:', error);
+        statusEl.textContent = '❌ Error: ' + error.message;
+        logContent.innerHTML += '<div class="text-red-500">❌ Error: ' + error.message + '</div>';
+        document.getElementById('seoBookList').innerHTML = '<div class="text-red-500 text-sm">Error: ' + error.message + '</div>';
     }
+}
 
+    
     function downloadAllSEOPages() {
         if (seoGeneratedFiles.length === 0) {
             showToast('No files to download. Generate pages first.', true);
