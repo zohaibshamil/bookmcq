@@ -4945,12 +4945,11 @@ function downloadSelectedSeoFiles(bookSlug) {
         setTimeout(() => {
             let cleanName;
             
-            // Build filename from database slugs - NO MANIPULATION!
+            // Build filename from database slugs
             if (file.isBook) {
-                cleanName = `${file.bookSlug}_index.html`;
+                cleanName = `index.html`;  // ← CHANGED: just index.html
             } else if (file.isTopic) {
-                // Topic: chapter_slug/topics/topic_slug.html
-                cleanName = `${file.chapterSlug}/topics/${file.topicSlug}.html`;
+                cleanName = `${file.topicSlug}.html`;  // ← CHANGED: just topic slug
             } else {
                 // Chapter: chapter_slug.html
                 cleanName = `${file.chapterSlug}.html`;
@@ -4995,11 +4994,11 @@ function downloadSingleSEOPage(bookSlug) {
             const decodedContent = decodeURIComponent(file.content);
             let cleanName;
             
-            // Build filename from database slugs - NO MANIPULATION!
+            // Build filename from database slugs
             if (file.isBook) {
-                cleanName = `${file.bookSlug}_index.html`;
+                cleanName = `index.html`;  // ← CHANGED: just index.html
             } else if (file.isTopic) {
-                cleanName = `${file.chapterSlug}/topics/${file.topicSlug}.html`;
+                cleanName = `${file.topicSlug}.html`;  // ← CHANGED: just topic slug
             } else {
                 // Chapter
                 cleanName = `${file.chapterSlug}.html`;
@@ -5021,7 +5020,6 @@ function downloadSingleSEOPage(bookSlug) {
         }, index * 500);
     });
 }
-
     // ============ FIX 9: Modified Main SEO Generation Function ============
     async function generateSEOPages() {
         const statusEl = document.getElementById('seoStatus');
