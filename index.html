@@ -94,25 +94,14 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       gtag('config', 'G-5WGZ1P0EV1');
     </script>
     
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;600;700&display=swap" rel="stylesheet">
-    <!-- Supabase JS -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Custom Styles -->
-    <link rel="stylesheet" href="styles.css">
-    
+    <!-- ===== MOBILE OPTIMIZATION: CRITICAL CSS INLINED ===== -->
     <style>
-        /* ========== BODY BACKGROUND - GRADIENT ========== */
+        /* Critical CSS for above-the-fold content - Mobile optimized */
         body { 
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
             min-height: 100vh;
         }
         
-        /* ========== QUIZ CARD - GLASSMORPHISM ========== */
         .quiz-card { 
             backdrop-filter: blur(10px); 
             background: rgba(255,255,255,0.95); 
@@ -120,12 +109,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             border-radius: 1.5rem; 
             overflow: hidden; 
         }
-        .quiz-card:hover { 
-            transform: translateY(-5px); 
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2); 
-        }
-
-        /* Stats cards - Pastel gradients */
+        
         .stats-card {
             background: linear-gradient(135deg, #c7d2fe 0%, #ddd6fe 100%);
             transition: all 0.3s ease;
@@ -134,12 +118,90 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             overflow: hidden;
             color: #4c1d95;
         }
+        
         .stats-card:nth-child(2) {
             background: linear-gradient(135deg, #bfdbfe 0%, #c7d2fe 100%);
         }
         .stats-card:nth-child(3) {
             background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
         }
+        
+        .stats-number {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #4c1d95;
+        }
+        
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        @media (max-width: 768px) {
+            .desktop-menu {
+                display: none !important;
+            }
+            .mobile-menu-btn {
+                display: block;
+            }
+            .stats-number {
+                font-size: 2rem;
+            }
+        }
+        
+        @media (min-width: 769px) {
+            .mobile-menu-btn {
+                display: none;
+            }
+            #mobileDropdown {
+                display: none !important;
+            }
+            .stats-number {
+                font-size: 3rem;
+            }
+        }
+        
+        nav.bg-white\/10 {
+            background: rgba(255, 255, 255, 0.1) !important;
+        }
+    </style>
+    
+    <!-- ===== MOBILE OPTIMIZATION: DEFER NON-CRITICAL STYLES ===== -->
+    <!-- Tailwind CSS - Deferred for mobile performance -->
+    <link rel="preload" href="https://cdn.tailwindcss.com" as="script">
+    <script src="https://cdn.tailwindcss.com" defer></script>
+    
+    <!-- Font Awesome - Deferred with media print trick -->
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" as="style">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"></noscript>
+    
+    <!-- Google Fonts - Optimized with font-display swap -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;600;700&display=swap" rel="stylesheet"></noscript>
+    
+    <!-- ===== IMPORTANT: SUPABASE LOADS WITH ASYNC (NOT DEFER) ===== -->
+    <!-- Supabase JS - Async so it loads fast but doesn't block rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" async></script>
+    
+    <!-- Custom Styles - Deferred with media print trick -->
+    <link rel="preload" href="styles.css" as="style">
+    <link rel="stylesheet" href="styles.css" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="styles.css"></noscript>
+    
+    <!-- ===== ORIGINAL STYLES - MOVED TO BOTTOM FOR PERFORMANCE ===== -->
+    <style>
+        /* ========== QUIZ CARD - GLASSMORPHISM ========== */
+        .quiz-card:hover { 
+            transform: translateY(-5px); 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2); 
+        }
+
+        /* Stats cards - Pastel gradients */
         .stats-card::before {
             content: '';
             position: absolute;
@@ -157,11 +219,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         .stats-card:hover {
             transform: translateY(-8px);
             box-shadow: 0 25px 40px -12px rgba(0,0,0,0.2);
-        }
-        .stats-number {
-            font-size: 2.5rem;
-            font-weight: 800;
-            color: #4c1d95;
         }
         @media (min-width: 768px) {
             .stats-number {
@@ -445,19 +502,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         }
         
         /* Mobile menu */
-        .mobile-menu-btn {
-            display: none;
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.5rem;
-            cursor: pointer;
-        }
-        
         @media (max-width: 768px) {
-            .desktop-menu {
-                display: none !important;
-            }
             .mobile-menu-btn {
                 display: block;
             }
@@ -703,6 +748,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
 </div>
 
+<!-- ===== MAIN SCRIPT - YOUR COMPLETE ORIGINAL CODE ===== -->
 <script>
     // ============================================
     // BOOKMCQ - HOME PAGE SCRIPT
@@ -769,6 +815,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         #key = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
         constructor() {
             this.#cache = new CacheManager();
+            // Check if supabase is loaded
+            if (typeof window.supabase === 'undefined') {
+                console.warn('Supabase not loaded yet, waiting...');
+                // Will retry when createClient is called
+            }
             this.#supabase = window.supabase.createClient(this.#url, this.#key);
         }
         async getBooks() {
@@ -1101,25 +1152,69 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         chatInput.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
     }
 
-    // Initialize
-    const security = new SecurityManager();
-    const supabaseService = new SupabaseService();
-    
-    async function loadStats() {
-        try {
-            const stats = await supabaseService.getStats();
-            document.getElementById('statBooks').innerHTML = `${stats.books}+`;
-            document.getElementById('statMcqs').innerHTML = `${stats.questions}+`;
-        } catch(e) { console.error('Error loading stats:', e); }
+    // ===== WAIT FOR SUPABASE TO LOAD BEFORE INITIALIZING =====
+    function waitForSupabase(retries = 30) {
+        return new Promise((resolve, reject) => {
+            if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+                resolve();
+                return;
+            }
+            
+            let attempts = 0;
+            const checkInterval = setInterval(() => {
+                attempts++;
+                if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+                    clearInterval(checkInterval);
+                    resolve();
+                } else if (attempts >= retries) {
+                    clearInterval(checkInterval);
+                    reject(new Error('Supabase failed to load after ' + retries + ' attempts'));
+                }
+            }, 100);
+        });
     }
-    
-    loadStats();
-    setupAIChat(supabaseService);
-    initNavbarScroll();
-    initCategoryFilters(supabaseService);
-    setupStatsCardHandlers();
-    updateDynamicSEO(supabaseService);
-    initMobileMenu();
+
+    // Initialize everything
+    async function initializeApp() {
+        try {
+            // Wait for Supabase to load
+            await waitForSupabase(30);
+            
+            // Now initialize
+            const security = new SecurityManager();
+            const supabaseService = new SupabaseService();
+            
+            async function loadStats() {
+                try {
+                    const stats = await supabaseService.getStats();
+                    document.getElementById('statBooks').innerHTML = `${stats.books}+`;
+                    document.getElementById('statMcqs').innerHTML = `${stats.questions}+`;
+                } catch(e) { console.error('Error loading stats:', e); }
+            }
+            
+            await loadStats();
+            await setupAIChat(supabaseService);
+            initNavbarScroll();
+            await initCategoryFilters(supabaseService);
+            setupStatsCardHandlers();
+            await updateDynamicSEO(supabaseService);
+            initMobileMenu();
+            
+            console.log('✅ BookMCQ initialized successfully!');
+        } catch(error) {
+            console.error('Failed to initialize app:', error);
+            // Show fallback UI
+            document.getElementById('statBooks').innerHTML = '📚';
+            document.getElementById('statMcqs').innerHTML = '❓';
+        }
+    }
+
+    // Start app when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeApp);
+    } else {
+        initializeApp();
+    }
 </script>
 </body>
 </html>
