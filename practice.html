@@ -93,7 +93,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300,400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300,400,600;700&display=swap" rel="stylesheet">
     <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="styles.css">
@@ -180,7 +180,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             max-width: 150px;
         }
 
-        /* Topic header styles */
+        /* Topic header styles - UPDATED to include range info */
         .topic-header {
             background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
             border-left: 4px solid #7c3aed;
@@ -195,9 +195,10 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         .topic-header h3 {
             color: #5b21b6;
             font-weight: 700;
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             display: flex;
             align-items: center;
+            flex-wrap: wrap;
             gap: 8px;
         }
         .topic-header h3 i {
@@ -210,6 +211,29 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             padding: 2px 10px;
             border-radius: 20px;
             font-weight: 600;
+        }
+        .topic-range-info {
+            font-size: 0.8rem;
+            color: #6b21a5;
+            background: rgba(124, 58, 237, 0.15);
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            margin-left: auto;
+        }
+        @media (max-width: 640px) {
+            .topic-header h3 {
+                font-size: 0.9rem;
+                gap: 6px;
+            }
+            .topic-range-info {
+                font-size: 0.7rem;
+                padding: 2px 8px;
+                margin-left: 0;
+                width: 100%;
+                text-align: left;
+                margin-top: 4px;
+            }
         }
     </style>
 </head>
@@ -291,8 +315,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             </div>
         </div>
         
-        <!-- Per Page Selector Row -->
-        <div class="flex justify-end items-center mb-4">
+        <!-- Per Page Selector Row - 1st Line -->
+        <div class="flex justify-end items-center mb-2">
             <label class="text-sm font-semibold text-gray-700 mr-2">Show:</label>
             <select id="perPageSelect" class="per-page-selector p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
                 <option value="10">10 per page</option>
@@ -302,11 +326,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             </select>
         </div>
         
+        <!-- Top Pagination - 2nd Line (NEW) -->
+        <div id="practicePaginationTop" class="mt-0 mb-4"></div>
+        
         <div id="practiceQuestionsContainer" class="space-y-4 mt-2">
             <div class="text-center py-8 text-gray-500">Select a book and chapter to view questions</div>
         </div>
         
-        <div id="practicePagination" class="mt-6"></div>
+        <!-- Bottom Pagination - 3rd Line (EXISTING - KEPT) -->
+        <div id="practicePaginationBottom" class="mt-6"></div>
     </div>
     
     <!-- Missing Book Request Section -->
@@ -463,7 +491,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                 .from('subtopics')
                 .select('id, name')
                 .eq('chapter_id', chapterId)
-                .order('id'); // Fixed: Order by ID instead of name to maintain creation order
+                .order('id');
             if (error) throw error;
             this.#cache.set(`topics_${chapterId}`, data);
             return data;
@@ -608,6 +636,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     let currentPerPage = 10;
     let currentTopicId = null;
     let totalQuestions = 0;
+    let currentStart = 1;
+    let currentEnd = 10;
 
     function showToast(message, isError = false) {
         const toast = document.getElementById('toast');
@@ -735,12 +765,17 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             // Store total questions for pagination display
             totalQuestions = result.total || 0;
             
-            // Calculate total pages (if not showing all)
+            // Calculate range
             if (currentPerPage === 0) {
+                currentStart = 1;
+                currentEnd = totalQuestions;
                 totalPages = 1;
             } else {
+                currentStart = (page - 1) * currentPerPage + 1;
+                currentEnd = Math.min(page * currentPerPage, totalQuestions);
                 totalPages = Math.ceil(result.total / currentPerPage);
             }
+            
             renderPagination();
             
             if (!result.questions || result.questions.length === 0) {
@@ -763,18 +798,33 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                 groupedQuestions[topicId].questions.push(q);
             });
             
-            // Build HTML with topic headers
+            // Build HTML with topic headers - INCLUDING RANGE INFO IN HEADER
             let html = '';
             let globalNumber = currentPerPage === 0 ? 1 : (page - 1) * currentPerPage + 1;
             
+            // Get the total count from the result
+            const totalCount = result.total || 0;
+            
             Object.keys(groupedQuestions).forEach(topicId => {
                 const topicGroup = groupedQuestions[topicId];
+                const topicQuestionCount = topicGroup.questions.length;
+                
+                // Build the range info for this topic
+                let rangeInfo = '';
+                if (totalCount > 0) {
+                    // Calculate the actual range for this topic's questions
+                    const topicStart = globalNumber;
+                    const topicEnd = globalNumber + topicQuestionCount - 1;
+                    rangeInfo = `Showing ${topicStart}-${topicEnd} of ${totalCount} questions`;
+                }
+                
                 html += `
                     <div class="topic-header">
                         <h3>
                             <i class="fas fa-tag"></i>
                             ${escapeHtml(topicGroup.name)}
-                            <span class="topic-question-count">${topicGroup.questions.length} question${topicGroup.questions.length > 1 ? 's' : ''}</span>
+                            <span class="topic-question-count">${topicQuestionCount} question${topicQuestionCount > 1 ? 's' : ''}</span>
+                            ${rangeInfo ? `<span class="topic-range-info">${rangeInfo}</span>` : ''}
                         </h3>
                     </div>
                 `;
@@ -822,38 +872,45 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         }
     }
 
-function renderPagination() {
-    const container = document.getElementById('practicePagination');
-    if (!container) return;
-    
-    // Calculate the range being shown
-    const start = (currentPage - 1) * currentPerPage + 1;
-    const end = Math.min(currentPage * currentPerPage, totalQuestions);
-    
-    // Always show the range information
-    let html = `<div class="text-sm text-gray-600 text-center mb-2">Showing ${start}-${end} of ${totalQuestions} questions</div>`;
-    
-    // Only show pagination buttons if there are multiple pages
-    if (currentPerPage !== 0 && totalPages > 1) {
-        html += `
-            <div class="flex justify-between items-center flex-wrap gap-2">
-                <div></div>
-                <div class="flex gap-2">
-                    <button id="practicePrevBtn" class="bg-gray-500 text-white px-4 py-2 rounded-lg disabled:opacity-50" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>
-                    <span class="text-sm flex items-center">Page ${currentPage} of ${totalPages || 1}</span>
-                    <button id="practiceNextBtn" class="bg-gray-500 text-white px-4 py-2 rounded-lg disabled:opacity-50" ${currentPage >= totalPages ? 'disabled' : ''}>Next</button>
-                </div>
-            </div>
-        `;
+    // UPDATED renderPagination function to render BOTH top and bottom pagination
+    function renderPagination() {
+        const topContainer = document.getElementById('practicePaginationTop');
+        const bottomContainer = document.getElementById('practicePaginationBottom');
+        if (!topContainer || !bottomContainer) return;
         
-        const prevBtn = document.getElementById('practicePrevBtn');
-        const nextBtn = document.getElementById('practiceNextBtn');
-        if (prevBtn) prevBtn.onclick = () => { if (currentPage > 1) loadQuestions(currentChapterId, currentPage - 1); };
-        if (nextBtn) nextBtn.onclick = () => { if (currentPage < totalPages) loadQuestions(currentChapterId, currentPage + 1); };
+        // Only show pagination buttons if there are multiple pages and not showing all
+        if (currentPerPage !== 0 && totalPages > 1) {
+            const paginationHTML = `
+                <div class="flex justify-between items-center flex-wrap gap-2">
+                    <div></div>
+                    <div class="flex gap-2">
+                        <button id="practicePrevBtn" class="bg-gray-500 text-white px-4 py-2 rounded-lg disabled:opacity-50" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>
+                        <span class="text-sm flex items-center">Page ${currentPage} of ${totalPages || 1}</span>
+                        <button id="practiceNextBtn" class="bg-gray-500 text-white px-4 py-2 rounded-lg disabled:opacity-50" ${currentPage >= totalPages ? 'disabled' : ''}>Next</button>
+                    </div>
+                </div>
+            `;
+            
+            // Render both top and bottom pagination
+            topContainer.innerHTML = paginationHTML;
+            bottomContainer.innerHTML = paginationHTML;
+            
+            // Attach event listeners to both sets of buttons
+            const prevBtns = document.querySelectorAll('#practicePrevBtn');
+            const nextBtns = document.querySelectorAll('#practiceNextBtn');
+            
+            prevBtns.forEach(btn => {
+                btn.onclick = () => { if (currentPage > 1) loadQuestions(currentChapterId, currentPage - 1); };
+            });
+            
+            nextBtns.forEach(btn => {
+                btn.onclick = () => { if (currentPage < totalPages) loadQuestions(currentChapterId, currentPage + 1); };
+            });
+        } else {
+            topContainer.innerHTML = '';
+            bottomContainer.innerHTML = '';
+        }
     }
-    
-    container.innerHTML = html;
-}
 
     // Mobile Menu functionality (matching home page)
     function initMobileMenu() {
