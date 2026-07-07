@@ -463,7 +463,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                 .from('subtopics')
                 .select('id, name')
                 .eq('chapter_id', chapterId)
-                .order('name');
+                .order('id'); // Fixed: Order by ID instead of name to maintain creation order
             if (error) throw error;
             this.#cache.set(`topics_${chapterId}`, data);
             return data;
@@ -607,6 +607,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     let currentChapterId = null;
     let currentPerPage = 10;
     let currentTopicId = null;
+    let totalQuestions = 0;
 
     function showToast(message, isError = false) {
         const toast = document.getElementById('toast');
@@ -731,6 +732,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             
             const result = await supabaseService.getPaginatedQuestions(chapterId, page, currentPerPage, difficultyFilter, topicFilter);
             
+            // Store total questions for pagination display
+            totalQuestions = result.total || 0;
+            
             // Calculate total pages (if not showing all)
             if (currentPerPage === 0) {
                 totalPages = 1;
@@ -824,15 +828,24 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         
         // Don't show pagination if showing all questions
         if (currentPerPage === 0 || totalPages <= 1) {
-            container.innerHTML = '';
+            container.innerHTML = `<div class="text-center text-sm text-gray-600">Showing all ${totalQuestions} questions</div>`;
             return;
         }
         
+        // Calculate the range being shown
+        const start = (currentPage - 1) * currentPerPage + 1;
+        const end = Math.min(currentPage * currentPerPage, totalQuestions);
+        
         container.innerHTML = `
-            <div class="flex justify-between items-center">
-                <button id="practicePrevBtn" class="bg-gray-500 text-white px-4 py-2 rounded-lg disabled:opacity-50" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>
-                <span class="text-sm">Page ${currentPage} of ${totalPages || 1}</span>
-                <button id="practiceNextBtn" class="bg-gray-500 text-white px-4 py-2 rounded-lg disabled:opacity-50" ${currentPage >= totalPages ? 'disabled' : ''}>Next</button>
+            <div class="flex justify-between items-center flex-wrap gap-2">
+                <div class="text-sm text-gray-600">
+                    Showing ${start}-${end} of ${totalQuestions} questions
+                </div>
+                <div class="flex gap-2">
+                    <button id="practicePrevBtn" class="bg-gray-500 text-white px-4 py-2 rounded-lg disabled:opacity-50" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>
+                    <span class="text-sm flex items-center">Page ${currentPage} of ${totalPages || 1}</span>
+                    <button id="practiceNextBtn" class="bg-gray-500 text-white px-4 py-2 rounded-lg disabled:opacity-50" ${currentPage >= totalPages ? 'disabled' : ''}>Next</button>
+                </div>
             </div>
         `;
         
