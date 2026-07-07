@@ -93,7 +93,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300,400;600;700&display=swap" rel="stylesheet">
     <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="styles.css">
@@ -179,6 +179,38 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         .per-page-selector {
             max-width: 150px;
         }
+
+        /* Topic header styles */
+        .topic-header {
+            background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+            border-left: 4px solid #7c3aed;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            margin-top: 20px;
+        }
+        .topic-header:first-of-type {
+            margin-top: 0;
+        }
+        .topic-header h3 {
+            color: #5b21b6;
+            font-weight: 700;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .topic-header h3 i {
+            color: #7c3aed;
+        }
+        .topic-question-count {
+            font-size: 0.8rem;
+            color: #7c3aed;
+            background: rgba(124, 58, 237, 0.1);
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body class="disable-select">
@@ -228,8 +260,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </h2>
         <p class="text-gray-600 mb-6">Browse and practice questions organized by book, chapter, and difficulty</p>
         
-        <!-- Filter Row - Updated to use Chapters -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <!-- Filter Row - Updated to include Topics -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">📚 Select Book</label>
                 <select id="practiceBookSelect" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500">
@@ -240,6 +272,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">📖 Select Chapter</label>
                 <select id="practiceChapterSelect" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" disabled>
                     <option value="">Select a book first</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">📌 Select Topic</label>
+                <select id="practiceTopicSelect" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" disabled>
+                    <option value="">Select a chapter first</option>
                 </select>
             </div>
             <div>
@@ -388,7 +426,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         }
     }
 
-    // Supabase Service - Updated to use chapters instead of topics
+    // Supabase Service - Updated to include topics
     class SupabaseService {
         #supabase;
         #cache;
@@ -418,13 +456,26 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             this.#cache.set(`chapters_${bookId}`, data);
             return data;
         }
-        async getPaginatedQuestions(chapterId, page = 1, pageSize = 10, difficulty = '') {
+        async getTopics(chapterId) {
+            const cached = this.#cache.get(`topics_${chapterId}`);
+            if (cached) return cached;
+            const { data, error } = await this.#supabase
+                .from('subtopics')
+                .select('id, name')
+                .eq('chapter_id', chapterId)
+                .order('name');
+            if (error) throw error;
+            this.#cache.set(`topics_${chapterId}`, data);
+            return data;
+        }
+        async getPaginatedQuestions(chapterId, page = 1, pageSize = 10, difficulty = '', topicId = null) {
             const from = (page - 1) * pageSize;
             const to = from + pageSize - 1;
             
-            // Include difficulty in cache key to differentiate between different difficulty filters
+            // Build cache key with all filters
             const difficultySuffix = difficulty ? `_${difficulty}` : '_all';
-            const cacheKey = `questions_page_chapter_${chapterId}_${page}_${pageSize}${difficultySuffix}`;
+            const topicSuffix = topicId ? `_topic_${topicId}` : '_alltopics';
+            const cacheKey = `questions_page_chapter_${chapterId}_${page}_${pageSize}${difficultySuffix}${topicSuffix}`;
             
             // Check cache first
             const cached = this.#cache.get(cacheKey);
@@ -433,8 +484,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             }
             
             let query = this.#supabase.from('questions')
-                .select(`id, question_text, difficulty, correct_answer, explanation, options (option_text, option_index)`, { count: 'exact' })
+                .select(`
+                    id, 
+                    question_text, 
+                    difficulty, 
+                    correct_answer, 
+                    explanation,
+                    topic_id,
+                    subtopics!left (id, name)
+                `, { count: 'exact' })
                 .eq('chapter_id', chapterId);
+            
+            // Apply topic filter if selected
+            if (topicId && topicId !== '') {
+                query = query.eq('topic_id', topicId);
+            }
             
             // Apply difficulty filter if selected
             if (difficulty && difficulty !== '') {
@@ -448,13 +512,36 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                 const formatted = (data || []).map(q => ({
                     id: q.id, 
                     text: q.question_text,
-                    options: (q.options || []).sort((a,b) => a.option_index - b.option_index).map(o => o.option_text),
+                    options: [], // Will be filled later
                     correct: q.correct_answer, 
                     explanation: q.explanation || 'No explanation available', 
-                    difficulty: q.difficulty
+                    difficulty: q.difficulty,
+                    topic_id: q.topic_id,
+                    topic_name: q.subtopics ? q.subtopics.name : null
                 }));
+                
+                // Fetch options for all questions
+                if (formatted.length > 0) {
+                    const questionIds = formatted.map(q => q.id);
+                    const { data: optionsData, error: optionsError } = await this.#supabase
+                        .from('options')
+                        .select('question_id, option_text, option_index')
+                        .in('question_id', questionIds)
+                        .order('option_index');
+                    
+                    if (!optionsError && optionsData) {
+                        const optionsMap = {};
+                        optionsData.forEach(opt => {
+                            if (!optionsMap[opt.question_id]) optionsMap[opt.question_id] = [];
+                            optionsMap[opt.question_id].push(opt.option_text);
+                        });
+                        formatted.forEach(q => {
+                            q.options = optionsMap[q.id] || [];
+                        });
+                    }
+                }
+                
                 const result = { questions: formatted, total: count || 0 };
-                // Store in cache
                 this.#cache.set(cacheKey, result);
                 return result;
             } else {
@@ -463,13 +550,36 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                 const formatted = (data || []).map(q => ({
                     id: q.id, 
                     text: q.question_text,
-                    options: (q.options || []).sort((a,b) => a.option_index - b.option_index).map(o => o.option_text),
+                    options: [], // Will be filled later
                     correct: q.correct_answer, 
                     explanation: q.explanation || 'No explanation available', 
-                    difficulty: q.difficulty
+                    difficulty: q.difficulty,
+                    topic_id: q.topic_id,
+                    topic_name: q.subtopics ? q.subtopics.name : null
                 }));
+                
+                // Fetch options for all questions
+                if (formatted.length > 0) {
+                    const questionIds = formatted.map(q => q.id);
+                    const { data: optionsData, error: optionsError } = await this.#supabase
+                        .from('options')
+                        .select('question_id, option_text, option_index')
+                        .in('question_id', questionIds)
+                        .order('option_index');
+                    
+                    if (!optionsError && optionsData) {
+                        const optionsMap = {};
+                        optionsData.forEach(opt => {
+                            if (!optionsMap[opt.question_id]) optionsMap[opt.question_id] = [];
+                            optionsMap[opt.question_id].push(opt.option_text);
+                        });
+                        formatted.forEach(q => {
+                            q.options = optionsMap[q.id] || [];
+                        });
+                    }
+                }
+                
                 const result = { questions: formatted, total: count || 0 };
-                // Store in cache
                 this.#cache.set(cacheKey, result);
                 return result;
             }
@@ -496,6 +606,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     let totalPages = 0;
     let currentChapterId = null;
     let currentPerPage = 10;
+    let currentTopicId = null;
 
     function showToast(message, isError = false) {
         const toast = document.getElementById('toast');
@@ -528,29 +639,75 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
     async function loadChapters() {
         const bookId = document.getElementById('practiceBookSelect').value;
-        const select = document.getElementById('practiceChapterSelect');
+        const chapterSelect = document.getElementById('practiceChapterSelect');
+        const topicSelect = document.getElementById('practiceTopicSelect');
+        
         if (!bookId) {
-            select.innerHTML = '<option value="">Select a book first</option>';
-            select.disabled = true;
+            chapterSelect.innerHTML = '<option value="">Select a book first</option>';
+            chapterSelect.disabled = true;
+            topicSelect.innerHTML = '<option value="">Select a chapter first</option>';
+            topicSelect.disabled = true;
             return;
         }
-        select.innerHTML = '<option value="">Loading chapters...</option>';
-        select.disabled = false;
+        chapterSelect.innerHTML = '<option value="">Loading chapters...</option>';
+        chapterSelect.disabled = false;
         try {
             const chapters = await supabaseService.getChapters(bookId);
             if (!chapters || chapters.length === 0) {
-                select.innerHTML = '<option value="">No chapters available</option>';
-                select.disabled = true;
+                chapterSelect.innerHTML = '<option value="">No chapters available</option>';
+                chapterSelect.disabled = true;
+                topicSelect.innerHTML = '<option value="">Select a chapter first</option>';
+                topicSelect.disabled = true;
                 showToast('No chapters found for this book. Please add chapters through admin panel.', true);
                 return;
             }
-            select.innerHTML = '<option value="">-- Select a Chapter --</option>';
+            chapterSelect.innerHTML = '<option value="">-- Select a Chapter --</option>';
             chapters.forEach(chapter => {
                 const display = chapter.chapter_number ? `Ch ${chapter.chapter_number}: ${chapter.name}` : chapter.name;
-                select.innerHTML += `<option value="${chapter.id}">${escapeHtml(display)}</option>`;
+                chapterSelect.innerHTML += `<option value="${chapter.id}">${escapeHtml(display)}</option>`;
             });
-            select.disabled = false;
-        } catch(e) { select.innerHTML = '<option value="">Error loading chapters</option>'; select.disabled = true; }
+            chapterSelect.disabled = false;
+            
+            // Reset topic select
+            topicSelect.innerHTML = '<option value="">Select a chapter first</option>';
+            topicSelect.disabled = true;
+            
+        } catch(e) { 
+            chapterSelect.innerHTML = '<option value="">Error loading chapters</option>'; 
+            chapterSelect.disabled = true;
+            topicSelect.innerHTML = '<option value="">Select a chapter first</option>';
+            topicSelect.disabled = true;
+        }
+    }
+
+    async function loadTopics() {
+        const chapterId = document.getElementById('practiceChapterSelect').value;
+        const topicSelect = document.getElementById('practiceTopicSelect');
+        
+        if (!chapterId) {
+            topicSelect.innerHTML = '<option value="">Select a chapter first</option>';
+            topicSelect.disabled = true;
+            return;
+        }
+        
+        topicSelect.innerHTML = '<option value="">Loading topics...</option>';
+        topicSelect.disabled = false;
+        try {
+            const topics = await supabaseService.getTopics(chapterId);
+            if (!topics || topics.length === 0) {
+                topicSelect.innerHTML = '<option value="">No topics available</option>';
+                topicSelect.disabled = true;
+                return;
+            }
+            topicSelect.innerHTML = '<option value="">-- All Topics --</option>';
+            topics.forEach(topic => {
+                topicSelect.innerHTML += `<option value="${topic.id}">${escapeHtml(topic.name)}</option>`;
+            });
+            topicSelect.disabled = false;
+        } catch(e) { 
+            topicSelect.innerHTML = '<option value="">Error loading topics</option>'; 
+            topicSelect.disabled = true;
+        }
     }
 
     async function loadQuestions(chapterId, page = 1) {
@@ -568,7 +725,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             // Get current difficulty filter
             const difficultyFilter = document.getElementById('practiceDifficultySelect')?.value || '';
             
-            const result = await supabaseService.getPaginatedQuestions(chapterId, page, currentPerPage, difficultyFilter);
+            // Get current topic filter
+            const topicFilter = document.getElementById('practiceTopicSelect')?.value || null;
+            currentTopicId = topicFilter;
+            
+            const result = await supabaseService.getPaginatedQuestions(chapterId, page, currentPerPage, difficultyFilter, topicFilter);
             
             // Calculate total pages (if not showing all)
             if (currentPerPage === 0) {
@@ -583,36 +744,70 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                 return;
             }
             
-            container.innerHTML = result.questions.map((q, idx) => {
-                const globalNumber = currentPerPage === 0 ? idx + 1 : (page - 1) * currentPerPage + idx + 1;
-                const difficultyColor = q.difficulty === 'easy' ? 'text-green-600 bg-green-50' : 
-                                      q.difficulty === 'medium' ? 'text-yellow-600 bg-yellow-50' : 
-                                      'text-red-600 bg-red-50';
-                
-                const processedQuestion = escapeHtmlPreserveMath(q.text);
-                const processedOptions = q.options.map(opt => escapeHtmlPreserveMath(opt));
-                const processedExplanation = escapeHtmlPreserveMath(q.explanation);
-                
-                return `
-                    <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 practice-card">
-                        <div class="flex justify-between items-start mb-3 flex-wrap gap-2">
-                            <span class="font-bold text-purple-600 text-sm">Q${globalNumber}</span>
-                            <span class="px-2 py-1 rounded-full text-xs font-medium ${difficultyColor}">${q.difficulty.toUpperCase()}</span>
-                        </div>
-                        <p class="font-medium text-gray-800 mb-4 question-text">${processedQuestion}</p>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
-                            ${processedOptions.map((opt, optIdx) => `
-                                <div class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg ${optIdx === q.correct ? 'border-l-4 border-green-500' : ''}">
-                                    <span class="font-semibold text-gray-600 w-6">${String.fromCharCode(65+optIdx)}.</span>
-                                    <span class="text-gray-700 text-sm option-text">${opt}</span>
-                                    ${optIdx === q.correct ? '<i class="fas fa-check-circle text-green-500 ml-auto"></i>' : ''}
-                                </div>
-                            `).join('')}
-                        </div>
-                        ${q.explanation ? `<div class="mt-3 p-3 bg-blue-50 rounded-lg text-sm text-gray-600 explanation-text"><i class="fas fa-info-circle text-blue-500 mr-2"></i><span class="math-content">${processedExplanation}</span></div>` : ''}
+            // Group questions by topic
+            const groupedQuestions = {};
+            let untitledCount = 0;
+            result.questions.forEach(q => {
+                const topicName = q.topic_name || 'Untitled Topic';
+                const topicId = q.topic_id || `untitled_${untitledCount++}`;
+                if (!groupedQuestions[topicId]) {
+                    groupedQuestions[topicId] = {
+                        name: topicName,
+                        questions: []
+                    };
+                }
+                groupedQuestions[topicId].questions.push(q);
+            });
+            
+            // Build HTML with topic headers
+            let html = '';
+            let globalNumber = currentPerPage === 0 ? 1 : (page - 1) * currentPerPage + 1;
+            
+            Object.keys(groupedQuestions).forEach(topicId => {
+                const topicGroup = groupedQuestions[topicId];
+                html += `
+                    <div class="topic-header">
+                        <h3>
+                            <i class="fas fa-tag"></i>
+                            ${escapeHtml(topicGroup.name)}
+                            <span class="topic-question-count">${topicGroup.questions.length} question${topicGroup.questions.length > 1 ? 's' : ''}</span>
+                        </h3>
                     </div>
                 `;
-            }).join('');
+                
+                topicGroup.questions.forEach((q) => {
+                    const difficultyColor = q.difficulty === 'easy' ? 'text-green-600 bg-green-50' : 
+                                          q.difficulty === 'medium' ? 'text-yellow-600 bg-yellow-50' : 
+                                          'text-red-600 bg-red-50';
+                    
+                    const processedQuestion = escapeHtmlPreserveMath(q.text);
+                    const processedOptions = q.options.map(opt => escapeHtmlPreserveMath(opt));
+                    const processedExplanation = escapeHtmlPreserveMath(q.explanation);
+                    
+                    html += `
+                        <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 practice-card">
+                            <div class="flex justify-between items-start mb-3 flex-wrap gap-2">
+                                <span class="font-bold text-purple-600 text-sm">Q${globalNumber}</span>
+                                <span class="px-2 py-1 rounded-full text-xs font-medium ${difficultyColor}">${q.difficulty.toUpperCase()}</span>
+                            </div>
+                            <p class="font-medium text-gray-800 mb-4 question-text">${processedQuestion}</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
+                                ${processedOptions.map((opt, optIdx) => `
+                                    <div class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg ${optIdx === q.correct ? 'border-l-4 border-green-500' : ''}">
+                                        <span class="font-semibold text-gray-600 w-6">${String.fromCharCode(65+optIdx)}.</span>
+                                        <span class="text-gray-700 text-sm option-text">${opt}</span>
+                                        ${optIdx === q.correct ? '<i class="fas fa-check-circle text-green-500 ml-auto"></i>' : ''}
+                                    </div>
+                                `).join('')}
+                            </div>
+                            ${q.explanation ? `<div class="mt-3 p-3 bg-blue-50 rounded-lg text-sm text-gray-600 explanation-text"><i class="fas fa-info-circle text-blue-500 mr-2"></i><span class="math-content">${processedExplanation}</span></div>` : ''}
+                        </div>
+                    `;
+                    globalNumber++;
+                });
+            });
+            
+            container.innerHTML = html;
             
             // Render math in all question containers
             await renderMathInElement(container);
@@ -698,16 +893,26 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         }
     }
 
-    // Event Listeners - Updated to use chapters
+    // Event Listeners - Updated to include topics
     document.getElementById('practiceBookSelect').addEventListener('change', loadChapters);
-    document.getElementById('practiceChapterSelect').addEventListener('change', (e) => {
+    document.getElementById('practiceChapterSelect').addEventListener('change', function(e) {
         if (e.target.value) {
+            loadTopics();
+            // Reset topic filter and load questions
             currentPage = 1;
             loadQuestions(e.target.value, 1);
+        } else {
+            const topicSelect = document.getElementById('practiceTopicSelect');
+            topicSelect.innerHTML = '<option value="">Select a chapter first</option>';
+            topicSelect.disabled = true;
         }
     });
-    
-    // Add event listeners for filters
+    document.getElementById('practiceTopicSelect').addEventListener('change', function(e) {
+        if (currentChapterId) {
+            currentPage = 1;
+            loadQuestions(currentChapterId, 1);
+        }
+    });
     document.getElementById('practiceDifficultySelect').addEventListener('change', refreshQuestions);
     document.getElementById('perPageSelect').addEventListener('change', refreshQuestions);
     
