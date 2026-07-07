@@ -822,25 +822,22 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         }
     }
 
-    function renderPagination() {
-        const container = document.getElementById('practicePagination');
-        if (!container) return;
-        
-        // Don't show pagination if showing all questions
-        if (currentPerPage === 0 || totalPages <= 1) {
-            container.innerHTML = `<div class="text-center text-sm text-gray-600">Showing all ${totalQuestions} questions</div>`;
-            return;
-        }
-        
-        // Calculate the range being shown
-        const start = (currentPage - 1) * currentPerPage + 1;
-        const end = Math.min(currentPage * currentPerPage, totalQuestions);
-        
-        container.innerHTML = `
+function renderPagination() {
+    const container = document.getElementById('practicePagination');
+    if (!container) return;
+    
+    // Calculate the range being shown
+    const start = (currentPage - 1) * currentPerPage + 1;
+    const end = Math.min(currentPage * currentPerPage, totalQuestions);
+    
+    // Always show the range information
+    let html = `<div class="text-sm text-gray-600 text-center mb-2">Showing ${start}-${end} of ${totalQuestions} questions</div>`;
+    
+    // Only show pagination buttons if there are multiple pages
+    if (currentPerPage !== 0 && totalPages > 1) {
+        html += `
             <div class="flex justify-between items-center flex-wrap gap-2">
-                <div class="text-sm text-gray-600">
-                    Showing ${start}-${end} of ${totalQuestions} questions
-                </div>
+                <div></div>
                 <div class="flex gap-2">
                     <button id="practicePrevBtn" class="bg-gray-500 text-white px-4 py-2 rounded-lg disabled:opacity-50" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>
                     <span class="text-sm flex items-center">Page ${currentPage} of ${totalPages || 1}</span>
@@ -854,6 +851,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         if (prevBtn) prevBtn.onclick = () => { if (currentPage > 1) loadQuestions(currentChapterId, currentPage - 1); };
         if (nextBtn) nextBtn.onclick = () => { if (currentPage < totalPages) loadQuestions(currentChapterId, currentPage + 1); };
     }
+    
+    container.innerHTML = html;
+}
 
     // Mobile Menu functionality (matching home page)
     function initMobileMenu() {
