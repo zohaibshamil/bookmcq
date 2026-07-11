@@ -5977,18 +5977,37 @@ async function loadBooksForSeoDropdown() {
                 });
             });
             
-bookListHtml += `
-    <div class="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-200 hover:border-purple-300 transition">
-        <div class="flex items-center gap-3">
-            <span class="font-medium text-gray-800">📚 ${escapeHtml(bookTitle)}</span>
-            <span class="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full font-semibold">✅ Generated</span>
-            <span class="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full">${totalChapters} chapters</span>
-            ${totalTopics > 0 ? `<span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">${totalTopics} topics</span>` : ''}
-            <span class="text-xs text-gray-400">${totalFiles} files</span>
-        </div>
-        <!-- ... rest of the HTML stays the same ... -->
-    </div>
-`;
+            bookListHtml += `
+                <div class="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-200 hover:border-purple-300 transition">
+                    <div class="flex items-center gap-3">
+                        <span class="font-medium text-gray-800">📚 ${escapeHtml(bookTitle)}</span>
+                        <span class="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full">${totalChapters} chapters</span>
+                        ${totalTopics > 0 ? `<span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">${totalTopics} topics</span>` : ''}
+                        <span class="text-xs text-gray-400">${totalFiles} files</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="downloadSelectedSeoFiles('${bookSlug}')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm transition flex items-center gap-1">
+                            <i class="fas fa-download"></i> Download Selected
+                        </button>
+                        <div class="seo-dropdown-container">
+                            <div class="seo-dropdown-toggle" onclick="toggleSeoDropdown('${bookSlug}')">
+                                <span>Select Files</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                            <div id="seoDropdown_${bookSlug}" class="seo-dropdown-menu">
+                                ${dropdownItems}
+                                <div class="seo-dropdown-actions" style="padding:8px 12px; border-top:1px solid #e5e7eb; display:flex; gap:8px; background:#f9fafb; border-radius:0 0 8px 8px;">
+                                    <button onclick="selectAllSeoFiles('${bookSlug}')" class="select-all-btn" style="background:#8b5cf6; color:white; padding:4px 12px; border-radius:4px; font-size:12px; border:none; cursor:pointer;">Select All</button>
+                                    <button onclick="deselectAllSeoFiles('${bookSlug}')" class="deselect-all-btn" style="background:#e5e7eb; color:#1e293b; padding:4px 12px; border-radius:4px; font-size:12px; border:none; cursor:pointer;">Deselect All</button>
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="downloadSingleSEOPage('${bookSlug}')" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm transition flex items-center gap-1">
+                            <i class="fas fa-folder-open"></i> All (${totalFiles})
+                        </button>
+                    </div>
+                </div>
+            `;
             
             bookListEl.innerHTML = bookListHtml;
             
@@ -6004,9 +6023,10 @@ bookListHtml += `
             
             progressBar.style.width = '100%';
             
-// The dropdown should always show all books from the database
-// Generation status is shown in the book list below
-console.log('✅ Pages generated for:', bookTitle);
+            // Re-initialize dropdown to show the book
+            setTimeout(() => {
+                initSeoBookDropdown();
+            }, 300);
             
         } catch (error) {
             console.error('SEO Generation Error:', error);
