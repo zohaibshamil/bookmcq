@@ -5139,95 +5139,134 @@
         }
     }
 
-    function renderBookUrlsPanel(filterSlug) {
-        const listEl = document.getElementById('bookUrlsList');
-        const totalCountEl = document.getElementById('bookUrlsTotalCount');
-        const bookCountEl = document.getElementById('bookUrlsBookCount');
-        const chapterCountEl = document.getElementById('bookUrlsChapterCount');
-        const topicCountEl = document.getElementById('bookUrlsTopicCount');
-        
-        if (!window.sitemapUrls || window.sitemapUrls.length === 0) {
-            listEl.innerHTML = '<div class="no-urls-text">No URLs available. Generate sitemap first.</div>';
-            return;
-        }
-        
-        let urls = window.sitemapUrls;
-        
-        if (filterSlug !== 'all') {
-            urls = urls.filter(url => url.bookSlug === filterSlug);
-        }
-        
-        const bookUrls = urls.filter(u => u.isBook);
-        const chapterUrls = urls.filter(u => u.isChapter);
-        const topicUrls = urls.filter(u => u.isTopic);
-        const staticUrls = urls.filter(u => !u.isBook && !u.isChapter && !u.isTopic);
-        
-        if (totalCountEl) totalCountEl.textContent = urls.length;
-        if (bookCountEl) bookCountEl.textContent = bookUrls.length;
-        if (chapterCountEl) chapterCountEl.textContent = chapterUrls.length;
-        if (topicCountEl) topicCountEl.textContent = topicUrls.length;
-        
-        if (urls.length === 0) {
-            listEl.innerHTML = '<div class="no-urls-text">No URLs found for this book.</div>';
-            return;
-        }
-        
-        let html = '';
-        
-        if (staticUrls.length > 0) {
-            html += `<div style="padding:8px 14px; background:#f3f4f6; font-weight:600; font-size:13px; color:#4b5563; border-bottom:1px solid #e5e7eb;">🏠 Static Pages</div>`;
-            staticUrls.forEach(url => {
-                html += generateUrlItemHtml(url, 'Static');
-            });
-        }
-        
-        if (bookUrls.length > 0) {
-            html += `<div style="padding:8px 14px; background:#f3f4f6; font-weight:600; font-size:13px; color:#4b5563; border-bottom:1px solid #e5e7eb; margin-top:4px;">📚 Books</div>`;
-            bookUrls.forEach(url => {
-                html += generateUrlItemHtml(url, 'Book');
-            });
-        }
-        
-        if (chapterUrls.length > 0) {
-            html += `<div style="padding:8px 14px; background:#f3f4f6; font-weight:600; font-size:13px; color:#4b5563; border-bottom:1px solid #e5e7eb; margin-top:4px;">📖 Chapters</div>`;
-            chapterUrls.forEach(url => {
-                html += generateUrlItemHtml(url, 'Chapter');
-            });
-        }
-        
-        if (topicUrls.length > 0) {
-            html += `<div style="padding:8px 14px; background:#f3f4f6; font-weight:600; font-size:13px; color:#4b5563; border-bottom:1px solid #e5e7eb; margin-top:4px;">📝 Topics</div>`;
-            topicUrls.forEach(url => {
-                html += generateUrlItemHtml(url, 'Topic');
-            });
-        }
-        
-        listEl.innerHTML = html;
+function renderBookUrlsPanel(filterSlug) {
+    const listEl = document.getElementById('bookUrlsList');
+    const totalCountEl = document.getElementById('bookUrlsTotalCount');
+    const bookCountEl = document.getElementById('bookUrlsBookCount');
+    const chapterCountEl = document.getElementById('bookUrlsChapterCount');
+    const topicCountEl = document.getElementById('bookUrlsTopicCount');
+    
+    // Use window.sitemapUrls from the sitemap generation
+    let urls = window.sitemapUrls || [];
+    
+    if (urls.length === 0) {
+        listEl.innerHTML = '<div class="no-urls-text">No URLs available. Click "Generate Sitemap" first or wait for auto-generation.</div>';
+        if (totalCountEl) totalCountEl.textContent = '0';
+        if (bookCountEl) bookCountEl.textContent = '0';
+        if (chapterCountEl) chapterCountEl.textContent = '0';
+        if (topicCountEl) topicCountEl.textContent = '0';
+        return;
     }
-
-    function generateUrlItemHtml(url, type) {
-        const urlDisplay = url.loc.replace('https://www.bookmcq.com', '');
-        let label = '';
-        
-        if (type === 'Static') {
-            label = urlDisplay || '/';
-        } else if (type === 'Book') {
-            label = url.bookTitle || 'Book';
-        } else if (type === 'Chapter') {
-            label = url.chapterNumber ? `Ch ${url.chapterNumber}: ${url.chapterName || 'Chapter'}` : (url.chapterName || 'Chapter');
-        } else if (type === 'Topic') {
-            label = url.topicName || 'Topic';
-        }
-        
-        return `
-            <div class="url-item">
-                <span class="url-type">${type}</span>
-                <span class="url-link">${label}</span>
-                <span class="url-priority-badge">${url.priority}</span>
-            </div>
-        `;
+    
+    // Filter by book if not 'all'
+    let filteredUrls = urls;
+    if (filterSlug !== 'all') {
+        filteredUrls = urls.filter(url => url.bookSlug === filterSlug);
     }
+    
+    // Count stats
+    const bookUrls = filteredUrls.filter(u => u.isBook === true);
+    const chapterUrls = filteredUrls.filter(u => u.isChapter === true);
+    const topicUrls = filteredUrls.filter(u => u.isTopic === true);
+    const staticUrls = filteredUrls.filter(u => !u.isBook && !u.isChapter && !u.isTopic);
+    
+    if (totalCountEl) totalCountEl.textContent = filteredUrls.length;
+    if (bookCountEl) bookCountEl.textContent = bookUrls.length;
+    if (chapterCountEl) chapterCountEl.textContent = chapterUrls.length;
+    if (topicCountEl) topicCountEl.textContent = topicUrls.length;
+    
+    if (filteredUrls.length === 0) {
+        listEl.innerHTML = '<div class="no-urls-text">No URLs found for this book.</div>';
+        return;
+    }
+    
+    let html = '';
+    
+    // Static pages
+    if (staticUrls.length > 0) {
+        html += `<div style="padding:8px 14px; background:#f3f4f6; font-weight:600; font-size:13px; color:#4b5563; border-bottom:1px solid #e5e7eb;">🏠 Static Pages</div>`;
+        staticUrls.forEach(url => {
+            html += generateUrlItemHtml(url, 'Static');
+        });
+    }
+    
+    // Books
+    if (bookUrls.length > 0) {
+        html += `<div style="padding:8px 14px; background:#f3f4f6; font-weight:600; font-size:13px; color:#4b5563; border-bottom:1px solid #e5e7eb; margin-top:4px;">📚 Books</div>`;
+        bookUrls.forEach(url => {
+            html += generateUrlItemHtml(url, 'Book');
+        });
+    }
+    
+    // Chapters - FIXED: Use chapterName from URL data
+    if (chapterUrls.length > 0) {
+        html += `<div style="padding:8px 14px; background:#f3f4f6; font-weight:600; font-size:13px; color:#4b5563; border-bottom:1px solid #e5e7eb; margin-top:4px;">📖 Chapters</div>`;
+        chapterUrls.forEach(url => {
+            html += generateUrlItemHtml(url, 'Chapter');
+        });
+    }
+    
+    // Topics - FIXED: Use topicName from URL data
+    if (topicUrls.length > 0) {
+        html += `<div style="padding:8px 14px; background:#f3f4f6; font-weight:600; font-size:13px; color:#4b5563; border-bottom:1px solid #e5e7eb; margin-top:4px;">📝 Topics</div>`;
+        topicUrls.forEach(url => {
+            html += generateUrlItemHtml(url, 'Topic');
+        });
+    }
+    
+    listEl.innerHTML = html;
+}
 
+function generateUrlItemHtml(url, type) {
+    let label = '';
+    let displayUrl = url.loc || '';
+    
+    if (type === 'Static') {
+        label = displayUrl.replace('https://www.bookmcq.com', '') || '/';
+    } else if (type === 'Book') {
+        label = url.bookTitle || 'Book';
+    } else if (type === 'Chapter') {
+        // FIX: Use the chapter name from the URL data
+        if (url.chapterName && url.chapterName !== 'Chapter') {
+            label = url.chapterName;
+        } else {
+            // Try to extract from the URL
+            const urlParts = displayUrl.split('/');
+            const fileName = urlParts[urlParts.length - 1];
+            const nameWithoutExt = fileName.replace('.html', '');
+            // Convert slug to readable name
+            label = nameWithoutExt.replace(/-/g, ' ');
+            // Capitalize first letter of each word
+            label = label.replace(/\b\w/g, l => l.toUpperCase());
+        }
+        // Add chapter number if available
+        if (url.chapterNumber) {
+            label = `Ch ${url.chapterNumber}: ${label}`;
+        }
+    } else if (type === 'Topic') {
+        // FIX: Use the topic name from the URL data
+        if (url.topicName) {
+            label = url.topicName;
+        } else {
+            // Try to extract from the URL
+            const urlParts = displayUrl.split('/');
+            const fileName = urlParts[urlParts.length - 1];
+            const nameWithoutExt = fileName.replace('.html', '');
+            // Convert slug to readable name
+            label = nameWithoutExt.replace(/-/g, ' ');
+            // Capitalize first letter of each word
+            label = label.replace(/\b\w/g, l => l.toUpperCase());
+        }
+    }
+    
+    return `
+        <div class="url-item">
+            <span class="url-type">${type}</span>
+            <span class="url-link">${label}</span>
+            <span class="url-priority-badge">${url.priority || '0.7'}</span>
+        </div>
+    `;
+}
     function initBookUrlsBookDropdown() {
         const wrapper = document.getElementById('bookUrlsBookSelectWrapper');
         if (!wrapper) return;
