@@ -1378,34 +1378,14 @@
     </div>
 </div>
 
-<!-- Sitemap Generation Tab -->
+<!-- ============================================ -->
+<!-- SITEMAP TAB - FIXED: View Book URLs Added      -->
+<!-- ============================================ -->
 <div id="sitemapTab" class="hidden">
     <div class="text-center py-8">
         <i class="fas fa-sitemap text-6xl text-green-500 mb-4"></i>
         <h2 class="text-2xl font-bold mb-3">🗺️ Generate Sitemap.xml</h2>
         <p class="text-gray-600 mb-6">Generate a sitemap.xml file automatically from your books, chapters, and topics.</p>
-
-        <!-- FIX B: Searchable Book Dropdown for URL Filtering -->
-        <div class="mb-6 max-w-md mx-auto">
-            <label class="block text-sm font-semibold text-gray-700 mb-2">📚 Filter URLs by Book:</label>
-            <div class="single-select-wrapper" id="sitemapBookSelectWrapper" style="position:relative; z-index:100;">
-                <div class="single-select-btn" data-dropdown="sitemapBook" style="width:100%; padding:12px; border:1px solid #d1d5db; border-radius:12px; background:white; cursor:pointer; display:flex; justify-content:space-between; align-items:center; font-size:14px;">
-                    <span id="sitemapBookSelectedText" style="color:#6b7280;">All Books</span>
-                    <i class="fas fa-chevron-down" style="color:#6b7280;"></i>
-                </div>
-                <div class="desktop-dropdown-content" id="sitemapBookDesktopDropdown" style="display:none; position:absolute; top:100%; left:0; right:0; background:white; border:1px solid #d1d5db; border-radius:12px; margin-top:5px; z-index:99999; max-height:280px; overflow-y:auto; box-shadow:0 10px 25px -5px rgba(0,0,0,0.2);">
-                    <div class="dropdown-search" style="padding:10px; border-bottom:1px solid #e5e7eb; position:sticky; top:0; background:white; z-index:10;">
-                        <input type="text" id="sitemapBookSearchInput" placeholder="Search books..." autocomplete="off" style="width:100%; padding:8px 12px; border:1px solid #e5e7eb; border-radius:8px; font-size:13px; outline:none;">
-                    </div>
-                    <div id="sitemapBookDropdownItems" class="dropdown-items" style="max-height:220px; overflow-y:auto;">
-                        <div class="dropdown-item" data-value="all" style="padding:10px 12px; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f3f4f6; transition:background 0.2s; background:#f5f3ff;">
-                            <label style="cursor:pointer; flex:1; color:#374151; font-size:14px; font-weight:500;">📚 All Books</label>
-                        </div>
-                        <div class="dropdown-item" style="padding:10px 12px; color:#6b7280; font-size:13px;">Loading books...</div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto text-left mb-6">
             <div class="bg-blue-50 p-4 rounded-lg">
@@ -1446,16 +1426,43 @@
                 </div>
             </div>
 
-            <div class="flex items-center gap-4 mb-4">
-                <button id="generateSitemapBtn" class="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-lg font-bold hover:opacity-90 transition flex items-center gap-2">
+            <!-- Buttons Row - View Book URLs added here -->
+            <div class="flex flex-wrap items-center gap-3 mb-4">
+                <button id="generateSitemapBtn" class="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 py-2 rounded-lg font-bold hover:opacity-90 transition flex items-center gap-2 text-sm">
                     <i class="fas fa-sitemap"></i> Generate Sitemap
                 </button>
-                <button id="downloadSitemapBtn" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition flex items-center gap-2 hidden">
+                <button id="downloadSitemapBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-700 transition flex items-center gap-2 text-sm hidden">
                     <i class="fas fa-download"></i> Download sitemap.xml
                 </button>
-                <button id="viewSitemapUrlsBtn" class="bg-purple-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-purple-700 transition flex items-center gap-2 hidden">
+                <button id="viewSitemapUrlsBtn" class="bg-purple-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-purple-700 transition flex items-center gap-2 text-sm hidden">
                     <i class="fas fa-list"></i> View URLs
                 </button>
+                <!-- NEW: View Book URLs Button -->
+                <button id="viewBookUrlsBtn" class="bg-amber-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-amber-700 transition flex items-center gap-2 text-sm hidden">
+                    <i class="fas fa-book"></i> View Book URLs
+                </button>
+            </div>
+
+            <!-- Book Dropdown - Hidden by default, shows when View Book URLs is clicked -->
+            <div id="sitemapBookFilterContainer" class="hidden max-w-sm mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">📚 Filter URLs by Book:</label>
+                <div class="single-select-wrapper" id="sitemapBookSelectWrapper" style="position:relative; z-index:100;">
+                    <div class="single-select-btn" data-dropdown="sitemapBook" style="width:100%; padding:12px; border:1px solid #d1d5db; border-radius:12px; background:white; cursor:pointer; display:flex; justify-content:space-between; align-items:center; font-size:14px;">
+                        <span id="sitemapBookSelectedText" style="color:#6b7280;">All Books</span>
+                        <i class="fas fa-chevron-down" style="color:#6b7280;"></i>
+                    </div>
+                    <div class="desktop-dropdown-content" id="sitemapBookDesktopDropdown" style="display:none; position:absolute; top:100%; left:0; right:0; background:white; border:1px solid #d1d5db; border-radius:12px; margin-top:5px; z-index:99999; max-height:280px; overflow-y:auto; box-shadow:0 10px 25px -5px rgba(0,0,0,0.2);">
+                        <div class="dropdown-search" style="padding:10px; border-bottom:1px solid #e5e7eb; position:sticky; top:0; background:white; z-index:10;">
+                            <input type="text" id="sitemapBookSearchInput" placeholder="Search books..." autocomplete="off" style="width:100%; padding:8px 12px; border:1px solid #e5e7eb; border-radius:8px; font-size:13px; outline:none;">
+                        </div>
+                        <div id="sitemapBookDropdownItems" class="dropdown-items" style="max-height:220px; overflow-y:auto;">
+                            <div class="dropdown-item" data-value="all" style="padding:10px 12px; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f3f4f6; transition:background 0.2s; background:#f5f3ff;">
+                                <label style="cursor:pointer; flex:1; color:#374151; font-size:14px; font-weight:500;">📚 All Books</label>
+                            </div>
+                            <div class="dropdown-item" style="padding:10px 12px; color:#6b7280; font-size:13px;">Loading books...</div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div id="sitemapProgress" class="mt-4">
@@ -4712,6 +4719,7 @@ function getGTMBodyCode() {
         const resultEl = document.getElementById('sitemapResult');
         const downloadBtn = document.getElementById('downloadSitemapBtn');
         const viewUrlsBtn = document.getElementById('viewSitemapUrlsBtn');
+        const viewBookUrlsBtn = document.getElementById('viewBookUrlsBtn');
         const urlPreviewEl = document.getElementById('sitemapUrlPreview');
         const urlListEl = document.getElementById('sitemapUrlList');
         
@@ -4720,6 +4728,7 @@ function getGTMBodyCode() {
         resultEl.classList.add('hidden');
         downloadBtn.classList.add('hidden');
         viewUrlsBtn.classList.add('hidden');
+        viewBookUrlsBtn.classList.add('hidden');
         urlPreviewEl.classList.add('hidden');
         
         statusEl.textContent = '📦 Fetching data...';
@@ -4984,6 +4993,7 @@ const staticPages = [
             resultEl.classList.remove('hidden');
             downloadBtn.classList.remove('hidden');
             viewUrlsBtn.classList.remove('hidden');
+            viewBookUrlsBtn.classList.remove('hidden');
             
             progressBar.style.width = '100%';
             
@@ -5135,13 +5145,17 @@ function showTab(tabName) {
         document.getElementById('sitemapBookCount').textContent = '0';
         document.getElementById('sitemapChapterCount').textContent = '0';
         document.getElementById('sitemapTotalCount').textContent = '0';
+        // Reset dropdown visibility
+        const filterContainer = document.getElementById('sitemapBookFilterContainer');
+        if (filterContainer) filterContainer.classList.add('hidden');
+        const viewBookBtn = document.getElementById('viewBookUrlsBtn');
+        if (viewBookBtn) viewBookBtn.textContent = '📚 View Book URLs';
+        sitemapBookDropdownInitialized = false;
         setTimeout(async () => {
             await generateSitemap();
             setTimeout(() => {
-                initSitemapBookDropdown();
-                if (window.sitemapUrls && window.sitemapUrls.length > 0) {
-                    filterSitemapUrls('all');
-                }
+                // Pre-load book data without showing dropdown
+                loadSitemapBooksData();
             }, 500);
         }, 500);
     }
@@ -6421,6 +6435,9 @@ function setupEventListeners() {
     document.getElementById('viewSitemapUrlsBtn').addEventListener('click', toggleSitemapUrlPreview);
     document.getElementById('closeUrlPreviewBtn').addEventListener('click', closeUrlPreview);
     
+    // ============ NEW: View Book URLs button ============
+    document.getElementById('viewBookUrlsBtn').addEventListener('click', showBookUrls);
+    
     document.getElementById('showAddBookBtn').addEventListener('click', () => {
         document.getElementById('addBookForm').classList.remove('hidden');
     });
@@ -6872,8 +6889,10 @@ if (topicToggle && topicMenu) {
         }
     }
 
+    // ============ SITEMAP BOOK DROPDOWN FUNCTIONS ============
     let sitemapBooksData = [];
     let sitemapSelectedBookSlug = 'all';
+    let sitemapBookDropdownInitialized = false;
 
     function initSitemapBookDropdown() {
         const wrapper = document.getElementById('sitemapBookSelectWrapper');
@@ -6958,7 +6977,94 @@ if (topicToggle && topicMenu) {
             });
         }
         
-        loadSitemapBooks();
+        // Only load books if not already loaded
+        if (!sitemapBookDropdownInitialized) {
+            sitemapBookDropdownInitialized = true;
+            loadSitemapBooks();
+        } else {
+            // If already loaded, just show the existing data
+            if (sitemapBooksData.length > 0) {
+                // Rebuild the dropdown with existing data
+                let html = '<div class="dropdown-item" data-value="all" data-slug="all" style="padding:10px 12px; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f3f4f6; transition:background 0.2s; background:#f5f3ff;">';
+                html += '<label style="cursor:pointer; flex:1; color:#374151; font-size:14px; font-weight:500;">📚 All Books</label></div>';
+                sitemapBooksData.forEach(book => {
+                    html += `<div class="dropdown-item" data-value="${escapeHtml(book.title)}" data-slug="${escapeHtml(book.slug)}" style="padding:10px 12px; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f3f4f6; transition:background 0.2s;">
+                        <label style="cursor:pointer; flex:1; color:#374151; font-size:14px;">📚 ${escapeHtml(book.title)}</label>
+                    </div>`;
+                });
+                itemsContainer.innerHTML = html;
+                
+                // Re-add click handlers
+                itemsContainer.querySelectorAll('.dropdown-item').forEach(item => {
+                    item.addEventListener('click', function(e) {
+                        const value = this.getAttribute('data-value');
+                        const slug = this.getAttribute('data-slug');
+                        if (value === 'all') {
+                            sitemapSelectedBookSlug = 'all';
+                            document.getElementById('sitemapBookSelectedText').textContent = 'All Books';
+                            document.getElementById('sitemapBookSelectedText').style.color = '#374151';
+                            wrapper.classList.remove('active');
+                            filterSitemapUrls('all');
+                            return;
+                        }
+                        sitemapSelectedBookSlug = slug;
+                        document.getElementById('sitemapBookSelectedText').textContent = value;
+                        document.getElementById('sitemapBookSelectedText').style.color = '#374151';
+                        wrapper.classList.remove('active');
+                        filterSitemapUrls(slug);
+                    });
+                });
+            }
+        }
+    }
+
+    // ============ SHOW BOOK URLs ============
+    function showBookUrls() {
+        const container = document.getElementById('sitemapBookFilterContainer');
+        const btn = document.getElementById('viewBookUrlsBtn');
+        if (!container || !btn) return;
+        
+        if (container.classList.contains('hidden')) {
+            container.classList.remove('hidden');
+            btn.textContent = '🔒 Hide Book URLs';
+            // Initialize dropdown if not already done
+            initSitemapBookDropdown();
+            // Filter with current selection
+            filterSitemapUrls(sitemapSelectedBookSlug);
+            // Also show the URL preview if hidden
+            const previewEl = document.getElementById('sitemapUrlPreview');
+            if (previewEl && previewEl.classList.contains('hidden')) {
+                previewEl.classList.remove('hidden');
+                document.getElementById('viewSitemapUrlsBtn').textContent = '🔒 Hide URLs';
+            }
+        } else {
+            container.classList.add('hidden');
+            btn.textContent = '📚 View Book URLs';
+        }
+    }
+
+    // ============ PRE-LOAD SITEMAP BOOKS DATA ============
+    async function loadSitemapBooksData() {
+        const itemsContainer = document.getElementById('sitemapBookDropdownItems');
+        if (!itemsContainer) return;
+        
+        // If already loaded, skip
+        if (sitemapBooksData.length > 0) {
+            sitemapBookDropdownInitialized = true;
+            return;
+        }
+        
+        const { data, error } = await _supabase
+            .from('books')
+            .select('id, title, slug')
+            .order('title');
+        
+        if (error || !data) {
+            return;
+        }
+        
+        sitemapBooksData = data;
+        sitemapBookDropdownInitialized = true;
     }
 
     function filterSitemapUrls(bookSlug) {
@@ -6966,6 +7072,9 @@ if (topicToggle && topicMenu) {
         const filterCountEl = document.getElementById('sitemapUrlFilterCount');
         
         if (!window.sitemapUrls || window.sitemapUrls.length === 0) {
+            if (urlListEl) {
+                urlListEl.innerHTML = '<div class="text-gray-500 text-sm">No URLs available. Generate sitemap first.</div>';
+            }
             return;
         }
         
@@ -6981,6 +7090,11 @@ if (topicToggle && topicMenu) {
         
         if (filterCountEl) {
             filterCountEl.textContent = filterText;
+        }
+        
+        if (filteredUrls.length === 0) {
+            urlListEl.innerHTML = '<div class="text-gray-500 text-sm">No URLs found for this book.</div>';
+            return;
         }
         
         urlListEl.innerHTML = filteredUrls.map(url => {
