@@ -640,41 +640,11 @@
                 <i class="fas fa-sign-out-alt mr-2"></i> Logout
             </button>
         </div>
-
-        <!-- FEATURE 1: Dashboard Stats -->
-        <div id="dashboardStats" class="hidden">
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <span class="stat-icon">📚</span>
-                    <div class="stat-number" id="statBooks">0</div>
-                    <div class="stat-label">Total Books</div>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-icon">📖</span>
-                    <div class="stat-number" id="statChapters">0</div>
-                    <div class="stat-label">Total Chapters</div>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-icon">📝</span>
-                    <div class="stat-number" id="statTopics">0</div>
-                    <div class="stat-label">Total Topics</div>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-icon">❓</span>
-                    <div class="stat-number" id="statQuestions">0</div>
-                    <div class="stat-label">Total Questions</div>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-icon">📬</span>
-                    <div class="stat-number" id="statMessages">0</div>
-                    <div class="stat-label">Unread Messages</div>
-                </div>
-            </div>
-        </div>
         
         <div id="adminFeatures" class="hidden">
             <div class="flex flex-wrap gap-2 mb-6">
-                <button id="tabBooksBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-purple-600 text-white">📚 Books</button>
+                <button id="tabDashboardBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-purple-600 text-white">📊 Dashboard</button>
+                <button id="tabBooksBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">📚 Books</button>
                 <button id="tabChaptersBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">📖 Chapters</button>
                 <button id="tabSubTopicsBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">📝 Topics</button>
                 <button id="tabQuestionsBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">❓ Questions</button>
@@ -686,8 +656,42 @@
                 <button id="tabSitemapBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">🗺️ Sitemap</button>
             </div>
 
+            <!-- Dashboard Tab -->
+            <div id="dashboardTab">
+                <h2 class="text-xl font-bold mb-4">📊 Dashboard</h2>
+                <div id="dashboardStats">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <span class="stat-icon">📚</span>
+                            <div class="stat-number" id="statBooks">0</div>
+                            <div class="stat-label">Total Books</div>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-icon">📖</span>
+                            <div class="stat-number" id="statChapters">0</div>
+                            <div class="stat-label">Total Chapters</div>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-icon">📝</span>
+                            <div class="stat-number" id="statTopics">0</div>
+                            <div class="stat-label">Total Topics</div>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-icon">❓</span>
+                            <div class="stat-number" id="statQuestions">0</div>
+                            <div class="stat-label">Total Questions</div>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-icon">📬</span>
+                            <div class="stat-number" id="statMessages">0</div>
+                            <div class="stat-label">Unread Messages</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Books Tab -->
-            <div id="booksTab">
+            <div id="booksTab" class="hidden">
                 <h2 class="text-xl font-bold mb-4">📚 Books</h2>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -1701,9 +1705,6 @@ let selectedTopicIds = [];  // <-- ADD THIS LINE
                 document.getElementById('adminFeatures').classList.remove('hidden');
                 document.getElementById('nonAdminView').classList.add('hidden');
                 
-                // Load dashboard stats
-                await loadDashboardStats();
-                
                 await Promise.all([
                     loadBooksCached(),
                     loadChaptersCached(),
@@ -1715,11 +1716,15 @@ let selectedTopicIds = [];  // <-- ADD THIS LINE
                     loadChapterFilterBooksCached(),
                     loadCategoriesCached(),
                     loadBulkDeleteBooks(),
-                    loadMessages()
+                    loadMessages(),
+                    loadDashboardStats()
                 ]);
                 setupBookFilters();
                 setupMathPreviews();
                 resetSessionTimer();
+                
+                // Show Dashboard tab by default
+                showTab('dashboard');
             } else {
                 document.getElementById('adminBadge').classList.add('hidden');
                 document.getElementById('adminFeatures').classList.add('hidden');
@@ -1731,10 +1736,6 @@ let selectedTopicIds = [];  // <-- ADD THIS LINE
     // ============ FEATURE 1: Dashboard Stats ============
     async function loadDashboardStats() {
         try {
-            const statsDiv = document.getElementById('dashboardStats');
-            statsDiv.classList.remove('hidden');
-            
-            // Get counts
             const [booksRes, chaptersRes, topicsRes, questionsRes, messagesRes] = await Promise.all([
                 _supabase.from('books').select('id', { count: 'exact', head: true }),
                 _supabase.from('chapters').select('id', { count: 'exact', head: true }),
@@ -4534,6 +4535,8 @@ function showTab(tabName) {
         return;
     }
     
+    // Hide all tabs
+    document.getElementById('dashboardTab').classList.add('hidden');
     document.getElementById('booksTab').classList.add('hidden');
     document.getElementById('chaptersTab').classList.add('hidden');
     document.getElementById('subtopicsTab').classList.add('hidden');
@@ -4546,7 +4549,8 @@ function showTab(tabName) {
     document.getElementById('sitemapTab').classList.add('hidden');
     document.getElementById(`${tabName}Tab`).classList.remove('hidden');
     
-    const buttons = ['Books', 'Chapters', 'SubTopics', 'Questions', 'Categories', 'BulkUpload', 'Admins', 'Messages', 'Seo', 'Sitemap'];
+    // Update button styles
+    const buttons = ['Dashboard', 'Books', 'Chapters', 'SubTopics', 'Questions', 'Categories', 'BulkUpload', 'Admins', 'Messages', 'Seo', 'Sitemap'];
     buttons.forEach(btn => {
         const btnElement = document.getElementById(`tab${btn}Btn`);
         if (btnElement) {
@@ -4560,6 +4564,9 @@ function showTab(tabName) {
         }
     });
     
+    if (tabName === 'dashboard') {
+        loadDashboardStats();
+    }
     if (tabName === 'questions') {
         // FIX: Load books and chapters when questions tab is opened
         loadFilterBooksCached();
@@ -4613,9 +4620,6 @@ function showTab(tabName) {
                 document.getElementById('adminFeatures').classList.remove('hidden');
                 document.getElementById('nonAdminView').classList.add('hidden');
                 
-                // Load dashboard stats
-                await loadDashboardStats();
-                
                 await Promise.all([
                     loadBooksCached(),
                     loadChaptersCached(),
@@ -4627,11 +4631,15 @@ function showTab(tabName) {
                     loadChapterFilterBooksCached(),
                     loadCategoriesCached(),
                     loadBulkDeleteBooks(),
-                    loadMessages()
+                    loadMessages(),
+                    loadDashboardStats()
                 ]);
                 setupBookFilters();
                 setupMathPreviews();
                 resetSessionTimer();
+                
+                // Show Dashboard tab by default
+                showTab('dashboard');
             } else {
                 document.getElementById('adminBadge').classList.add('hidden');
                 document.getElementById('adminFeatures').classList.add('hidden');
@@ -5842,6 +5850,7 @@ function setupEventListeners() {
     document.getElementById('showLoginBtn').addEventListener('click', showLoginForm);
     document.getElementById('logoutBtn').addEventListener('click', handleLogout);
     
+    document.getElementById('tabDashboardBtn').addEventListener('click', () => showTab('dashboard'));
     document.getElementById('tabBooksBtn').addEventListener('click', () => showTab('books'));
     document.getElementById('tabChaptersBtn').addEventListener('click', () => showTab('chapters'));
     document.getElementById('tabSubTopicsBtn').addEventListener('click', () => showTab('subtopics'));
