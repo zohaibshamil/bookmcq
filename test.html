@@ -1490,24 +1490,33 @@
     }
     
     // ============ FIX B: Load permissions ============
-    async function loadUserPermissions(userId) {
-        const { data, error } = await _supabase
-            .from('admin_permissions')
-            .select('permission_type, permission_value')
-            .eq('user_id', userId)
-            .or('expires_at.is.null,expires_at.gt.now()');
-        
-        if (error) {
-            console.error('Error loading permissions:', error);
-            return {};
-        }
-        
-        const perms = {};
+async function loadUserPermissions(userId) {
+    console.log('Loading permissions for user:', userId);
+    
+    const { data, error } = await _supabase
+        .from('admin_permissions')
+        .select('permission_type, permission_value')
+        .eq('user_id', userId);
+    
+    if (error) {
+        console.error('Error loading permissions:', error);
+        return {};
+    }
+    
+    console.log('Permissions data from DB:', data);
+    
+    const perms = {};
+    if (data && data.length > 0) {
         data.forEach(row => {
             perms[row.permission_type] = row.permission_value;
         });
-        return perms;
+    } else {
+        console.warn('No permissions found for user:', userId);
     }
+    
+    console.log('Parsed permissions:', perms);
+    return perms;
+}
     
     // ============ FIX B: Check permission ============
     function hasPermission(permissionType) {
