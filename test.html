@@ -5198,7 +5198,7 @@ function renderBookUrlsPanel(filterSlug) {
         });
     }
     
-    // Chapters - FIXED: Use chapterName from URL data
+    // Chapters
     if (chapterUrls.length > 0) {
         html += `<div style="padding:8px 14px; background:#f3f4f6; font-weight:600; font-size:13px; color:#4b5563; border-bottom:1px solid #e5e7eb; margin-top:4px;">📖 Chapters</div>`;
         chapterUrls.forEach(url => {
@@ -5206,7 +5206,7 @@ function renderBookUrlsPanel(filterSlug) {
         });
     }
     
-    // Topics - FIXED: Use topicName from URL data
+    // Topics
     if (topicUrls.length > 0) {
         html += `<div style="padding:8px 14px; background:#f3f4f6; font-weight:600; font-size:13px; color:#4b5563; border-bottom:1px solid #e5e7eb; margin-top:4px;">📝 Topics</div>`;
         topicUrls.forEach(url => {
@@ -5226,11 +5226,11 @@ function generateUrlItemHtml(url, type) {
     } else if (type === 'Book') {
         label = url.bookTitle || 'Book';
     } else if (type === 'Chapter') {
-        // FIX: Use the chapter name from the URL data
+        // Get chapter name from URL data or extract from URL
         if (url.chapterName && url.chapterName !== 'Chapter') {
             label = url.chapterName;
         } else {
-            // Try to extract from the URL
+            // Extract from URL: /books/calculus/limits-and-continuity-an-introduction.html
             const urlParts = displayUrl.split('/');
             const fileName = urlParts[urlParts.length - 1];
             const nameWithoutExt = fileName.replace('.html', '');
@@ -5239,31 +5239,28 @@ function generateUrlItemHtml(url, type) {
             // Capitalize first letter of each word
             label = label.replace(/\b\w/g, l => l.toUpperCase());
         }
-        // Add chapter number if available
         if (url.chapterNumber) {
-            label = `Ch ${url.chapterNumber}: ${label}`;
+            label = `📖 ${label}`;
         }
     } else if (type === 'Topic') {
-        // FIX: Use the topic name from the URL data
         if (url.topicName) {
             label = url.topicName;
         } else {
-            // Try to extract from the URL
+            // Extract from URL: /books/calculus/basics-before-calculus/topics/exponential-functions.html
             const urlParts = displayUrl.split('/');
             const fileName = urlParts[urlParts.length - 1];
             const nameWithoutExt = fileName.replace('.html', '');
-            // Convert slug to readable name
             label = nameWithoutExt.replace(/-/g, ' ');
-            // Capitalize first letter of each word
             label = label.replace(/\b\w/g, l => l.toUpperCase());
         }
+        label = `📝 ${label}`;
     }
     
+    // Return with the URL displayed like the "View URLs" button
     return `
-        <div class="url-item">
-            <span class="url-type">${type}</span>
-            <span class="url-link">${label}</span>
-            <span class="url-priority-badge">${url.priority || '0.7'}</span>
+        <div class="sitemap-url-item" style="display:flex; justify-content:space-between; padding:6px 12px; background:#f8fafc; border-radius:6px; font-size:12px; border-left:3px solid #22c55e; margin-bottom:4px;">
+            <span class="url-path" style="color:#1e293b; font-weight:500;">${label}</span>
+            <span class="url-priority" style="color:#64748b; font-size:11px;">${displayUrl} | Priority: ${url.priority || '0.7'}</span>
         </div>
     `;
 }
