@@ -6119,7 +6119,6 @@ function initSeoBookDropdown() {
     // Update the "Your Books" section with generated books
     const container = document.getElementById('seoBookList');
     if (container && uniqueBooks.length > 0) {
-        // Build the display for the "Your Books" section
         let html = '';
         uniqueBooks.forEach(book => {
             const files = seoGeneratedFiles.filter(f => f.bookSlug === book.slug);
@@ -6133,9 +6132,14 @@ function initSeoBookDropdown() {
                         ${totalTopics > 0 ? `<span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">${totalTopics} topics</span>` : ''}
                         <span class="text-xs text-gray-400">${files.length} files</span>
                     </div>
-                    <button onclick="showSeoBookFiles('${book.slug}', '${escapeHtml(book.title)}')" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-lg text-sm transition">
-                        <i class="fas fa-eye"></i> View
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button onclick="downloadSelectedSeoFilesForBook('${book.slug}')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-sm transition flex items-center gap-1">
+                            <i class="fas fa-download"></i> Download Selected
+                        </button>
+                        <button onclick="downloadSingleSEOPage('${book.slug}')" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-lg text-sm transition flex items-center gap-1">
+                            <i class="fas fa-folder-open"></i> All (${files.length})
+                        </button>
+                    </div>
                 </div>
             `;
         });
