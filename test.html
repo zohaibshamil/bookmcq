@@ -5593,100 +5593,118 @@ function generateUrlItemHtml(url, type, isIndented = false) {
     }
 
     // ============ Load books for SEO dropdown from database ============
-    async function loadBooksForSeoDropdown() {
-        const wrapper = document.getElementById('seoBookSelectWrapper');
-        if (!wrapper) return;
-        
-        const toggle = wrapper.querySelector('.single-select-btn');
-        const searchInput = document.getElementById('seoBookSearchInput');
-        const itemsContainer = document.getElementById('seoBookDropdownItems');
-        
-        // Show loading state
-        itemsContainer.innerHTML = '<div class="dropdown-item" style="padding:10px 12px; color:#6b7280; font-size:13px;">Loading books...</div>';
-        
-        // Load books from database
-        const { data, error } = await _supabase
-            .from('books')
-            .select('id, title, slug')
-            .order('title');
-        
-        if (error || !data || data.length === 0) {
-            itemsContainer.innerHTML = '<div class="dropdown-item" style="padding:10px 12px; color:#ef4444; font-size:13px;">No books found</div>';
-            return;
-        }
-        
-        seoBooksData = data;
-        
-        function buildDropdownItems() {
-            let html = '<div class="dropdown-item" data-value="" data-slug="" data-id="" style="padding:10px 12px; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f3f4f6; transition:background 0.2s; color:#6b7280; font-style:italic;">-- Select a book --</div>';
-            data.forEach(book => {
-                html += `<div class="dropdown-item" data-value="${escapeHtml(book.title)}" data-slug="${escapeHtml(book.slug)}" data-id="${book.id}" style="padding:10px 12px; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f3f4f6; transition:background 0.2s;">
-                    <label style="cursor:pointer; flex:1; color:#374151; font-size:14px;">📚 ${escapeHtml(book.title)}</label>
-                </div>`;
-            });
-            itemsContainer.innerHTML = html;
-            
-            // Add click handlers
-            itemsContainer.querySelectorAll('.dropdown-item').forEach(item => {
-                item.addEventListener('click', function(e) {
-                    const value = this.getAttribute('data-value');
-                    const slug = this.getAttribute('data-slug');
-                    const id = this.getAttribute('data-id');
-                    
-                    if (value === '' || !id) {
-                        seoSelectedBookSlug = '';
-                        seoSelectedBookTitle = '';
-                        document.getElementById('seoBookSelectedText').textContent = 'Select a book...';
-                        document.getElementById('seoBookSelectedText').style.color = '#6b7280';
-                        wrapper.classList.remove('active');
-                        document.getElementById('seoBookList').innerHTML = '<div class="text-gray-500 text-sm">Select a book above to view files</div>';
-                        document.getElementById('seoCount').textContent = '0 pages';
-                        document.getElementById('seoResult').classList.add('hidden');
-                        return;
-                    }
-                    
-                    seoSelectedBookSlug = slug;
-                    seoSelectedBookTitle = value;
-                    document.getElementById('seoBookSelectedText').textContent = value;
-                    document.getElementById('seoBookSelectedText').style.color = '#374151';
-                    wrapper.classList.remove('active');
-                    
-                    // Generate pages for this specific book
-                    generateSEOPagesForBook(id, slug, value);
-                });
-            });
-        }
-        
-        // Toggle click handler
-        toggle.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const isActive = wrapper.classList.contains('active');
-            document.querySelectorAll('.single-select-wrapper').forEach(w => w.classList.remove('active'));
-            if (!isActive) {
-                buildDropdownItems();
-                wrapper.classList.add('active');
-                setTimeout(() => {
-                    if (searchInput) searchInput.focus();
-                }, 100);
-            }
-        });
-        
-        if (searchInput) {
-            searchInput.addEventListener('click', function(e) {
-                e.stopPropagation();
-            });
-            searchInput.addEventListener('input', function() {
-                const term = this.value.toLowerCase();
-                itemsContainer.querySelectorAll('.dropdown-item').forEach(item => {
-                    const text = item.textContent.toLowerCase();
-                    item.style.display = text.includes(term) ? 'flex' : 'none';
-                });
-            });
-        }
-        
-        // Initial build
-        buildDropdownItems();
+// ============ Load books for SEO dropdown from database - FIXED ============
+async function loadBooksForSeoDropdown() {
+    const wrapper = document.getElementById('seoBookSelectWrapper');
+    if (!wrapper) return;
+    
+    const toggle = wrapper.querySelector('.single-select-btn');
+    const searchInput = document.getElementById('seoBookSearchInput');
+    const itemsContainer = document.getElementById('seoBookDropdownItems');
+    
+    // Show loading state
+    itemsContainer.innerHTML = '<div class="dropdown-item" style="padding:10px 12px; color:#6b7280; font-size:13px;">Loading books...</div>';
+    
+    // Load books from database
+    const { data, error } = await _supabase
+        .from('books')
+        .select('id, title, slug')
+        .order('title');
+    
+    if (error || !data || data.length === 0) {
+        itemsContainer.innerHTML = '<div class="dropdown-item" style="padding:10px 12px; color:#ef4444; font-size:13px;">No books found</div>';
+        return;
     }
+    
+    seoBooksData = data;
+    
+    function buildDropdownItems() {
+        let html = '<div class="dropdown-item" data-value="" data-slug="" data-id="" style="padding:10px 12px; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f3f4f6; transition:background 0.2s; color:#6b7280; font-style:italic;">-- Select a book --</div>';
+        data.forEach(book => {
+            html += `<div class="dropdown-item" data-value="${escapeHtml(book.title)}" data-slug="${escapeHtml(book.slug)}" data-id="${book.id}" style="padding:10px 12px; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f3f4f6; transition:background 0.2s;">
+                <label style="cursor:pointer; flex:1; color:#374151; font-size:14px;">📚 ${escapeHtml(book.title)}</label>
+            </div>`;
+        });
+        itemsContainer.innerHTML = html;
+        
+        // Add click handlers
+        itemsContainer.querySelectorAll('.dropdown-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                const value = this.getAttribute('data-value');
+                const slug = this.getAttribute('data-slug');
+                const id = this.getAttribute('data-id');
+                
+                if (value === '' || !id) {
+                    seoSelectedBookSlug = '';
+                    seoSelectedBookTitle = '';
+                    document.getElementById('seoBookSelectedText').textContent = 'Select a book...';
+                    document.getElementById('seoBookSelectedText').style.color = '#6b7280';
+                    wrapper.classList.remove('active');
+                    document.getElementById('seoBookList').innerHTML = '<div class="text-gray-500 text-sm">Select a book above to view files</div>';
+                    document.getElementById('seoCount').textContent = '0 pages';
+                    document.getElementById('seoResult').classList.add('hidden');
+                    return;
+                }
+                
+                seoSelectedBookSlug = slug;
+                seoSelectedBookTitle = value;
+                document.getElementById('seoBookSelectedText').textContent = value;
+                document.getElementById('seoBookSelectedText').style.color = '#374151';
+                wrapper.classList.remove('active');
+                
+                // Generate pages for this specific book
+                generateSEOPagesForBook(id, slug, value);
+            });
+        });
+    }
+    
+    // REMOVE OLD EVENT LISTENERS by cloning and replacing
+    const newToggle = toggle.cloneNode(true);
+    toggle.parentNode.replaceChild(newToggle, toggle);
+    
+    // Get fresh reference
+    const freshToggle = document.getElementById('seoBookSelectWrapper').querySelector('.single-select-btn');
+    
+    // Toggle click handler - FIXED
+    freshToggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Build dropdown items first
+        buildDropdownItems();
+        
+        // Toggle active class
+        const wrapperEl = document.getElementById('seoBookSelectWrapper');
+        const isActive = wrapperEl.classList.contains('active');
+        
+        // Close all other dropdowns
+        document.querySelectorAll('.single-select-wrapper').forEach(w => w.classList.remove('active'));
+        
+        if (!isActive) {
+            wrapperEl.classList.add('active');
+            setTimeout(() => {
+                const input = document.getElementById('seoBookSearchInput');
+                if (input) input.focus();
+            }, 100);
+        }
+    });
+    
+    if (searchInput) {
+        searchInput.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+        searchInput.addEventListener('input', function() {
+            const term = this.value.toLowerCase();
+            itemsContainer.querySelectorAll('.dropdown-item').forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(term) ? 'flex' : 'none';
+            });
+        });
+    }
+    
+    // Initial build
+    buildDropdownItems();
+}
 
     // ============ Generate SEO pages for a specific book ============
     async function generateSEOPagesForBook(bookId, bookSlug, bookTitle) {
