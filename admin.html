@@ -506,6 +506,83 @@
             margin-top: 4px;
             flex-wrap: wrap;
         }
+
+        /* Dashboard Stats Styles */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin: 16px 0 24px 0;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+            transition: transform 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .stat-number {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 2px;
+        }
+        .stat-icon {
+            font-size: 20px;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        /* Admin Permissions Form Styles */
+        .permissions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 6px;
+            margin: 8px 0;
+        }
+        .permission-group {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 10px 14px;
+            border: 1px solid #e2e8f0;
+        }
+        .permission-group-title {
+            font-weight: 600;
+            font-size: 13px;
+            color: #1e293b;
+            margin-bottom: 4px;
+            display: block;
+        }
+        .permission-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #475569;
+            padding: 2px 0;
+        }
+        .permission-checkbox input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            cursor: pointer;
+            accent-color: #8b5cf6;
+        }
+        .permission-checkbox label {
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .permission-checkbox label:hover {
+            color: #1e293b;
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -566,7 +643,8 @@
         
         <div id="adminFeatures" class="hidden">
             <div class="flex flex-wrap gap-2 mb-6">
-                <button id="tabBooksBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-purple-600 text-white">📚 Books</button>
+                <button id="tabDashboardBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-purple-600 text-white">📊 Dashboard</button>
+                <button id="tabBooksBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">📚 Books</button>
                 <button id="tabChaptersBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">📖 Chapters</button>
                 <button id="tabSubTopicsBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">📝 Topics</button>
                 <button id="tabQuestionsBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">❓ Questions</button>
@@ -578,8 +656,42 @@
                 <button id="tabSitemapBtn" class="tab-btn px-4 py-2 rounded-lg font-semibold bg-gray-200">🗺️ Sitemap</button>
             </div>
 
+            <!-- Dashboard Tab -->
+            <div id="dashboardTab">
+                <h2 class="text-xl font-bold mb-4">📊 Dashboard</h2>
+                <div id="dashboardStats">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <span class="stat-icon">📚</span>
+                            <div class="stat-number" id="statBooks">0</div>
+                            <div class="stat-label">Total Books</div>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-icon">📖</span>
+                            <div class="stat-number" id="statChapters">0</div>
+                            <div class="stat-label">Total Chapters</div>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-icon">📝</span>
+                            <div class="stat-number" id="statTopics">0</div>
+                            <div class="stat-label">Total Topics</div>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-icon">❓</span>
+                            <div class="stat-number" id="statQuestions">0</div>
+                            <div class="stat-label">Total Questions</div>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-icon">📬</span>
+                            <div class="stat-number" id="statMessages">0</div>
+                            <div class="stat-label">Unread Messages</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Books Tab -->
-            <div id="booksTab">
+            <div id="booksTab" class="hidden">
                 <h2 class="text-xl font-bold mb-4">📚 Books</h2>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -929,6 +1041,112 @@
             <!-- Admins Tab -->
             <div id="adminsTab" class="hidden">
                 <h2 class="text-xl font-bold mb-4">👑 Admin Users</h2>
+                
+                <!-- FEATURE 2: Add New Admin Form with Permissions -->
+                <div class="bg-purple-50 p-4 rounded-lg mb-4">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-bold text-purple-800">➕ Add New Admin</h3>
+                        <button id="toggleAdminFormBtn" class="bg-purple-600 text-white px-4 py-1 rounded-lg text-sm hover:bg-purple-700 transition">
+                            <i class="fas fa-plus"></i> Show Form
+                        </button>
+                    </div>
+                    
+                    <div id="addAdminForm" class="hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Admin Email <span class="text-red-500">*</span></label>
+                                <input type="email" id="newAdminEmail" placeholder="admin@example.com" class="w-full p-2 border rounded-lg bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Role Template (Optional)</label>
+                                <select id="newAdminRoleTemplate" class="w-full p-2 border rounded-lg bg-white">
+                                    <option value="">-- Custom Permissions --</option>
+                                    <option value="super_admin">Super Admin (All Permissions)</option>
+                                    <option value="content_manager">Content Manager</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">🔑 Permissions:</label>
+                            <div class="permissions-grid">
+                                <!-- Books -->
+                                <div class="permission-group">
+                                    <span class="permission-group-title">📚 Books</span>
+                                    <div class="permission-checkbox"><input type="checkbox" id="perm_add_books" value="add_books"> <label for="perm_add_books">Add</label></div>
+                                    <div class="permission-checkbox"><input type="checkbox" id="perm_edit_books" value="edit_books"> <label for="perm_edit_books">Edit</label></div>
+                                    <div class="permission-checkbox"><input type="checkbox" id="perm_delete_books" value="delete_books"> <label for="perm_delete_books">Delete</label></div>
+                                </div>
+                                <!-- Chapters -->
+                                <div class="permission-group">
+                                    <span class="permission-group-title">📖 Chapters</span>
+                                    <div class="permission-checkbox"><input type="checkbox" id="perm_add_chapters" value="add_chapters"> <label for="perm_add_chapters">Add</label></div>
+                                    <div class="permission-checkbox"><input type="checkbox" id="perm_edit_chapters" value="edit_chapters"> <label for="perm_edit_chapters">Edit</label></div>
+                                    <div class="permission-checkbox"><input type="checkbox" id="perm_delete_chapters" value="delete_chapters"> <label for="perm_delete_chapters">Delete</label></div>
+                                </div>
+                                <!-- Topics -->
+                                <div class="permission-group">
+                                    <span class="permission-group-title">📝 Topics</span>
+                                    <div class="permission-checkbox"><input type="checkbox" id="perm_add_topics" value="add_topics"> <label for="perm_add_topics">Add</label></div>
+                                    <div class="permission-checkbox"><input type="checkbox" id="perm_edit_topics" value="edit_topics"> <label for="perm_edit_topics">Edit</label></div>
+                                    <div class="permission-checkbox"><input type="checkbox" id="perm_delete_topics" value="delete_topics"> <label for="perm_delete_topics">Delete</label></div>
+                                </div>
+                                <!-- Questions -->
+                                <div class="permission-group">
+                                    <span class="permission-group-title">❓ Questions</span>
+                                    <div class="permission-checkbox"><input type="checkbox" id="perm_add_questions" value="add_questions"> <label for="perm_add_questions">Add</label></div>
+                                    <div class="permission-checkbox"><input type="checkbox" id="perm_edit_questions" value="edit_questions"> <label for="perm_edit_questions">Edit</label></div>
+                                    <div class="permission-checkbox"><input type="checkbox" id="perm_delete_questions" value="delete_questions"> <label for="perm_delete_questions">Delete</label></div>
+                                </div>
+                                <!-- Categories -->
+                                <div class="permission-group">
+                                    <span class="permission-group-title">🏷️ Categories</span>
+                                    <div class="permission-checkbox"><input type="checkbox" id="perm_add_categories" value="add_categories"> <label for="perm_add_categories">Add</label></div>
+                                    <div class="permission-checkbox"><input type="checkbox" id="perm_edit_categories" value="edit_categories"> <label for="perm_edit_categories">Edit</label></div>
+                                    <div class="permission-checkbox"><input type="checkbox" id="perm_delete_categories" value="delete_categories"> <label for="perm_delete_categories">Delete</label></div>
+                                </div>
+                                <!-- Bulk Upload -->
+                                <div class="permission-group">
+                                    <span class="permission-group-title">📤 Bulk Upload</span>
+                                    <div class="permission-checkbox"><input type="checkbox" id="perm_bulk_upload" value="bulk_upload"> <label for="perm_bulk_upload">Access</label></div>
+                                </div>
+                                <!-- Admins -->
+                                <div class="permission-group">
+                                    <span class="permission-group-title">👑 Admins</span>
+                                    <div class="permission-checkbox"><input type="checkbox" id="perm_add_admins" value="add_admins"> <label for="perm_add_admins">Add</label></div>
+                                    <div class="permission-checkbox"><input type="checkbox" id="perm_edit_admins" value="edit_admins"> <label for="perm_edit_admins">Edit</label></div>
+                                    <div class="permission-checkbox"><input type="checkbox" id="perm_delete_admins" value="delete_admins"> <label for="perm_delete_admins">Delete</label></div>
+                                </div>
+                                <!-- Messages -->
+                                <div class="permission-group">
+                                    <span class="permission-group-title">📬 Messages</span>
+                                    <div class="permission-checkbox"><input type="checkbox" id="perm_view_messages" value="view_messages"> <label for="perm_view_messages">View</label></div>
+                                    <div class="permission-checkbox"><input type="checkbox" id="perm_delete_messages" value="delete_messages"> <label for="perm_delete_messages">Delete</label></div>
+                                </div>
+                                <!-- SEO -->
+                                <div class="permission-group">
+                                    <span class="permission-group-title">🤖 SEO Pages</span>
+                                    <div class="permission-checkbox"><input type="checkbox" id="perm_manage_seo" value="manage_seo"> <label for="perm_manage_seo">Manage</label></div>
+                                </div>
+                                <!-- Sitemap -->
+                                <div class="permission-group">
+                                    <span class="permission-group-title">🗺️ Sitemap</span>
+                                    <div class="permission-checkbox"><input type="checkbox" id="perm_manage_sitemap" value="manage_sitemap"> <label for="perm_manage_sitemap">Manage</label></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex gap-2">
+                            <button id="saveNewAdminBtn" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition">
+                                <i class="fas fa-save"></i> Add Admin
+                            </button>
+                            <button id="cancelNewAdminBtn" class="bg-gray-400 text-white px-6 py-2 rounded-lg hover:bg-gray-500 transition">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
                 <div id="adminsList">Loading...</div>
             </div>
             
@@ -1498,11 +1716,15 @@ let selectedTopicIds = [];  // <-- ADD THIS LINE
                     loadChapterFilterBooksCached(),
                     loadCategoriesCached(),
                     loadBulkDeleteBooks(),
-                    loadMessages()
+                    loadMessages(),
+                    loadDashboardStats()
                 ]);
                 setupBookFilters();
                 setupMathPreviews();
                 resetSessionTimer();
+                
+                // Show Dashboard tab by default
+                showTab('dashboard');
             } else {
                 document.getElementById('adminBadge').classList.add('hidden');
                 document.getElementById('adminFeatures').classList.add('hidden');
@@ -1510,6 +1732,149 @@ let selectedTopicIds = [];  // <-- ADD THIS LINE
             }
         }
     }
+
+    // ============ FEATURE 1: Dashboard Stats ============
+    async function loadDashboardStats() {
+        try {
+            const [booksRes, chaptersRes, topicsRes, questionsRes, messagesRes] = await Promise.all([
+                _supabase.from('books').select('id', { count: 'exact', head: true }),
+                _supabase.from('chapters').select('id', { count: 'exact', head: true }),
+                _supabase.from('subtopics').select('id', { count: 'exact', head: true }),
+                _supabase.from('questions').select('id', { count: 'exact', head: true }),
+                _supabase.from('contact_messages').select('id', { count: 'exact', head: true }).eq('status', 'unread')
+            ]);
+            
+            document.getElementById('statBooks').textContent = booksRes.count || 0;
+            document.getElementById('statChapters').textContent = chaptersRes.count || 0;
+            document.getElementById('statTopics').textContent = topicsRes.count || 0;
+            document.getElementById('statQuestions').textContent = questionsRes.count || 0;
+            document.getElementById('statMessages').textContent = messagesRes.count || 0;
+        } catch (e) {
+            console.error('Error loading stats:', e);
+        }
+    }
+
+    // ============ FEATURE 2: Admin Management with Permissions ============
+    let adminFormVisible = false;
+    
+    // Toggle form visibility
+    document.getElementById('toggleAdminFormBtn').addEventListener('click', function() {
+        adminFormVisible = !adminFormVisible;
+        document.getElementById('addAdminForm').classList.toggle('hidden');
+        this.innerHTML = adminFormVisible ? '<i class="fas fa-minus"></i> Hide Form' : '<i class="fas fa-plus"></i> Show Form';
+    });
+    
+    // Cancel new admin
+    document.getElementById('cancelNewAdminBtn').addEventListener('click', function() {
+        adminFormVisible = false;
+        document.getElementById('addAdminForm').classList.add('hidden');
+        document.getElementById('toggleAdminFormBtn').innerHTML = '<i class="fas fa-plus"></i> Show Form';
+        document.getElementById('newAdminEmail').value = '';
+        document.getElementById('newAdminRoleTemplate').value = '';
+        // Uncheck all permissions
+        document.querySelectorAll('#addAdminForm input[type="checkbox"]').forEach(cb => cb.checked = false);
+    });
+    
+    // Apply role template
+    document.getElementById('newAdminRoleTemplate').addEventListener('change', function() {
+        const template = this.value;
+        // Uncheck all first
+        document.querySelectorAll('#addAdminForm input[type="checkbox"]').forEach(cb => cb.checked = false);
+        
+        if (template === 'super_admin') {
+            document.querySelectorAll('#addAdminForm input[type="checkbox"]').forEach(cb => cb.checked = true);
+        } else if (template === 'content_manager') {
+            const contentPerms = ['add_books', 'edit_books', 'delete_books', 'add_chapters', 'edit_chapters', 
+                                 'delete_chapters', 'add_topics', 'edit_topics', 'delete_topics', 
+                                 'add_questions', 'edit_questions', 'delete_questions', 
+                                 'add_categories', 'edit_categories', 'delete_categories', 'bulk_upload'];
+            document.querySelectorAll('#addAdminForm input[type="checkbox"]').forEach(cb => {
+                if (contentPerms.includes(cb.value)) cb.checked = true;
+            });
+        }
+    });
+    
+    // Save new admin
+    document.getElementById('saveNewAdminBtn').addEventListener('click', async function() {
+        const email = document.getElementById('newAdminEmail').value.trim();
+        if (!email) {
+            showToast('Please enter an admin email', true);
+            return;
+        }
+        
+        // Check if already admin
+        const { data: existing } = await _supabase.from('admin_roles').select('user_id').eq('user_id', email);
+        if (existing && existing.length > 0) {
+            showToast('This user is already an admin', true);
+            return;
+        }
+        
+        // Get selected permissions
+        const permissions = {};
+        document.querySelectorAll('#addAdminForm input[type="checkbox"]:checked').forEach(cb => {
+            permissions[cb.value] = true;
+        });
+        
+        // Add all permissions (set unchecked to false)
+        const allPerms = ['add_books', 'edit_books', 'delete_books', 'add_chapters', 'edit_chapters', 
+                         'delete_chapters', 'add_topics', 'edit_topics', 'delete_topics', 
+                         'add_questions', 'edit_questions', 'delete_questions', 
+                         'add_categories', 'edit_categories', 'delete_categories', 
+                         'bulk_upload', 'add_admins', 'edit_admins', 'delete_admins', 
+                         'view_messages', 'delete_messages', 'manage_seo', 'manage_sitemap'];
+        allPerms.forEach(p => {
+            if (!permissions[p]) permissions[p] = false;
+        });
+        
+        // Check if user has add_admins permission
+        if (!permissions.add_admins) {
+            showToast('You must grant "Add Admins" permission to this admin', true);
+            return;
+        }
+        
+        try {
+            // Add to admin_roles
+            const { error: roleError } = await _supabase
+                .from('admin_roles')
+                .insert([{ user_id: email, user_email: email, role_name: 'custom' }]);
+            
+            if (roleError) {
+                showToast('Error adding admin: ' + roleError.message, true);
+                return;
+            }
+            
+            // Add permissions
+            const permInserts = allPerms.map(p => ({
+                user_id: email,
+                permission_type: p,
+                permission_value: permissions[p] || false,
+                granted_by: _currentUser?.id || null
+            }));
+            
+            const { error: permError } = await _supabase
+                .from('admin_permissions')
+                .insert(permInserts);
+            
+            if (permError) {
+                showToast('Error adding permissions: ' + permError.message, true);
+                return;
+            }
+            
+            showToast('✅ Admin added successfully with permissions!');
+            document.getElementById('newAdminEmail').value = '';
+            document.querySelectorAll('#addAdminForm input[type="checkbox"]').forEach(cb => cb.checked = false);
+            document.getElementById('newAdminRoleTemplate').value = '';
+            document.getElementById('addAdminForm').classList.add('hidden');
+            document.getElementById('toggleAdminFormBtn').innerHTML = '<i class="fas fa-plus"></i> Show Form';
+            adminFormVisible = false;
+            
+            // Reload admin list
+            await loadAdmins();
+            
+        } catch (e) {
+            showToast('Error: ' + e.message, true);
+        }
+    });
 
     async function handleSignup() {
         const email = document.getElementById('signupEmail').value;
@@ -2000,7 +2365,7 @@ let selectedTopicIds = [];  // <-- ADD THIS LINE
             booksCache = null;
             chaptersCache = {};
             subTopicsCache = {};
-            await Promise.all([loadBooksCached(), loadChaptersCached(), loadSubTopicsCached(), loadFilterBooksCached(), loadBookSelectsCached(), loadChapterFilterBooksCached(), loadBulkDeleteBooks()]);
+            await Promise.all([loadBooksCached(), loadChaptersCached(), loadSubTopicsCached(), loadFilterBooksCached(), loadBookSelectsCached(), loadChapterFilterBooksCached(), loadBulkDeleteBooks(), loadDashboardStats()]);
             showToast('Book deleted');
         }
     };
@@ -2039,7 +2404,7 @@ let selectedTopicIds = [];  // <-- ADD THIS LINE
             document.getElementById('bookTitle').value = '';
             document.getElementById('bookAuthor').value = '';
             booksCache = null;
-            await Promise.all([loadBooksCached(), loadFilterBooksCached(), loadBookSelectsCached(), loadChapterFilterBooksCached(), loadBulkDeleteBooks()]);
+            await Promise.all([loadBooksCached(), loadFilterBooksCached(), loadBookSelectsCached(), loadChapterFilterBooksCached(), loadBulkDeleteBooks(), loadDashboardStats()]);
         }
     }
 
@@ -2084,7 +2449,7 @@ let selectedTopicIds = [];  // <-- ADD THIS LINE
             showToast('Book updated!');
             document.getElementById('editBookModal').classList.add('hidden');
             booksCache = null;
-            await Promise.all([loadBooksCached(), loadFilterBooksCached(), loadBookSelectsCached(), loadChapterFilterBooksCached(), loadBulkDeleteBooks()]);
+            await Promise.all([loadBooksCached(), loadFilterBooksCached(), loadBookSelectsCached(), loadChapterFilterBooksCached(), loadBulkDeleteBooks(), loadDashboardStats()]);
         }
     }
 
@@ -2170,7 +2535,7 @@ let selectedTopicIds = [];  // <-- ADD THIS LINE
             await _supabase.from('chapters').delete().eq('id', id);
             chaptersCache = {};
             subTopicsCache = {};
-            await Promise.all([loadChaptersCached(), loadSubTopicsCached(), loadQuestions()]);
+            await Promise.all([loadChaptersCached(), loadSubTopicsCached(), loadQuestions(), loadDashboardStats()]);
             showToast('Chapter deleted');
         }
     };
@@ -2207,7 +2572,7 @@ let selectedTopicIds = [];  // <-- ADD THIS LINE
             document.getElementById('chapterName').value = '';
             document.getElementById('chapterNumber').value = '';
             chaptersCache = {};
-            await Promise.all([loadChaptersCached(), loadFilterBooksCached(), loadChapterFilterBooksCached(), loadSubTopicChapterFilters()]);
+            await Promise.all([loadChaptersCached(), loadFilterBooksCached(), loadChapterFilterBooksCached(), loadSubTopicChapterFilters(), loadDashboardStats()]);
         }
     }
 
@@ -2255,7 +2620,7 @@ let selectedTopicIds = [];  // <-- ADD THIS LINE
             showToast('Chapter updated!');
             document.getElementById('editChapterModal').classList.add('hidden');
             chaptersCache = {};
-            await Promise.all([loadChaptersCached(), loadFilterBooksCached(), loadSubTopicChapterFilters()]);
+            await Promise.all([loadChaptersCached(), loadFilterBooksCached(), loadSubTopicChapterFilters(), loadDashboardStats()]);
         }
     }
     
@@ -2419,7 +2784,7 @@ let selectedTopicIds = [];  // <-- ADD THIS LINE
         if (confirm('Delete this topic? This will also delete all questions in this topic.')) {
             await _supabase.from('subtopics').delete().eq('id', id);
             subTopicsCache = {};
-            await Promise.all([loadSubTopicsCached(), loadQuestions()]);
+            await Promise.all([loadSubTopicsCached(), loadQuestions(), loadDashboardStats()]);
             showToast('Topic deleted');
         }
     };
@@ -2513,6 +2878,7 @@ let selectedTopicIds = [];  // <-- ADD THIS LINE
             document.getElementById('subTopicChapterId').innerHTML = '<option value="">Select Chapter</option>';
             subTopicsCache = {};
             await loadSubTopicsCached();
+            await loadDashboardStats();
         }
     }
 
@@ -3172,6 +3538,7 @@ async function loadQuestions() {
             await _supabase.from('options').delete().eq('question_id', id);
             await _supabase.from('questions').delete().eq('id', id);
             await loadQuestions();
+            await loadDashboardStats();
             showToast('Question deleted');
         }
     };
@@ -3403,6 +3770,7 @@ async function loadQuestions() {
         document.getElementById('option3').value = '';
         document.getElementById('explanation').value = '';
         await loadQuestions();
+        await loadDashboardStats();
     }
     
     window.openEditQuestionModal = async function(id) {
@@ -3711,7 +4079,8 @@ async function loadQuestions() {
             loadQuestions(),
             refreshBulkDeletePreview(),
             loadChaptersCached(),
-            loadSubTopicsCached()
+            loadSubTopicsCached(),
+            loadDashboardStats()
         ]);
         
         document.getElementById('bulkDeleteBookId').value = '';
@@ -3726,7 +4095,7 @@ async function loadQuestions() {
 
     // ============ ADMINS ============
     async function loadAdmins() {
-        const { data, error } = await _supabase.from('admin_roles').select('user_email');
+        const { data, error } = await _supabase.from('admin_roles').select('user_email, user_id, role_name');
         const container = document.getElementById('adminsList');
         
         if (error || !data || data.length === 0) {
@@ -3734,14 +4103,35 @@ async function loadQuestions() {
             return;
         }
         
-        container.innerHTML = data.map(admin => `
-            <div class="bg-gray-50 p-3 rounded-lg mb-2">
-                <i class="fas fa-user-shield text-purple-600 mr-2"></i>
-                Administrator
-                ${admin.user_email === _currentUser?.email ? ' <span class="text-green-600 text-sm">(You)</span>' : ''}
+        container.innerHTML = data.map(admin => {
+            const isYou = admin.user_email === _currentUser?.email;
+            const roleDisplay = admin.role_name || 'custom';
+            return `
+            <div class="bg-gray-50 p-3 rounded-lg mb-2 flex justify-between items-center">
+                <div>
+                    <i class="fas fa-user-shield text-purple-600 mr-2"></i>
+                    ${escapeHtml(admin.user_email)}
+                    ${isYou ? ' <span class="text-green-600 text-sm font-semibold">(You)</span>' : ''}
+                    <span class="text-xs text-gray-400 ml-2">Role: ${roleDisplay}</span>
+                </div>
+                ${!isYou ? `<button onclick="removeAdmin('${admin.user_id}')" class="text-red-600 hover:text-red-800 text-sm">
+                    <i class="fas fa-trash"></i> Remove
+                </button>` : ''}
             </div>
-        `).join('');
+        `}).join('');
     }
+    
+    window.removeAdmin = async function(userId) {
+        if (!confirm('Remove this admin? This will delete all their permissions.')) return;
+        
+        const { error } = await _supabase.from('admin_roles').delete().eq('user_id', userId);
+        if (error) {
+            showToast('Error removing admin: ' + error.message, true);
+        } else {
+            showToast('Admin removed successfully');
+            await loadAdmins();
+        }
+    };
 
     // ============ SUB-TOPIC CHAPTER FILTERS ============
     async function loadSubTopicChapterFilters(selectedChapterId = null) {
@@ -4145,6 +4535,8 @@ function showTab(tabName) {
         return;
     }
     
+    // Hide all tabs
+    document.getElementById('dashboardTab').classList.add('hidden');
     document.getElementById('booksTab').classList.add('hidden');
     document.getElementById('chaptersTab').classList.add('hidden');
     document.getElementById('subtopicsTab').classList.add('hidden');
@@ -4157,7 +4549,8 @@ function showTab(tabName) {
     document.getElementById('sitemapTab').classList.add('hidden');
     document.getElementById(`${tabName}Tab`).classList.remove('hidden');
     
-    const buttons = ['Books', 'Chapters', 'SubTopics', 'Questions', 'Categories', 'BulkUpload', 'Admins', 'Messages', 'Seo', 'Sitemap'];
+    // Update button styles
+    const buttons = ['Dashboard', 'Books', 'Chapters', 'SubTopics', 'Questions', 'Categories', 'BulkUpload', 'Admins', 'Messages', 'Seo', 'Sitemap'];
     buttons.forEach(btn => {
         const btnElement = document.getElementById(`tab${btn}Btn`);
         if (btnElement) {
@@ -4171,6 +4564,9 @@ function showTab(tabName) {
         }
     });
     
+    if (tabName === 'dashboard') {
+        loadDashboardStats();
+    }
     if (tabName === 'questions') {
         // FIX: Load books and chapters when questions tab is opened
         loadFilterBooksCached();
@@ -4223,6 +4619,7 @@ function showTab(tabName) {
                 document.getElementById('adminBadge').classList.remove('hidden');
                 document.getElementById('adminFeatures').classList.remove('hidden');
                 document.getElementById('nonAdminView').classList.add('hidden');
+                
                 await Promise.all([
                     loadBooksCached(),
                     loadChaptersCached(),
@@ -4234,11 +4631,15 @@ function showTab(tabName) {
                     loadChapterFilterBooksCached(),
                     loadCategoriesCached(),
                     loadBulkDeleteBooks(),
-                    loadMessages()
+                    loadMessages(),
+                    loadDashboardStats()
                 ]);
                 setupBookFilters();
                 setupMathPreviews();
                 resetSessionTimer();
+                
+                // Show Dashboard tab by default
+                showTab('dashboard');
             } else {
                 document.getElementById('adminBadge').classList.add('hidden');
                 document.getElementById('adminFeatures').classList.add('hidden');
@@ -5449,6 +5850,7 @@ function setupEventListeners() {
     document.getElementById('showLoginBtn').addEventListener('click', showLoginForm);
     document.getElementById('logoutBtn').addEventListener('click', handleLogout);
     
+    document.getElementById('tabDashboardBtn').addEventListener('click', () => showTab('dashboard'));
     document.getElementById('tabBooksBtn').addEventListener('click', () => showTab('books'));
     document.getElementById('tabChaptersBtn').addEventListener('click', () => showTab('chapters'));
     document.getElementById('tabSubTopicsBtn').addEventListener('click', () => showTab('subtopics'));
