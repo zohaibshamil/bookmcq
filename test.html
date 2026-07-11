@@ -6116,108 +6116,33 @@ function initSeoBookDropdown() {
         }
     });
     
-    // Update the "Your Books" section with generated books and their files
+    // Update the "Your Books" section with generated books
     const container = document.getElementById('seoBookList');
     if (container && uniqueBooks.length > 0) {
+        // Build the display for the "Your Books" section
         let html = '';
         uniqueBooks.forEach(book => {
             const files = seoGeneratedFiles.filter(f => f.bookSlug === book.slug);
             const totalChapters = files.filter(f => f.isBook === false && f.isTopic === false).length;
             const totalTopics = files.filter(f => f.isTopic === true).length;
-            
-            // Build file list with checkboxes for this book
-            let fileItems = '';
-            
-            // Index file
-            const indexFile = files.find(f => f.isBook);
-            if (indexFile) {
-                fileItems += `
-                    <div class="seo-dropdown-item" style="display:flex; align-items:center; gap:10px; padding:6px 12px; cursor:pointer; transition:background 0.2s; text-align:left; border-bottom:1px solid #f3f4f6;">
-                        <input type="checkbox" 
-                               data-name="${escapeHtml(indexFile.name)}" 
-                               data-content="${encodeURIComponent(indexFile.content)}" 
-                               data-display-name="${escapeHtml(indexFile.displayName)}"
-                               data-book-slug="${escapeHtml(indexFile.bookSlug)}"
-                               data-is-book="true"
-                               style="width:16px; height:16px; cursor:pointer; flex-shrink:0;">
-                        <span class="file-label" style="font-size:13px; color:#1e293b; text-align:left;">📖 ${escapeHtml(indexFile.displayName)}</span>
-                    </div>
-                `;
-            }
-            
-            // Chapter files
-            const chapterFiles = files.filter(f => f.isBook === false && f.isTopic === false);
-            chapterFiles.sort((a, b) => (a.chapterNumber || 999) - (b.chapterNumber || 999));
-            
-            chapterFiles.forEach(f => {
-                fileItems += `
-                    <div class="seo-dropdown-item" style="display:flex; align-items:center; gap:10px; padding:6px 12px; cursor:pointer; transition:background 0.2s; text-align:left; border-bottom:1px solid #f3f4f6;">
-                        <input type="checkbox" 
-                               data-name="${escapeHtml(f.name)}" 
-                               data-content="${encodeURIComponent(f.content)}" 
-                               data-display-name="${escapeHtml(f.displayName)}"
-                               data-book-slug="${escapeHtml(f.bookSlug)}"
-                               data-chapter-slug="${escapeHtml(f.chapterSlug)}"
-                               data-is-topic="false"
-                               data-is-book="false"
-                               style="width:16px; height:16px; cursor:pointer; flex-shrink:0;">
-                        <span class="file-label" style="font-size:13px; color:#1e293b; text-align:left;">${escapeHtml(f.displayName)}</span>
-                    </div>
-                `;
-                
-                // Topic files under this chapter
-                const chapterTopics = files.filter(t => t.isTopic && t.chapterId === f.chapterId);
-                chapterTopics.sort((a, b) => a.topic.localeCompare(b.topic));
-                chapterTopics.forEach(t => {
-                    fileItems += `
-                        <div class="seo-dropdown-item" style="display:flex; align-items:center; gap:10px; padding:6px 12px 6px 28px; cursor:pointer; transition:background 0.2s; text-align:left; border-bottom:1px solid #f3f4f6;">
-                            <input type="checkbox" 
-                                   data-name="${escapeHtml(t.name)}" 
-                                   data-content="${encodeURIComponent(t.content)}" 
-                                   data-display-name="${escapeHtml(t.displayName)}"
-                                   data-book-slug="${escapeHtml(t.bookSlug)}"
-                                   data-chapter-slug="${escapeHtml(t.chapterSlug)}"
-                                   data-topic-slug="${escapeHtml(t.topicSlug)}"
-                                   data-is-topic="true"
-                                   data-is-book="false"
-                                   style="width:16px; height:16px; cursor:pointer; flex-shrink:0;">
-                            <span class="file-label file-indent" style="font-size:12px; color:#64748b; text-align:left;">${escapeHtml(t.displayName)}</span>
-                        </div>
-                    `;
-                });
-            });
-            
             html += `
-                <div class="bg-white p-3 rounded-lg border border-gray-200 hover:border-purple-300 transition mb-3">
-                    <div class="flex justify-between items-center mb-2">
-                        <div class="flex items-center gap-3">
-                            <span class="font-medium text-gray-800">📚 ${escapeHtml(book.title)}</span>
-                            <span class="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full">${totalChapters} chapters</span>
-                            ${totalTopics > 0 ? `<span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">${totalTopics} topics</span>` : ''}
-                            <span class="text-xs text-gray-400">${files.length} files</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <button onclick="downloadSelectedSeoFilesForBook('${book.slug}')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-sm transition flex items-center gap-1">
-                                <i class="fas fa-download"></i> Download Selected
-                            </button>
-                            <button onclick="downloadSingleSEOPage('${book.slug}')" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-lg text-sm transition flex items-center gap-1">
-                                <i class="fas fa-folder-open"></i> All (${files.length})
-                            </button>
-                        </div>
+                <div class="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-200 hover:border-purple-300 transition">
+                    <div class="flex items-center gap-3">
+                        <span class="font-medium text-gray-800">📚 ${escapeHtml(book.title)}</span>
+                        <span class="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full">${totalChapters} chapters</span>
+                        ${totalTopics > 0 ? `<span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">${totalTopics} topics</span>` : ''}
+                        <span class="text-xs text-gray-400">${files.length} files</span>
                     </div>
-                    <div style="max-height:300px; overflow-y:auto; border:1px solid #e5e7eb; border-radius:8px; background:#fafafa;">
-                        ${fileItems}
-                        <div class="seo-dropdown-actions" style="padding:8px 12px; border-top:1px solid #e5e7eb; display:flex; gap:8px; background:#f9fafb; border-radius:0 0 8px 8px;">
-                            <button onclick="selectAllSeoFiles('${book.slug}')" class="select-all-btn" style="background:#8b5cf6; color:white; padding:4px 12px; border-radius:4px; font-size:12px; border:none; cursor:pointer;">Select All</button>
-                            <button onclick="deselectAllSeoFiles('${book.slug}')" class="deselect-all-btn" style="background:#e5e7eb; color:#1e293b; padding:4px 12px; border-radius:4px; font-size:12px; border:none; cursor:pointer;">Deselect All</button>
-                        </div>
-                    </div>
+                    <button onclick="showSeoBookFiles('${book.slug}', '${escapeHtml(book.title)}')" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-lg text-sm transition">
+                        <i class="fas fa-eye"></i> View
+                    </button>
                 </div>
             `;
         });
         container.innerHTML = html;
     }
 }
+
     function showSeoBookFiles(slug, title) {
         const container = document.getElementById('seoBookList');
         const files = seoGeneratedFiles.filter(f => f.bookSlug === slug);
