@@ -5457,14 +5457,11 @@ function generateUrlItemHtml(url, type, isIndented = false) {
         if (tabName === 'categories') loadCategoriesCached();
         if (tabName === 'messages') loadMessages();
         
+        // ============ FIXED: SEO Tab - No auto-generation ============
         if (tabName === 'seo') {
-            setTimeout(async () => {
-                await generateSEOPages();
-                setTimeout(() => {
-                    initSeoBookDropdown();
-                }, 300);
-            }, 300);
+            openSEOTab();
         }
+        
         if (tabName === 'sitemap') {
             document.getElementById('sitemapStaticCount').textContent = '0';
             document.getElementById('sitemapBookCount').textContent = '0';
@@ -5538,6 +5535,777 @@ function generateUrlItemHtml(url, type, isIndented = false) {
     let seoGeneratedCount = 0;
     let seoBooksData = [];
 
+    // ============ FIXED: Open SEO Tab - No auto-generation ============
+    async function openSEOTab() {
+        showTab('seo');
+        
+        // Clear any previous content
+        const bookListEl = document.getElementById('seoBookList');
+        bookListEl.innerHTML = '<div class="text-gray-500 text-sm">Select a book above to generate and view files</div>';
+        
+        document.getElementById('seoStatus').textContent = 'Select a book to generate pages';
+        document.getElementById('seoCount').textContent = '0 pages';
+        document.getElementById('seoProgressBar').style.width = '0%';
+        document.getElementById('seoResult').classList.add('hidden');
+        document.getElementById('seoLog').classList.add('hidden');
+        
+        // Load books for the dropdown from database
+        await loadBooksForSeoDropdown();
+    }
+
+    // ============ Load books for SEO dropdown from database ============
+    async function loadBooksForSeoDropdown() {
+        const wrapper = document.getElementById('seoBookSelectWrapper');
+        if (!wrapper) return;
+        
+        const toggle = wrapper.querySelector('.single-select-btn');
+        const searchInput = document.getElementById('seoBookSearchInput');
+        const itemsContainer = document.getElementById('seoBookDropdownItems');
+        
+        // Show loading state
+        itemsContainer.innerHTML = '<div class="dropdown-item" style="padding:10px 12px; color:#6b7280; font-size:13px;">Loading books...</div>';
+        
+        // Load books from database
+        const { data, error } = await _supabase
+            .from('books')
+            .select('id, title, slug')
+            .order('title');
+        
+        if (error || !data || data.length === 0) {
+            itemsContainer.innerHTML = '<div class="dropdown-item" style="padding:10px 12px; color:#ef4444; font-size:13px;">No books found</div>';
+            return;
+        }
+        
+        seoBooksData = data;
+        
+        function buildDropdownItems() {
+            let html = '<div class="dropdown-item" data-value="" data-slug="" data-id="" style="padding:10px 12px; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f3f4f6; transition:background 0.2s; color:#6b7280; font-style:italic;">-- Select a book --</div>';
+            data.forEach(book => {
+                html += `<div class="dropdown-item" data-value="${escapeHtml(book.title)}" data-slug="${escapeHtml(book.slug)}" data-id="${book.id}" style="padding:10px 12px; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f3f4f6; transition:background 0.2s;">
+                    <label style="cursor:pointer; flex:1; color:#374151; font-size:14px;">📚 ${escapeHtml(book.title)}</label>
+                </div>`;
+            });
+            itemsContainer.innerHTML = html;
+            
+            // Add click handlers
+            itemsContainer.querySelectorAll('.dropdown-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    const value = this.getAttribute('data-value');
+                    const slug = this.getAttribute('data-slug');
+                    const id = this.getAttribute('data-id');
+                    
+                    if (value === '' || !id) {
+                        seoSelectedBookSlug = '';
+                        seoSelectedBookTitle = '';
+                        document.getElementById('seoBookSelectedText').textContent = 'Select a book...';
+                        document.getElementById('seoBookSelectedText').style.color = '#6b7280';
+                        wrapper.classList.remove('active');
+                        document.getElementById('seoBookList').innerHTML = '<div class="text-gray-500 text-sm">Select a book above to view files</div>';
+                        document.getElementById('seoCount').textContent = '0 pages';
+                        document.getElementById('seoResult').classList.add('hidden');
+                        return;
+                    }
+                    
+                    seoSelectedBookSlug = slug;
+                    seoSelectedBookTitle = value;
+                    document.getElementById('seoBookSelectedText').textContent = value;
+                    document.getElementById('seoBookSelectedText').style.color = '#374151';
+                    wrapper.classList.remove('active');
+                    
+                    // Generate pages for this specific book
+                    generateSEOPagesForBook(id, slug, value);
+                });
+            });
+        }
+        
+        // Toggle click handler
+        toggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const isActive = wrapper.classList.contains('active');
+            document.querySelectorAll('.single-select-wrapper').forEach(w => w.classList.remove('active'));
+            if (!isActive) {
+                buildDropdownItems();
+                wrapper.classList.add('active');
+                setTimeout(() => {
+                    if (searchInput) searchInput.focus();
+                }, 100);
+            }
+        });
+        
+        if (searchInput) {
+            searchInput.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+            searchInput.addEventListener('input', function() {
+                const term = this.value.toLowerCase();
+                itemsContainer.querySelectorAll('.dropdown-item').forEach(item => {
+                    const text = item.textContent.toLowerCase();
+                    item.style.display = text.includes(term) ? 'flex' : 'none';
+                });
+            });
+        }
+        
+        // Initial build
+        buildDropdownItems();
+    }
+
+    // ============ Generate SEO pages for a specific book ============
+    async function generateSEOPagesForBook(bookId, bookSlug, bookTitle) {
+        const statusEl = document.getElementById('seoStatus');
+        const countEl = document.getElementById('seoCount');
+        const progressBar = document.getElementById('seoProgressBar');
+        const logEl = document.getElementById('seoLog');
+        const logContent = document.getElementById('seoLogContent');
+        const resultEl = document.getElementById('seoResult');
+        const downloadAllBtn = document.getElementById('downloadAllSEOBtn');
+        const bookListEl = document.getElementById('seoBookList');
+        
+        seoGeneratedFiles = [];
+        logEl.classList.remove('hidden');
+        logContent.innerHTML = '';
+        resultEl.classList.add('hidden');
+        downloadAllBtn.classList.add('hidden');
+        
+        statusEl.textContent = `📦 Generating pages for "${bookTitle}"...`;
+        progressBar.style.width = '10%';
+        logContent.innerHTML += `<div>📦 Generating pages for "${bookTitle}"...</div>`;
+        bookListEl.innerHTML = '<div class="text-gray-500 text-sm">Generating pages...</div>';
+        
+        try {
+            // Fetch book details
+            const { data: book, error: bookError } = await _supabase
+                .from('books')
+                .select('*')
+                .eq('id', bookId)
+                .single();
+            
+            if (bookError) throw bookError;
+            
+            // Fetch chapters for this book
+            const { data: chapters, error: chaptersError } = await _supabase
+                .from('chapters')
+                .select('*, books(title, slug)')
+                .eq('book_id', bookId)
+                .order('chapter_number', { ascending: true, nullsFirst: false });
+            
+            if (chaptersError) throw chaptersError;
+            
+            // Fetch topics for this book
+            let topics = [];
+            if (chapters && chapters.length > 0) {
+                const chapterIds = chapters.map(c => c.id);
+                const { data: topicsData, error: topicsError } = await _supabase
+                    .from('subtopics')
+                    .select('*, chapters(book_id, name, chapter_number, slug, books(title, slug))')
+                    .in('chapter_id', chapterIds)
+                    .order('chapter_id')
+                    .order('name');
+                
+                if (!topicsError) {
+                    topics = topicsData || [];
+                }
+            }
+            
+            // Fetch all questions for this book
+            const allQuestions = await fetchQuestionsForBook(bookId);
+            
+            logContent.innerHTML += `<div>📚 Found ${chapters.length} chapters, ${topics.length} topics, ${allQuestions.length} questions</div>`;
+            statusEl.textContent = '📄 Generating pages...';
+            progressBar.style.width = '20%';
+            
+            if (chapters.length === 0) {
+                statusEl.textContent = '⚠️ No chapters found for this book';
+                logContent.innerHTML += '<div class="text-red-500">⚠️ No chapters found.</div>';
+                bookListEl.innerHTML = '<div class="text-gray-500 text-sm">No chapters found for this book</div>';
+                return;
+            }
+            
+            // Build options map
+            var allOptionsMap = {};
+            allQuestions.forEach(function(q) {
+                if (q.options_array && q.options_array.length > 0) {
+                    allOptionsMap[q.id] = q.options_array;
+                } else {
+                    allOptionsMap[q.id] = ['', '', '', ''];
+                }
+            });
+            
+            var tempFiles = [];
+            var bookSlug = book.slug || createSlug(book.title);
+            var bookChapters = chapters || [];
+            var bookTopics = topics || [];
+            
+            // Calculate total questions for book
+            var totalQuestionsForBook = allQuestions.length;
+            
+            // Calculate chapter question counts
+            var chapterQuestionCounts = {};
+            bookChapters.forEach(function(ch) {
+                var chIdNum = Number(ch.id);
+                chapterQuestionCounts[ch.id] = allQuestions.filter(function(q) {
+                    var qChapterId = q.chapter_id ? Number(q.chapter_id) : null;
+                    return qChapterId === chIdNum;
+                }).length;
+            });
+            
+            // Calculate difficulty stats for this book
+            var bookDifficultyStats = { easy: 0, medium: 0, hard: 0 };
+            allQuestions.forEach(function(q) {
+                if (q.difficulty === 'easy' || q.difficulty === 'Easy') bookDifficultyStats.easy++;
+                else if (q.difficulty === 'medium' || q.difficulty === 'Medium') bookDifficultyStats.medium++;
+                else if (q.difficulty === 'hard' || q.difficulty === 'Hard') bookDifficultyStats.hard++;
+            });
+            
+            // Generate book index page
+            var bookIndexHtml = generateBookIndexPage(book, bookChapters, bookTopics, {}, totalQuestionsForBook, chapterQuestionCounts, bookDifficultyStats);
+            tempFiles.push({
+                name: bookSlug + '/index.html',
+                content: bookIndexHtml,
+                book: book.title,
+                bookSlug: bookSlug,
+                chapters: bookChapters.length,
+                topics: bookTopics.length,
+                questions: totalQuestionsForBook,
+                isBook: true,
+                displayName: '📖 Index'
+            });
+            
+            // Generate chapter pages
+            bookChapters.forEach(function(chapter) {
+                var chapterSlug = chapter.slug || createSlug(chapter.name);
+                var chapterDisplay = chapter.chapter_number ? chapter.chapter_number + '. ' : '';
+                
+                var chapterIdNum = Number(chapter.id);
+                var chapterQuestions = allQuestions.filter(function(q) {
+                    var qChapterId = q.chapter_id ? Number(q.chapter_id) : null;
+                    return qChapterId === chapterIdNum;
+                });
+                
+                var chapterTopics = bookTopics.filter(function(t) {
+                    return t.chapter_id === chapter.id;
+                });
+                
+                var chapterDifficultyStats = { easy: 0, medium: 0, hard: 0 };
+                chapterQuestions.forEach(function(q) {
+                    if (q.difficulty === 'easy' || q.difficulty === 'Easy') chapterDifficultyStats.easy++;
+                    else if (q.difficulty === 'medium' || q.difficulty === 'Medium') chapterDifficultyStats.medium++;
+                    else if (q.difficulty === 'hard' || q.difficulty === 'Hard') chapterDifficultyStats.hard++;
+                });
+                
+                var chapterHtml = generateChapterPage(book, chapter, chapterTopics, chapterQuestions, chapterDifficultyStats, allOptionsMap);
+                tempFiles.push({
+                    name: bookSlug + '/' + chapterSlug + '.html',
+                    content: chapterHtml,
+                    book: book.title,
+                    bookSlug: bookSlug,
+                    chapter: chapter.name,
+                    chapterId: chapter.id,
+                    chapterNumber: chapter.chapter_number,
+                    chapterSlug: chapterSlug,
+                    isBook: false,
+                    isTopic: false,
+                    displayName: '📄 ' + chapterDisplay + chapter.name
+                });
+                
+                // Generate topic pages
+                chapterTopics.forEach(function(topic) {
+                    var topicSlug = topic.slug || createSlug(topic.name);
+                    var topicIdNum = Number(topic.id);
+                    var topicQuestions = allQuestions.filter(function(q) {
+                        var qTopicId = q.topic_id ? Number(q.topic_id) : null;
+                        return qTopicId === topicIdNum;
+                    });
+                    
+                    var topicDifficultyStats = { easy: 0, medium: 0, hard: 0 };
+                    topicQuestions.forEach(function(q) {
+                        if (q.difficulty === 'easy' || q.difficulty === 'Easy') topicDifficultyStats.easy++;
+                        else if (q.difficulty === 'medium' || q.difficulty === 'Medium') topicDifficultyStats.medium++;
+                        else if (q.difficulty === 'hard' || q.difficulty === 'Hard') topicDifficultyStats.hard++;
+                    });
+                    
+                    var topicHtml = generateTopicPage(book, chapter, topic, topicQuestions, topicDifficultyStats, bookTopics, allOptionsMap);
+                    var topicPath = bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html';
+                    tempFiles.push({
+                        name: topicPath,
+                        content: topicHtml,
+                        book: book.title,
+                        bookSlug: bookSlug,
+                        chapter: chapter.name,
+                        chapterId: chapter.id,
+                        chapterSlug: chapterSlug,
+                        topic: topic.name,
+                        topicId: topic.id,
+                        topicSlug: topicSlug,
+                        isBook: false,
+                        isTopic: true,
+                        displayName: '📝 ' + topic.name
+                    });
+                });
+            });
+            
+            seoGeneratedFiles = tempFiles;
+            
+            // Build the book list display for this book
+            var bookListHtml = '';
+            var totalFiles = tempFiles.length;
+            var totalChapters = tempFiles.filter(function(f) { return f.isBook === false && f.isTopic === false; }).length;
+            var totalTopics = tempFiles.filter(function(f) { return f.isTopic === true; }).length;
+            
+            var dropdownItems = '';
+            
+            var indexFile = tempFiles.find(function(f) { return f.isBook; });
+            if (indexFile) {
+                dropdownItems += `
+                    <div class="seo-dropdown-item" style="display:flex; align-items:center; gap:10px; padding:6px 12px; cursor:pointer; transition:background 0.2s; text-align:left;">
+                        <input type="checkbox" 
+                               data-name="${escapeHtml(indexFile.name)}" 
+                               data-content="${encodeURIComponent(indexFile.content)}" 
+                               data-display-name="${escapeHtml(indexFile.displayName)}"
+                               data-book-slug="${escapeHtml(indexFile.bookSlug)}"
+                               data-is-book="true"
+                               style="width:16px; height:16px; cursor:pointer; flex-shrink:0;">
+                        <span class="file-label" style="font-size:13px; color:#1e293b; text-align:left;">📖 ${escapeHtml(indexFile.displayName)}</span>
+                    </div>
+                `;
+            }
+            
+            var chapterFiles = tempFiles.filter(function(f) { return f.isBook === false && f.isTopic === false; });
+            chapterFiles.sort(function(a, b) {
+                return (a.chapterNumber || 999) - (b.chapterNumber || 999);
+            });
+            
+            chapterFiles.forEach(function(f) {
+                dropdownItems += `
+                    <div class="seo-dropdown-item" style="display:flex; align-items:center; gap:10px; padding:6px 12px; cursor:pointer; transition:background 0.2s; text-align:left;">
+                        <input type="checkbox" 
+                               data-name="${escapeHtml(f.name)}" 
+                               data-content="${encodeURIComponent(f.content)}" 
+                               data-display-name="${escapeHtml(f.displayName)}"
+                               data-book-slug="${escapeHtml(f.bookSlug)}"
+                               data-chapter-slug="${escapeHtml(f.chapterSlug)}"
+                               data-is-topic="false"
+                               data-is-book="false"
+                               style="width:16px; height:16px; cursor:pointer; flex-shrink:0;">
+                        <span class="file-label" style="font-size:13px; color:#1e293b; text-align:left;">${escapeHtml(f.displayName)}</span>
+                    </div>
+                `;
+                    
+                var chapterTopics = tempFiles.filter(function(t) { 
+                    return t.isTopic && t.chapterId === f.chapterId; 
+                });
+                chapterTopics.sort(function(a, b) {
+                    return a.topic.localeCompare(b.topic);
+                });
+                chapterTopics.forEach(function(t) {
+                    dropdownItems += `
+                        <div class="seo-dropdown-item" style="display:flex; align-items:center; gap:10px; padding:6px 12px 6px 28px; cursor:pointer; transition:background 0.2s; text-align:left;">
+                            <input type="checkbox" 
+                                   data-name="${escapeHtml(t.name)}" 
+                                   data-content="${encodeURIComponent(t.content)}" 
+                                   data-display-name="${escapeHtml(t.displayName)}"
+                                   data-book-slug="${escapeHtml(t.bookSlug)}"
+                                   data-chapter-slug="${escapeHtml(t.chapterSlug)}"
+                                   data-topic-slug="${escapeHtml(t.topicSlug)}"
+                                   data-is-topic="true"
+                                   data-is-book="false"
+                                   style="width:16px; height:16px; cursor:pointer; flex-shrink:0;">
+                            <span class="file-label file-indent" style="font-size:12px; color:#64748b; text-align:left;">${escapeHtml(t.displayName)}</span>
+                        </div>
+                    `;
+                });
+            });
+            
+            bookListHtml += `
+                <div class="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-200 hover:border-purple-300 transition">
+                    <div class="flex items-center gap-3">
+                        <span class="font-medium text-gray-800">📚 ${escapeHtml(bookTitle)}</span>
+                        <span class="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full">${totalChapters} chapters</span>
+                        ${totalTopics > 0 ? `<span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">${totalTopics} topics</span>` : ''}
+                        <span class="text-xs text-gray-400">${totalFiles} files</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="downloadSelectedSeoFiles('${bookSlug}')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm transition flex items-center gap-1">
+                            <i class="fas fa-download"></i> Download Selected
+                        </button>
+                        <div class="seo-dropdown-container">
+                            <div class="seo-dropdown-toggle" onclick="toggleSeoDropdown('${bookSlug}')">
+                                <span>Select Files</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                            <div id="seoDropdown_${bookSlug}" class="seo-dropdown-menu">
+                                ${dropdownItems}
+                                <div class="seo-dropdown-actions" style="padding:8px 12px; border-top:1px solid #e5e7eb; display:flex; gap:8px; background:#f9fafb; border-radius:0 0 8px 8px;">
+                                    <button onclick="selectAllSeoFiles('${bookSlug}')" class="select-all-btn" style="background:#8b5cf6; color:white; padding:4px 12px; border-radius:4px; font-size:12px; border:none; cursor:pointer;">Select All</button>
+                                    <button onclick="deselectAllSeoFiles('${bookSlug}')" class="deselect-all-btn" style="background:#e5e7eb; color:#1e293b; padding:4px 12px; border-radius:4px; font-size:12px; border:none; cursor:pointer;">Deselect All</button>
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="downloadSingleSEOPage('${bookSlug}')" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm transition flex items-center gap-1">
+                            <i class="fas fa-folder-open"></i> All (${totalFiles})
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            bookListEl.innerHTML = bookListHtml;
+            
+            progressBar.style.width = '95%';
+            statusEl.textContent = `🎉 Pages generated for "${bookTitle}"!`;
+            countEl.textContent = tempFiles.length + ' pages';
+            
+            resultEl.classList.remove('hidden');
+            downloadAllBtn.classList.remove('hidden');
+            
+            logContent.innerHTML += `<div class="text-green-600 font-bold">🎉 Successfully generated ${tempFiles.length} SEO pages!</div>`;
+            logEl.scrollTop = logEl.scrollHeight;
+            
+            progressBar.style.width = '100%';
+            
+            // Re-initialize dropdown to show the book
+            setTimeout(() => {
+                initSeoBookDropdown();
+            }, 300);
+            
+        } catch (error) {
+            console.error('SEO Generation Error:', error);
+            statusEl.textContent = '❌ Error: ' + error.message;
+            logContent.innerHTML += `<div class="text-red-500">❌ Error: ${error.message}</div>`;
+            bookListEl.innerHTML = '<div class="text-red-500 text-sm">Error: ' + error.message + '</div>';
+        }
+    }
+
+    // ============ Fetch questions for a specific book ============
+    async function fetchQuestionsForBook(bookId) {
+        let allQuestions = [];
+        let page = 0;
+        const pageSize = 1000;
+        let hasMore = true;
+        
+        // First get all chapter IDs for this book
+        const { data: chapters } = await _supabase
+            .from('chapters')
+            .select('id')
+            .eq('book_id', bookId);
+        
+        if (!chapters || chapters.length === 0) {
+            return [];
+        }
+        
+        const chapterIds = chapters.map(c => c.id);
+        
+        while (hasMore) {
+            const from = page * pageSize;
+            const to = from + pageSize - 1;
+            
+            const { data, error } = await _supabase
+                .from('questions')
+                .select('id, chapter_id, topic_id, difficulty, question_text, created_at, correct_answer, options (option_text, option_index)')
+                .in('chapter_id', chapterIds)
+                .range(from, to);
+            
+            if (error) {
+                console.error('Error fetching questions:', error);
+                break;
+            }
+            
+            if (!data || data.length === 0) {
+                hasMore = false;
+            } else {
+                data.forEach(function(q) {
+                    q.chapter_id = q.chapter_id ? Number(q.chapter_id) : null;
+                    q.topic_id = q.topic_id ? Number(q.topic_id) : null;
+                    if (q.options && q.options.length > 0) {
+                        var opts = q.options.sort(function(a, b) { return a.option_index - b.option_index; });
+                        q.options_array = opts.map(function(o) { return o.option_text; });
+                    } else {
+                        q.options_array = ['', '', '', ''];
+                    }
+                });
+                allQuestions = allQuestions.concat(data);
+                page++;
+                if (data.length < pageSize) {
+                    hasMore = false;
+                }
+            }
+        }
+        return allQuestions;
+    }
+
+    // ============ FIXED: SEO Dropdown Initialization ============
+    function initSeoBookDropdown() {
+        const wrapper = document.getElementById('seoBookSelectWrapper');
+        if (!wrapper) return;
+        
+        const toggle = wrapper.querySelector('.single-select-btn');
+        const searchInput = document.getElementById('seoBookSearchInput');
+        const itemsContainer = document.getElementById('seoBookDropdownItems');
+        
+        function buildSeoBookDropdown() {
+            // Get unique books from seoGeneratedFiles
+            const uniqueBooks = [];
+            const seenSlugs = {};
+            seoGeneratedFiles.forEach(file => {
+                if (!seenSlugs[file.bookSlug]) {
+                    seenSlugs[file.bookSlug] = true;
+                    uniqueBooks.push({
+                        slug: file.bookSlug,
+                        title: file.book
+                    });
+                }
+            });
+            
+            if (uniqueBooks.length === 0) {
+                // If no files generated, show message
+                itemsContainer.innerHTML = '<div class="dropdown-item" style="padding:10px 12px; color:#6b7280; font-size:13px;">No books generated. Select a book from above.</div>';
+                return;
+            }
+            
+            let html = '<div class="dropdown-item" data-value="" data-slug="" style="padding:10px 12px; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f3f4f6; transition:background 0.2s; color:#6b7280; font-style:italic;">-- Select a book --</div>';
+            uniqueBooks.forEach(book => {
+                html += `<div class="dropdown-item" data-value="${escapeHtml(book.title)}" data-slug="${escapeHtml(book.slug)}" style="padding:10px 12px; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f3f4f6; transition:background 0.2s;">
+                    <label style="cursor:pointer; flex:1; color:#374151; font-size:14px;">📚 ${escapeHtml(book.title)}</label>
+                </div>`;
+            });
+            itemsContainer.innerHTML = html;
+            
+            itemsContainer.querySelectorAll('.dropdown-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    const value = this.getAttribute('data-value');
+                    const slug = this.getAttribute('data-slug');
+                    if (value === '') {
+                        // Deselect
+                        seoSelectedBookSlug = '';
+                        seoSelectedBookTitle = '';
+                        document.getElementById('seoBookSelectedText').textContent = 'Select a book...';
+                        document.getElementById('seoBookSelectedText').style.color = '#6b7280';
+                        wrapper.classList.remove('active');
+                        document.getElementById('seoBookList').innerHTML = '<div class="text-gray-500 text-sm">Select a book above to view files</div>';
+                        document.getElementById('seoCount').textContent = '0 pages';
+                        return;
+                    }
+                    seoSelectedBookSlug = slug;
+                    seoSelectedBookTitle = value;
+                    document.getElementById('seoBookSelectedText').textContent = value;
+                    document.getElementById('seoBookSelectedText').style.color = '#374151';
+                    wrapper.classList.remove('active');
+                    showSeoBookFiles(slug, value);
+                });
+            });
+            
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    const term = this.value.toLowerCase();
+                    itemsContainer.querySelectorAll('.dropdown-item').forEach(item => {
+                        const text = item.textContent.toLowerCase();
+                        item.style.display = text.includes(term) ? 'flex' : 'none';
+                    });
+                });
+            }
+        }
+        
+        toggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const isActive = wrapper.classList.contains('active');
+            document.querySelectorAll('.single-select-wrapper').forEach(w => w.classList.remove('active'));
+            if (!isActive) {
+                buildSeoBookDropdown();
+                wrapper.classList.add('active');
+                setTimeout(() => {
+                    if (searchInput) searchInput.focus();
+                }, 100);
+            }
+        });
+        
+        if (searchInput) {
+            searchInput.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        }
+        
+        buildSeoBookDropdown();
+    }
+
+    function showSeoBookFiles(slug, title) {
+        const container = document.getElementById('seoBookList');
+        const files = seoGeneratedFiles.filter(f => f.bookSlug === slug);
+        
+        if (files.length === 0) {
+            container.innerHTML = `<div class="text-gray-500 text-sm">No files found for "${title}". Generate pages first.</div>`;
+            document.getElementById('seoCount').textContent = '0 pages';
+            return;
+        }
+        
+        const bookFiles = files;
+        const totalChapters = bookFiles.filter(f => f.isBook === false && f.isTopic === false).length;
+        const totalTopics = bookFiles.filter(f => f.isTopic === true).length;
+        
+        let dropdownItems = '';
+        
+        const indexFile = bookFiles.find(f => f.isBook);
+        if (indexFile) {
+            dropdownItems += `
+                <div class="seo-dropdown-item" style="display:flex; align-items:center; gap:10px; padding:6px 12px; cursor:pointer; transition:background 0.2s; text-align:left;">
+                    <input type="checkbox" 
+                           data-name="${escapeHtml(indexFile.name)}" 
+                           data-content="${encodeURIComponent(indexFile.content)}" 
+                           data-display-name="${escapeHtml(indexFile.displayName)}"
+                           data-book-slug="${escapeHtml(indexFile.bookSlug)}"
+                           data-is-book="true"
+                           style="width:16px; height:16px; cursor:pointer; flex-shrink:0;">
+                    <span class="file-label" style="font-size:13px; color:#1e293b; text-align:left;">📖 ${escapeHtml(indexFile.displayName)}</span>
+                </div>
+            `;
+        }
+        
+        const chapterFiles = bookFiles.filter(f => f.isBook === false && f.isTopic === false);
+        chapterFiles.sort((a, b) => (a.chapterNumber || 999) - (b.chapterNumber || 999));
+        
+        chapterFiles.forEach(f => {
+            dropdownItems += `
+                <div class="seo-dropdown-item" style="display:flex; align-items:center; gap:10px; padding:6px 12px; cursor:pointer; transition:background 0.2s; text-align:left;">
+                    <input type="checkbox" 
+                           data-name="${escapeHtml(f.name)}" 
+                           data-content="${encodeURIComponent(f.content)}" 
+                           data-display-name="${escapeHtml(f.displayName)}"
+                           data-book-slug="${escapeHtml(f.bookSlug)}"
+                           data-chapter-slug="${escapeHtml(f.chapterSlug)}"
+                           data-is-topic="false"
+                           data-is-book="false"
+                           style="width:16px; height:16px; cursor:pointer; flex-shrink:0;">
+                    <span class="file-label" style="font-size:13px; color:#1e293b; text-align:left;">${escapeHtml(f.displayName)}</span>
+                </div>
+            `;
+            
+            const chapterTopics = bookFiles.filter(t => t.isTopic && t.chapterId === f.chapterId);
+            chapterTopics.sort((a, b) => a.topic.localeCompare(b.topic));
+            chapterTopics.forEach(t => {
+                dropdownItems += `
+                    <div class="seo-dropdown-item" style="display:flex; align-items:center; gap:10px; padding:6px 12px 6px 28px; cursor:pointer; transition:background 0.2s; text-align:left;">
+                        <input type="checkbox" 
+                               data-name="${escapeHtml(t.name)}" 
+                               data-content="${encodeURIComponent(t.content)}" 
+                               data-display-name="${escapeHtml(t.displayName)}"
+                               data-book-slug="${escapeHtml(t.bookSlug)}"
+                               data-chapter-slug="${escapeHtml(t.chapterSlug)}"
+                               data-topic-slug="${escapeHtml(t.topicSlug)}"
+                               data-is-topic="true"
+                               data-is-book="false"
+                               style="width:16px; height:16px; cursor:pointer; flex-shrink:0;">
+                        <span class="file-label file-indent" style="font-size:12px; color:#64748b; text-align:left;">${escapeHtml(t.displayName)}</span>
+                    </div>
+                `;
+            });
+        });
+        
+        container.innerHTML = `
+            <div class="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-200 hover:border-purple-300 transition">
+                <div class="flex items-center gap-3">
+                    <span class="font-medium text-gray-800">📚 ${escapeHtml(title)}</span>
+                    <span class="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full">${totalChapters} chapters</span>
+                    ${totalTopics > 0 ? `<span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">${totalTopics} topics</span>` : ''}
+                    <span class="text-xs text-gray-400">${bookFiles.length} files</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="downloadSelectedSeoFilesForBook('${slug}')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm transition flex items-center gap-1">
+                        <i class="fas fa-download"></i> Download Selected
+                    </button>
+                    <div class="seo-dropdown-container">
+                        <div class="seo-dropdown-toggle" onclick="toggleSeoDropdown('${slug}')">
+                            <span>Select Files</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div id="seoDropdown_${slug}" class="seo-dropdown-menu">
+                            ${dropdownItems}
+                            <div class="seo-dropdown-actions" style="padding:8px 12px; border-top:1px solid #e5e7eb; display:flex; gap:8px; background:#f9fafb; border-radius:0 0 8px 8px;">
+                                <button onclick="selectAllSeoFiles('${slug}')" class="select-all-btn" style="background:#8b5cf6; color:white; padding:4px 12px; border-radius:4px; font-size:12px; border:none; cursor:pointer;">Select All</button>
+                                <button onclick="deselectAllSeoFiles('${slug}')" class="deselect-all-btn" style="background:#e5e7eb; color:#1e293b; padding:4px 12px; border-radius:4px; font-size:12px; border:none; cursor:pointer;">Deselect All</button>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="downloadSingleSEOPage('${slug}')" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm transition flex items-center gap-1">
+                        <i class="fas fa-folder-open"></i> All (${bookFiles.length})
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('seoCount').textContent = bookFiles.length + ' pages';
+    }
+
+    function selectAllSeoFiles(bookSlug) {
+        const menu = document.getElementById(`seoDropdown_${bookSlug}`);
+        if (menu) {
+            menu.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
+        }
+    }
+
+    function deselectAllSeoFiles(bookSlug) {
+        const menu = document.getElementById(`seoDropdown_${bookSlug}`);
+        if (menu) {
+            menu.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+        }
+    }
+
+    function downloadSelectedSeoFilesForBook(bookSlug) {
+        const checkboxes = document.querySelectorAll(`#seoDropdown_${bookSlug} input[type="checkbox"]:checked`);
+        const files = [];
+        checkboxes.forEach(cb => {
+            const fileData = {
+                name: cb.dataset.name || '',
+                content: decodeURIComponent(cb.dataset.content || ''),
+                displayName: cb.dataset.displayName || '',
+                bookSlug: cb.dataset.bookSlug || '',
+                chapterSlug: cb.dataset.chapterSlug || '',
+                topicSlug: cb.dataset.topicSlug || '',
+                isTopic: cb.dataset.isTopic === 'true',
+                isBook: cb.dataset.isBook === 'true'
+            };
+            if (fileData.name && fileData.content) {
+                files.push(fileData);
+            }
+        });
+        
+        if (files.length === 0) {
+            showToast('Please select at least one file to download', true);
+            return;
+        }
+        
+        showToast(`📥 Downloading ${files.length} selected files...`);
+        
+        files.forEach((file, index) => {
+            setTimeout(() => {
+                let cleanName;
+                if (file.isBook) {
+                    cleanName = `index.html`;
+                } else if (file.isTopic) {
+                    cleanName = `${file.topicSlug}.html`;
+                } else {
+                    cleanName = `${file.chapterSlug}.html`;
+                }
+                
+                const blob = new Blob([file.content], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = cleanName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                if (index === files.length - 1) {
+                    showToast(`✅ Downloaded ${files.length} files successfully!`);
+                }
+            }, index * 300);
+        });
+        
+        const menu = document.getElementById(`seoDropdown_${bookSlug}`);
+        if (menu) {
+            menu.classList.remove('open');
+        }
+    }
+
+    // ============ SEO HELPER FUNCTIONS ============
     async function fetchAllQuestionsWithDifficulty() {
         let allQuestions = [];
         let page = 0;
@@ -6276,371 +7044,6 @@ function generateUrlItemHtml(url, type, isIndented = false) {
         });
     }
 
-    async function generateSEOPages() {
-        const statusEl = document.getElementById('seoStatus');
-        const countEl = document.getElementById('seoCount');
-        const progressBar = document.getElementById('seoProgressBar');
-        const logEl = document.getElementById('seoLog');
-        const logContent = document.getElementById('seoLogContent');
-        const resultEl = document.getElementById('seoResult');
-        const downloadAllBtn = document.getElementById('downloadAllSEOBtn');
-        const bookListEl = document.getElementById('seoBookList');
-        
-        seoGeneratedFiles = [];
-        seoGeneratedCount = 0;
-        seoBooksData = [];
-        logEl.classList.remove('hidden');
-        logContent.innerHTML = '';
-        resultEl.classList.add('hidden');
-        downloadAllBtn.classList.add('hidden');
-        
-        statusEl.textContent = '📦 Fetching data from database...';
-        progressBar.style.width = '10%';
-        logContent.innerHTML += '<div>📦 Fetching books, chapters, topics, and questions...</div>';
-        bookListEl.innerHTML = '<div class="text-gray-500 text-sm">Loading books...</div>';
-        
-        try {
-            const { data: books, error: booksError } = await _supabase
-                .from('books')
-                .select('*')
-                .order('title');
-            
-            if (booksError) throw booksError;
-            
-            const { data: chapters, error: chaptersError } = await _supabase
-                .from('chapters')
-                .select('*, books(title, slug)')
-                .order('book_id')
-                .order('chapter_number', { ascending: true, nullsFirst: false });
-            
-            if (chaptersError) throw chaptersError;
-            
-            const { data: topics, error: topicsError } = await _supabase
-                .from('subtopics')
-                .select('*, chapters(book_id, name, chapter_number, slug, books(title, slug))')
-                .order('chapter_id')
-                .order('name');
-            
-            if (topicsError) throw topicsError;
-            
-            const allQuestions = await fetchAllQuestionsWithDifficulty();
-            
-            logContent.innerHTML += '<div>📚 Found ' + books.length + ' books, ' + chapters.length + ' chapters, ' + topics.length + ' topics, ' + allQuestions.length + ' total questions</div>';
-            statusEl.textContent = '📄 Generating SEO pages...';
-            progressBar.style.width = '20%';
-            
-            if (books.length === 0) {
-                statusEl.textContent = '⚠️ No books found to generate pages';
-                logContent.innerHTML += '<div class="text-red-500">⚠️ No books found in database.</div>';
-                bookListEl.innerHTML = '<div class="text-gray-500 text-sm">No books available</div>';
-                return;
-            }
-            
-            var chaptersByBook = {};
-            chapters.forEach(function(chapter) {
-                if (chapter.book_id) {
-                    if (!chaptersByBook[chapter.book_id]) {
-                        chaptersByBook[chapter.book_id] = [];
-                    }
-                    chaptersByBook[chapter.book_id].push(chapter);
-                }
-            });
-            
-            var topicsByBook = {};
-            topics.forEach(function(topic) {
-                if (topic.chapters && topic.chapters.book_id) {
-                    if (!topicsByBook[topic.chapters.book_id]) {
-                        topicsByBook[topic.chapters.book_id] = [];
-                    }
-                    topicsByBook[topic.chapters.book_id].push(topic);
-                }
-            });
-            
-            var tempFiles = [];
-            var allOptionsMap = {};
-            allQuestions.forEach(function(q) {
-                if (q.options_array && q.options_array.length > 0) {
-                    allOptionsMap[q.id] = q.options_array;
-                } else {
-                    allOptionsMap[q.id] = ['', '', '', ''];
-                }
-            });
-            
-            var bookProgress = 0;
-            var totalBooks = books.length;
-            
-            books.forEach(function(book) {
-                bookProgress++;
-                var bookSlug = book.slug || createSlug(book.title);
-                var bookChapters = chaptersByBook[book.id] || [];
-                var bookTopics = topicsByBook[book.id] || [];
-                
-                bookChapters.sort(function(a, b) {
-                    var aNum = a.chapter_number || 999;
-                    var bNum = b.chapter_number || 999;
-                    return aNum - bNum;
-                });
-                
-                var totalQuestionsForBook = allQuestions.filter(function(q) {
-                    return q.chapter_id && bookChapters.some(function(c) { return c.id === q.chapter_id; });
-                }).length;
-                
-                var chapterQuestionCounts = {};
-                bookChapters.forEach(function(ch) {
-                    var chIdNum = Number(ch.id);
-                    chapterQuestionCounts[ch.id] = allQuestions.filter(function(q) {
-                        var qChapterId = q.chapter_id ? Number(q.chapter_id) : null;
-                        return qChapterId === chIdNum;
-                    }).length;
-                });
-                
-                var bookDifficultyStats = { easy: 0, medium: 0, hard: 0 };
-                var bookChapterIds = bookChapters.map(function(c) { return Number(c.id); });
-                var bookQuestionIds = allQuestions.filter(function(q) {
-                    var qChapterId = q.chapter_id ? Number(q.chapter_id) : null;
-                    return qChapterId && bookChapterIds.indexOf(qChapterId) !== -1;
-                });
-                bookQuestionIds.forEach(function(q) {
-                    if (q.difficulty === 'easy' || q.difficulty === 'Easy') bookDifficultyStats.easy++;
-                    else if (q.difficulty === 'medium' || q.difficulty === 'Medium') bookDifficultyStats.medium++;
-                    else if (q.difficulty === 'hard' || q.difficulty === 'Hard') bookDifficultyStats.hard++;
-                });
-                
-                var bookIndexHtml = generateBookIndexPage(book, bookChapters, bookTopics, {}, totalQuestionsForBook, chapterQuestionCounts, bookDifficultyStats);
-                tempFiles.push({
-                    name: bookSlug + '/index.html',
-                    content: bookIndexHtml,
-                    book: book.title,
-                    bookSlug: bookSlug,
-                    chapters: bookChapters.length,
-                    topics: bookTopics.length,
-                    questions: totalQuestionsForBook,
-                    isBook: true,
-                    displayName: '📖 Index'
-                });
-                
-                bookChapters.forEach(function(chapter) {
-                    var chapterSlug = chapter.slug || createSlug(chapter.name);
-                    var chapterDisplay = chapter.chapter_number ? chapter.chapter_number + '. ' : '';
-                    
-                    var chapterIdNum = Number(chapter.id);
-                    var chapterQuestions = allQuestions.filter(function(q) {
-                        var qChapterId = q.chapter_id ? Number(q.chapter_id) : null;
-                        return qChapterId === chapterIdNum;
-                    });
-                    
-                    var chapterTopics = bookTopics.filter(function(t) {
-                        return t.chapter_id === chapter.id;
-                    });
-                    
-                    var chapterDifficultyStats = { easy: 0, medium: 0, hard: 0 };
-                    chapterQuestions.forEach(function(q) {
-                        if (q.difficulty === 'easy' || q.difficulty === 'Easy') chapterDifficultyStats.easy++;
-                        else if (q.difficulty === 'medium' || q.difficulty === 'Medium') chapterDifficultyStats.medium++;
-                        else if (q.difficulty === 'hard' || q.difficulty === 'Hard') chapterDifficultyStats.hard++;
-                    });
-                    
-                    var chapterHtml = generateChapterPage(book, chapter, chapterTopics, chapterQuestions, chapterDifficultyStats, allOptionsMap);
-                    tempFiles.push({
-                        name: bookSlug + '/' + chapterSlug + '.html',
-                        content: chapterHtml,
-                        book: book.title,
-                        bookSlug: bookSlug,
-                        chapter: chapter.name,
-                        chapterId: chapter.id,
-                        chapterNumber: chapter.chapter_number,
-                        chapterSlug: chapterSlug,
-                        isBook: false,
-                        isTopic: false,
-                        displayName: '📄 ' + chapterDisplay + chapter.name
-                    });
-                    
-                    chapterTopics.forEach(function(topic) {
-                        var topicSlug = topic.slug || createSlug(topic.name);
-                        var topicIdNum = Number(topic.id);
-                        var topicQuestions = allQuestions.filter(function(q) {
-                            var qTopicId = q.topic_id ? Number(q.topic_id) : null;
-                            return qTopicId === topicIdNum;
-                        });
-                        
-                        var topicDifficultyStats = { easy: 0, medium: 0, hard: 0 };
-                        topicQuestions.forEach(function(q) {
-                            if (q.difficulty === 'easy' || q.difficulty === 'Easy') topicDifficultyStats.easy++;
-                            else if (q.difficulty === 'medium' || q.difficulty === 'Medium') topicDifficultyStats.medium++;
-                            else if (q.difficulty === 'hard' || q.difficulty === 'Hard') topicDifficultyStats.hard++;
-                        });
-                        
-                        var topicHtml = generateTopicPage(book, chapter, topic, topicQuestions, topicDifficultyStats, bookTopics, allOptionsMap);
-                        var topicPath = bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html';
-                        tempFiles.push({
-                            name: topicPath,
-                            content: topicHtml,
-                            book: book.title,
-                            bookSlug: bookSlug,
-                            chapter: chapter.name,
-                            chapterId: chapter.id,
-                            chapterSlug: chapterSlug,
-                            topic: topic.name,
-                            topicId: topic.id,
-                            topicSlug: topicSlug,
-                            isBook: false,
-                            isTopic: true,
-                            displayName: '📝 ' + topic.name
-                        });
-                    });
-                });
-                
-                var progressPercent = 20 + (bookProgress / totalBooks) * 70;
-                progressBar.style.width = progressPercent + '%';
-                statusEl.textContent = '📄 Generating pages for ' + book.title + '...';
-            });
-            
-            seoGeneratedFiles = tempFiles;
-            
-            var bookListHtml = '';
-            var uniqueBookSlugs = [];
-            seoGeneratedFiles.forEach(function(f) {
-                if (uniqueBookSlugs.indexOf(f.bookSlug) === -1) {
-                    uniqueBookSlugs.push(f.bookSlug);
-                }
-            });
-            
-            var processedBooks = {};
-            
-            uniqueBookSlugs.forEach(function(bookSlug) {
-                var bookFiles = seoGeneratedFiles.filter(function(f) { 
-                    return f.bookSlug === bookSlug; 
-                });
-                
-                if (bookFiles.length === 0 || processedBooks[bookSlug]) return;
-                processedBooks[bookSlug] = true;
-                
-                var firstFile = bookFiles[0];
-                var bookTitle = firstFile.book;
-                var totalChapters = bookFiles.filter(function(f) { 
-                    return f.isBook === false && f.isTopic === false; 
-                }).length;
-                var totalTopics = bookFiles.filter(function(f) { 
-                    return f.isTopic === true; 
-                }).length;
-                
-                var dropdownItems = '';
-                
-                var indexFile = bookFiles.find(function(f) { return f.isBook; });
-                if (indexFile) {
-                    dropdownItems += `
-                        <div class="seo-dropdown-item" style="display:flex; align-items:center; gap:10px; padding:6px 12px; cursor:pointer; transition:background 0.2s; text-align:left;">
-                            <input type="checkbox" 
-                                   data-name="${escapeHtml(indexFile.name)}" 
-                                   data-content="${encodeURIComponent(indexFile.content)}" 
-                                   data-display-name="${escapeHtml(indexFile.displayName)}"
-                                   data-book-slug="${escapeHtml(indexFile.bookSlug)}"
-                                   data-is-book="true"
-                                   style="width:16px; height:16px; cursor:pointer; flex-shrink:0;">
-                            <span class="file-label" style="font-size:13px; color:#1e293b; text-align:left;">📖 ${indexFile.displayName}</span>
-                        </div>
-                    `;
-                }
-                
-                var chapterFiles = bookFiles.filter(function(f) { return f.isBook === false && f.isTopic === false; });
-                chapterFiles.sort(function(a, b) {
-                    return (a.chapterNumber || 999) - (b.chapterNumber || 999);
-                });
-                
-                chapterFiles.forEach(function(f) {
-                    dropdownItems += `
-                        <div class="seo-dropdown-item" style="display:flex; align-items:center; gap:10px; padding:6px 12px; cursor:pointer; transition:background 0.2s; text-align:left;">
-                            <input type="checkbox" 
-                                   data-name="${escapeHtml(f.name)}" 
-                                   data-content="${encodeURIComponent(f.content)}" 
-                                   data-display-name="${escapeHtml(f.displayName)}"
-                                   data-book-slug="${escapeHtml(f.bookSlug)}"
-                                   data-chapter-slug="${escapeHtml(f.chapterSlug)}"
-                                   data-is-topic="false"
-                                   data-is-book="false"
-                                   style="width:16px; height:16px; cursor:pointer; flex-shrink:0;">
-                            <span class="file-label" style="font-size:13px; color:#1e293b; text-align:left;">${f.displayName}</span>
-                        </div>
-                    `;
-                        
-                    var chapterTopics = bookFiles.filter(function(t) { 
-                        return t.isTopic && t.chapterId === f.chapterId; 
-                    });
-                    chapterTopics.sort(function(a, b) {
-                        return a.topic.localeCompare(b.topic);
-                    });
-                    chapterTopics.forEach(function(t) {
-                        dropdownItems += `
-                            <div class="seo-dropdown-item" style="display:flex; align-items:center; gap:10px; padding:6px 12px 6px 28px; cursor:pointer; transition:background 0.2s; text-align:left;">
-                                <input type="checkbox" 
-                                       data-name="${escapeHtml(t.name)}" 
-                                       data-content="${encodeURIComponent(t.content)}" 
-                                       data-display-name="${escapeHtml(t.displayName)}"
-                                       data-book-slug="${escapeHtml(t.bookSlug)}"
-                                       data-chapter-slug="${escapeHtml(t.chapterSlug)}"
-                                       data-topic-slug="${escapeHtml(t.topicSlug)}"
-                                       data-is-topic="true"
-                                       data-is-book="false"
-                                       style="width:16px; height:16px; cursor:pointer; flex-shrink:0;">
-                                <span class="file-label file-indent" style="font-size:12px; color:#64748b; text-align:left;">${t.displayName}</span>
-                            </div>
-                        `;
-                    });
-                });
-                
-                var totalFiles = bookFiles.length;
-                
-                bookListHtml += `
-                    <div class="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-200 hover:border-purple-300 transition">
-                        <div class="flex items-center gap-3">
-                            <span class="font-medium text-gray-800">${escapeHtml(bookTitle)}</span>
-                            <span class="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full">${totalChapters} chapters</span>
-                            ${totalTopics > 0 ? `<span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">${totalTopics} topics</span>` : ''}
-                            <span class="text-xs text-gray-400">${totalFiles} files</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <button onclick="downloadSelectedSeoFiles('${bookSlug}')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm transition flex items-center gap-1">
-                                <i class="fas fa-download"></i> Download Selected
-                            </button>
-                            <div class="seo-dropdown-container">
-                                <div class="seo-dropdown-toggle" onclick="toggleSeoDropdown('${bookSlug}')">
-                                    <span>Select Files</span>
-                                    <i class="fas fa-chevron-down"></i>
-                                </div>
-                                <div id="seoDropdown_${bookSlug}" class="seo-dropdown-menu">
-                                    ${dropdownItems}
-                                </div>
-                            </div>
-                            <button onclick="downloadSingleSEOPage('${bookSlug}')" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm transition flex items-center gap-1">
-                                <i class="fas fa-folder-open"></i> All (${totalFiles})
-                            </button>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            bookListEl.innerHTML = bookListHtml;
-            
-            progressBar.style.width = '95%';
-            statusEl.textContent = '🎉 All ' + uniqueBookSlugs.length + ' book pages generated!';
-            countEl.textContent = seoGeneratedFiles.length + ' pages (' + uniqueBookSlugs.length + ' books)';
-            
-            resultEl.classList.remove('hidden');
-            downloadAllBtn.classList.remove('hidden');
-            
-            logContent.innerHTML += '<div class="text-green-600 font-bold">🎉 Successfully generated ' + seoGeneratedFiles.length + ' SEO pages with actual questions and options!</div>';
-            logEl.scrollTop = logEl.scrollHeight;
-            
-            progressBar.style.width = '100%';
-            
-        } catch (error) {
-            console.error('SEO Generation Error:', error);
-            statusEl.textContent = '❌ Error: ' + error.message;
-            logContent.innerHTML += '<div class="text-red-500">❌ Error: ' + error.message + '</div>';
-            document.getElementById('seoBookList').innerHTML = '<div class="text-red-500 text-sm">Error: ' + error.message + '</div>';
-        }
-    }
-
     function downloadAllSEOPages() {
         if (seoGeneratedFiles.length === 0) {
             showToast('No files to download. Generate pages first.', true);
@@ -6677,282 +7080,6 @@ function generateUrlItemHtml(url, type, isIndented = false) {
         });
     }
 
-    async function openSEOTab() {
-        showTab('seo');
-    }
-
-    // ============ SEO Dropdown Initialization ============
-    function initSeoBookDropdown() {
-        const wrapper = document.getElementById('seoBookSelectWrapper');
-        if (!wrapper) return;
-        
-        const toggle = wrapper.querySelector('.single-select-btn');
-        const searchInput = document.getElementById('seoBookSearchInput');
-        const itemsContainer = document.getElementById('seoBookDropdownItems');
-        
-        function buildSeoBookDropdown() {
-            const uniqueBooks = [];
-            const seenSlugs = {};
-            seoGeneratedFiles.forEach(file => {
-                if (!seenSlugs[file.bookSlug]) {
-                    seenSlugs[file.bookSlug] = true;
-                    uniqueBooks.push({
-                        slug: file.bookSlug,
-                        title: file.book
-                    });
-                }
-            });
-            
-            if (uniqueBooks.length === 0) {
-                itemsContainer.innerHTML = '<div class="dropdown-item" style="padding:10px 12px; color:#6b7280; font-size:13px;">No books available. Generate pages first.</div>';
-                return;
-            }
-            
-            let html = '<div class="dropdown-item" data-value="" data-slug="" style="padding:10px 12px; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f3f4f6; transition:background 0.2s; color:#6b7280; font-style:italic;">-- Select a book --</div>';
-            uniqueBooks.forEach(book => {
-                html += `<div class="dropdown-item" data-value="${escapeHtml(book.title)}" data-slug="${escapeHtml(book.slug)}" style="padding:10px 12px; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f3f4f6; transition:background 0.2s;">
-                    <label style="cursor:pointer; flex:1; color:#374151; font-size:14px;">📚 ${escapeHtml(book.title)}</label>
-                </div>`;
-            });
-            itemsContainer.innerHTML = html;
-            
-            itemsContainer.querySelectorAll('.dropdown-item').forEach(item => {
-                item.addEventListener('click', function(e) {
-                    const value = this.getAttribute('data-value');
-                    const slug = this.getAttribute('data-slug');
-                    if (value === '') {
-                        seoSelectedBookSlug = '';
-                        seoSelectedBookTitle = '';
-                        document.getElementById('seoBookSelectedText').textContent = 'Select a book...';
-                        document.getElementById('seoBookSelectedText').style.color = '#6b7280';
-                        wrapper.classList.remove('active');
-                        document.getElementById('seoBookList').innerHTML = '<div class="text-gray-500 text-sm">Select a book above to view files</div>';
-                        document.getElementById('seoCount').textContent = '0 pages';
-                        return;
-                    }
-                    seoSelectedBookSlug = slug;
-                    seoSelectedBookTitle = value;
-                    document.getElementById('seoBookSelectedText').textContent = value;
-                    document.getElementById('seoBookSelectedText').style.color = '#374151';
-                    wrapper.classList.remove('active');
-                    showSeoBookFiles(slug, value);
-                });
-            });
-            
-            if (searchInput) {
-                searchInput.addEventListener('input', function() {
-                    const term = this.value.toLowerCase();
-                    itemsContainer.querySelectorAll('.dropdown-item').forEach(item => {
-                        const text = item.textContent.toLowerCase();
-                        item.style.display = text.includes(term) ? 'flex' : 'none';
-                    });
-                });
-            }
-        }
-        
-        toggle.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const isActive = wrapper.classList.contains('active');
-            document.querySelectorAll('.single-select-wrapper').forEach(w => w.classList.remove('active'));
-            if (!isActive) {
-                buildSeoBookDropdown();
-                wrapper.classList.add('active');
-                setTimeout(() => {
-                    const input = document.getElementById('seoBookSearchInput');
-                    if (input) input.focus();
-                }, 100);
-            }
-        });
-        
-        if (searchInput) {
-            searchInput.addEventListener('click', function(e) {
-                e.stopPropagation();
-            });
-        }
-        
-        buildSeoBookDropdown();
-    }
-
-    function showSeoBookFiles(slug, title) {
-        const container = document.getElementById('seoBookList');
-        const files = seoGeneratedFiles.filter(f => f.bookSlug === slug);
-        
-        if (files.length === 0) {
-            container.innerHTML = `<div class="text-gray-500 text-sm">No files found for "${title}". Generate pages first.</div>`;
-            document.getElementById('seoCount').textContent = '0 pages';
-            return;
-        }
-        
-        const bookFiles = files;
-        const totalChapters = bookFiles.filter(f => f.isBook === false && f.isTopic === false).length;
-        const totalTopics = bookFiles.filter(f => f.isTopic === true).length;
-        
-        let dropdownItems = '';
-        
-        const indexFile = bookFiles.find(f => f.isBook);
-        if (indexFile) {
-            dropdownItems += `
-                <div class="seo-dropdown-item" style="display:flex; align-items:center; gap:10px; padding:6px 12px; cursor:pointer; transition:background 0.2s; text-align:left;">
-                    <input type="checkbox" 
-                           data-name="${escapeHtml(indexFile.name)}" 
-                           data-content="${encodeURIComponent(indexFile.content)}" 
-                           data-display-name="${escapeHtml(indexFile.displayName)}"
-                           data-book-slug="${escapeHtml(indexFile.bookSlug)}"
-                           data-is-book="true"
-                           style="width:16px; height:16px; cursor:pointer; flex-shrink:0;">
-                    <span class="file-label" style="font-size:13px; color:#1e293b; text-align:left;">📖 ${escapeHtml(indexFile.displayName)}</span>
-                </div>
-            `;
-        }
-        
-        const chapterFiles = bookFiles.filter(f => f.isBook === false && f.isTopic === false);
-        chapterFiles.sort((a, b) => (a.chapterNumber || 999) - (b.chapterNumber || 999));
-        
-        chapterFiles.forEach(f => {
-            dropdownItems += `
-                <div class="seo-dropdown-item" style="display:flex; align-items:center; gap:10px; padding:6px 12px; cursor:pointer; transition:background 0.2s; text-align:left;">
-                    <input type="checkbox" 
-                           data-name="${escapeHtml(f.name)}" 
-                           data-content="${encodeURIComponent(f.content)}" 
-                           data-display-name="${escapeHtml(f.displayName)}"
-                           data-book-slug="${escapeHtml(f.bookSlug)}"
-                           data-chapter-slug="${escapeHtml(f.chapterSlug)}"
-                           data-is-topic="false"
-                           data-is-book="false"
-                           style="width:16px; height:16px; cursor:pointer; flex-shrink:0;">
-                    <span class="file-label" style="font-size:13px; color:#1e293b; text-align:left;">${escapeHtml(f.displayName)}</span>
-                </div>
-            `;
-            
-            const chapterTopics = bookFiles.filter(t => t.isTopic && t.chapterId === f.chapterId);
-            chapterTopics.sort((a, b) => a.topic.localeCompare(b.topic));
-            chapterTopics.forEach(t => {
-                dropdownItems += `
-                    <div class="seo-dropdown-item" style="display:flex; align-items:center; gap:10px; padding:6px 12px 6px 28px; cursor:pointer; transition:background 0.2s; text-align:left;">
-                        <input type="checkbox" 
-                               data-name="${escapeHtml(t.name)}" 
-                               data-content="${encodeURIComponent(t.content)}" 
-                               data-display-name="${escapeHtml(t.displayName)}"
-                               data-book-slug="${escapeHtml(t.bookSlug)}"
-                               data-chapter-slug="${escapeHtml(t.chapterSlug)}"
-                               data-topic-slug="${escapeHtml(t.topicSlug)}"
-                               data-is-topic="true"
-                               data-is-book="false"
-                               style="width:16px; height:16px; cursor:pointer; flex-shrink:0;">
-                        <span class="file-label file-indent" style="font-size:12px; color:#64748b; text-align:left;">${escapeHtml(t.displayName)}</span>
-                    </div>
-                `;
-            });
-        });
-        
-        container.innerHTML = `
-            <div class="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-200 hover:border-purple-300 transition">
-                <div class="flex items-center gap-3">
-                    <span class="font-medium text-gray-800">📚 ${escapeHtml(title)}</span>
-                    <span class="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full">${totalChapters} chapters</span>
-                    ${totalTopics > 0 ? `<span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">${totalTopics} topics</span>` : ''}
-                    <span class="text-xs text-gray-400">${bookFiles.length} files</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <button onclick="downloadSelectedSeoFilesForBook('${slug}')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm transition flex items-center gap-1">
-                        <i class="fas fa-download"></i> Download Selected
-                    </button>
-                    <div class="seo-dropdown-container">
-                        <div class="seo-dropdown-toggle" onclick="toggleSeoDropdown('${slug}')">
-                            <span>Select Files</span>
-                            <i class="fas fa-chevron-down"></i>
-                        </div>
-                        <div id="seoDropdown_${slug}" class="seo-dropdown-menu">
-                            ${dropdownItems}
-                            <div class="seo-dropdown-actions" style="padding:8px 12px; border-top:1px solid #e5e7eb; display:flex; gap:8px; background:#f9fafb; border-radius:0 0 8px 8px;">
-                                <button onclick="selectAllSeoFiles('${slug}')" class="select-all-btn" style="background:#8b5cf6; color:white; padding:4px 12px; border-radius:4px; font-size:12px; border:none; cursor:pointer;">Select All</button>
-                                <button onclick="deselectAllSeoFiles('${slug}')" class="deselect-all-btn" style="background:#e5e7eb; color:#1e293b; padding:4px 12px; border-radius:4px; font-size:12px; border:none; cursor:pointer;">Deselect All</button>
-                            </div>
-                        </div>
-                    </div>
-                    <button onclick="downloadSingleSEOPage('${slug}')" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm transition flex items-center gap-1">
-                        <i class="fas fa-folder-open"></i> All (${bookFiles.length})
-                    </button>
-                </div>
-            </div>
-        `;
-        
-        document.getElementById('seoCount').textContent = bookFiles.length + ' pages';
-    }
-
-    function selectAllSeoFiles(bookSlug) {
-        const menu = document.getElementById(`seoDropdown_${bookSlug}`);
-        if (menu) {
-            menu.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
-        }
-    }
-
-    function deselectAllSeoFiles(bookSlug) {
-        const menu = document.getElementById(`seoDropdown_${bookSlug}`);
-        if (menu) {
-            menu.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-        }
-    }
-
-    function downloadSelectedSeoFilesForBook(bookSlug) {
-        const checkboxes = document.querySelectorAll(`#seoDropdown_${bookSlug} input[type="checkbox"]:checked`);
-        const files = [];
-        checkboxes.forEach(cb => {
-            const fileData = {
-                name: cb.dataset.name || '',
-                content: decodeURIComponent(cb.dataset.content || ''),
-                displayName: cb.dataset.displayName || '',
-                bookSlug: cb.dataset.bookSlug || '',
-                chapterSlug: cb.dataset.chapterSlug || '',
-                topicSlug: cb.dataset.topicSlug || '',
-                isTopic: cb.dataset.isTopic === 'true',
-                isBook: cb.dataset.isBook === 'true'
-            };
-            if (fileData.name && fileData.content) {
-                files.push(fileData);
-            }
-        });
-        
-        if (files.length === 0) {
-            showToast('Please select at least one file to download', true);
-            return;
-        }
-        
-        showToast(`📥 Downloading ${files.length} selected files...`);
-        
-        files.forEach((file, index) => {
-            setTimeout(() => {
-                let cleanName;
-                if (file.isBook) {
-                    cleanName = `index.html`;
-                } else if (file.isTopic) {
-                    cleanName = `${file.topicSlug}.html`;
-                } else {
-                    cleanName = `${file.chapterSlug}.html`;
-                }
-                
-                const blob = new Blob([file.content], { type: 'text/html' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = cleanName;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                
-                if (index === files.length - 1) {
-                    showToast(`✅ Downloaded ${files.length} files successfully!`);
-                }
-            }, index * 300);
-        });
-        
-        const menu = document.getElementById(`seoDropdown_${bookSlug}`);
-        if (menu) {
-            menu.classList.remove('open');
-        }
-    }
-
     // ============ VARIABLES ============
     let seoSelectedBookSlug = '';
     let seoSelectedBookTitle = '';
@@ -6974,7 +7101,12 @@ function generateUrlItemHtml(url, type, isIndented = false) {
         document.getElementById('tabBulkUploadBtn').addEventListener('click', () => showTab('bulkupload'));
         document.getElementById('tabAdminsBtn').addEventListener('click', () => showTab('admins'));
         document.getElementById('tabMessagesBtn').addEventListener('click', () => showTab('messages'));
-        document.getElementById('tabSeoBtn').addEventListener('click', openSEOTab);
+        
+        // ============ FIXED: SEO Tab Listener ============
+        document.getElementById('tabSeoBtn').addEventListener('click', function() {
+            openSEOTab();
+        });
+        
         document.getElementById('tabSitemapBtn').addEventListener('click', () => showTab('sitemap'));
         
         document.getElementById('downloadAllSEOBtn').addEventListener('click', downloadAllSEOPages);
