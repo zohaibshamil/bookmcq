@@ -5198,33 +5198,59 @@ function renderBookUrlsPanel(filterSlug) {
         });
     }
     
-    // Chapters
+    // Chapters with their topics nested under them
     if (chapterUrls.length > 0) {
-        html += `<div style="padding:8px 14px; background:#f3f4f6; font-weight:600; font-size:13px; color:#4b5563; border-bottom:1px solid #e5e7eb; margin-top:4px;">📖 Chapters</div>`;
-        chapterUrls.forEach(url => {
+        html += `<div style="padding:8px 14px; background:#f3f4f6; font-weight:600; font-size:13px; color:#4b5563; border-bottom:1px solid #e5e7eb; margin-top:4px;">📖 Chapters & Topics</div>`;
+        
+        // Group topics by chapter
+        const topicsByChapter = {};
+        topicUrls.forEach(topic => {
+            const key = topic.chapterSlug || topic.bookSlug + '_' + (topic.chapterName || 'unknown');
+            if (!topicsByChapter[key]) {
+                topicsByChapter[key] = [];
+            }
+            topicsByChapter[key].push(topic);
+        });
+        
+        // Display each chapter with its topics
+        chapterUrls.forEach((url, index) => {
+            // Find topics for this chapter
+            const chapterKey = url.chapterSlug || url.bookSlug + '_' + (url.chapterName || 'unknown');
+            const chapterTopics = topicsByChapter[chapterKey] || [];
+            
+            // Display chapter
             html += generateUrlItemHtml(url, 'Chapter');
+            
+            // Display topics under this chapter with indentation
+            if (chapterTopics.length > 0) {
+                chapterTopics.forEach(topic => {
+                    html += generateUrlItemHtml(topic, 'Topic', true); // true = indented
+                });
+            }
         });
-    }
-    
-    // Topics
-    if (topicUrls.length > 0) {
-        html += `<div style="padding:8px 14px; background:#f3f4f6; font-weight:600; font-size:13px; color:#4b5563; border-bottom:1px solid #e5e7eb; margin-top:4px;">📝 Topics</div>`;
-        topicUrls.forEach(url => {
-            html += generateUrlItemHtml(url, 'Topic');
-        });
+    } else {
+        // If no chapters, just show topics
+        if (topicUrls.length > 0) {
+            html += `<div style="padding:8px 14px; background:#f3f4f6; font-weight:600; font-size:13px; color:#4b5563; border-bottom:1px solid #e5e7eb; margin-top:4px;">📝 Topics</div>`;
+            topicUrls.forEach(url => {
+                html += generateUrlItemHtml(url, 'Topic');
+            });
+        }
     }
     
     listEl.innerHTML = html;
 }
 
-function generateUrlItemHtml(url, type) {
+function generateUrlItemHtml(url, type, isIndented = false) {
     let label = '';
     let displayUrl = url.loc || '';
+    let indentStyle = isIndented ? 'padding-left: 28px !important; border-left-color: #8b5cf6 !important;' : '';
     
     if (type === 'Static') {
         label = displayUrl.replace('https://www.bookmcq.com', '') || '/';
     } else if (type === 'Book') {
         label = url.bookTitle || 'Book';
+        label = `📚 ${label}`;
     } else if (type === 'Chapter') {
         // Get chapter name from URL data or extract from URL
         if (url.chapterName && url.chapterName !== 'Chapter') {
@@ -5240,6 +5266,8 @@ function generateUrlItemHtml(url, type) {
             label = label.replace(/\b\w/g, l => l.toUpperCase());
         }
         if (url.chapterNumber) {
+            label = `📖 Ch ${url.chapterNumber}: ${label}`;
+        } else {
             label = `📖 ${label}`;
         }
     } else if (type === 'Topic') {
@@ -5258,7 +5286,7 @@ function generateUrlItemHtml(url, type) {
     
     // Return with the URL displayed like the "View URLs" button
     return `
-        <div class="sitemap-url-item" style="display:flex; justify-content:space-between; padding:6px 12px; background:#f8fafc; border-radius:6px; font-size:12px; border-left:3px solid #22c55e; margin-bottom:4px;">
+        <div class="sitemap-url-item" style="display:flex; justify-content:space-between; padding:6px 12px; background:#f8fafc; border-radius:6px; font-size:12px; border-left:3px solid ${isIndented ? '#8b5cf6' : '#22c55e'}; margin-bottom:4px; ${indentStyle}">
             <span class="url-path" style="color:#1e293b; font-weight:500;">${label}</span>
             <span class="url-priority" style="color:#64748b; font-size:11px;">${displayUrl} | Priority: ${url.priority || '0.7'}</span>
         </div>
