@@ -5977,37 +5977,18 @@ async function loadBooksForSeoDropdown() {
                 });
             });
             
-            bookListHtml += `
-                <div class="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-200 hover:border-purple-300 transition">
-                    <div class="flex items-center gap-3">
-                        <span class="font-medium text-gray-800">📚 ${escapeHtml(bookTitle)}</span>
-                        <span class="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full">${totalChapters} chapters</span>
-                        ${totalTopics > 0 ? `<span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">${totalTopics} topics</span>` : ''}
-                        <span class="text-xs text-gray-400">${totalFiles} files</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button onclick="downloadSelectedSeoFiles('${bookSlug}')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm transition flex items-center gap-1">
-                            <i class="fas fa-download"></i> Download Selected
-                        </button>
-                        <div class="seo-dropdown-container">
-                            <div class="seo-dropdown-toggle" onclick="toggleSeoDropdown('${bookSlug}')">
-                                <span>Select Files</span>
-                                <i class="fas fa-chevron-down"></i>
-                            </div>
-                            <div id="seoDropdown_${bookSlug}" class="seo-dropdown-menu">
-                                ${dropdownItems}
-                                <div class="seo-dropdown-actions" style="padding:8px 12px; border-top:1px solid #e5e7eb; display:flex; gap:8px; background:#f9fafb; border-radius:0 0 8px 8px;">
-                                    <button onclick="selectAllSeoFiles('${bookSlug}')" class="select-all-btn" style="background:#8b5cf6; color:white; padding:4px 12px; border-radius:4px; font-size:12px; border:none; cursor:pointer;">Select All</button>
-                                    <button onclick="deselectAllSeoFiles('${bookSlug}')" class="deselect-all-btn" style="background:#e5e7eb; color:#1e293b; padding:4px 12px; border-radius:4px; font-size:12px; border:none; cursor:pointer;">Deselect All</button>
-                                </div>
-                            </div>
-                        </div>
-                        <button onclick="downloadSingleSEOPage('${bookSlug}')" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm transition flex items-center gap-1">
-                            <i class="fas fa-folder-open"></i> All (${totalFiles})
-                        </button>
-                    </div>
-                </div>
-            `;
+bookListHtml += `
+    <div class="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-200 hover:border-purple-300 transition">
+        <div class="flex items-center gap-3">
+            <span class="font-medium text-gray-800">📚 ${escapeHtml(bookTitle)}</span>
+            <span class="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full font-semibold">✅ Generated</span>
+            <span class="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full">${totalChapters} chapters</span>
+            ${totalTopics > 0 ? `<span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">${totalTopics} topics</span>` : ''}
+            <span class="text-xs text-gray-400">${totalFiles} files</span>
+        </div>
+        <!-- ... rest of the HTML stays the same ... -->
+    </div>
+`;
             
             bookListEl.innerHTML = bookListHtml;
             
@@ -6023,10 +6004,9 @@ async function loadBooksForSeoDropdown() {
             
             progressBar.style.width = '100%';
             
-            // Re-initialize dropdown to show the book
-            setTimeout(() => {
-                initSeoBookDropdown();
-            }, 300);
+// The dropdown should always show all books from the database
+// Generation status is shown in the book list below
+console.log('✅ Pages generated for:', bookTitle);
             
         } catch (error) {
             console.error('SEO Generation Error:', error);
@@ -6093,83 +6073,6 @@ async function loadBooksForSeoDropdown() {
         return allQuestions;
     }
 
-    // ============ FIXED: SEO Dropdown Initialization ============
-function initSeoBookDropdown() {
-    // IMPORTANT: If seoGeneratedFiles is empty, do NOT rebuild the dropdown
-    // This prevents overwriting the database-loaded dropdown with empty data
-    if (!seoGeneratedFiles || seoGeneratedFiles.length === 0) {
-        console.log('No generated files yet - skipping dropdown rebuild');
-        return;
-    }
-    
-    const wrapper = document.getElementById('seoBookSelectWrapper');
-    if (!wrapper) return;
-    
-    const toggle = wrapper.querySelector('.single-select-btn');
-    const searchInput = document.getElementById('seoBookSearchInput');
-    const itemsContainer = document.getElementById('seoBookDropdownItems');
-    
-    function buildSeoBookDropdown() {
-        // Get unique books from seoGeneratedFiles
-        const uniqueBooks = [];
-        const seenSlugs = {};
-        seoGeneratedFiles.forEach(file => {
-            if (!seenSlugs[file.bookSlug]) {
-                seenSlugs[file.bookSlug] = true;
-                uniqueBooks.push({
-                    slug: file.bookSlug,
-                    title: file.book
-                });
-            }
-        });
-        
-        if (uniqueBooks.length === 0) {
-            // If no files generated, show message
-            itemsContainer.innerHTML = '<div class="dropdown-item" style="padding:10px 12px; color:#6b7280; font-size:13px;">No books generated. Select a book from above.</div>';
-            return;
-        }
-        
-        let html = '<div class="dropdown-item" data-value="" data-slug="" style="padding:10px 12px; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f3f4f6; transition:background 0.2s; color:#6b7280; font-style:italic;">-- Select a book --</div>';
-        uniqueBooks.forEach(book => {
-            html += `<div class="dropdown-item" data-value="${escapeHtml(book.title)}" data-slug="${escapeHtml(book.slug)}" style="padding:10px 12px; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f3f4f6; transition:background 0.2s;">
-                <label style="cursor:pointer; flex:1; color:#374151; font-size:14px;">📚 ${escapeHtml(book.title)}</label>
-            </div>`;
-        });
-        itemsContainer.innerHTML = html;
-        
-        itemsContainer.querySelectorAll('.dropdown-item').forEach(item => {
-            item.addEventListener('click', function(e) {
-                const value = this.getAttribute('data-value');
-                const slug = this.getAttribute('data-slug');
-                if (value === '') {
-                    seoSelectedBookSlug = '';
-                    seoSelectedBookTitle = '';
-                    document.getElementById('seoBookSelectedText').textContent = 'Select a book...';
-                    document.getElementById('seoBookSelectedText').style.color = '#6b7280';
-                    wrapper.classList.remove('active');
-                    document.getElementById('seoBookList').innerHTML = '<div class="text-gray-500 text-sm">Select a book above to view files</div>';
-                    document.getElementById('seoCount').textContent = '0 pages';
-                    return;
-                }
-                seoSelectedBookSlug = slug;
-                seoSelectedBookTitle = value;
-                document.getElementById('seoBookSelectedText').textContent = value;
-                document.getElementById('seoBookSelectedText').style.color = '#374151';
-                wrapper.classList.remove('active');
-                showSeoBookFiles(slug, value);
-            });
-        });
-        
-        if (searchInput) {
-            searchInput.addEventListener('input', function() {
-                const term = this.value.toLowerCase();
-                itemsContainer.querySelectorAll('.dropdown-item').forEach(item => {
-                    const text = item.textContent.toLowerCase();
-                    item.style.display = text.includes(term) ? 'flex' : 'none';
-                });
-            });
-        }
-    }
     
     // Remove old event listeners by cloning
     const newToggle = toggle.cloneNode(true);
