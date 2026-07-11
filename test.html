@@ -583,6 +583,94 @@
         .permission-checkbox label:hover {
             color: #1e293b;
         }
+
+        /* Searchable Dropdown Styles */
+        .single-select-wrapper {
+            position: relative;
+            width: 100%;
+            z-index: 100;
+        }
+        .single-select-btn {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 12px;
+            background: white;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+        }
+        .single-select-btn span {
+            color: #374151;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .single-select-btn i {
+            transition: transform 0.2s;
+        }
+        .single-select-wrapper.active .single-select-btn i {
+            transform: rotate(180deg);
+        }
+
+        .desktop-dropdown-content {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 12px;
+            margin-top: 5px;
+            z-index: 99999;
+            max-height: 280px;
+            overflow-y: auto;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2);
+        }
+        .single-select-wrapper.active .desktop-dropdown-content {
+            display: block;
+        }
+        .desktop-dropdown-content .dropdown-search {
+            padding: 10px;
+            border-bottom: 1px solid #e5e7eb;
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 10;
+        }
+        .desktop-dropdown-content .dropdown-search input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 13px;
+            outline: none;
+        }
+        .desktop-dropdown-content .dropdown-search input:focus {
+            border-color: #8b5cf6;
+        }
+        .desktop-dropdown-content .dropdown-items {
+            max-height: 220px;
+            overflow-y: auto;
+        }
+        .desktop-dropdown-content .dropdown-item {
+            padding: 10px 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .desktop-dropdown-content .dropdown-item:hover {
+            background: #f3e8ff;
+        }
+        .desktop-dropdown-content .dropdown-item:last-child {
+            border-bottom: none;
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -1211,7 +1299,26 @@
         <i class="fas fa-robot text-6xl text-purple-500 mb-4"></i>
         <h2 class="text-2xl font-bold mb-3">🤖 Generate SEO Pages</h2>
         <p class="text-gray-600 mb-6">Generate static HTML pages for each book so Google can crawl all your content.</p>
-        
+
+        <!-- FIX A: Searchable Book Dropdown -->
+        <div class="mb-6 max-w-md mx-auto">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">📚 Select Book:</label>
+            <div class="single-select-wrapper" id="seoBookSelectWrapper" style="position:relative; z-index:100;">
+                <div class="single-select-btn" data-dropdown="seoBook" style="width:100%; padding:12px; border:1px solid #d1d5db; border-radius:12px; background:white; cursor:pointer; display:flex; justify-content:space-between; align-items:center; font-size:14px;">
+                    <span id="seoBookSelectedText" style="color:#6b7280;">Select a book...</span>
+                    <i class="fas fa-chevron-down" style="color:#6b7280;"></i>
+                </div>
+                <div class="desktop-dropdown-content" id="seoBookDesktopDropdown" style="display:none; position:absolute; top:100%; left:0; right:0; background:white; border:1px solid #d1d5db; border-radius:12px; margin-top:5px; z-index:99999; max-height:280px; overflow-y:auto; box-shadow:0 10px 25px -5px rgba(0,0,0,0.2);">
+                    <div class="dropdown-search" style="padding:10px; border-bottom:1px solid #e5e7eb; position:sticky; top:0; background:white; z-index:10;">
+                        <input type="text" id="seoBookSearchInput" placeholder="Search books..." autocomplete="off" style="width:100%; padding:8px 12px; border:1px solid #e5e7eb; border-radius:8px; font-size:13px; outline:none;">
+                    </div>
+                    <div id="seoBookDropdownItems" class="dropdown-items" style="max-height:220px; overflow-y:auto;">
+                        <div class="dropdown-item" style="padding:10px 12px; color:#6b7280; font-size:13px;">Loading books...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto text-left mb-6">
             <div class="bg-blue-50 p-4 rounded-lg">
                 <div class="text-2xl mb-2">📚</div>
@@ -1229,24 +1336,24 @@
                 <p class="text-sm text-gray-600">Question count shown</p>
             </div>
         </div>
-        
+
         <div class="bg-gray-50 p-6 rounded-lg max-w-4xl mx-auto">
             <div class="mb-4 text-left">
                 <h3 class="font-bold text-gray-700 mb-3">📚 Your Books:</h3>
                 <div id="seoBookList" class="space-y-2 max-h-64 overflow-y-auto">
-                    <div class="text-gray-500 text-sm">Loading books...</div>
+                    <div class="text-gray-500 text-sm">Select a book above to view files</div>
                 </div>
             </div>
-            
+
             <div class="flex items-center gap-4 mb-4 border-t pt-4">
                 <button id="generateSEOPagesBtn" class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-lg font-bold hover:opacity-90 transition flex items-center gap-2">
-                    <i class="fas fa-sync-alt"></i> Refresh All Books
+                    <i class="fas fa-sync-alt"></i> Generate All Books
                 </button>
                 <button id="downloadAllSEOBtn" class="bg-green-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-700 transition flex items-center gap-2 hidden">
                     <i class="fas fa-download"></i> Download All
                 </button>
             </div>
-            
+
             <div id="seoProgress" class="mt-4">
                 <div class="flex justify-between text-sm text-gray-600 mb-1">
                     <span id="seoStatus">Ready to generate</span>
@@ -1256,15 +1363,15 @@
                     <div id="seoProgressBar" class="bg-purple-600 h-2 rounded-full transition-all" style="width: 0%"></div>
                 </div>
             </div>
-            
+
             <div id="seoLog" class="mt-4 max-h-60 overflow-y-auto bg-gray-100 rounded-lg p-3 text-xs font-mono hidden">
                 <div id="seoLogContent"></div>
             </div>
-            
+
             <div id="seoResult" class="mt-4 hidden">
                 <div class="bg-green-50 border border-green-300 p-4 rounded-lg">
                     <p class="text-green-800 font-semibold"><i class="fas fa-check-circle text-green-600"></i> Pages generated successfully!</p>
-                    <p class="text-sm text-gray-600 mt-1">Click the download button next to each book to save individual pages.</p>
+                    <p class="text-sm text-gray-600 mt-1">Select a book above to download its pages.</p>
                 </div>
             </div>
         </div>
@@ -1277,6 +1384,28 @@
         <i class="fas fa-sitemap text-6xl text-green-500 mb-4"></i>
         <h2 class="text-2xl font-bold mb-3">🗺️ Generate Sitemap.xml</h2>
         <p class="text-gray-600 mb-6">Generate a sitemap.xml file automatically from your books, chapters, and topics.</p>
+
+        <!-- FIX B: Searchable Book Dropdown for URL Filtering -->
+        <div class="mb-6 max-w-md mx-auto">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">📚 Filter URLs by Book:</label>
+            <div class="single-select-wrapper" id="sitemapBookSelectWrapper" style="position:relative; z-index:100;">
+                <div class="single-select-btn" data-dropdown="sitemapBook" style="width:100%; padding:12px; border:1px solid #d1d5db; border-radius:12px; background:white; cursor:pointer; display:flex; justify-content:space-between; align-items:center; font-size:14px;">
+                    <span id="sitemapBookSelectedText" style="color:#6b7280;">All Books</span>
+                    <i class="fas fa-chevron-down" style="color:#6b7280;"></i>
+                </div>
+                <div class="desktop-dropdown-content" id="sitemapBookDesktopDropdown" style="display:none; position:absolute; top:100%; left:0; right:0; background:white; border:1px solid #d1d5db; border-radius:12px; margin-top:5px; z-index:99999; max-height:280px; overflow-y:auto; box-shadow:0 10px 25px -5px rgba(0,0,0,0.2);">
+                    <div class="dropdown-search" style="padding:10px; border-bottom:1px solid #e5e7eb; position:sticky; top:0; background:white; z-index:10;">
+                        <input type="text" id="sitemapBookSearchInput" placeholder="Search books..." autocomplete="off" style="width:100%; padding:8px 12px; border:1px solid #e5e7eb; border-radius:8px; font-size:13px; outline:none;">
+                    </div>
+                    <div id="sitemapBookDropdownItems" class="dropdown-items" style="max-height:220px; overflow-y:auto;">
+                        <div class="dropdown-item" data-value="all" style="padding:10px 12px; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f3f4f6; transition:background 0.2s; background:#f5f3ff;">
+                            <label style="cursor:pointer; flex:1; color:#374151; font-size:14px; font-weight:500;">📚 All Books</label>
+                        </div>
+                        <div class="dropdown-item" style="padding:10px 12px; color:#6b7280; font-size:13px;">Loading books...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto text-left mb-6">
             <div class="bg-blue-50 p-4 rounded-lg">
@@ -1354,7 +1483,7 @@
             <div id="sitemapUrlPreview" class="mt-4 hidden">
                 <div class="bg-white border border-gray-200 rounded-lg p-4">
                     <div class="flex justify-between items-center mb-3">
-                        <h4 class="font-bold text-gray-700">📋 Generated URLs</h4>
+                        <h4 class="font-bold text-gray-700">📋 Generated URLs <span id="sitemapUrlFilterCount" class="text-sm font-normal text-gray-500"></span></h4>
                         <button id="closeUrlPreviewBtn" class="text-gray-400 hover:text-gray-600">
                             <i class="fas fa-times"></i>
                         </button>
@@ -4991,15 +5120,30 @@ function showTab(tabName) {
     }
     if (tabName === 'categories') loadCategoriesCached();
     if (tabName === 'messages') loadMessages();
+    
+    // ============ FIX A & B: Initialize dropdowns when SEO or Sitemap tab opens ============
     if (tabName === 'seo') {
-        setTimeout(generateSEOPages, 500);
+        setTimeout(async () => {
+            await generateSEOPages();
+            setTimeout(() => {
+                initSeoBookDropdown();
+            }, 500);
+        }, 500);
     }
     if (tabName === 'sitemap') {
         document.getElementById('sitemapStaticCount').textContent = '0';
         document.getElementById('sitemapBookCount').textContent = '0';
         document.getElementById('sitemapChapterCount').textContent = '0';
         document.getElementById('sitemapTotalCount').textContent = '0';
-        setTimeout(generateSitemap, 500);
+        setTimeout(async () => {
+            await generateSitemap();
+            setTimeout(() => {
+                initSitemapBookDropdown();
+                if (window.sitemapUrls && window.sitemapUrls.length > 0) {
+                    filterSitemapUrls('all');
+                }
+            }, 500);
+        }, 500);
     }
     if (tabName === 'subtopics') {
         loadSubTopicFilterBooks();
@@ -6456,6 +6600,407 @@ if (topicToggle && topicMenu) {
     window.downloadSelectedSeoFiles = downloadSelectedSeoFiles;
     window.downloadSingleSEOPage = downloadSingleSEOPage;
 }
+
+    // ============ FIX A & B: SEO & Sitemap Dropdown Functions ============
+    let seoBooksData = [];
+    let seoSelectedBookSlug = '';
+    let seoSelectedBookTitle = '';
+
+    function initSeoBookDropdown() {
+        const wrapper = document.getElementById('seoBookSelectWrapper');
+        if (!wrapper) return;
+        
+        const toggle = wrapper.querySelector('.single-select-btn');
+        const searchInput = document.getElementById('seoBookSearchInput');
+        const itemsContainer = document.getElementById('seoBookDropdownItems');
+        
+        async function loadSeoBooks() {
+            itemsContainer.innerHTML = '<div class="dropdown-item" style="padding:10px 12px; color:#6b7280; font-size:13px;">Loading books...</div>';
+            
+            const { data, error } = await _supabase
+                .from('books')
+                .select('id, title, slug')
+                .order('title');
+            
+            if (error || !data) {
+                itemsContainer.innerHTML = '<div class="dropdown-item" style="padding:10px 12px; color:#ef4444; font-size:13px;">Error loading books</div>';
+                return;
+            }
+            
+            seoBooksData = data;
+            
+            let html = '<div class="dropdown-item" data-value="" data-slug="" style="padding:10px 12px; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f3f4f6; transition:background 0.2s; color:#6b7280; font-style:italic;">-- Select a book --</div>';
+            data.forEach(book => {
+                html += `<div class="dropdown-item" data-value="${escapeHtml(book.title)}" data-slug="${escapeHtml(book.slug)}" style="padding:10px 12px; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f3f4f6; transition:background 0.2s;">
+                    <label style="cursor:pointer; flex:1; color:#374151; font-size:14px;">📚 ${escapeHtml(book.title)}</label>
+                </div>`;
+            });
+            itemsContainer.innerHTML = html;
+            
+            itemsContainer.querySelectorAll('.dropdown-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    const value = this.getAttribute('data-value');
+                    const slug = this.getAttribute('data-slug');
+                    if (value === '') {
+                        seoSelectedBookSlug = '';
+                        seoSelectedBookTitle = '';
+                        document.getElementById('seoBookSelectedText').textContent = 'Select a book...';
+                        document.getElementById('seoBookSelectedText').style.color = '#6b7280';
+                        wrapper.classList.remove('active');
+                        document.getElementById('seoBookList').innerHTML = '<div class="text-gray-500 text-sm">Select a book above to view files</div>';
+                        document.getElementById('seoCount').textContent = '0 pages';
+                        return;
+                    }
+                    seoSelectedBookSlug = slug;
+                    seoSelectedBookTitle = value;
+                    document.getElementById('seoBookSelectedText').textContent = value;
+                    document.getElementById('seoBookSelectedText').style.color = '#374151';
+                    wrapper.classList.remove('active');
+                    showSeoBookFiles(slug, value);
+                });
+            });
+            
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    const term = this.value.toLowerCase();
+                    itemsContainer.querySelectorAll('.dropdown-item').forEach(item => {
+                        const text = item.textContent.toLowerCase();
+                        item.style.display = text.includes(term) ? 'flex' : 'none';
+                    });
+                });
+            }
+        }
+        
+        toggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const isActive = wrapper.classList.contains('active');
+            document.querySelectorAll('.single-select-wrapper').forEach(w => w.classList.remove('active'));
+            if (!isActive) {
+                wrapper.classList.add('active');
+                setTimeout(() => {
+                    const input = document.getElementById('seoBookSearchInput');
+                    if (input) input.focus();
+                }, 100);
+            }
+        });
+        
+        if (searchInput) {
+            searchInput.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        }
+        
+        loadSeoBooks();
+    }
+
+    function showSeoBookFiles(slug, title) {
+        const container = document.getElementById('seoBookList');
+        const files = seoGeneratedFiles.filter(f => f.bookSlug === slug);
+        
+        if (files.length === 0) {
+            container.innerHTML = `<div class="text-gray-500 text-sm">No files found for "${title}". Generate pages first.</div>`;
+            document.getElementById('seoCount').textContent = '0 pages';
+            return;
+        }
+        
+        const bookFiles = files;
+        const totalChapters = bookFiles.filter(f => f.isBook === false && f.isTopic === false).length;
+        const totalTopics = bookFiles.filter(f => f.isTopic === true).length;
+        
+        let dropdownItems = '';
+        
+        const indexFile = bookFiles.find(f => f.isBook);
+        if (indexFile) {
+            dropdownItems += `
+                <div class="seo-dropdown-item" style="display:flex; align-items:center; gap:10px; padding:6px 12px; cursor:pointer; transition:background 0.2s; text-align:left;">
+                    <input type="checkbox" 
+                           data-name="${escapeHtml(indexFile.name)}" 
+                           data-content="${encodeURIComponent(indexFile.content)}" 
+                           data-display-name="${escapeHtml(indexFile.displayName)}"
+                           data-book-slug="${escapeHtml(indexFile.bookSlug)}"
+                           data-is-book="true"
+                           style="width:16px; height:16px; cursor:pointer; flex-shrink:0;">
+                    <span class="file-label" style="font-size:13px; color:#1e293b; text-align:left;">📖 ${escapeHtml(indexFile.displayName)}</span>
+                </div>
+            `;
+        }
+        
+        const chapterFiles = bookFiles.filter(f => f.isBook === false && f.isTopic === false);
+        chapterFiles.sort((a, b) => (a.chapterNumber || 999) - (b.chapterNumber || 999));
+        
+        chapterFiles.forEach(f => {
+            dropdownItems += `
+                <div class="seo-dropdown-item" style="display:flex; align-items:center; gap:10px; padding:6px 12px; cursor:pointer; transition:background 0.2s; text-align:left;">
+                    <input type="checkbox" 
+                           data-name="${escapeHtml(f.name)}" 
+                           data-content="${encodeURIComponent(f.content)}" 
+                           data-display-name="${escapeHtml(f.displayName)}"
+                           data-book-slug="${escapeHtml(f.bookSlug)}"
+                           data-chapter-slug="${escapeHtml(f.chapterSlug)}"
+                           data-is-topic="false"
+                           data-is-book="false"
+                           style="width:16px; height:16px; cursor:pointer; flex-shrink:0;">
+                    <span class="file-label" style="font-size:13px; color:#1e293b; text-align:left;">${escapeHtml(f.displayName)}</span>
+                </div>
+            `;
+            
+            const chapterTopics = bookFiles.filter(t => t.isTopic && t.chapterId === f.chapterId);
+            chapterTopics.sort((a, b) => a.topic.localeCompare(b.topic));
+            chapterTopics.forEach(t => {
+                dropdownItems += `
+                    <div class="seo-dropdown-item" style="display:flex; align-items:center; gap:10px; padding:6px 12px 6px 28px; cursor:pointer; transition:background 0.2s; text-align:left;">
+                        <input type="checkbox" 
+                               data-name="${escapeHtml(t.name)}" 
+                               data-content="${encodeURIComponent(t.content)}" 
+                               data-display-name="${escapeHtml(t.displayName)}"
+                               data-book-slug="${escapeHtml(t.bookSlug)}"
+                               data-chapter-slug="${escapeHtml(t.chapterSlug)}"
+                               data-topic-slug="${escapeHtml(t.topicSlug)}"
+                               data-is-topic="true"
+                               data-is-book="false"
+                               style="width:16px; height:16px; cursor:pointer; flex-shrink:0;">
+                        <span class="file-label file-indent" style="font-size:12px; color:#64748b; text-align:left;">${escapeHtml(t.displayName)}</span>
+                    </div>
+                `;
+            });
+        });
+        
+        container.innerHTML = `
+            <div class="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-200 hover:border-purple-300 transition">
+                <div class="flex items-center gap-3">
+                    <span class="font-medium text-gray-800">📚 ${escapeHtml(title)}</span>
+                    <span class="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full">${totalChapters} chapters</span>
+                    ${totalTopics > 0 ? `<span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">${totalTopics} topics</span>` : ''}
+                    <span class="text-xs text-gray-400">${bookFiles.length} files</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="downloadSelectedSeoFilesForBook('${slug}')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm transition flex items-center gap-1">
+                        <i class="fas fa-download"></i> Download Selected
+                    </button>
+                    <div class="seo-dropdown-container">
+                        <div class="seo-dropdown-toggle" onclick="toggleSeoDropdown('${slug}')">
+                            <span>Select Files</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div id="seoDropdown_${slug}" class="seo-dropdown-menu">
+                            ${dropdownItems}
+                            <div class="seo-dropdown-actions" style="padding:8px 12px; border-top:1px solid #e5e7eb; display:flex; gap:8px; background:#f9fafb; border-radius:0 0 8px 8px;">
+                                <button onclick="selectAllSeoFiles('${slug}')" class="select-all-btn" style="background:#8b5cf6; color:white; padding:4px 12px; border-radius:4px; font-size:12px; border:none; cursor:pointer;">Select All</button>
+                                <button onclick="deselectAllSeoFiles('${slug}')" class="deselect-all-btn" style="background:#e5e7eb; color:#1e293b; padding:4px 12px; border-radius:4px; font-size:12px; border:none; cursor:pointer;">Deselect All</button>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="downloadSingleSEOPage('${slug}')" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm transition flex items-center gap-1">
+                        <i class="fas fa-folder-open"></i> All (${bookFiles.length})
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('seoCount').textContent = bookFiles.length + ' pages';
+    }
+
+    function selectAllSeoFiles(bookSlug) {
+        const menu = document.getElementById(`seoDropdown_${bookSlug}`);
+        if (menu) {
+            menu.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
+        }
+    }
+
+    function deselectAllSeoFiles(bookSlug) {
+        const menu = document.getElementById(`seoDropdown_${bookSlug}`);
+        if (menu) {
+            menu.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+        }
+    }
+
+    function downloadSelectedSeoFilesForBook(bookSlug) {
+        const checkboxes = document.querySelectorAll(`#seoDropdown_${bookSlug} input[type="checkbox"]:checked`);
+        const files = [];
+        checkboxes.forEach(cb => {
+            const fileData = {
+                name: cb.dataset.name || '',
+                content: decodeURIComponent(cb.dataset.content || ''),
+                displayName: cb.dataset.displayName || '',
+                bookSlug: cb.dataset.bookSlug || '',
+                chapterSlug: cb.dataset.chapterSlug || '',
+                topicSlug: cb.dataset.topicSlug || '',
+                isTopic: cb.dataset.isTopic === 'true',
+                isBook: cb.dataset.isBook === 'true'
+            };
+            if (fileData.name && fileData.content) {
+                files.push(fileData);
+            }
+        });
+        
+        if (files.length === 0) {
+            showToast('Please select at least one file to download', true);
+            return;
+        }
+        
+        showToast(`📥 Downloading ${files.length} selected files...`);
+        
+        files.forEach((file, index) => {
+            setTimeout(() => {
+                let cleanName;
+                if (file.isBook) {
+                    cleanName = `index.html`;
+                } else if (file.isTopic) {
+                    cleanName = `${file.topicSlug}.html`;
+                } else {
+                    cleanName = `${file.chapterSlug}.html`;
+                }
+                
+                const blob = new Blob([file.content], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = cleanName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                if (index === files.length - 1) {
+                    showToast(`✅ Downloaded ${files.length} files successfully!`);
+                }
+            }, index * 300);
+        });
+        
+        const menu = document.getElementById(`seoDropdown_${bookSlug}`);
+        if (menu) {
+            menu.classList.remove('open');
+        }
+    }
+
+    let sitemapBooksData = [];
+    let sitemapSelectedBookSlug = 'all';
+
+    function initSitemapBookDropdown() {
+        const wrapper = document.getElementById('sitemapBookSelectWrapper');
+        if (!wrapper) return;
+        
+        const toggle = wrapper.querySelector('.single-select-btn');
+        const searchInput = document.getElementById('sitemapBookSearchInput');
+        const itemsContainer = document.getElementById('sitemapBookDropdownItems');
+        
+        async function loadSitemapBooks() {
+            itemsContainer.innerHTML = '<div class="dropdown-item" style="padding:10px 12px; color:#6b7280; font-size:13px;">Loading books...</div>';
+            
+            const { data, error } = await _supabase
+                .from('books')
+                .select('id, title, slug')
+                .order('title');
+            
+            if (error || !data) {
+                itemsContainer.innerHTML = '<div class="dropdown-item" style="padding:10px 12px; color:#ef4444; font-size:13px;">Error loading books</div>';
+                return;
+            }
+            
+            sitemapBooksData = data;
+            
+            let html = '<div class="dropdown-item" data-value="all" data-slug="all" style="padding:10px 12px; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f3f4f6; transition:background 0.2s; background:#f5f3ff;">';
+            html += '<label style="cursor:pointer; flex:1; color:#374151; font-size:14px; font-weight:500;">📚 All Books</label></div>';
+            
+            data.forEach(book => {
+                html += `<div class="dropdown-item" data-value="${escapeHtml(book.title)}" data-slug="${escapeHtml(book.slug)}" style="padding:10px 12px; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f3f4f6; transition:background 0.2s;">
+                    <label style="cursor:pointer; flex:1; color:#374151; font-size:14px;">📚 ${escapeHtml(book.title)}</label>
+                </div>`;
+            });
+            itemsContainer.innerHTML = html;
+            
+            itemsContainer.querySelectorAll('.dropdown-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    const value = this.getAttribute('data-value');
+                    const slug = this.getAttribute('data-slug');
+                    if (value === 'all') {
+                        sitemapSelectedBookSlug = 'all';
+                        document.getElementById('sitemapBookSelectedText').textContent = 'All Books';
+                        document.getElementById('sitemapBookSelectedText').style.color = '#374151';
+                        wrapper.classList.remove('active');
+                        filterSitemapUrls('all');
+                        return;
+                    }
+                    sitemapSelectedBookSlug = slug;
+                    document.getElementById('sitemapBookSelectedText').textContent = value;
+                    document.getElementById('sitemapBookSelectedText').style.color = '#374151';
+                    wrapper.classList.remove('active');
+                    filterSitemapUrls(slug);
+                });
+            });
+            
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    const term = this.value.toLowerCase();
+                    itemsContainer.querySelectorAll('.dropdown-item').forEach(item => {
+                        const text = item.textContent.toLowerCase();
+                        item.style.display = text.includes(term) ? 'flex' : 'none';
+                    });
+                });
+            }
+        }
+        
+        toggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const isActive = wrapper.classList.contains('active');
+            document.querySelectorAll('.single-select-wrapper').forEach(w => w.classList.remove('active'));
+            if (!isActive) {
+                wrapper.classList.add('active');
+                setTimeout(() => {
+                    const input = document.getElementById('sitemapBookSearchInput');
+                    if (input) input.focus();
+                }, 100);
+            }
+        });
+        
+        if (searchInput) {
+            searchInput.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        }
+        
+        loadSitemapBooks();
+    }
+
+    function filterSitemapUrls(bookSlug) {
+        const urlListEl = document.getElementById('sitemapUrlList');
+        const filterCountEl = document.getElementById('sitemapUrlFilterCount');
+        
+        if (!window.sitemapUrls || window.sitemapUrls.length === 0) {
+            return;
+        }
+        
+        let filteredUrls = window.sitemapUrls;
+        let filterText = '';
+        
+        if (bookSlug !== 'all') {
+            filteredUrls = window.sitemapUrls.filter(url => url.bookSlug === bookSlug);
+            filterText = ` (${filteredUrls.length} URLs for this book)`;
+        } else {
+            filterText = ` (${filteredUrls.length} total URLs)`;
+        }
+        
+        if (filterCountEl) {
+            filterCountEl.textContent = filterText;
+        }
+        
+        urlListEl.innerHTML = filteredUrls.map(url => {
+            let label = url.loc;
+            if (url.isTopic) {
+                label = `📝 ${url.topicName || 'Topic'} (${url.chapterName || 'Chapter'})`;
+            } else if (url.isChapter) {
+                label = `📖 ${url.chapterName || 'Chapter'}`;
+            } else if (url.isBook) {
+                label = `📚 ${url.bookTitle || 'Book'}`;
+            }
+            return `
+                <div class="sitemap-url-item">
+                    <span class="url-path">${label}</span>
+                    <span class="url-priority">${url.loc} | Priority: ${url.priority}</span>
+                </div>
+            `;
+        }).join('');
+    }
 
     // ============ INIT ============
     setupEventListeners();
