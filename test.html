@@ -5198,71 +5198,107 @@ function renderBookUrlsPanel(filterSlug) {
         });
     }
     
-    // Chapters
+    // Chapters with their topics nested under them
     if (chapterUrls.length > 0) {
         html += `<div style="padding:8px 14px; background:#f3f4f6; font-weight:600; font-size:13px; color:#4b5563; border-bottom:1px solid #e5e7eb; margin-top:4px;">📖 Chapters</div>`;
-        chapterUrls.forEach(url => {
-            html += generateUrlItemHtml(url, 'Chapter');
+        
+        // Sort chapters by chapter number or name
+        chapterUrls.sort((a, b) => {
+            const aNum = a.chapterNumber || 999;
+            const bNum = b.chapterNumber || 999;
+            return aNum - bNum;
         });
-    }
-    
-    // Topics
-    if (topicUrls.length > 0) {
-        html += `<div style="padding:8px 14px; background:#f3f4f6; font-weight:600; font-size:13px; color:#4b5563; border-bottom:1px solid #e5e7eb; margin-top:4px;">📝 Topics</div>`;
-        topicUrls.forEach(url => {
-            html += generateUrlItemHtml(url, 'Topic');
+        
+        chapterUrls.forEach(chapterUrl => {
+            // Get the chapter slug from the URL
+            const chapterSlug = chapterUrl.loc.split('/').pop().replace('.html', '');
+            
+            // Find topics that belong to this chapter
+            const chapterTopics = topicUrls.filter(topic => {
+                // Check if topic URL contains the chapter slug
+                return topic.loc.includes(`/${chapterSlug}/topics/`);
+            });
+            
+            // Display the chapter
+            html += generateUrlItemHtml(chapterUrl, 'Chapter');
+            
+            // Display topics under this chapter (indented)
+            if (chapterTopics.length > 0) {
+                chapterTopics.sort((a, b) => {
+                    const aName = a.topicName || a.loc;
+                    const bName = b.topicName || b.loc;
+                    return aName.localeCompare(bName);
+                });
+                
+                chapterTopics.forEach(topic => {
+                    html += generateUrlItemHtml(topic, 'Topic', true); // indent = true
+                });
+            }
         });
     }
     
     listEl.innerHTML = html;
 }
 
-function generateUrlItemHtml(url, type) {
+function generateUrlItemHtml(url, type, isIndented = false) {
     let label = '';
     let displayUrl = url.loc || '';
+    const indentStyle = isIndented ? 'padding-left: 30px !important;' : '';
     
     if (type === 'Static') {
         label = displayUrl.replace('https://www.bookmcq.com', '') || '/';
+        return `
+            <div class="sitemap-url-item" style="display:flex; justify-content:space-between; padding:6px 12px; background:#f8fafc; border-radius:6px; font-size:12px; border-left:3px solid #22c55e; margin-bottom:4px; ${indentStyle}">
+                <span class="url-path" style="color:#1e293b; font-weight:500;">${label}</span>
+                <span class="url-priority" style="color:#64748b; font-size:11px;">${displayUrl} | Priority: ${url.priority || '0.7'}</span>
+            </div>
+        `;
     } else if (type === 'Book') {
         label = url.bookTitle || 'Book';
+        return `
+            <div class="sitemap-url-item" style="display:flex; justify-content:space-between; padding:6px 12px; background:#f8fafc; border-radius:6px; font-size:12px; border-left:3px solid #22c55e; margin-bottom:4px; ${indentStyle}">
+                <span class="url-path" style="color:#1e293b; font-weight:500;">📚 ${label}</span>
+                <span class="url-priority" style="color:#64748b; font-size:11px;">${displayUrl} | Priority: ${url.priority || '0.7'}</span>
+            </div>
+        `;
     } else if (type === 'Chapter') {
         // Get chapter name from URL data or extract from URL
         if (url.chapterName && url.chapterName !== 'Chapter') {
             label = url.chapterName;
         } else {
-            // Extract from URL: /books/calculus/limits-and-continuity-an-introduction.html
+            // Extract from URL
             const urlParts = displayUrl.split('/');
             const fileName = urlParts[urlParts.length - 1];
             const nameWithoutExt = fileName.replace('.html', '');
-            // Convert slug to readable name
             label = nameWithoutExt.replace(/-/g, ' ');
-            // Capitalize first letter of each word
             label = label.replace(/\b\w/g, l => l.toUpperCase());
         }
-        if (url.chapterNumber) {
-            label = `📖 ${label}`;
-        }
+        return `
+            <div class="sitemap-url-item" style="display:flex; justify-content:space-between; padding:6px 12px; background:#f8fafc; border-radius:6px; font-size:12px; border-left:3px solid #22c55e; margin-bottom:4px; ${indentStyle}">
+                <span class="url-path" style="color:#1e293b; font-weight:500;">📖 ${label}</span>
+                <span class="url-priority" style="color:#64748b; font-size:11px;">${displayUrl} | Priority: ${url.priority || '0.7'}</span>
+            </div>
+        `;
     } else if (type === 'Topic') {
         if (url.topicName) {
             label = url.topicName;
         } else {
-            // Extract from URL: /books/calculus/basics-before-calculus/topics/exponential-functions.html
+            // Extract from URL
             const urlParts = displayUrl.split('/');
             const fileName = urlParts[urlParts.length - 1];
             const nameWithoutExt = fileName.replace('.html', '');
             label = nameWithoutExt.replace(/-/g, ' ');
             label = label.replace(/\b\w/g, l => l.toUpperCase());
         }
-        label = `📝 ${label}`;
+        return `
+            <div class="sitemap-url-item" style="display:flex; justify-content:space-between; padding:6px 12px; background:#f8fafc; border-radius:6px; font-size:12px; border-left:3px solid #22c55e; margin-bottom:4px; ${indentStyle}">
+                <span class="url-path" style="color:#1e293b; font-weight:500;">📝 ${label}</span>
+                <span class="url-priority" style="color:#64748b; font-size:11px;">${displayUrl} | Priority: ${url.priority || '0.7'}</span>
+            </div>
+        `;
     }
     
-    // Return with the URL displayed like the "View URLs" button
-    return `
-        <div class="sitemap-url-item" style="display:flex; justify-content:space-between; padding:6px 12px; background:#f8fafc; border-radius:6px; font-size:12px; border-left:3px solid #22c55e; margin-bottom:4px;">
-            <span class="url-path" style="color:#1e293b; font-weight:500;">${label}</span>
-            <span class="url-priority" style="color:#64748b; font-size:11px;">${displayUrl} | Priority: ${url.priority || '0.7'}</span>
-        </div>
-    `;
+    return '';
 }
     function initBookUrlsBookDropdown() {
         const wrapper = document.getElementById('bookUrlsBookSelectWrapper');
