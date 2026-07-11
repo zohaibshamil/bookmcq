@@ -6073,7 +6073,111 @@ console.log('✅ Pages generated for:', bookTitle);
         return allQuestions;
     }
 
+    // ============ FIXED: SEO Dropdown Initialization ============
+function initSeoBookDropdown() {
+    // IMPORTANT: If seoGeneratedFiles is empty, do NOT rebuild the dropdown
+    // This prevents overwriting the database-loaded dropdown with empty data
+    if (!seoGeneratedFiles || seoGeneratedFiles.length === 0) {
+        console.log('No generated files yet - skipping dropdown rebuild');
+        return;
+    }
     
+    const wrapper = document.getElementById('seoBookSelectWrapper');
+    if (!wrapper) return;
+    
+    const toggle = wrapper.querySelector('.single-select-btn');
+    const searchInput = document.getElementById('seoBookSearchInput');
+    const itemsContainer = document.getElementById('seoBookDropdownItems');
+    
+    function buildSeoBookDropdown() {
+        // Get unique books from seoGeneratedFiles
+        const uniqueBooks = [];
+        const seenSlugs = {};
+        seoGeneratedFiles.forEach(file => {
+            if (!seenSlugs[file.bookSlug]) {
+                seenSlugs[file.bookSlug] = true;
+                uniqueBooks.push({
+                    slug: file.bookSlug,
+                    title: file.book
+                });
+            }
+        });
+        
+        if (uniqueBooks.length === 0) {
+            // If no files generated, show message
+            itemsContainer.innerHTML = '<div class="dropdown-item" style="padding:10px 12px; color:#6b7280; font-size:13px;">No books generated. Select a book from above.</div>';
+            return;
+        }
+        
+        let html = '<div class="dropdown-item" data-value="" data-slug="" style="padding:10px 12px; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f3f4f6; transition:background 0.2s; color:#6b7280; font-style:italic;">-- Select a book --</div>';
+        uniqueBooks.forEach(book => {
+            html += `<div class="dropdown-item" data-value="${escapeHtml(book.title)}" data-slug="${escapeHtml(book.slug)}" style="padding:10px 12px; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f3f4f6; transition:background 0.2s;">
+                <label style="cursor:pointer; flex:1; color:#374151; font-size:14px;">📚 ${escapeHtml(book.title)}</label>
+            </div>`;
+        });
+        itemsContainer.innerHTML = html;
+        
+        itemsContainer.querySelectorAll('.dropdown-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                const value = this.getAttribute('data-value');
+                const slug = this.getAttribute('data-slug');
+                if (value === '') {
+                    seoSelectedBookSlug = '';
+                    seoSelectedBookTitle = '';
+                    document.getElementById('seoBookSelectedText').textContent = 'Select a book...';
+                    document.getElementById('seoBookSelectedText').style.color = '#6b7280';
+                    wrapper.classList.remove('active');
+                    document.getElementById('seoBookList').innerHTML = '<div class="text-gray-500 text-sm">Select a book above to view files</div>';
+                    document.getElementById('seoCount').textContent = '0 pages';
+                    return;
+                }
+                seoSelectedBookSlug = slug;
+                seoSelectedBookTitle = value;
+                document.getElementById('seoBookSelectedText').textContent = value;
+                document.getElementById('seoBookSelectedText').style.color = '#374151';
+                wrapper.classList.remove('active');
+                showSeoBookFiles(slug, value);
+            });
+        });
+        
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                const term = this.value.toLowerCase();
+                itemsContainer.querySelectorAll('.dropdown-item').forEach(item => {
+                    const text = item.textContent.toLowerCase();
+                    item.style.display = text.includes(term) ? 'flex' : 'none';
+                });
+            });
+        }
+    }
+    
+    // Remove old event listeners by cloning
+    const newToggle = toggle.cloneNode(true);
+    toggle.parentNode.replaceChild(newToggle, toggle);
+    
+    const freshToggle = document.getElementById('seoBookSelectWrapper').querySelector('.single-select-btn');
+    
+    freshToggle.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const isActive = wrapper.classList.contains('active');
+        document.querySelectorAll('.single-select-wrapper').forEach(w => w.classList.remove('active'));
+        if (!isActive) {
+            buildSeoBookDropdown();
+            wrapper.classList.add('active');
+            setTimeout(() => {
+                if (searchInput) searchInput.focus();
+            }, 100);
+        }
+    });
+    
+    if (searchInput) {
+        searchInput.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    }
+    
+    buildSeoBookDropdown();
+}
 
     function showSeoBookFiles(slug, title) {
         const container = document.getElementById('seoBookList');
