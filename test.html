@@ -5029,112 +5029,7 @@ async function generateSitemap() {
         logContent.innerHTML += `<div class="text-red-500">❌ Error: ${error.message}</div>`;
     }
 }
-            
-            let xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  
-  <!-- ================= MAIN PAGES ================= -->\n`;
-            
-            staticPages.forEach(page => {
-                xml += `  <url>
-    <loc>https://www.bookmcq.com${page.url}</loc>
-    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
-    <changefreq>${page.changefreq}</changefreq>
-    <priority>${page.priority}</priority>
-  </url>\n`;
-            });
-            
-            xml += `
-  <!-- ================= BOOKS ================= -->\n`;
-            
-            sortedBooks.forEach(book => {
-                const slug = book.slug || createSlug(book.title);
-                const bookTitle = book.title;
-                const lastmod = book.created_at ? new Date(book.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-                
-                xml += `
-  <!-- ${bookTitle} -->
-  <url>
-    <loc>https://www.bookmcq.com/books/${slug}/index.html</loc>
-    <lastmod>${lastmod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>\n`;
-                
-                const bookChapters = chaptersByBook[slug] || [];
-                if (bookChapters.length > 0) {
-                    bookChapters.sort((a, b) => {
-                        const aNum = a.chapter_number || 999;
-                        const bNum = b.chapter_number || 999;
-                        return aNum - bNum;
-                    });
-                    
-                    bookChapters.forEach(chapter => {
-                        if (chapter.slug) {
-                            const chapterLastmod = chapter.created_at ? new Date(chapter.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-                            const chapterLabel = chapter.chapter_number ? `Ch ${chapter.chapter_number}: ${chapter.name}` : chapter.name;
-                            
-                            xml += `
-  <!-- ${bookTitle} - ${chapterLabel} -->
-  <url>
-    <loc>https://www.bookmcq.com/books/${slug}/${chapter.slug}.html</loc>
-    <lastmod>${chapterLastmod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>\n`;
-                            
-                            const bookTopicsByChapter = topicsByBookAndChapter[slug] || {};
-                            const chapterTopics = bookTopicsByChapter[chapter.slug] || [];
-                            if (chapterTopics.length > 0) {
-                                chapterTopics.forEach(topic => {
-                                    if (topic.slug) {
-                                        const topicLastmod = topic.created_at ? new Date(topic.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-                                        xml += `  <url>
-    <loc>https://www.bookmcq.com/books/${slug}/${chapter.slug}/topics/${topic.slug}.html</loc>
-    <lastmod>${topicLastmod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>\n`;
-                                    }
-                                });
-                            }
-                        }
-                    });
-                }
-            });
-            
-            xml += `</urlset>`;
-            
-            sitemapData = {
-                xml: xml,
-                urls: urls,
-                total: urls.length,
-                staticCount: staticPages.length,
-                bookCount: books.length,
-                chapterCount: chapters.length,
-                topicCount: topics.length
-            };
-            
-            progressBar.style.width = '90%';
-            statusEl.textContent = '✅ Sitemap generated!';
-            countEl.textContent = `${urls.length} URLs`;
-            logContent.innerHTML += `<div class="text-green-600">✅ Sitemap generated with ${urls.length} URLs</div>`;
-            logContent.innerHTML += `<div>📊 ${staticPages.length} static, ${books.length} books, ${chapters.length} chapters, ${topics.length} topics</div>`;
-            
-            resultEl.classList.remove('hidden');
-            downloadBtn.classList.remove('hidden');
-            viewUrlsBtn.classList.remove('hidden');
-            viewBookUrlsBtn.classList.remove('hidden');
-            
-            progressBar.style.width = '100%';
-            
-        } catch (error) {
-            console.error('Sitemap Generation Error:', error);
-            statusEl.textContent = '❌ Error: ' + error.message;
-            logContent.innerHTML += `<div class="text-red-500">❌ Error: ${error.message}</div>`;
-        }
-    }
-    
+
 function downloadSitemap() {
     if (!window.sitemapData) {
         showToast('Please generate sitemap first', true);
@@ -5194,8 +5089,7 @@ function downloadSitemap() {
         URL.revokeObjectURL(url);
         showToast('✅ sitemap.xml downloaded!');
     }
-}
-    
+} 
     function toggleSitemapUrlPreview() {
         const previewEl = document.getElementById('sitemapUrlPreview');
         const urlListEl = document.getElementById('sitemapUrlList');
