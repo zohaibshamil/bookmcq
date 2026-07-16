@@ -442,160 +442,178 @@
             addLog('✅ Template downloaded', 'success');
         }
         
-// ============================================
-// 11. GET OR CREATE TOPIC - POSTFIX VERSION
-// ============================================
-async function getOrCreateTopic(chapterId, topicName) {
-    if (!topicName || topicName.trim() === '') {
-        return null;
-    }
-    
-    const trimmedName = topicName.trim();
-    const chapterIdInt = parseInt(chapterId);
-    
-    // Generate a unique slug using topic name + chapter_id (postfix)
-    const cleanSlug = trimmedName
-        .toLowerCase()
-        .trim()
-        .replace(/&/g, 'and')
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-');
-    
-    // Add chapter_id at the end to make it globally unique
-    const finalSlug = `${cleanSlug}-${chapterIdInt}`;
-    
-    // Try to find existing topic with this slug
-    const { data: existing, error: findError } = await supabase
-        .from('subtopics')
-        .select('id')
-        .eq('slug', finalSlug)
-        .maybeSingle();
-    
-    if (findError) {
-        addLog(`❌ Error finding topic: ${findError.message}`, 'error');
-        return null;
-    }
-    
-    if (existing) {
-        return existing.id;
-    }
-    
-    // Create new topic with unique slug
-    const { data: newTopic, error: createError } = await supabase
-        .from('subtopics')
-        .insert({
-            chapter_id: chapterIdInt,
-            name: trimmedName,
-            slug: finalSlug
-        })
-        .select()
-        .single();
-    
-    if (createError) {
-        addLog(`❌ Error creating topic: ${createError.message}`, 'error');
-        return null;
-    }
-    
-    addLog(`✅ Created new topic: "${trimmedName}" (ID: ${newTopic.id})`, 'success');
-    return newTopic.id;
-}
-
-// ============================================
-// 12. BATCH GET OR CREATE TOPICS - POSTFIX VERSION
-// ============================================
-async function batchGetOrCreateTopics(chapterId, uniqueTopics) {
-    const results = {};
-    const topicsToCreate = [];
-    const chapterIdInt = parseInt(chapterId);
-    
-    // Generate slugs with postfix (chapter_id at the end)
-    const topicSlugs = {};
-    uniqueTopics.forEach(name => {
-        const cleanSlug = name
-            .toLowerCase()
-            .trim()
-            .replace(/&/g, 'and')
-            .replace(/[^a-z0-9\s-]/g, '')
-            .replace(/\s+/g, '-')
-            .replace(/-+/g, '-');
-        
-        topicSlugs[name] = `${cleanSlug}-${chapterIdInt}`;
-    });
-    
-    // First, find all existing topics by slug
-    if (uniqueTopics.length > 0) {
-        const slugs = Object.values(topicSlugs);
-        const { data: existingTopics, error } = await supabase
-            .from('subtopics')
-            .select('id, name, slug')
-            .in('slug', slugs);
-        
-        if (!error && existingTopics) {
-            existingTopics.forEach(t => {
-                results[t.name] = t.id;
-            });
+        // ============================================
+        // 11. GET OR CREATE TOPIC - FIXED
+        // ============================================
+        async function getOrCreateTopic(chapterId, topicName) {
+            if (!topicName || topicName.trim() === '') {
+                return null;
+            }
+            
+            const trimmedName = topicName.trim();
+            const cacheKey = `${chapterId}_${trimmedName}`;
+            
+            if (topicCache[cacheKey]) {
+                return topicCache[cacheKey];
+            }
+            
+            const chapterIdInt = parseInt(chapterId);
+            
+            // Try to find existing topic
+            const { data: existing, error: findError } = await supabase
+                .from('subtopics')
+                .select('id')
+                .eq('chapter_id', chapterIdInt)
+                .eq('name', trimmedName)
+                .maybeSingle();
+            
+            if (findError) {
+                addLog(`❌ Error finding topic: ${findError.message}`, 'error');
+                return null;
+            }
+            
+            if (existing) {
+                topicCache[cacheKey] = existing.id;
+                return existing.id;
+            }
+            
+            // Create new topic with clean slug - just the topic name in slug format
+            const cleanSlug = trimmedName
+                .toLowerCase()
+                .trim()
+                .replace(/&/g, 'and')
+                .replace(/[^a-z0-9\s-]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-');
+            
+            // Add chapter ID to make it unique per chapter
+            const finalSlug = `${cleanSlug}`;
+            
+            const { data: newTopic, error: createError } = await supabase
+                .from('subtopics')
+                .insert({
+                    chapter_id: chapterIdInt,
+                    name: trimmedName,
+                    slug: finalSlug
+                })
+                .select()
+                .single();
+            
+            if (createError) {
+                addLog(`❌ Error creating topic: ${createError.message}`, 'error');
+                return null;
+            }
+            
+            topicCache[cacheKey] = newTopic.id;
+            addLog(`✅ Created new topic: "${trimmedName}" (ID: ${newTopic.id})`, 'success');
+            return newTopic.id;
         }
         
-        // Find which topics need to be created
-        uniqueTopics.forEach(name => {
-            if (!results[name]) {
-                topicsToCreate.push(name);
-            }
-        });
-    }
-    
-    // Batch create all missing topics
-    if (topicsToCreate.length > 0) {
-        const topicsData = topicsToCreate.map((name) => {
-            return {
-                chapter_id: chapterIdInt,
-                name: name,
-                slug: topicSlugs[name]
-            };
-        });
-        
-        const { data: createdTopics, error } = await supabase
-            .from('subtopics')
-            .insert(topicsData)
-            .select();
-        
-        if (!error && createdTopics) {
-            createdTopics.forEach(t => {
-                results[t.name] = t.id;
-                addLog(`✅ Created new topic: "${t.name}" (ID: ${t.id})`, 'success');
-            });
-        } else {
-            addLog(`❌ Error creating topics: ${error?.message}`, 'error');
+        // ============================================
+        // 12. BATCH GET OR CREATE TOPICS - FIXED
+        // ============================================
+        async function batchGetOrCreateTopics(chapterId, uniqueTopics) {
+            const results = {};
+            const topicsToCreate = [];
             
-            // Fallback: Try one by one
-            for (const name of topicsToCreate) {
-                try {
-                    const { data: newTopic, error: createError } = await supabase
-                        .from('subtopics')
-                        .insert({
-                            chapter_id: chapterIdInt,
-                            name: name,
-                            slug: topicSlugs[name]
-                        })
-                        .select()
-                        .single();
-                    
-                    if (!createError && newTopic) {
-                        results[name] = newTopic.id;
-                        addLog(`✅ Created topic individually: "${name}" (ID: ${newTopic.id})`, 'success');
-                    } else {
-                        addLog(`❌ Failed to create topic "${name}": ${createError?.message}`, 'error');
+            // First, find all existing topics in one query
+            if (uniqueTopics.length > 0) {
+                const { data: existingTopics, error } = await supabase
+                    .from('subtopics')
+                    .select('id, name')
+                    .eq('chapter_id', parseInt(chapterId))
+                    .in('name', uniqueTopics);
+                
+                if (!error && existingTopics) {
+                    existingTopics.forEach(t => {
+                        const key = `${chapterId}_${t.name}`;
+                        results[key] = t.id;
+                        topicCache[key] = t.id;
+                    });
+                }
+                
+                // Find which topics need to be created
+                uniqueTopics.forEach(name => {
+                    const key = `${chapterId}_${name}`;
+                    if (!results[key]) {
+                        topicsToCreate.push(name);
                     }
-                } catch(e) {
-                    addLog(`❌ Error creating topic "${name}": ${e.message}`, 'error');
+                });
+            }
+            
+            // Batch create all missing topics
+            if (topicsToCreate.length > 0) {
+                const topicsData = topicsToCreate.map((name) => {
+                    // Create clean slug - just the topic name
+                    const cleanSlug = name
+                        .toLowerCase()
+                        .trim()
+                        .replace(/&/g, 'and')
+                        .replace(/[^a-z0-9\s-]/g, '')
+                        .replace(/\s+/g, '-')
+                        .replace(/-+/g, '-');
+                    
+                    return {
+                        chapter_id: parseInt(chapterId),
+                        name: name,
+                        slug: cleanSlug
+                    };
+                });
+                
+                const { data: createdTopics, error } = await supabase
+                    .from('subtopics')
+                    .insert(topicsData)
+                    .select();
+                
+                if (!error && createdTopics) {
+                    createdTopics.forEach(t => {
+                        const key = `${chapterId}_${t.name}`;
+                        results[key] = t.id;
+                        topicCache[key] = t.id;
+                        addLog(`✅ Created new topic: "${t.name}" (ID: ${t.id})`, 'success');
+                    });
+                } else {
+                    addLog(`❌ Error creating topics: ${error?.message}`, 'error');
+                    // If batch fails, try one by one
+                    addLog('🔄 Attempting individual topic creation...', 'info');
+                    
+                    for (const name of topicsToCreate) {
+                        try {
+                            const cleanSlug = name
+                                .toLowerCase()
+                                .trim()
+                                .replace(/&/g, 'and')
+                                .replace(/[^a-z0-9\s-]/g, '')
+                                .replace(/\s+/g, '-')
+                                .replace(/-+/g, '-');
+                            
+                            const { data: newTopic, error: createError } = await supabase
+                                .from('subtopics')
+                                .insert({
+                                    chapter_id: parseInt(chapterId),
+                                    name: name,
+                                    slug: cleanSlug
+                                })
+                                .select()
+                                .single();
+                            
+                            if (!createError && newTopic) {
+                                const key = `${chapterId}_${name}`;
+                                results[key] = newTopic.id;
+                                topicCache[key] = newTopic.id;
+                                addLog(`✅ Created topic individually: "${name}" (ID: ${newTopic.id})`, 'success');
+                            } else {
+                                addLog(`❌ Failed to create topic "${name}": ${createError?.message}`, 'error');
+                            }
+                        } catch(e) {
+                            addLog(`❌ Error creating topic "${name}": ${e.message}`, 'error');
+                        }
+                    }
                 }
             }
+            
+            return results;
         }
-    }
-    
-    return results;
-}
         
         // ============================================
         // 13. PROCESS FILE
@@ -725,126 +743,127 @@ async function batchGetOrCreateTopics(chapterId, uniqueTopics) {
             updateProgress(0, total, '🚀 Starting fast upload...');
             
             try {
-// Update the topic creation section in uploadToDatabase function
-// STEP 1: Get all unique topics
-const uniqueTopics = [];
-currentQuestions.forEach(q => {
-    if (q.topic && q.topic.trim() !== '') {
-        const cleanedTopic = q.topic.trim();
-        if (!uniqueTopics.includes(cleanedTopic)) {
-            uniqueTopics.push(cleanedTopic);
-        }
-    }
-});
-
-addLog(`📝 Found ${uniqueTopics.length} unique topics`, 'info');
-
-// STEP 2: Process topics with postfix slug
-const topicIdMap = {};
-
-if (uniqueTopics.length > 0) {
-    updateProgress(0, total, `📝 Processing ${uniqueTopics.length} topics...`);
-    
-    // Generate slugs with chapter_id at the end (postfix)
-    const topicSlugs = {};
-    uniqueTopics.forEach(name => {
-        const cleanSlug = name
-            .toLowerCase()
-            .trim()
-            .replace(/[^a-z0-9\s-]/g, '')
-            .replace(/\s+/g, '-')
-            .replace(/-+/g, '-');
-        
-        topicSlugs[name] = `${cleanSlug}-${chapterIdNum}`;
-    });
-    
-    // Fetch ALL existing topics for this chapter by slug
-    const slugs = Object.values(topicSlugs);
-    const { data: existingTopics, error: fetchError } = await supabase
-        .from('subtopics')
-        .select('id, name, slug')
-        .in('slug', slugs);
-    
-    if (fetchError) {
-        addLog(`❌ Error fetching topics: ${fetchError.message}`, 'error');
-    } else {
-        // Build map of existing topics
-        const existingMap = {};
-        if (existingTopics && existingTopics.length > 0) {
-            existingTopics.forEach(t => {
-                existingMap[t.name] = t.id;
-            });
-            addLog(`📊 Found ${existingTopics.length} existing topics`, 'info');
-        }
-        
-        // Separate existing and new topics
-        const topicsToCreate = [];
-        uniqueTopics.forEach(name => {
-            if (existingMap[name]) {
-                topicIdMap[name] = existingMap[name];
-            } else {
-                topicsToCreate.push(name);
-            }
-        });
-        
-        addLog(`📊 ${Object.keys(topicIdMap).length} topics found, ${topicsToCreate.length} to create`, 'info');
-        
-        // BATCH CREATE all new topics
-        if (topicsToCreate.length > 0) {
-            addLog(`📝 Creating ${topicsToCreate.length} new topics in batch...`, 'info');
-            
-            const topicsData = topicsToCreate.map((name) => {
-                return {
-                    chapter_id: chapterIdNum,
-                    name: name,
-                    slug: topicSlugs[name]
-                };
-            });
-            
-            // Batch insert all topics
-            const { data: createdTopics, error: createError } = await supabase
-                .from('subtopics')
-                .insert(topicsData)
-                .select();
-            
-            if (createError) {
-                addLog(`❌ Batch topic creation failed: ${createError.message}`, 'error');
-                
-                // Fallback: Create one by one
-                for (let i = 0; i < topicsToCreate.length; i++) {
-                    const name = topicsToCreate[i];
-                    try {
-                        const { data: newTopic, error: singleError } = await supabase
-                            .from('subtopics')
-                            .insert({
-                                chapter_id: chapterIdNum,
-                                name: name,
-                                slug: topicSlugs[name]
-                            })
-                            .select()
-                            .single();
-                        
-                        if (!singleError && newTopic) {
-                            topicIdMap[name] = newTopic.id;
-                            addLog(`✅ Created topic: "${name}" (ID: ${newTopic.id})`, 'success');
-                        } else {
-                            addLog(`❌ Failed to create topic "${name}": ${singleError?.message}`, 'error');
+                // STEP 1: Get all unique topics
+                const uniqueTopics = [];
+                currentQuestions.forEach(q => {
+                    if (q.topic && q.topic.trim() !== '') {
+                        const cleanedTopic = q.topic.trim();
+                        if (!uniqueTopics.includes(cleanedTopic)) {
+                            uniqueTopics.push(cleanedTopic);
                         }
-                    } catch(e) {
-                        addLog(`❌ Error creating topic "${name}": ${e.message}`, 'error');
                     }
-                }
-            } else if (createdTopics) {
-                createdTopics.forEach(t => {
-                    topicIdMap[t.name] = t.id;
-                    addLog(`✅ Created topic: "${t.name}" (ID: ${t.id})`, 'success');
                 });
-            }
-        }
-    }
-    
-    addLog(`📊 Topic map ready: ${Object.keys(topicIdMap).length} topics`, 'success');
-}
+                
+                addLog(`📝 Found ${uniqueTopics.length} unique topics`, 'info');
+                
+                // STEP 2: Process topics - BATCH MODE (FAST)
+                const topicIdMap = {};
+                
+                if (uniqueTopics.length > 0) {
+                    updateProgress(0, total, `📝 Processing ${uniqueTopics.length} topics...`);
+                    
+                    // Fetch ALL existing topics for this chapter in ONE query
+                    const { data: existingTopics, error: fetchError } = await supabase
+                        .from('subtopics')
+                        .select('id, name')
+                        .eq('chapter_id', chapterIdNum);
+                    
+                    if (fetchError) {
+                        addLog(`❌ Error fetching topics: ${fetchError.message}`, 'error');
+                    } else {
+                        // Build map of existing topics
+                        const existingMap = {};
+                        if (existingTopics && existingTopics.length > 0) {
+                            existingTopics.forEach(t => {
+                                existingMap[t.name] = t.id;
+                            });
+                            addLog(`📊 Found ${existingTopics.length} existing topics`, 'info');
+                        }
+                        
+                        // Separate existing and new topics
+                        const topicsToCreate = [];
+                        uniqueTopics.forEach(name => {
+                            if (existingMap[name]) {
+                                topicIdMap[name] = existingMap[name];
+                            } else {
+                                topicsToCreate.push(name);
+                            }
+                        });
+                        
+                        addLog(`📊 ${Object.keys(topicIdMap).length} topics found, ${topicsToCreate.length} to create`, 'info');
+                        
+                        // BATCH CREATE all new topics at once (FAST)
+                        if (topicsToCreate.length > 0) {
+                            addLog(`📝 Creating ${topicsToCreate.length} new topics in batch...`, 'info');
+                            
+                            const topicsData = topicsToCreate.map((name) => {
+                                // Create clean slug - just the topic name
+                                const cleanSlug = name
+                                    .toLowerCase()
+                                    .trim()
+                                    .replace(/[^a-z0-9\s-]/g, '')
+                                    .replace(/\s+/g, '-')
+                                    .replace(/-+/g, '-');
+                                
+                                return {
+                                    chapter_id: chapterIdNum,
+                                    name: name,
+                                    slug: cleanSlug
+                                };
+                            });
+                            
+                            // Batch insert all topics
+                            const { data: createdTopics, error: createError } = await supabase
+                                .from('subtopics')
+                                .insert(topicsData)
+                                .select();
+                            
+                            if (createError) {
+                                addLog(`❌ Batch topic creation failed: ${createError.message}`, 'error');
+                                
+                                // Fallback: Create one by one (slower but works)
+                                addLog('🔄 Falling back to individual topic creation...', 'info');
+                                for (let i = 0; i < topicsToCreate.length; i++) {
+                                    const name = topicsToCreate[i];
+                                    try {
+                                        const cleanSlug = name
+                                            .toLowerCase()
+                                            .trim()
+                                            .replace(/[^a-z0-9\s-]/g, '')
+                                            .replace(/\s+/g, '-')
+                                            .replace(/-+/g, '-');
+                                        
+                                        const { data: newTopic, error: singleError } = await supabase
+                                            .from('subtopics')
+                                            .insert({
+                                                chapter_id: chapterIdNum,
+                                                name: name,
+                                                slug: cleanSlug
+                                            })
+                                            .select()
+                                            .single();
+                                        
+                                        if (!singleError && newTopic) {
+                                            topicIdMap[name] = newTopic.id;
+                                            addLog(`✅ Created topic: "${name}" (ID: ${newTopic.id})`, 'success');
+                                        } else {
+                                            addLog(`❌ Failed to create topic "${name}": ${singleError?.message}`, 'error');
+                                        }
+                                    } catch(e) {
+                                        addLog(`❌ Error creating topic "${name}": ${e.message}`, 'error');
+                                    }
+                                }
+                            } else if (createdTopics) {
+                                createdTopics.forEach(t => {
+                                    topicIdMap[t.name] = t.id;
+                                    addLog(`✅ Created topic: "${t.name}" (ID: ${t.id})`, 'success');
+                                });
+                            }
+                        }
+                    }
+                    
+                    addLog(`📊 Topic map ready: ${Object.keys(topicIdMap).length} topics`, 'success');
+                }
                 
                 // STEP 3: Prepare questions with topic IDs (FAST)
                 updateProgress(0, total, '📦 Preparing questions data...');
