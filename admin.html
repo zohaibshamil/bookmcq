@@ -6751,15 +6751,21 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
                 var opts = optionsMap[q.id] || ['', '', '', ''];
                 var correctIndex = q.correct_answer !== undefined ? q.correct_answer : 0;
                 var optionLabels = ['A', 'B', 'C', 'D'];
+                
+                // ✅ FIXED: Use escapeHtmlPreserveMath to safely escape HTML while preserving LaTeX
+                var questionText = escapeHtmlPreserveMath(q.question_text);
+                var opt0 = escapeHtmlPreserveMath(opts[0] || '');
+                var opt1 = escapeHtmlPreserveMath(opts[1] || '');
+                var opt2 = escapeHtmlPreserveMath(opts[2] || '');
+                var opt3 = escapeHtmlPreserveMath(opts[3] || '');
+                
                 sampleMcqsHtml += '<div style="background:white; padding:12px; border-radius:8px; margin-bottom:10px; border:1px solid #e5e7eb;">';
-                // DO NOT escapeHtml - preserve LaTeX delimiters
-                sampleMcqsHtml += '<p style="font-weight:600; margin:0 0 8px 0;">Q' + (idx + 1) + '. ' + q.question_text + '</p>';
-                sampleMcqsHtml += '<div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:13px; color:#64748b;">';
-                // DO NOT escapeHtml - preserve LaTeX delimiters
-                sampleMcqsHtml += '<div>🔹 A. ' + (opts[0] || '') + '</div>';
-                sampleMcqsHtml += '<div>🔹 B. ' + (opts[1] || '') + '</div>';
-                sampleMcqsHtml += '<div>🔹 C. ' + (opts[2] || '') + '</div>';
-                sampleMcqsHtml += '<div>🔹 D. ' + (opts[3] || '') + '</div>';
+                sampleMcqsHtml += '<p class="math" style="font-weight:600; margin:0 0 8px 0;">Q' + (idx + 1) + '. ' + questionText + '</p>';
+                sampleMcqsHtml += '<div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:13px; color:#64748b;">';
+                sampleMcqsHtml += '<div>🔹 A. ' + opt0 + '</div>';
+                sampleMcqsHtml += '<div>🔹 B. ' + opt1 + '</div>';
+                sampleMcqsHtml += '<div>🔹 C. ' + opt2 + '</div>';
+                sampleMcqsHtml += '<div>🔹 D. ' + opt3 + '</div>';
                 sampleMcqsHtml += '</div>';
                 sampleMcqsHtml += '<p style="font-size:12px; color:#8b5cf6; margin-top:6px;">💡 Difficulty: ' + (q.difficulty || 'Medium') + (q.correct_answer !== undefined ? ' | ✅ Correct: ' + optionLabels[correctIndex] : '') + '</p>';
                 sampleMcqsHtml += '</div>';
@@ -6833,16 +6839,17 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     '    <script type="application/ld+json">\n' + JSON.stringify(schemaData) + '\n' +
     '    <\/script>\n' +
     '    <script src="https://cdn.tailwindcss.com"><\/script>\n' +
+    // ✅ FIXED: Properly escaped MathJax configuration
     '    <script>\n' +
     '        window.MathJax = {\n' +
     '            tex: {\n' +
     '                inlineMath: [\n' +
     '                    [\'$\', \'$\'],\n' +
-    '                    [\'\(\', \'\)\']\n' +
+    '                    [\'\\\\(\', \'\\\\)\']\n' +
     '                ],\n' +
     '                displayMath: [\n' +
     '                    [\'$$\', \'$$\'],\n' +
-    '                    [\'\[\', \'\]\']\n' +
+    '                    [\'\\\\[\', \'\\\\]\']\n' +
     '                ],\n' +
     '                processEscapes: true,\n' +
     '                processEnvironments: true\n' +
@@ -6858,6 +6865,59 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     '        };\n' +
     '    <\/script>\n' +
     '    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async><\/script>\n' +
+    // ✅ ADDED: Math rendering functions
+    '    <script>\n' +
+    '        // Helper function to safely escape HTML while preserving LaTeX delimiters\n' +
+    '        function escapeHtmlPreserveMath(text) {\n' +
+    '            if (!text) return \'\';\n' +
+    '            // Escape HTML entities\n' +
+    '            var escaped = text.replace(/&/g, \'&amp;\')\n' +
+    '                              .replace(/</g, \'&lt;\')\n' +
+    '                              .replace(/>/g, \'&gt;\')\n' +
+    '                              .replace(/"/g, \'&quot;\')\n' +
+    '                              .replace(/\'/g, \'&#039;\');\n' +
+    '            return escaped;\n' +
+    '        }\n' +
+    '\n' +
+    '        // Function to render math in an element\n' +
+    '        async function renderMathInElement(element) {\n' +
+    '            if (window.MathJax && element) {\n' +
+    '                try {\n' +
+    '                    await MathJax.typesetPromise([element]);\n' +
+    '                } catch(e) {\n' +
+    '                    console.log(\'MathJax error:\', e);\n' +
+    '                }\n' +
+    '            }\n' +
+    '        }\n' +
+    '\n' +
+    '        // Function to render all math on page\n' +
+    '        async function renderAllMath() {\n' +
+    '            if (window.MathJax) {\n' +
+    '                try {\n' +
+    '                    await MathJax.typesetPromise();\n' +
+    '                } catch(e) {\n' +
+    '                    console.log(\'MathJax error:\', e);\n' +
+    '                }\n' +
+    '            }\n' +
+    '        }\n' +
+    '\n' +
+    '        // Function to process text with math delimiters (supports ALL formats)\n' +
+    '        function processMathContent(text) {\n' +
+    '            if (!text) return \'\';\n' +
+    '            // All formats are supported by MathJax configuration\n' +
+    '            return text;\n' +
+    '        }\n' +
+    '\n' +
+    '        // Render math when DOM is ready\n' +
+    '        document.addEventListener(\'DOMContentLoaded\', function() {\n' +
+    '            renderAllMath();\n' +
+    '        });\n' +
+    '\n' +
+    '        // Also render after MathJax loads\n' +
+    '        if (window.MathJax) {\n' +
+    '            MathJax.typesetPromise = MathJax.typesetPromise || function() { return Promise.resolve(); };\n' +
+    '        }\n' +
+    '    <\/script>\n' +
     '    <style>\n' +
     '        body {\n' +
     '            font-family: Arial, sans-serif;\n' +
@@ -6934,7 +6994,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     '        .breadcrumb a:hover {\n' +
     '            text-decoration: underline;\n' +
     '        }\n' +
-    '        /* Math rendering styles */\n' +
+    '        /* ✅ ADDED: Math rendering styles */\n' +
     '        .math-rendered {\n' +
     '            display: inline;\n' +
     '            line-height: 1.6;\n' +
@@ -6949,6 +7009,10 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     '        }\n' +
     '        .option-text {\n' +
     '            display: inline;\n' +
+    '        }\n' +
+    '        .explanation-text {\n' +
+    '            font-size: 0.875rem;\n' +
+    '            line-height: 1.5;\n' +
     '        }\n' +
     '    </style>\n' +
     '</head>\n' +
@@ -6976,7 +7040,6 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     '</body>\n' +
     '</html>';
 }
-
     function toggleSeoDropdown(bookSlug) {
         const menu = document.getElementById(`seoDropdown_${bookSlug}`);
         if (menu) {
