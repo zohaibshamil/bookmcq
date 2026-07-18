@@ -6712,6 +6712,56 @@ function initSeoBookDropdown() {
         '</html>';
     }
 
+// ✅ ADD THIS FUNCTION AT THE TOP OF YOUR SCRIPT (server-side)
+function escapeHtmlPreserveMath(text) {
+    if (!text) return '';
+    // Escape HTML entities
+    var escaped = text.replace(/&/g, '&amp;')
+                      .replace(/</g, '&lt;')
+                      .replace(/>/g, '&gt;')
+                      .replace(/"/g, '&quot;')
+                      .replace(/'/g, '&#039;');
+    return escaped;
+}
+
+// ✅ Also make sure these helper functions exist
+function escapeHtml(text) {
+    if (!text) return '';
+    return text.replace(/&/g, '&amp;')
+               .replace(/</g, '&lt;')
+               .replace(/>/g, '&gt;')
+               .replace(/"/g, '&quot;')
+               .replace(/'/g, '&#039;');
+}
+
+function createSlug(text) {
+    if (!text) return '';
+    return text.toString().toLowerCase()
+        .replace(/\s+/g, '-')           // Replace spaces with -
+        .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
+        .replace(/\-\-+/g, '-')         // Replace multiple - with single -
+        .replace(/^-+/, '')             // Trim - from start of text
+        .replace(/-+$/, '');            // Trim - from end of text
+}
+
+function getGTMHeadCode() {
+    return '<!-- Google Tag Manager -->\n' +
+    '<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({\'gtm.start\':\n' +
+    'new Date().getTime(),event:\'gtm.js\'});var f=d.getElementsByTagName(s)[0],\n' +
+    'j=d.createElement(s),dl=l!=\'dataLayer\'?\'&l=\'+l:\'\';j.async=true;j.src=\n' +
+    '\'https://www.googletagmanager.com/gtm.js?id=\'+i+dl;f.parentNode.insertBefore(j,f);\n' +
+    '})(window,document,\'script\',\'dataLayer\',\'GTM-PT363CT7\');<\/script>\n' +
+    '<!-- End Google Tag Manager -->';
+}
+
+function getGTMBodyCode() {
+    return '<!-- Google Tag Manager (noscript) -->\n' +
+    '<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PT363CT7"\n' +
+    'height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>\n' +
+    '<!-- End Google Tag Manager (noscript) -->';
+}
+
+// ✅ NOW the generateTopicPage function (using escapeHtmlPreserveMath defined above)
 function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficultyStats, allBookTopics, optionsMap) {
     var bookSlug = book.slug || createSlug(book.title);
     var bookTitle = escapeHtml(book.title);
@@ -6752,7 +6802,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
                 var correctIndex = q.correct_answer !== undefined ? q.correct_answer : 0;
                 var optionLabels = ['A', 'B', 'C', 'D'];
                 
-                // ✅ FIXED: Use escapeHtmlPreserveMath to safely escape HTML while preserving LaTeX
+                // ✅ FIXED: Use escapeHtmlPreserveMath (now defined at top)
                 var questionText = escapeHtmlPreserveMath(q.question_text);
                 var opt0 = escapeHtmlPreserveMath(opts[0] || '');
                 var opt1 = escapeHtmlPreserveMath(opts[1] || '');
@@ -6839,7 +6889,6 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     '    <script type="application/ld+json">\n' + JSON.stringify(schemaData) + '\n' +
     '    <\/script>\n' +
     '    <script src="https://cdn.tailwindcss.com"><\/script>\n' +
-    // ✅ FIXED: Properly escaped MathJax configuration
     '    <script>\n' +
     '        window.MathJax = {\n' +
     '            tex: {\n' +
@@ -6865,12 +6914,10 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     '        };\n' +
     '    <\/script>\n' +
     '    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async><\/script>\n' +
-    // ✅ ADDED: Math rendering functions
     '    <script>\n' +
     '        // Helper function to safely escape HTML while preserving LaTeX delimiters\n' +
     '        function escapeHtmlPreserveMath(text) {\n' +
     '            if (!text) return \'\';\n' +
-    '            // Escape HTML entities\n' +
     '            var escaped = text.replace(/&/g, \'&amp;\')\n' +
     '                              .replace(/</g, \'&lt;\')\n' +
     '                              .replace(/>/g, \'&gt;\')\n' +
@@ -6879,7 +6926,6 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     '            return escaped;\n' +
     '        }\n' +
     '\n' +
-    '        // Function to render math in an element\n' +
     '        async function renderMathInElement(element) {\n' +
     '            if (window.MathJax && element) {\n' +
     '                try {\n' +
@@ -6890,7 +6936,6 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     '            }\n' +
     '        }\n' +
     '\n' +
-    '        // Function to render all math on page\n' +
     '        async function renderAllMath() {\n' +
     '            if (window.MathJax) {\n' +
     '                try {\n' +
@@ -6901,19 +6946,15 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     '            }\n' +
     '        }\n' +
     '\n' +
-    '        // Function to process text with math delimiters (supports ALL formats)\n' +
     '        function processMathContent(text) {\n' +
     '            if (!text) return \'\';\n' +
-    '            // All formats are supported by MathJax configuration\n' +
     '            return text;\n' +
     '        }\n' +
     '\n' +
-    '        // Render math when DOM is ready\n' +
     '        document.addEventListener(\'DOMContentLoaded\', function() {\n' +
     '            renderAllMath();\n' +
     '        });\n' +
     '\n' +
-    '        // Also render after MathJax loads\n' +
     '        if (window.MathJax) {\n' +
     '            MathJax.typesetPromise = MathJax.typesetPromise || function() { return Promise.resolve(); };\n' +
     '        }\n' +
@@ -6994,7 +7035,6 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     '        .breadcrumb a:hover {\n' +
     '            text-decoration: underline;\n' +
     '        }\n' +
-    '        /* ✅ ADDED: Math rendering styles */\n' +
     '        .math-rendered {\n' +
     '            display: inline;\n' +
     '            line-height: 1.6;\n' +
