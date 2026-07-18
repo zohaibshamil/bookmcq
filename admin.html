@@ -6752,10 +6752,8 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
                 var correctIndex = q.correct_answer !== undefined ? q.correct_answer : 0;
                 var optionLabels = ['A', 'B', 'C', 'D'];
                 sampleMcqsHtml += '<div style="background:white; padding:12px; border-radius:8px; margin-bottom:10px; border:1px solid #e5e7eb;">';
-                // IMPORTANT: Do NOT escapeHtml for question text - it contains LaTeX with backslashes
                 sampleMcqsHtml += '<p style="font-weight:600; margin:0 0 8px 0;">Q' + (idx + 1) + '. ' + q.question_text + '</p>';
                 sampleMcqsHtml += '<div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:13px; color:#64748b;">';
-                // IMPORTANT: Do NOT escapeHtml for options - they contain LaTeX with backslashes
                 sampleMcqsHtml += '<div>🔹 A. ' + (opts[0] || '') + '</div>';
                 sampleMcqsHtml += '<div>🔹 B. ' + (opts[1] || '') + '</div>';
                 sampleMcqsHtml += '<div>🔹 C. ' + (opts[2] || '') + '</div>';
@@ -6834,14 +6832,30 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     '    <\/script>\n' +
     '    <script src="https://cdn.tailwindcss.com"><\/script>\n' +
     '    <script>\n' +
-    '        MathJax = {\n' +
+    '        window.MathJax = {\n' +
     '            tex: {\n' +
-    '                inlineMath: [[\'\(\', \'\)\']],\n' +
-    '                displayMath: [[\'\[\', \'\]\']]\n' +
+    '                inlineMath: [\n' +
+    '                    [\'$\', \'$\'],\n' +
+    '                    [\'\(\', \'\)\']\n' +
+    '                ],\n' +
+    '                displayMath: [\n' +
+    '                    [\'$$\', \'$$\'],\n' +
+    '                    [\'\[\', \'\]\']\n' +
+    '                ],\n' +
+    '                processEscapes: true,\n' +
+    '                processEnvironments: true\n' +
+    '            },\n' +
+    '            svg: {\n' +
+    '                fontCache: \'global\'\n' +
+    '            },\n' +
+    '            options: {\n' +
+    '                skipHtmlTypes: \'script\',\n' +
+    '                ignoreHtmlClass: \'no-mathjax\',\n' +
+    '                processHtmlClass: \'math\'\n' +
     '            }\n' +
     '        };\n' +
     '    <\/script>\n' +
-    '    <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"><\/script>\n' +
+    '    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async><\/script>\n' +
     '    <style>\n' +
     '        body {\n' +
     '            font-family: Arial, sans-serif;\n' +
@@ -6917,6 +6931,22 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     '        }\n' +
     '        .breadcrumb a:hover {\n' +
     '            text-decoration: underline;\n' +
+    '        }\n' +
+    '        /* Math rendering styles */\n' +
+    '        .math-rendered {\n' +
+    '            display: inline;\n' +
+    '            line-height: 1.6;\n' +
+    '        }\n' +
+    '        .math-rendered mjx-container {\n' +
+    '            display: inline-block;\n' +
+    '            margin: 0 2px;\n' +
+    '        }\n' +
+    '        .question-text {\n' +
+    '            font-size: 1rem;\n' +
+    '            line-height: 1.6;\n' +
+    '        }\n' +
+    '        .option-text {\n' +
+    '            display: inline;\n' +
     '        }\n' +
     '    </style>\n' +
     '</head>\n' +
