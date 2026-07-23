@@ -189,10 +189,9 @@
                 <button class="btn-warning btn-sm" onclick="clearCSVPreview()">🗑️ Clear</button>
             </div>
             <div class="csv-format-hint">
-                📌 CSV Format: Supports hierarchical structure with chapters and subtopics<br>
-                <code>8.1 THE WAR IN KOREA AND ITS EFFECTS ON INTERNATIONAL RELATIONS,</code> → Chapter<br>
-                <code>,(a) Background to the war</code> → Subtopic<br>
-                <code>"8.3 THE WARS IN VIETNAM, 1946–54 AND 1961–75"</code> → Quoted topic
+                📌 CSV Format: Column 1 = Topic, Column 2 = (optional), Column 3 = MCQ Count<br>
+                <code>,(a) Disillusionment and frustration,33</code> → Generates 33 MCQs<br>
+                <code>,(b) There was a wave of strikes in 1919 and 1920,18</code> → Generates 18 MCQs
             </div>
             <div class="csv-preview" id="csvPreview"></div>
         </div>
@@ -212,7 +211,7 @@
         <div class="panel">
             <h3>⚙️ Settings</h3>
             <div class="settings-row">
-                <label>MCQs:</label>
+                <label>Default MCQs:</label>
                 <input type="number" id="questionsPerTopic" value="10" min="5" max="30" style="max-width:100px;">
                 <label>Model:</label>
                 <select id="modelSelect" style="max-width:200px;">
@@ -332,6 +331,7 @@
 
     <div class="note note-success">
         ✅ <strong>Enhanced Topic Extraction:</strong> Now extracts all topics including sub-topics like (a), (b), (c) with validation scores.
+        <br>✅ <strong>CSV MCQ Count:</strong> Column 3 in CSV specifies how many MCQs to generate per topic.
     </div>
 </div>
 
@@ -587,7 +587,7 @@ function countMCQs() {
     return count;
 }
 
-// ============ ENHANCED CSV PARSING WITH HIERARCHY ============
+// ============ FIXED: ENHANCED CSV PARSING WITH MCQ COUNT FROM COLUMN 3 ============
 function parseCSVTopicsWithHierarchy(csvText) {
     const lines = csvText.split('\n').filter(l => l.trim().length > 0);
     if (lines.length === 0) return [];
@@ -600,8 +600,8 @@ function parseCSVTopicsWithHierarchy(csvText) {
         const line = lines[i].trim();
         if (!line) continue;
         
-        // Check for quoted chapter (like "8.3 THE WARS IN VIETNAM, 1946Ė54 AND 1961Ė75",)
-        const quotedMatch = line.match(/^"([^"]+)"\s*,?\s*$/);
+        // Check for quoted chapter (like "13.1 WHY WAS MUSSOLINI ABLE TO COME TO POWER?",,,)
+        const quotedMatch = line.match(/^"([^"]+)"\s*,*\s*$/);
         if (quotedMatch) {
             const content = quotedMatch[1].trim();
             const chapterMatch = content.match(/^(\d+\.\d+)\s+(.+)/);
@@ -617,7 +617,7 @@ function parseCSVTopicsWithHierarchy(csvText) {
             }
         }
         
-        // Check for unquoted chapter (like "8.1 THE WAR IN KOREA AND ITS EFFECTS ON INTERNATIONAL RELATIONS,")
+        // Check for unquoted chapter (like "13.1 WHY WAS MUSSOLINI ABLE TO COME TO POWER?,")
         const chapterMatch = line.match(/^(\d+\.\d+)\s+([^,]+),?\s*$/);
         if (chapterMatch) {
             currentChapter = {
@@ -630,17 +630,38 @@ function parseCSVTopicsWithHierarchy(csvText) {
             continue;
         }
         
-        // Check for subtopic (like ",(a) Background to the war")
-        const subTopicMatch = line.match(/^,\(([a-z])\)\s+(.+)/);
+        // ===== FIXED: SUBTOPIC WITH MCQ COUNT FROM COLUMN 3 =====
+        // Format: ,(a) Disillusionment and frustration,33
+        const subTopicMatch = line.match(/^,\(([a-z])\)\s+(.+?)(?:,(\d+))?$/);
         if (subTopicMatch && currentChapter) {
+            const mcqCount = subTopicMatch[3] ? parseInt(subTopicMatch[3]) : 8;
             const subTopic = {
                 number: subTopicMatch[1],
                 title: subTopicMatch[2].trim(),
                 content: '',
-                type: 'subtopic'
+                type: 'subtopic',
+                mcq_count: mcqCount
             };
             currentChapter.topics.push(subTopic);
             currentTopic = subTopic;
+            log(`📊 Found subtopic: (${subTopicMatch[1]}) ${subTopicMatch[2].trim()} → ${mcqCount} MCQs`);
+            continue;
+        }
+        
+        // Alternative: Subtopic with comma in title (more complex parsing)
+        const altSubMatch = line.match(/^,\(([a-z])\)\s+(.+?)(?:,\s*(\d+))?$/);
+        if (altSubMatch && currentChapter) {
+            const mcqCount = altSubMatch[3] ? parseInt(altSubMatch[3]) : 8;
+            const subTopic = {
+                number: altSubMatch[1],
+                title: altSubMatch[2].trim(),
+                content: '',
+                type: 'subtopic',
+                mcq_count: mcqCount
+            };
+            currentChapter.topics.push(subTopic);
+            currentTopic = subTopic;
+            log(`📊 Found subtopic: (${altSubMatch[1]}) ${altSubMatch[2].trim()} → ${mcqCount} MCQs`);
             continue;
         }
         
@@ -652,6 +673,18 @@ function parseCSVTopicsWithHierarchy(csvText) {
             }
         }
     }
+    
+    // Log summary
+    let totalTopics = 0;
+    chapters.forEach(ch => {
+        if (ch.topics) {
+            ch.topics.forEach(t => {
+                totalTopics++;
+                log(`📊 Topic: ${t.title} → ${t.mcq_count} MCQs`);
+            });
+        }
+    });
+    log(`📊 Total: ${chapters.length} chapters, ${totalTopics} topics with MCQ counts`);
     
     return chapters;
 }
@@ -698,7 +731,8 @@ function showCSVPreviewWithHierarchy(chapters) {
             for (let ti = 0; ti < maxShow; ti++) {
                 const topic = chapter.topics[ti];
                 const typeLabel = topic.type === 'subtopic' ? ' [sub]' : '';
-                html += `<div style="padding-left:20px;font-size:12px;color:#555;">  • (${topic.number}) ${topic.title}${typeLabel}</div>`;
+                const mcqLabel = topic.mcq_count ? ` → ${topic.mcq_count} MCQs` : '';
+                html += `<div style="padding-left:20px;font-size:12px;color:#555;">  • (${topic.number}) ${topic.title}${typeLabel}${mcqLabel}</div>`;
             }
             if (chapter.topics.length > 8) {
                 html += `<div style="padding-left:20px;font-size:11px;color:#888;">  ... and ${chapter.topics.length - 8} more topics</div>`;
@@ -711,7 +745,7 @@ function showCSVPreviewWithHierarchy(chapters) {
     csvPreview.innerHTML = html;
 }
 
-// ============ UPLOAD TOPIC CSV AND MATCH TO PDF CONTENT ============
+// ============ UPDATED: UPLOAD TOPIC CSV AND MATCH TO PDF CONTENT ============
 function uploadTopicCSV() {
     if (csvTopicData.length === 0) {
         showError('No CSV data loaded. Please select a CSV file first.');
@@ -857,11 +891,13 @@ function uploadTopicCSV() {
                     topicContent = chapterContent.slice(0, 1500);
                 }
                 
+                // ===== UPDATED: Add mcq_count from CSV =====
                 let topicToAdd = {
                     number: csvTopic.number || `${existingChapter.topics.length + 1}`,
                     title: csvTopic.title,
                     content: topicContent,
                     type: isSubTopic ? 'subtopic' : 'main',
+                    mcq_count: csvTopic.mcq_count || 8,  // Store MCQ count from CSV
                     done: false,
                     mcqs: []
                 };
@@ -869,7 +905,7 @@ function uploadTopicCSV() {
                 existingChapter.topics.push(topicToAdd);
                 totalTopicsAdded++;
                 
-                log(`✅ Added topic: ${csvTopic.title} with ${topicContent.length} chars of content`);
+                log(`✅ Added topic: ${csvTopic.title} with ${topicContent.length} chars of content, ${csvTopic.mcq_count || 8} MCQs requested`);
             }
         }
     }
@@ -888,12 +924,13 @@ function uploadTopicCSV() {
             <strong>✅ ${totalTopicsAdded} Topics Imported and Matched to PDF!</strong><br>
             📚 Chapters: ${bookStructure.chapters.length}<br>
             📊 Total Topics: ${total}<br>
-            📄 Content: ${extractedText.length} chars
+            📄 Content: ${extractedText.length} chars<br>
+            📝 Each topic has its own MCQ count from CSV column 3
         `;
     }
     
-    showSuccess(`Imported ${totalTopicsAdded} topics with content from PDF!`);
-    log(`CSV import: ${totalTopicsAdded} topics added across ${bookStructure.chapters.length} chapters`);
+    showSuccess(`Imported ${totalTopicsAdded} topics with individual MCQ counts from CSV!`);
+    log(`CSV import: ${totalTopicsAdded} topics added with individual MCQ counts`);
     
     csvTopicData = [];
     if (csvPreview) csvPreview.classList.remove('show');
@@ -950,6 +987,7 @@ function renderTree() {
                     const mainTopic = group.main;
                     const isDone = mainTopic.done && mainTopic.mcqs && mainTopic.mcqs.length > 0;
                     const mcqCount = mainTopic.mcqs ? mainTopic.mcqs.length : 0;
+                    const requestedMcqs = mainTopic.mcq_count || 8;
                     const valKey = `${ci}|${topicIndex}`;
                     const valResult = topicValidationResults[valKey];
                     const isValid = valResult ? valResult.valid : false;
@@ -959,7 +997,7 @@ function renderTree() {
                     
                     html += `<div class="tree-item topic" data-chapter="${ci}" data-topic="${topicIndex}" onclick="selectTopic(${ci}, ${topicIndex})" style="cursor:pointer;padding-left:25px;">
                         <strong>${mainTopic.number} ${mainTopic.title}</strong>
-                        <span class="badge-topic">${mcqCount} MCQs ${isDone ? '✅' : ''} ${statusIcon} ${score}%</span>
+                        <span class="badge-topic">${mcqCount}/${requestedMcqs} MCQs ${isDone ? '✅' : ''} ${statusIcon} ${score}%</span>
                         <div style="font-size:10px;color:#888;padding-left:10px;">${contentPreview}</div>
                     </div>`;
                     topicIndex++;
@@ -969,6 +1007,7 @@ function renderTree() {
                         const subTopic = group.subtopics[sti];
                         const subIsDone = subTopic.done && subTopic.mcqs && subTopic.mcqs.length > 0;
                         const subMcqCount = subTopic.mcqs ? subTopic.mcqs.length : 0;
+                        const subRequestedMcqs = subTopic.mcq_count || 8;
                         const subValKey = `${ci}|${topicIndex}`;
                         const subValResult = topicValidationResults[subValKey];
                         const subIsValid = subValResult ? subValResult.valid : false;
@@ -979,7 +1018,7 @@ function renderTree() {
                         html += `<div class="tree-item subtopic" data-chapter="${ci}" data-topic="${topicIndex}" onclick="selectTopic(${ci}, ${topicIndex})" style="cursor:pointer;padding-left:45px;font-size:12px;color:#555;">
                             • (${subTopic.number}) ${subTopic.title}
                             <span class="subtopic-badge">sub</span>
-                            <span class="badge-topic">${subMcqCount} MCQs ${subIsDone ? '✅' : ''} ${subStatusIcon} ${subScore}%</span>
+                            <span class="badge-topic">${subMcqCount}/${subRequestedMcqs} MCQs ${subIsDone ? '✅' : ''} ${subStatusIcon} ${subScore}%</span>
                             <div style="font-size:9px;color:#aaa;padding-left:10px;">${subContentPreview}</div>
                         </div>`;
                         topicIndex++;
@@ -990,6 +1029,7 @@ function renderTree() {
                         const subTopic = group.subtopics[sti];
                         const subIsDone = subTopic.done && subTopic.mcqs && subTopic.mcqs.length > 0;
                         const subMcqCount = subTopic.mcqs ? subTopic.mcqs.length : 0;
+                        const subRequestedMcqs = subTopic.mcq_count || 8;
                         const subValKey = `${ci}|${topicIndex}`;
                         const subValResult = topicValidationResults[subValKey];
                         const subIsValid = subValResult ? subValResult.valid : false;
@@ -999,7 +1039,7 @@ function renderTree() {
                         html += `<div class="tree-item subtopic" data-chapter="${ci}" data-topic="${topicIndex}" onclick="selectTopic(${ci}, ${topicIndex})" style="cursor:pointer;padding-left:45px;font-size:12px;color:#555;">
                             • (${subTopic.number}) ${subTopic.title}
                             <span class="subtopic-badge">sub</span>
-                            <span class="badge-topic">${subMcqCount} MCQs ${subIsDone ? '✅' : ''} ${subStatusIcon} ${subScore}%</span>
+                            <span class="badge-topic">${subMcqCount}/${subRequestedMcqs} MCQs ${subIsDone ? '✅' : ''} ${subStatusIcon} ${subScore}%</span>
                         </div>`;
                         topicIndex++;
                     }
@@ -1097,6 +1137,7 @@ function extractChaptersAndTopics() {
                         title: topicTitle,
                         content: '',
                         type: 'main',
+                        mcq_count: 8,  // Default
                         done: false,
                         mcqs: []
                     });
@@ -1131,6 +1172,7 @@ function extractChaptersAndTopics() {
                             title: sectionTitle,
                             content: '',
                             type: 'section',
+                            mcq_count: 8,  // Default
                             done: false,
                             mcqs: []
                         });
@@ -1159,6 +1201,7 @@ function extractChaptersAndTopics() {
                         title: subTitle,
                         content: '',
                         type: 'subtopic',
+                        mcq_count: 8,  // Default
                         done: false,
                         mcqs: []
                     });
@@ -1187,6 +1230,7 @@ function extractChaptersAndTopics() {
                             title: subTitle,
                             content: '',
                             type: 'subtopic',
+                            mcq_count: 8,  // Default
                             done: false,
                             mcqs: []
                         });
@@ -1255,6 +1299,7 @@ function extractChaptersAndTopics() {
                             title: sections[i].title,
                             content: content,
                             type: 'main',
+                            mcq_count: 8,  // Default
                             done: false,
                             mcqs: []
                         });
@@ -1274,6 +1319,7 @@ function extractChaptersAndTopics() {
                             title: 'Content',
                             content: text.slice(0, 4000),
                             type: 'main',
+                            mcq_count: 8,  // Default
                             done: false,
                             mcqs: []
                         }]
@@ -1581,9 +1627,10 @@ function selectTopic(chapterIdx, topicIdx) {
         const statusText = isValid ? `✅ Valid (${score}%)` : (valResult ? `⚠️ Issues (${score}%)` : '⏳ Not validated');
         const contentLen = topic.content ? topic.content.length : 0;
         const typeLabel = topic.type || 'main';
+        const requestedMcqs = topic.mcq_count || 8;
         selectedTopicInfo.innerHTML = `
             <strong>Selected:</strong> ${chapter.number}.${topic.number} ${topic.title} <span class="subtopic-badge">${typeLabel}</span>
-            <span style="margin-left:15px;">📝 ${topic.mcqs ? topic.mcqs.length : 0} MCQs</span>
+            <span style="margin-left:15px;">📝 ${topic.mcqs ? topic.mcqs.length : 0}/${requestedMcqs} MCQs</span>
             <span style="margin-left:15px;">${topic.done ? '✅ Done' : '⏳ Pending'}</span>
             <span style="margin-left:15px;">${statusText}</span>
             <span style="margin-left:15px;">📄 ${contentLen} chars</span>
@@ -1615,6 +1662,8 @@ function updateTopicSelect() {
         if (!chapter.topics) return;
         chapter.topics.forEach((topic, ti) => {
             const isDone = topic.done && topic.mcqs && topic.mcqs.length > 0;
+            const requestedMcqs = topic.mcq_count || 8;
+            const currentMcqs = topic.mcqs ? topic.mcqs.length : 0;
             const valKey = `${ci}|${ti}`;
             const valResult = topicValidationResults[valKey];
             const isValid = valResult ? valResult.valid : false;
@@ -1623,7 +1672,7 @@ function updateTopicSelect() {
             const opt = document.createElement('option');
             opt.value = `${ci}|${ti}`;
             const typeLabel = topic.type === 'subtopic' ? ' [sub]' : '';
-            opt.textContent = `${chapter.number}.${topic.number} ${topic.title}${typeLabel} ${isDone ? '✅' : ''} ${statusIcon} ${score}%`;
+            opt.textContent = `${chapter.number}.${topic.number} ${topic.title}${typeLabel} ${currentMcqs}/${requestedMcqs} ${isDone ? '✅' : ''} ${statusIcon} ${score}%`;
             topicSelect.appendChild(opt);
         });
     });
@@ -1697,6 +1746,7 @@ function addManualTopic() {
                     title: title,
                     content: content.slice(0, 4000),
                     type: 'main',
+                    mcq_count: 8,  // Default
                     done: false,
                     mcqs: []
                 }]
@@ -1714,6 +1764,7 @@ function addManualTopic() {
             title: title,
             content: content.slice(0, 4000),
             type: 'main',
+            mcq_count: 8,  // Default
             done: false,
             mcqs: []
         });
@@ -1730,7 +1781,7 @@ function addManualTopic() {
     if (manualTopicTitle) manualTopicTitle.value = '';
 }
 
-// ============ GENERATE TOPIC MCQs (kept from original) ============
+// ============ GENERATE TOPIC MCQs ============
 async function generateTopicMCQs() {
     const key = apiKey ? apiKey.value.trim() : '';
     if (!key) {
@@ -1764,7 +1815,7 @@ async function generateTopicMCQs() {
     const model = modelSelect ? modelSelect.value : 'llama3.1-8b';
     const hots = includeHOTS ? includeHOTS.checked : true;
 
-    log(`Generating ${numQuestions} MCQs for: ${topic.title}`);
+    log(`Generating MCQs for: ${topic.title}`);
 
     if (progress) progress.classList.add('show');
     if (progressFill) { progressFill.style.width = '0%'; progressFill.textContent = '0%'; }
@@ -1797,9 +1848,10 @@ async function generateTopicMCQs() {
             validateAllTopics();
             
             if (selectedTopicInfo) {
+                const requestedMcqs = topic.mcq_count || 8;
                 selectedTopicInfo.innerHTML = `
                     <strong>✅ Done!</strong> ${chapter.number}.${topic.number} ${topic.title}
-                    <span style="margin-left:15px;">📝 ${mcqs.length} MCQs</span>
+                    <span style="margin-left:15px;">📝 ${mcqs.length}/${requestedMcqs} MCQs</span>
                 `;
             }
             
@@ -1821,7 +1873,7 @@ async function generateTopicMCQs() {
     if (generateTopicBtn) generateTopicBtn.disabled = false;
 }
 
-// ============ GENERATE TOPIC MCQs WITH RESULT (kept from original) ============
+// ============ UPDATED: GENERATE TOPIC MCQS WITH RESULT (uses topic's mcq_count) ============
 async function generateTopicMCQsWithResult(chapterIdx, topicIdx, topicTitle, topicContent, numQuestions, model, hots, isRetry = false) {
     const key = apiKey ? apiKey.value.trim() : '';
     if (!key) {
@@ -1832,11 +1884,19 @@ async function generateTopicMCQsWithResult(chapterIdx, topicIdx, topicTitle, top
         return { success: false, mcqs: [], count: 0, error: 'Content too short' };
     }
 
-    log(`${isRetry ? '🔄 RETRY' : '📝'} Generating ${numQuestions} MCQs for: ${topicTitle}`);
+    // ===== UPDATED: Get MCQ count from the topic object =====
+    let actualTopic = null;
+    if (bookStructure.chapters && bookStructure.chapters[chapterIdx]) {
+        actualTopic = bookStructure.chapters[chapterIdx].topics[topicIdx];
+    }
+    // Use topic's mcq_count if available, otherwise use the provided numQuestions
+    const effectiveNumQuestions = (actualTopic && actualTopic.mcq_count) ? actualTopic.mcq_count : numQuestions;
+    
+    log(`${isRetry ? '🔄 RETRY' : '📝'} Generating ${effectiveNumQuestions} MCQs for: ${topicTitle} (from CSV: ${actualTopic ? actualTopic.mcq_count : 'default'})`);
 
     try {
         const hotsInstruction = hots ? 'Include at least 40% scenario-based and analytical questions (HOTS).' : '';
-        const prompt = `Generate EXACTLY ${numQuestions} multiple-choice questions. You MUST generate ${numQuestions} questions - no more, no less.
+        const prompt = `Generate EXACTLY ${effectiveNumQuestions} multiple-choice questions. You MUST generate ${effectiveNumQuestions} questions - no more, no less.
 
 TOPIC: ${topicTitle}
 CONTENT:
@@ -1850,10 +1910,10 @@ REQUIREMENTS:
 5. Each explanation: 40-80 words
 6. Use \\( ... \\) for all mathematical expressions and equations.
 
-OUTPUT CSV FORMAT (EXACTLY ${numQuestions} rows):
+OUTPUT CSV FORMAT (EXACTLY ${effectiveNumQuestions} rows):
 topic,question_text,option_a,option_b,option_c,option_d,correct_answer,difficulty,explanation
 
-IMPORTANT: Return EXACTLY ${numQuestions} rows of data. Do not return more or less than ${numQuestions} questions. Return ONLY CSV data, no other text.`;
+IMPORTANT: Return EXACTLY ${effectiveNumQuestions} rows of data. Do not return more or less than ${effectiveNumQuestions} questions. Return ONLY CSV data, no other text.`;
 
         log(`${isRetry ? '🔄 RETRY' : '📤'} Sending request for: ${topicTitle}`);
 
@@ -1913,9 +1973,9 @@ IMPORTANT: Return EXACTLY ${numQuestions} rows of data. Do not return more or le
 
         log(`${isRetry ? '🔄 RETRY' : '📊'} Parsing results for: ${topicTitle}`);
         let mcqs = parseCSVResponseImproved(content, topicTitle);
-        log(`Parsed ${mcqs.length} MCQs (requested: ${numQuestions})`);
+        log(`Parsed ${mcqs.length} MCQs (requested: ${effectiveNumQuestions})`);
 
-        if (mcqs.length < numQuestions * 0.7 && mcqs.length > 0) {
+        if (mcqs.length < effectiveNumQuestions * 0.7 && mcqs.length > 0) {
             log(`Only got ${mcqs.length} MCQs, trying lenient parsing...`);
             mcqs = parseLenientCSV(content, topicTitle);
             log(`Lenient parsing gave ${mcqs.length} MCQs`);
@@ -1932,9 +1992,9 @@ IMPORTANT: Return EXACTLY ${numQuestions} rows of data. Do not return more or le
             }
         }
 
-        if (mcqs.length > numQuestions) {
-            log(`Got ${mcqs.length} MCQs, trimming to ${numQuestions}`);
-            mcqs = mcqs.slice(0, numQuestions);
+        if (mcqs.length > effectiveNumQuestions) {
+            log(`Got ${mcqs.length} MCQs, trimming to ${effectiveNumQuestions}`);
+            mcqs = mcqs.slice(0, effectiveNumQuestions);
         }
 
         mcqs = validateAndFixMCQs(mcqs, topicTitle);
@@ -2388,14 +2448,15 @@ async function generateAllMCQs() {
         return;
     }
     
-    const numQuestions = questionsPerTopic ? parseInt(questionsPerTopic.value) || 10 : 10;
-    const threshold = Math.max(5, Math.floor(numQuestions * 0.8));
+    const globalNumQuestions = questionsPerTopic ? parseInt(questionsPerTopic.value) || 10 : 10;
     
     // Validate topics first
     validateAllTopics();
     
-    // Filter topics - more lenient for sub-topics
+    // Filter topics - use topic's mcq_count for threshold
     const topicsToGenerate = allTopics.filter(item => {
+        const requestedMcqs = item.topic.mcq_count || globalNumQuestions;
+        const threshold = Math.max(3, Math.floor(requestedMcqs * 0.8));
         const hasEnoughMCQs = item.topic.mcqs && item.topic.mcqs.length >= threshold;
         const hasContent = item.topic.content && item.topic.content.length >= 50;
         const valKey = `${item.chapterIdx}|${item.topicIdx}`;
@@ -2418,7 +2479,11 @@ async function generateAllMCQs() {
     }
     
     if (topicsToGenerate.length === 0) {
-        const allDone = allTopics.every(item => item.topic.mcqs && item.topic.mcqs.length >= threshold);
+        const allDone = allTopics.every(item => {
+            const requestedMcqs = item.topic.mcq_count || globalNumQuestions;
+            const threshold = Math.max(3, Math.floor(requestedMcqs * 0.8));
+            return item.topic.mcqs && item.topic.mcqs.length >= threshold;
+        });
         if (allDone) {
             showSuccess('All topics already have enough MCQs generated!');
         } else {
@@ -2427,10 +2492,12 @@ async function generateAllMCQs() {
         return;
     }
     
+    const totalRequested = topicsToGenerate.reduce((sum, item) => {
+        return sum + (item.topic.mcq_count || globalNumQuestions);
+    }, 0);
+    
     const confirmMsg = `This will generate MCQs for ${topicsToGenerate.length} topics sequentially with 10-second pauses between each.
-Minimum acceptable MCQs per topic: ${threshold} (${numQuestions} requested)
-
-Total estimated time: ~${Math.ceil(topicsToGenerate.length * 15 / 60)} minutes.
+Total MCQs to generate: ${totalRequested}
 
 Continue?`;
     if (!confirm(confirmMsg)) {
@@ -2446,7 +2513,7 @@ Continue?`;
     batchFill.style.width = '0%';
     batchFill.textContent = '0%';
     
-    log(`Starting batch generation: ${topicsToGenerate.length} topics (threshold: ${threshold})`);
+    log(`Starting batch generation: ${topicsToGenerate.length} topics`);
     let completed = 0;
     let failed = 0;
     const failedTopics = [];
@@ -2459,9 +2526,11 @@ Continue?`;
             const currentTopic = item.topic;
             const chapterIdx = item.chapterIdx;
             const topicIdx = item.topicIdx;
+            const requestedMcqs = currentTopic.mcq_count || globalNumQuestions;
+            const threshold = Math.max(3, Math.floor(requestedMcqs * 0.8));
             
             const progressPct = Math.round((i / topicsToGenerate.length) * 100);
-            batchStatus.textContent = `🧠 Generating MCQs for: ${currentTopic.title} (${i+1}/${topicsToGenerate.length})`;
+            batchStatus.textContent = `🧠 Generating ${requestedMcqs} MCQs for: ${currentTopic.title} (${i+1}/${topicsToGenerate.length})`;
             batchDetail.textContent = `${completed} / ${topicsToGenerate.length} topics completed (${failed} failed)`;
             batchFill.style.width = progressPct + '%';
             batchFill.textContent = progressPct + '%';
@@ -2473,7 +2542,7 @@ Continue?`;
             
             const result = await generateTopicMCQsWithResult(
                 chapterIdx, topicIdx, currentTopic.title, currentTopic.content,
-                numQuestions, model, hots, false
+                globalNumQuestions, model, hots, false
             );
             
             if (result.success && result.count > 0) {
@@ -2487,7 +2556,7 @@ Continue?`;
                     currentTopic.done = true;
                     result.mcqs.forEach(row => allMCQs.push(row));
                     completed++;
-                    log(`✅ Topic "${currentTopic.title}" generated ${mcqCount} MCQs`);
+                    log(`✅ Topic "${currentTopic.title}" generated ${mcqCount} MCQs (requested: ${requestedMcqs})`);
                 } else {
                     failed++;
                     currentTopic.done = false;
@@ -2542,6 +2611,8 @@ Continue?`;
             
             const stillFailed = failedTopics.filter(item => {
                 const topic = item.topic;
+                const requestedMcqs = topic.mcq_count || globalNumQuestions;
+                const threshold = Math.max(3, Math.floor(requestedMcqs * 0.8));
                 const mcqCount = topic.mcqs ? topic.mcqs.length : 0;
                 return mcqCount < threshold;
             });
@@ -2585,10 +2656,9 @@ async function retryFailedTopics(failedTopics) {
     
     let retriedCount = 0;
     let successCount = 0;
-    const numQuestions = questionsPerTopic ? parseInt(questionsPerTopic.value) || 10 : 10;
+    const globalNumQuestions = questionsPerTopic ? parseInt(questionsPerTopic.value) || 10 : 10;
     const model = modelSelect ? modelSelect.value : 'llama3.1-8b';
     const hots = includeHOTS ? includeHOTS.checked : true;
-    const threshold = Math.max(5, Math.floor(numQuestions * 0.8));
     
     for (let i = 0; i < failedTopics.length; i++) {
         const item = failedTopics[i];
@@ -2596,6 +2666,8 @@ async function retryFailedTopics(failedTopics) {
         const chapterIdx = item.chapterIdx;
         const topicIdx = item.topicIdx;
         const retryCount = item.retryCount || 0;
+        const requestedMcqs = topic.mcq_count || globalNumQuestions;
+        const threshold = Math.max(3, Math.floor(requestedMcqs * 0.8));
         
         if (retryCount >= 2) {
             log(`⏭️ Skipping "${topic.title}" - already retried ${retryCount} times`);
@@ -2620,7 +2692,7 @@ async function retryFailedTopics(failedTopics) {
         
         const result = await generateTopicMCQsWithResult(
             chapterIdx, topicIdx, topic.title, topic.content, 
-            numQuestions, model, hots, true
+            globalNumQuestions, model, hots, true
         );
         
         retriedCount++;
@@ -2787,9 +2859,9 @@ function clearAll() {
 }
 
 // ============ INIT ============
-log('🚀 Book to MCQ Generator loaded - Enhanced Topic Extraction');
-log('✨ Extracts all topics including sub-topics like (a), (b), (c)');
-log('✨ Matches CSV topics to PDF content using boundary detection');
+log('🚀 Book to MCQ Generator loaded - Enhanced Topic Extraction with MCQ Count from CSV');
+log('✨ CSV Column 3 = Number of MCQs to generate per topic');
+log('✨ Example: ,(a) Disillusionment and frustration,33 → generates 33 MCQs');
 log('✨ Auto-validates topics after extraction with accurate scoring');
 log('✨ Automatic validation and fixing of mismatched correct answers!');
 updateContentStatus();
