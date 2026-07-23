@@ -130,6 +130,16 @@
         .quality-report .warn { color: #e67e22; }
         .stats-bar { display: flex; gap: 20px; flex-wrap: wrap; padding: 10px 0; }
         .stats-bar .stat { background: #f0f4f8; padding: 4px 12px; border-radius: 12px; font-size: 13px; }
+
+        /* Rate limit status styles */
+        .rate-limit-status { background: #e8f0fe; padding: 10px 15px; border-radius: 6px; margin: 10px 0; font-size: 12px; border: 1px solid #b3d4fc; display: none; }
+        .rate-limit-status.show { display: block; }
+        .rate-limit-status .stat-item { display: inline-block; margin-right: 15px; }
+        .rate-limit-status .stat-item .label { color: #555; }
+        .rate-limit-status .stat-item .value { font-weight: bold; color: #1a73e8; }
+        .rate-limit-status .stat-item .value.warning { color: #e67e22; }
+        .rate-limit-status .stat-item .value.danger { color: #e74c3c; }
+        .rate-limit-status .stat-item .value.success { color: #27ae60; }
     </style>
 </head>
 <body>
@@ -145,14 +155,24 @@
         <label>🔑 Cerebras API Key</label>
         <input type="password" id="apiKey" placeholder="Enter your Cerebras API key..." value="csk-4errjvx8dcnjp2hrcrh6vpmkc95m4y6n3cc6wjnnyyjw9ctf">
         <div style="margin-top:5px;font-size:12px;color:#888;">
-            Free tier: 1M tokens/day
+            Free tier: 1M tokens/day | Rate Limits: 5 req/min, 150 req/hr, 2400 req/day
         </div>
     </div>
-<!-- ===== ADD THIS NEW SECTION ===== -->
+
+    <!-- ===== RATE LIMIT STATUS ===== -->
+    <div class="rate-limit-status" id="rateLimitStatus">
+        <div style="display:flex;gap:15px;flex-wrap:wrap;">
+            <span class="stat-item">📊 Requests: <span class="value" id="reqMin">0</span>/5 min | <span class="value" id="reqHour">0</span>/150 hr</span>
+            <span class="stat-item">🔄 Tokens: <span class="value" id="tokMin">0</span>/30k min</span>
+            <span class="stat-item">⏱️ Next available: <span class="value" id="nextAvail">0</span>s</span>
+            <span class="stat-item">📈 Total: <span class="value" id="totalReqs">0</span> reqs | <span class="value" id="totalTokens">0</span> tokens</span>
+        </div>
+    </div>
+
+    <!-- ===== RATE LIMIT INFO ===== -->
     <div class="rate-limit-info" id="rateLimitInfo" style="display:none;background:#fff3cd;padding:10px;border-radius:5px;margin:10px 0;border:1px solid #ffc107;">
         ⏳ Rate limit in effect. Waiting <span id="rateLimitWait">5</span> seconds...
     </div>
-    <!-- ===== END OF NEW SECTION ===== -->
     
     <!-- ===== TABS ===== -->
     <div class="tab">
@@ -337,6 +357,7 @@
     <div class="note note-success">
         ✅ <strong>Enhanced Topic Extraction:</strong> Now extracts all topics including sub-topics like (a), (b), (c) with validation scores.
         <br>✅ <strong>CSV MCQ Count:</strong> Column 3 in CSV specifies how many MCQs to generate per topic.
+        <br>✅ <strong>Optimized Rate Limiting:</strong> Smart request throttling with concurrent request support (2 max).
     </div>
 </div>
 
@@ -355,6 +376,231 @@ let topicValidationResults = {};
 let csvTopicData = [];
 let failedTopicsForRetry = [];
 let isBatchRunning = false;
+
+// ============ RATE LIMITER ============
+class RateLimiter {
+    constructor() {
+        this.requestLimits = {
+            minute: { max: 5, used: 0, resetTime: Date.now() + 60000 },
+            hour: { max: 150, used: 0, resetTime: Date.now() + 3600000 },
+            day: { max: 2400, used: 0, resetTime: Date.now() + 86400000 }
+        };
+        this.tokenLimits = {
+            minute: { max: 30000, used: 0, resetTime: Date.now() + 60000 },
+            hour: { max: 1000000, used: 0, resetTime: Date.now() + 3600000 },
+            day: { max: 1000000, used: 0, resetTime: Date.now() + 86400000 }
+        };
+        this.requestQueue = [];
+        this.isProcessing = false;
+        this.concurrencyLimit = 2;
+        this.totalRequests = 0;
+        this.totalTokens = 0;
+        this.startTime = Date.now();
+        this.lastRequestTime = 0;
+        this.minDelay = 12000; // 12 seconds between requests
+    }
+
+    canMakeRequest(estimatedTokens = 8000) {
+        const now = Date.now();
+        let canRequest = true;
+        let waitTime = 0;
+        let reasons = [];
+
+        // Check request limits
+        for (const [period, limit] of Object.entries(this.requestLimits)) {
+            if (now > limit.resetTime) {
+                limit.used = 0;
+                limit.resetTime = now + this.getPeriodMs(period);
+            }
+            if (limit.used >= limit.max) {
+                canRequest = false;
+                const wait = limit.resetTime - now;
+                waitTime = Math.max(waitTime, wait);
+                reasons.push(`${period}: ${limit.used}/${limit.max} requests`);
+            }
+        }
+
+        // Check token limits
+        for (const [period, limit] of Object.entries(this.tokenLimits)) {
+            if (now > limit.resetTime) {
+                limit.used = 0;
+                limit.resetTime = now + this.getPeriodMs(period);
+            }
+            if (limit.used + estimatedTokens > limit.max) {
+                canRequest = false;
+                const wait = limit.resetTime - now;
+                waitTime = Math.max(waitTime, wait);
+                reasons.push(`${period}: tokens will exceed`);
+            }
+        }
+
+        // Check minimum delay between requests
+        const timeSinceLast = now - this.lastRequestTime;
+        if (timeSinceLast < this.minDelay && this.lastRequestTime > 0) {
+            canRequest = false;
+            const wait = this.minDelay - timeSinceLast;
+            waitTime = Math.max(waitTime, wait);
+            reasons.push(`min delay: ${Math.ceil(wait/1000)}s`);
+        }
+
+        return {
+            canRequest,
+            waitTime,
+            reasons: reasons.length > 0 ? reasons.join(', ') : 'OK',
+            estimatedWait: Math.ceil(waitTime / 1000)
+        };
+    }
+
+    getPeriodMs(period) {
+        switch(period) {
+            case 'minute': return 60000;
+            case 'hour': return 3600000;
+            case 'day': return 86400000;
+            default: return 60000;
+        }
+    }
+
+    recordRequest(tokensUsed = 8000) {
+        const now = Date.now();
+        this.lastRequestTime = now;
+        
+        for (const [period, limit] of Object.entries(this.requestLimits)) {
+            if (now > limit.resetTime) {
+                limit.used = 0;
+                limit.resetTime = now + this.getPeriodMs(period);
+            }
+            limit.used++;
+        }
+        
+        for (const [period, limit] of Object.entries(this.tokenLimits)) {
+            if (now > limit.resetTime) {
+                limit.used = 0;
+                limit.resetTime = now + this.getPeriodMs(period);
+            }
+            limit.used += tokensUsed;
+        }
+        
+        this.totalRequests++;
+        this.totalTokens += tokensUsed;
+        this.updateStatusDisplay();
+    }
+
+    updateStatusDisplay() {
+        const statusEl = document.getElementById('rateLimitStatus');
+        if (!statusEl) return;
+        
+        statusEl.classList.add('show');
+        
+        const reqMin = this.requestLimits.minute;
+        const reqHour = this.requestLimits.hour;
+        const tokMin = this.tokenLimits.minute;
+        
+        document.getElementById('reqMin').textContent = reqMin.used;
+        document.getElementById('reqHour').textContent = reqHour.used;
+        document.getElementById('tokMin').textContent = tokMin.used;
+        document.getElementById('totalReqs').textContent = this.totalRequests;
+        document.getElementById('totalTokens').textContent = Math.round(this.totalTokens / 1000) + 'k';
+        
+        // Next available
+        const status = this.canMakeRequest(8000);
+        document.getElementById('nextAvail').textContent = status.estimatedWait;
+        
+        // Color coding
+        const reqMinEl = document.getElementById('reqMin');
+        if (reqMin.used >= reqMin.max * 0.8) {
+            reqMinEl.className = 'value danger';
+        } else if (reqMin.used >= reqMin.max * 0.5) {
+            reqMinEl.className = 'value warning';
+        } else {
+            reqMinEl.className = 'value success';
+        }
+    }
+
+    async makeRequest(fn, estimatedTokens = 8000, priority = 0) {
+        return new Promise((resolve, reject) => {
+            this.requestQueue.push({
+                fn,
+                estimatedTokens,
+                priority,
+                resolve,
+                reject,
+                addedAt: Date.now()
+            });
+            
+            this.requestQueue.sort((a, b) => b.priority - a.priority);
+            this.processQueue();
+        });
+    }
+
+    async processQueue() {
+        if (this.isProcessing || this.requestQueue.length === 0) return;
+        
+        const item = this.requestQueue[0];
+        const status = this.canMakeRequest(item.estimatedTokens);
+        
+        if (!status.canRequest) {
+            this.showRateLimitWait(status.estimatedWait);
+            await sleep(status.estimatedWait * 1000 + 500);
+            this.processQueue();
+            return;
+        }
+        
+        this.isProcessing = true;
+        this.requestQueue.shift();
+        
+        try {
+            this.recordRequest(item.estimatedTokens);
+            const result = await item.fn();
+            item.resolve(result);
+        } catch (error) {
+            if (error.message && (error.message.includes('429') || error.message.includes('rate limit'))) {
+                log('⚠️ Rate limit hit, re-queuing with delay...');
+                this.requestQueue.unshift(item);
+                this.showRateLimitWait(30);
+                await sleep(30000);
+            } else {
+                item.reject(error);
+            }
+        } finally {
+            this.isProcessing = false;
+            setTimeout(() => this.processQueue(), 200);
+            this.updateStatusDisplay();
+        }
+    }
+
+    showRateLimitWait(seconds) {
+        const info = document.getElementById('rateLimitInfo');
+        const wait = document.getElementById('rateLimitWait');
+        if (info && wait) {
+            info.style.display = 'block';
+            wait.textContent = Math.max(1, seconds);
+            setTimeout(() => {
+                info.style.display = 'none';
+            }, 3000);
+        }
+    }
+
+    getOptimalBatchSize(totalTopics) {
+        const status = this.canMakeRequest(8000);
+        if (!status.canRequest) {
+            return { batchSize: 1, waitTime: status.estimatedWait };
+        }
+        
+        const remainingMinute = this.requestLimits.minute.max - this.requestLimits.minute.used;
+        const remainingHour = this.requestLimits.hour.max - this.requestLimits.hour.used;
+        
+        // Calculate optimal concurrent requests
+        // With 5 req/min, we can do 2 concurrent with 24s spacing
+        const maxConcurrent = Math.min(2, remainingMinute, Math.ceil(remainingHour / 60));
+        
+        return {
+            batchSize: Math.min(maxConcurrent, totalTopics, 2),
+            waitTime: 0,
+            remainingMinute,
+            remainingHour
+        };
+    }
+}
 
 // ============ DOM REFS ============
 function getEl(id) { return document.getElementById(id); }
@@ -405,6 +651,9 @@ const validationStatus = getEl('validationStatus');
 const confidenceFill = getEl('confidenceFill');
 const topicRegistryContent = getEl('topicRegistryContent');
 const qualityReportContent = getEl('qualityReportContent');
+
+// ============ GLOBAL RATE LIMITER ============
+const rateLimiter = new RateLimiter();
 
 // ============ LOGGING ============
 function log(msg) {
@@ -1924,8 +2173,8 @@ IMPORTANT: Return EXACTLY ${effectiveNumQuestions} rows of data. Do not return m
 
         log(`${isRetry ? '🔄 RETRY' : '📤'} Sending request for: ${topicTitle}`);
 
-        // ===== USE THROTTLED REQUEST =====
-        const response = await throttledRequest(async () => {
+        // ===== USE OPTIMIZED RATE LIMITER =====
+        const response = await rateLimiter.makeRequest(async () => {
             return await fetch('https://api.cerebras.ai/v1/chat/completions', {
                 method: 'POST',
                 headers: {
@@ -1942,7 +2191,7 @@ IMPORTANT: Return EXACTLY ${effectiveNumQuestions} rows of data. Do not return m
                     max_tokens: 8000
                 })
             });
-        }, isRetry ? 5000 : 3000);
+        }, 8000, isRetry ? 0 : 1);
 
         const rawText = await response.text();
         log(`${isRetry ? '🔄 RETRY' : '📥'} Response for "${topicTitle}": ${rawText.length} chars, status ${response.status}`);
@@ -2060,6 +2309,7 @@ IMPORTANT: Return EXACTLY ${effectiveNumQuestions} rows of data. Do not return m
         return { success: false, mcqs: [], count: 0, error: err.message };
     }
 }
+
 // ============ EXTRACT CSV FROM RAW RESPONSE ============
 function extractCSVFromRawResponse(rawText, defaultTopic) {
     log(`Attempting to extract CSV directly from raw response for "${defaultTopic}"`);
@@ -2467,7 +2717,7 @@ function validateAndFixMCQs(mcqs, topicTitle) {
     return fixedMCQs;
 }
 
-// ============ GENERATE ALL MCQS ============
+// ============ GENERATE ALL MCQS (OPTIMIZED WITH RATE LIMITER) ============
 async function generateAllMCQs() {
     if (isBatchRunning) {
         showError('Batch generation is already in progress!');
@@ -2549,10 +2799,19 @@ async function generateAllMCQs() {
         return sum + (item.topic.mcq_count || globalNumQuestions);
     }, 0);
     
-    const confirmMsg = `This will generate MCQs for ${topicsToGenerate.length} topics sequentially with 10-second pauses between each.
-Total MCQs to generate: ${totalRequested}
-
-Continue?`;
+    // Get optimal batch size from rate limiter
+    const { batchSize, waitTime } = rateLimiter.getOptimalBatchSize(topicsToGenerate.length);
+    
+    let confirmMsg = `This will generate MCQs for ${topicsToGenerate.length} topics.
+Total MCQs: ${totalRequested}
+`;
+    
+    if (batchSize > 1) {
+        confirmMsg += `\n🚀 Using OPTIMIZED mode: ${batchSize} concurrent requests (max 2)\n`;
+        confirmMsg += `⏱️ Estimated time: ~${Math.ceil(topicsToGenerate.length / batchSize * 15)} seconds\n`;
+    }
+    
+    confirmMsg += `\nContinue?`;
     if (!confirm(confirmMsg)) {
         return;
     }
@@ -2561,12 +2820,13 @@ Continue?`;
     generateAllBtn.disabled = true;
     generateAllBtn2.disabled = true;
     batchProgress.classList.add('show');
-    batchStatus.textContent = '⏳ Starting batch generation...';
+    batchStatus.textContent = '⏳ Starting optimized batch generation...';
     batchDetail.textContent = `0 / ${topicsToGenerate.length} topics completed`;
     batchFill.style.width = '0%';
     batchFill.textContent = '0%';
     
-    log(`Starting batch generation: ${topicsToGenerate.length} topics`);
+    log(`Starting optimized batch generation: ${topicsToGenerate.length} topics`);
+    log(`Optimal batch size: ${batchSize} concurrent requests`);
     let completed = 0;
     let failed = 0;
     const failedTopics = [];
@@ -2574,33 +2834,44 @@ Continue?`;
     const hots = includeHOTS ? includeHOTS.checked : true;
     
     try {
-        for (let i = 0; i < topicsToGenerate.length; i++) {
-            const item = topicsToGenerate[i];
-            const currentTopic = item.topic;
-            const chapterIdx = item.chapterIdx;
-            const topicIdx = item.topicIdx;
-            const requestedMcqs = currentTopic.mcq_count || globalNumQuestions;
-            const threshold = Math.max(3, Math.floor(requestedMcqs * 0.8));
+        // Process in batches with concurrency
+        for (let i = 0; i < topicsToGenerate.length; i += batchSize) {
+            const batch = topicsToGenerate.slice(i, Math.min(i + batchSize, topicsToGenerate.length));
             
-            const progressPct = Math.round((i / topicsToGenerate.length) * 100);
-            batchStatus.textContent = `🧠 Generating ${requestedMcqs} MCQs for: ${currentTopic.title} (${i+1}/${topicsToGenerate.length})`;
-            batchDetail.textContent = `${completed} / ${topicsToGenerate.length} topics completed (${failed} failed)`;
-            batchFill.style.width = progressPct + '%';
-            batchFill.textContent = progressPct + '%';
+            // Create batch promises
+            const batchPromises = batch.map(async (item, index) => {
+                const currentTopic = item.topic;
+                const chapterIdx = item.chapterIdx;
+                const topicIdx = item.topicIdx;
+                const requestedMcqs = currentTopic.mcq_count || globalNumQuestions;
+                const threshold = Math.max(3, Math.floor(requestedMcqs * 0.8));
+                
+                const result = await generateTopicMCQsWithResult(
+                    chapterIdx, topicIdx, currentTopic.title, currentTopic.content,
+                    globalNumQuestions, model, hots, false
+                );
+                
+                return {
+                    item,
+                    result,
+                    chapterIdx,
+                    topicIdx,
+                    requestedMcqs,
+                    threshold,
+                    success: result.success && result.count > 0 && result.count >= threshold
+                };
+            });
             
-            if (topicSelect) {
-                topicSelect.value = `${chapterIdx}|${topicIdx}`;
-                selectTopic(chapterIdx, topicIdx);
-            }
+            // Wait for batch to complete
+            const batchResults = await Promise.all(batchPromises);
             
-            const result = await generateTopicMCQsWithResult(
-                chapterIdx, topicIdx, currentTopic.title, currentTopic.content,
-                globalNumQuestions, model, hots, false
-            );
-            
-            if (result.success && result.count > 0) {
-                const mcqCount = result.count;
-                if (mcqCount >= threshold) {
+            // Process batch results
+            for (const batchResult of batchResults) {
+                const { item, result, chapterIdx, topicIdx, requestedMcqs, threshold, success } = batchResult;
+                const currentTopic = item.topic;
+                
+                if (success) {
+                    const mcqCount = result.count;
                     allMCQs = allMCQs.filter(row => {
                         const topicName = row[0] || '';
                         return topicName !== currentTopic.title;
@@ -2613,35 +2884,41 @@ Continue?`;
                 } else {
                     failed++;
                     currentTopic.done = false;
+                    const errorMsg = result.error || 'Unknown error';
                     failedTopics.push({
                         chapterIdx: chapterIdx,
                         topicIdx: topicIdx,
                         topic: currentTopic,
                         retryCount: 0,
-                        reason: `Generated ${mcqCount} MCQs (need ${threshold})`
+                        reason: errorMsg
                     });
-                    log(`⚠️ Topic "${currentTopic.title}" generated only ${mcqCount} MCQs (need ${threshold})`);
+                    log(`❌ Topic "${currentTopic.title}" failed: ${errorMsg}`);
                 }
-            } else {
-                failed++;
-                currentTopic.done = false;
-                failedTopics.push({
-                    chapterIdx: chapterIdx,
-                    topicIdx: topicIdx,
-                    topic: currentTopic,
-                    retryCount: 0,
-                    reason: result.error || 'Unknown error'
-                });
-                log(`❌ Topic "${currentTopic.title}" failed: ${result.error || 'Unknown error'}`);
             }
+            
+            // Update progress
+            const processed = Math.min(i + batchSize, topicsToGenerate.length);
+            const progressPct = Math.round((processed / topicsToGenerate.length) * 100);
+            batchStatus.textContent = `🧠 Generating: ${completed} topics done, ${failed} failed (${progressPct}%)`;
+            batchDetail.textContent = `${completed} / ${topicsToGenerate.length} topics completed`;
+            batchFill.style.width = progressPct + '%';
+            batchFill.textContent = progressPct + '%';
             
             updateStats();
             renderTree();
             validateAllTopics();
             
-            if (i < topicsToGenerate.length - 1) {
-                batchStatus.textContent = `⏳ Waiting 10 seconds before next topic... (${i+1}/${topicsToGenerate.length} done)`;
-                await sleep(10000);
+            // Check if we need to wait before next batch
+            if (i + batchSize < topicsToGenerate.length) {
+                const status = rateLimiter.canMakeRequest(8000);
+                if (!status.canRequest) {
+                    batchStatus.textContent = `⏳ Rate limit reached. Waiting ${status.estimatedWait}s...`;
+                    await sleep(status.estimatedWait * 1000 + 1000);
+                } else {
+                    // Smart delay: 2-5 seconds between batches
+                    const delay = batchSize > 1 ? 2000 : 3000;
+                    await sleep(delay);
+                }
             }
         }
         
@@ -2656,9 +2933,10 @@ Continue?`;
             downloadBookBtn.disabled = false;
         }
         
+        // Retry failed topics
         if (failedTopics.length > 0) {
             log(`🔄 Starting retry phase for ${failedTopics.length} topics...`);
-            batchStatus.textContent = `🔄 Starting retry phase for ${failedTopics.length} topics...`;
+            batchStatus.textContent = `🔄 Retrying ${failedTopics.length} failed topics...`;
             await sleep(2000);
             await retryFailedTopics(failedTopics);
             
@@ -2713,72 +2991,88 @@ async function retryFailedTopics(failedTopics) {
     const model = modelSelect ? modelSelect.value : 'llama3.1-8b';
     const hots = includeHOTS ? includeHOTS.checked : true;
     
-    for (let i = 0; i < failedTopics.length; i++) {
-        const item = failedTopics[i];
-        const topic = item.topic;
-        const chapterIdx = item.chapterIdx;
-        const topicIdx = item.topicIdx;
-        const retryCount = item.retryCount || 0;
-        const requestedMcqs = topic.mcq_count || globalNumQuestions;
-        const threshold = Math.max(3, Math.floor(requestedMcqs * 0.8));
+    // Use batch processing for retries too
+    const retryBatchSize = Math.min(2, failedTopics.length);
+    
+    for (let i = 0; i < failedTopics.length; i += retryBatchSize) {
+        const batch = failedTopics.slice(i, Math.min(i + retryBatchSize, failedTopics.length));
         
-        if (retryCount >= 2) {
-            log(`⏭️ Skipping "${topic.title}" - already retried ${retryCount} times`);
-            continue;
+        const batchPromises = batch.map(async (item) => {
+            const topic = item.topic;
+            const chapterIdx = item.chapterIdx;
+            const topicIdx = item.topicIdx;
+            const retryCount = item.retryCount || 0;
+            const requestedMcqs = topic.mcq_count || globalNumQuestions;
+            const threshold = Math.max(3, Math.floor(requestedMcqs * 0.8));
+            
+            if (retryCount >= 2) {
+                log(`⏭️ Skipping "${topic.title}" - already retried ${retryCount} times`);
+                return null;
+            }
+            
+            log(`🔄 Retry attempt ${retryCount + 1} for: ${topic.title}`);
+            
+            topic.mcqs = [];
+            topic.done = false;
+            
+            const result = await generateTopicMCQsWithResult(
+                chapterIdx, topicIdx, topic.title, topic.content, 
+                globalNumQuestions, model, hots, true
+            );
+            
+            let success = false;
+            if (result.success && result.count > 0) {
+                const mcqCount = result.count;
+                if (mcqCount >= threshold) {
+                    allMCQs = allMCQs.filter(row => {
+                        const topicName = row[0] || '';
+                        return topicName !== topic.title;
+                    });
+                    topic.mcqs = result.mcqs;
+                    topic.done = true;
+                    result.mcqs.forEach(row => allMCQs.push(row));
+                    success = true;
+                    log(`✅ RETRY SUCCESS: "${topic.title}" generated ${mcqCount} MCQs`);
+                } else {
+                    log(`⚠️ RETRY PARTIAL: "${topic.title}" generated ${mcqCount} MCQs (need ${threshold})`);
+                    item.retryCount = retryCount + 1;
+                }
+            } else {
+                log(`❌ RETRY FAILED: "${topic.title}" - ${result.error || 'Unknown error'}`);
+                item.retryCount = retryCount + 1;
+            }
+            
+            return { item, success };
+        });
+        
+        const batchResults = await Promise.all(batchPromises);
+        
+        for (const batchResult of batchResults) {
+            if (batchResult === null) continue;
+            retriedCount++;
+            if (batchResult.success) successCount++;
         }
         
-        const progressPct = Math.round((i / failedTopics.length) * 100);
-        retryStatus.textContent = `🔄 Retrying: ${topic.title} (Attempt ${retryCount + 1}) (${i+1}/${failedTopics.length})`;
+        // Update progress
+        const progressPct = Math.round((Math.min(i + retryBatchSize, failedTopics.length) / failedTopics.length) * 100);
+        retryStatus.textContent = `🔄 Retrying: ${retriedCount}/${failedTopics.length} topics (${successCount} succeeded)`;
         retryDetail.textContent = `${retriedCount} / ${failedTopics.length} topics retried (${successCount} succeeded)`;
         retryFill.style.width = progressPct + '%';
         retryFill.textContent = progressPct + '%';
-        
-        if (topicSelect) {
-            topicSelect.value = `${chapterIdx}|${topicIdx}`;
-            selectTopic(chapterIdx, topicIdx);
-        }
-        
-        log(`🔄 Retry attempt ${retryCount + 1} for: ${topic.title}`);
-        
-        topic.mcqs = [];
-        topic.done = false;
-        
-        const result = await generateTopicMCQsWithResult(
-            chapterIdx, topicIdx, topic.title, topic.content, 
-            globalNumQuestions, model, hots, true
-        );
-        
-        retriedCount++;
-        
-        if (result.success && result.count > 0) {
-            const mcqCount = result.count;
-            if (mcqCount >= threshold) {
-                allMCQs = allMCQs.filter(row => {
-                    const topicName = row[0] || '';
-                    return topicName !== topic.title;
-                });
-                topic.mcqs = result.mcqs;
-                topic.done = true;
-                result.mcqs.forEach(row => allMCQs.push(row));
-                successCount++;
-                log(`✅ RETRY SUCCESS: "${topic.title}" generated ${mcqCount} MCQs`);
-                showSuccess(`✅ Retry success: "${topic.title}" → ${mcqCount} MCQs`);
-            } else {
-                log(`⚠️ RETRY PARTIAL: "${topic.title}" generated ${mcqCount} MCQs (need ${threshold})`);
-                item.retryCount = retryCount + 1;
-            }
-        } else {
-            log(`❌ RETRY FAILED: "${topic.title}" - ${result.error || 'Unknown error'}`);
-            item.retryCount = retryCount + 1;
-        }
         
         updateStats();
         renderTree();
         validateAllTopics();
         
-        if (i < failedTopics.length - 1) {
-            retryStatus.textContent = `⏳ Waiting before next retry... (${i+1}/${failedTopics.length} done)`;
-            await sleep(10000);
+        // Wait between retry batches
+        if (i + retryBatchSize < failedTopics.length) {
+            const status = rateLimiter.canMakeRequest(8000);
+            if (!status.canRequest) {
+                retryStatus.textContent = `⏳ Rate limit reached. Waiting ${status.estimatedWait}s...`;
+                await sleep(status.estimatedWait * 1000 + 1000);
+            } else {
+                await sleep(3000);
+            }
         }
     }
     
@@ -2874,35 +3168,7 @@ function downloadBookCSV() {
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
-// ===== ADD THIS FUNCTION HERE =====
-// Request throttling - tracks last request time to prevent rate limiting
-let lastRequestTime = 0;
 
-async function throttledRequest(fn, delay = 3000) {
-    // Track last request time
-    const now = Date.now();
-    const timeSince = now - lastRequestTime;
-    if (timeSince < delay) {
-        const waitTime = delay - timeSince;
-        // Show rate limit status
-        const rateLimitInfo = document.getElementById('rateLimitInfo');
-        const rateLimitWait = document.getElementById('rateLimitWait');
-        if (rateLimitInfo) {
-            rateLimitInfo.style.display = 'block';
-            if (rateLimitWait) {
-                rateLimitWait.textContent = Math.ceil(waitTime / 1000);
-            }
-            // Auto-hide after 3 seconds
-            setTimeout(() => {
-                rateLimitInfo.style.display = 'none';
-            }, 3000);
-        }
-        await sleep(waitTime);
-    }
-    lastRequestTime = Date.now();
-    return await fn();
-}
-// ===== END OF ADDED FUNCTION =====
 // ============ CLEAR ALL ============
 function clearAll() {
     if (!confirm('Clear all data?')) return;
@@ -2945,8 +3211,20 @@ log('✨ CSV Column 3 = Number of MCQs to generate per topic');
 log('✨ Example: ,(a) Disillusionment and frustration,33 → generates 33 MCQs');
 log('✨ Auto-validates topics after extraction with accurate scoring');
 log('✨ Automatic validation and fixing of mismatched correct answers!');
+log('✨ OPTIMIZED: Smart rate limiting with 2 concurrent requests');
+log('✨ Rate Limits: 5 req/min, 150 req/hr, 2400 req/day');
 updateContentStatus();
 updateTopicRegistry();
+
+// Update rate limit status periodically
+setInterval(() => {
+    rateLimiter.updateStatusDisplay();
+}, 5000);
+
+// Initial status update
+setTimeout(() => {
+    rateLimiter.updateStatusDisplay();
+}, 1000);
 </script>
 </body>
 </html>
