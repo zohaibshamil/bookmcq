@@ -148,11 +148,10 @@
             Free tier: 1M tokens/day
         </div>
     </div>
-<!-- ===== ADD THIS NEW SECTION ===== -->
+
     <div class="rate-limit-info" id="rateLimitInfo" style="display:none;background:#fff3cd;padding:10px;border-radius:5px;margin:10px 0;border:1px solid #ffc107;">
         ⏳ Rate limit in effect. Waiting <span id="rateLimitWait">5</span> seconds...
     </div>
-    <!-- ===== END OF NEW SECTION ===== -->
     
     <!-- ===== TABS ===== -->
     <div class="tab">
@@ -355,6 +354,7 @@ let topicValidationResults = {};
 let csvTopicData = [];
 let failedTopicsForRetry = [];
 let isBatchRunning = false;
+let progressCounter = 0;
 
 // ============ DOM REFS ============
 function getEl(id) { return document.getElementById(id); }
@@ -513,6 +513,7 @@ async function handleFile(file) {
         fileInfo.querySelector('.filename').textContent = file.name;
         fileInfo.querySelector('.pages').textContent = '⏳ Reading...';
     }
+    progressCounter++;
     if (progress) progress.classList.add('show');
     if (progressFill) { progressFill.style.width = '0%'; progressFill.textContent = '0%'; }
     if (statusText) statusText.textContent = 'Loading PDF...';
@@ -549,12 +550,17 @@ async function handleFile(file) {
             }
         }
         if (progressFill) { progressFill.style.width = '100%'; progressFill.textContent = '100%'; }
-        setTimeout(() => { if (progress) progress.classList.remove('show'); }, 1500);
+        setTimeout(() => { 
+            progressCounter--;
+            if (progressCounter <= 0 && progress) progress.classList.remove('show'); 
+        }, 1500);
         updateContentStatus();
 
     } catch (err) {
         showError('Error reading PDF: ' + err.message);
         if (statusText) statusText.textContent = '❌ Error: ' + err.message;
+        progressCounter--;
+        if (progressCounter <= 0 && progress) progress.classList.remove('show');
     }
 }
 
@@ -748,6 +754,14 @@ function showCSVPreviewWithHierarchy(chapters) {
         html += `<div style="color:#888;margin-top:5px;">... and ${chapters.length - 5} more chapters</div>`;
     }
     csvPreview.innerHTML = html;
+}
+
+// ============ SANITIZE HTML ============
+function sanitizeHTML(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
 }
 
 // ============ UPDATED: UPLOAD TOPIC CSV AND MATCH TO PDF CONTENT ============
@@ -961,7 +975,7 @@ function renderTree() {
 
     let html = '';
     bookStructure.chapters.forEach((chapter, ci) => {
-        html += `<div class="tree-item"><span class="chapter">📚 ${chapter.number}. ${chapter.title}</span>`;
+        html += `<div class="tree-item"><span class="chapter">📚 ${sanitizeHTML(chapter.number)}. ${sanitizeHTML(chapter.title)}</span>`;
         if (!chapter.topics || chapter.topics.length === 0) {
             html += `<div class="tree-item topic" style="padding-left:25px;color:#888;">No topics</div>`;
         } else {
@@ -1001,9 +1015,9 @@ function renderTree() {
                     const contentPreview = mainTopic.content ? mainTopic.content.slice(0, 60) + '...' : 'No content';
                     
                     html += `<div class="tree-item topic" data-chapter="${ci}" data-topic="${topicIndex}" onclick="selectTopic(${ci}, ${topicIndex})" style="cursor:pointer;padding-left:25px;">
-                        <strong>${mainTopic.number} ${mainTopic.title}</strong>
+                        <strong>${sanitizeHTML(mainTopic.number)} ${sanitizeHTML(mainTopic.title)}</strong>
                         <span class="badge-topic">${mcqCount}/${requestedMcqs} MCQs ${isDone ? '✅' : ''} ${statusIcon} ${score}%</span>
-                        <div style="font-size:10px;color:#888;padding-left:10px;">${contentPreview}</div>
+                        <div style="font-size:10px;color:#888;padding-left:10px;">${sanitizeHTML(contentPreview)}</div>
                     </div>`;
                     topicIndex++;
                     
@@ -1021,10 +1035,10 @@ function renderTree() {
                         const subContentPreview = subTopic.content ? subTopic.content.slice(0, 50) + '...' : '📌 See parent topic content';
                         
                         html += `<div class="tree-item subtopic" data-chapter="${ci}" data-topic="${topicIndex}" onclick="selectTopic(${ci}, ${topicIndex})" style="cursor:pointer;padding-left:45px;font-size:12px;color:#555;">
-                            • (${subTopic.number}) ${subTopic.title}
+                            • (${sanitizeHTML(subTopic.number)}) ${sanitizeHTML(subTopic.title)}
                             <span class="subtopic-badge">sub</span>
                             <span class="badge-topic">${subMcqCount}/${subRequestedMcqs} MCQs ${subIsDone ? '✅' : ''} ${subStatusIcon} ${subScore}%</span>
-                            <div style="font-size:9px;color:#aaa;padding-left:10px;">${subContentPreview}</div>
+                            <div style="font-size:9px;color:#aaa;padding-left:10px;">${sanitizeHTML(subContentPreview)}</div>
                         </div>`;
                         topicIndex++;
                     }
@@ -1042,7 +1056,7 @@ function renderTree() {
                         const subStatusIcon = subIsValid ? '✅' : (subValResult ? '⚠️' : '');
                         
                         html += `<div class="tree-item subtopic" data-chapter="${ci}" data-topic="${topicIndex}" onclick="selectTopic(${ci}, ${topicIndex})" style="cursor:pointer;padding-left:45px;font-size:12px;color:#555;">
-                            • (${subTopic.number}) ${subTopic.title}
+                            • (${sanitizeHTML(subTopic.number)}) ${sanitizeHTML(subTopic.title)}
                             <span class="subtopic-badge">sub</span>
                             <span class="badge-topic">${subMcqCount}/${subRequestedMcqs} MCQs ${subIsDone ? '✅' : ''} ${subStatusIcon} ${subScore}%</span>
                         </div>`;
@@ -1069,6 +1083,7 @@ function extractChaptersAndTopics() {
         extractedText = text;
     }
 
+    progressCounter++;
     if (progress) progress.classList.add('show');
     if (progressFill) { progressFill.style.width = '0%'; progressFill.textContent = '0%'; }
     if (statusText) statusText.textContent = '🔍 Extracting topics...';
@@ -1371,12 +1386,16 @@ function extractChaptersAndTopics() {
             }
 
             showSuccess(`Extracted ${countTopics(chapters)} topics!`);
-            setTimeout(() => { if (progress) progress.classList.remove('show'); }, 1500);
+            setTimeout(() => { 
+                progressCounter--;
+                if (progressCounter <= 0 && progress) progress.classList.remove('show'); 
+            }, 1500);
 
         } catch (err) {
             showError('Error extracting: ' + err.message);
             if (statusText) statusText.textContent = '❌ Error: ' + err.message;
-            if (progress) progress.classList.remove('show');
+            progressCounter--;
+            if (progressCounter <= 0 && progress) progress.classList.remove('show');
         }
     }, 300);
 }
@@ -1419,7 +1438,7 @@ function renderTopicRegistry() {
     keys.forEach(key => {
         const t = topicRegistry[key];
         const status = t.mcqCount > 0 ? '✅' : '⏳';
-        html += `<span class="topic-chip">${status} ${t.title} (${t.mcqCount} MCQs)</span>`;
+        html += `<span class="topic-chip">${status} ${sanitizeHTML(t.title)} (${t.mcqCount} MCQs)</span>`;
     });
     topicRegistryContent.innerHTML = html;
 }
@@ -1634,7 +1653,7 @@ function selectTopic(chapterIdx, topicIdx) {
         const typeLabel = topic.type || 'main';
         const requestedMcqs = topic.mcq_count || 8;
         selectedTopicInfo.innerHTML = `
-            <strong>Selected:</strong> ${chapter.number}.${topic.number} ${topic.title} <span class="subtopic-badge">${typeLabel}</span>
+            <strong>Selected:</strong> ${sanitizeHTML(chapter.number)}.${sanitizeHTML(topic.number)} ${sanitizeHTML(topic.title)} <span class="subtopic-badge">${sanitizeHTML(typeLabel)}</span>
             <span style="margin-left:15px;">📝 ${topic.mcqs ? topic.mcqs.length : 0}/${requestedMcqs} MCQs</span>
             <span style="margin-left:15px;">${topic.done ? '✅ Done' : '⏳ Pending'}</span>
             <span style="margin-left:15px;">${statusText}</span>
@@ -1816,12 +1835,16 @@ async function generateTopicMCQs() {
         return;
     }
 
-    const numQuestions = questionsPerTopic ? parseInt(questionsPerTopic.value) || 10 : 10;
+    // Validate and clamp numQuestions
+    let numQuestions = questionsPerTopic ? parseInt(questionsPerTopic.value) || 10 : 10;
+    numQuestions = Math.max(5, Math.min(30, numQuestions));
+    
     const model = modelSelect ? modelSelect.value : 'llama3.1-8b';
     const hots = includeHOTS ? includeHOTS.checked : true;
 
     log(`Generating MCQs for: ${topic.title}`);
 
+    progressCounter++;
     if (progress) progress.classList.add('show');
     if (progressFill) { progressFill.style.width = '0%'; progressFill.textContent = '0%'; }
     if (statusText) statusText.textContent = `🧠 Generating MCQs for: ${topic.title}...`;
@@ -1835,13 +1858,26 @@ async function generateTopicMCQs() {
         
         if (result.success && result.count > 0) {
             const mcqs = result.mcqs;
-            allMCQs = allMCQs.filter(row => {
+            // Use Map to prevent memory leak
+            const mcqMap = new Map();
+            allMCQs.forEach(row => {
                 const topicName = row[0] || '';
-                return topicName !== topic.title;
+                if (topicName !== topic.title) {
+                    const key = row[1] + row[2] + row[3] + row[4] + row[5];
+                    if (!mcqMap.has(key)) {
+                        mcqMap.set(key, row);
+                    }
+                }
             });
             topic.mcqs = mcqs;
             topic.done = true;
-            mcqs.forEach(row => allMCQs.push(row));
+            mcqs.forEach(row => {
+                const key = row[1] + row[2] + row[3] + row[4] + row[5];
+                if (!mcqMap.has(key)) {
+                    mcqMap.set(key, row);
+                }
+            });
+            allMCQs = Array.from(mcqMap.values());
             
             if (progressFill) { progressFill.style.width = '100%'; progressFill.textContent = '100%'; }
             if (statusText) statusText.textContent = `✅ Generated ${mcqs.length} MCQs!`;
@@ -1855,7 +1891,7 @@ async function generateTopicMCQs() {
             if (selectedTopicInfo) {
                 const requestedMcqs = topic.mcq_count || 8;
                 selectedTopicInfo.innerHTML = `
-                    <strong>✅ Done!</strong> ${chapter.number}.${topic.number} ${topic.title}
+                    <strong>✅ Done!</strong> ${sanitizeHTML(chapter.number)}.${sanitizeHTML(topic.number)} ${sanitizeHTML(topic.title)}
                     <span style="margin-left:15px;">📝 ${mcqs.length}/${requestedMcqs} MCQs</span>
                 `;
             }
@@ -1867,24 +1903,67 @@ async function generateTopicMCQs() {
             throw new Error(result.error || 'Generation failed');
         }
         
-        setTimeout(() => { if (progress) progress.classList.remove('show'); }, 1500);
+        setTimeout(() => { 
+            progressCounter--;
+            if (progressCounter <= 0 && progress) progress.classList.remove('show'); 
+        }, 1500);
 
     } catch (err) {
         log(`Error: ${err.message}`);
         showError('Generation failed: ' + err.message);
         if (statusText) statusText.textContent = '❌ Error: ' + err.message;
-        if (progress) progress.classList.remove('show');
+        progressCounter--;
+        if (progressCounter <= 0 && progress) progress.classList.remove('show');
     }
     if (generateTopicBtn) generateTopicBtn.disabled = false;
 }
 
-// ============ FIXED: GENERATE TOPIC MCQS WITH RESULT (with rate limit handling) ============
-async function generateTopicMCQsWithResult(chapterIdx, topicIdx, topicTitle, topicContent, numQuestions, model, hots, isRetry = false) {
+// ============ REQUEST THROTTLING ============
+let lastRequestTime = 0;
+let activeRequests = 0;
+const MAX_CONCURRENT_REQUESTS = 1;
+
+async function throttledRequest(fn, delay = 3000) {
+    // Wait if there's an active request
+    while (activeRequests >= MAX_CONCURRENT_REQUESTS) {
+        await sleep(1000);
+    }
+    
+    const now = Date.now();
+    const timeSince = now - lastRequestTime;
+    if (timeSince < delay) {
+        const waitTime = delay - timeSince;
+        const rateLimitInfo = document.getElementById('rateLimitInfo');
+        const rateLimitWait = document.getElementById('rateLimitWait');
+        if (rateLimitInfo) {
+            rateLimitInfo.style.display = 'block';
+            if (rateLimitWait) {
+                rateLimitWait.textContent = Math.ceil(waitTime / 1000);
+            }
+        }
+        await sleep(waitTime);
+        if (rateLimitInfo) {
+            rateLimitInfo.style.display = 'none';
+        }
+    }
+    activeRequests++;
+    lastRequestTime = Date.now();
+    try {
+        return await fn();
+    } finally {
+        activeRequests--;
+    }
+}
+
+// ============ FIXED: GENERATE TOPIC MCQS WITH RESULT ============
+async function generateTopicMCQsWithResult(chapterIdx, topicIdx, topicTitle, topicContent, numQuestions, model, hots, isRetry = false, retryCount = 0) {
+    const MAX_RETRIES = 3;
     const key = apiKey ? apiKey.value.trim() : '';
     if (!key) {
         return { success: false, mcqs: [], count: 0, error: 'No API key provided' };
     }
 
+    // Validate API key format (basic check)
     if (!key.startsWith('csk-') && !key.startsWith('sk-')) {
         return { success: false, mcqs: [], count: 0, error: 'Invalid API key format. Cerebras keys start with "csk-" or "sk-"' };
     }
@@ -1893,6 +1972,7 @@ async function generateTopicMCQsWithResult(chapterIdx, topicIdx, topicTitle, top
         return { success: false, mcqs: [], count: 0, error: 'Content too short (minimum 50 characters)' };
     }
 
+    // Get MCQ count from topic object
     let actualTopic = null;
     if (bookStructure.chapters && bookStructure.chapters[chapterIdx]) {
         actualTopic = bookStructure.chapters[chapterIdx].topics[topicIdx];
@@ -1924,7 +2004,10 @@ IMPORTANT: Return EXACTLY ${effectiveNumQuestions} rows of data. Do not return m
 
         log(`${isRetry ? '🔄 RETRY' : '📤'} Sending request for: ${topicTitle}`);
 
-        // ===== USE THROTTLED REQUEST =====
+        if (isRetry) {
+            await sleep(2000);
+        }
+
         const response = await throttledRequest(async () => {
             return await fetch('https://api.cerebras.ai/v1/chat/completions', {
                 method: 'POST',
@@ -1942,7 +2025,7 @@ IMPORTANT: Return EXACTLY ${effectiveNumQuestions} rows of data. Do not return m
                     max_tokens: 8000
                 })
             });
-        }, isRetry ? 5000 : 3000);
+        }, 4000);
 
         const rawText = await response.text();
         log(`${isRetry ? '🔄 RETRY' : '📥'} Response for "${topicTitle}": ${rawText.length} chars, status ${response.status}`);
@@ -1962,33 +2045,20 @@ IMPORTANT: Return EXACTLY ${effectiveNumQuestions} rows of data. Do not return m
             }
             
             if (response.status === 429) {
-                const waitTime = isRetry ? 8000 : 5000;
-                log(`⏳ Rate limited. Waiting ${waitTime/1000}s before retry...`);
-                
-                const rateLimitInfo = document.getElementById('rateLimitInfo');
-                const rateLimitWait = document.getElementById('rateLimitWait');
-                if (rateLimitInfo) {
-                    rateLimitInfo.style.display = 'block';
-                    if (rateLimitWait) {
-                        rateLimitWait.textContent = Math.ceil(waitTime / 1000);
-                    }
-                    setTimeout(() => {
-                        rateLimitInfo.style.display = 'none';
-                    }, waitTime + 2000);
-                }
-                
-                if (!isRetry) {
+                if (retryCount < MAX_RETRIES) {
+                    const waitTime = Math.min(3000 * Math.pow(2, retryCount), 30000);
+                    log(`⏳ Rate limited. Waiting ${waitTime/1000}s before retry ${retryCount + 1}/${MAX_RETRIES}...`);
                     await sleep(waitTime);
                     return await generateTopicMCQsWithResult(
                         chapterIdx, topicIdx, topicTitle, topicContent, 
-                        numQuestions, model, hots, true
+                        numQuestions, model, hots, true, retryCount + 1
                     );
                 } else {
                     return { 
                         success: false, 
                         mcqs: [], 
                         count: 0, 
-                        error: 'Rate limit exceeded. Please wait 60 seconds before generating more MCQs.' 
+                        error: `Rate limit exceeded after ${MAX_RETRIES} retries. Please wait before generating more MCQs.` 
                     };
                 }
             }
@@ -2060,6 +2130,7 @@ IMPORTANT: Return EXACTLY ${effectiveNumQuestions} rows of data. Do not return m
         return { success: false, mcqs: [], count: 0, error: err.message };
     }
 }
+
 // ============ EXTRACT CSV FROM RAW RESPONSE ============
 function extractCSVFromRawResponse(rawText, defaultTopic) {
     log(`Attempting to extract CSV directly from raw response for "${defaultTopic}"`);
@@ -2501,7 +2572,8 @@ async function generateAllMCQs() {
         return;
     }
     
-    const globalNumQuestions = questionsPerTopic ? parseInt(questionsPerTopic.value) || 10 : 10;
+    let globalNumQuestions = questionsPerTopic ? parseInt(questionsPerTopic.value) || 10 : 10;
+    globalNumQuestions = Math.max(5, Math.min(30, globalNumQuestions));
     
     // Validate topics first
     validateAllTopics();
@@ -2593,23 +2665,49 @@ Continue?`;
                 selectTopic(chapterIdx, topicIdx);
             }
             
-            const result = await generateTopicMCQsWithResult(
-                chapterIdx, topicIdx, currentTopic.title, currentTopic.content,
-                globalNumQuestions, model, hots, false
-            );
-            
-            if (result.success && result.count > 0) {
-                const mcqCount = result.count;
-                if (mcqCount >= threshold) {
-                    allMCQs = allMCQs.filter(row => {
-                        const topicName = row[0] || '';
-                        return topicName !== currentTopic.title;
-                    });
-                    currentTopic.mcqs = result.mcqs;
-                    currentTopic.done = true;
-                    result.mcqs.forEach(row => allMCQs.push(row));
-                    completed++;
-                    log(`✅ Topic "${currentTopic.title}" generated ${mcqCount} MCQs (requested: ${requestedMcqs})`);
+            try {
+                const result = await generateTopicMCQsWithResult(
+                    chapterIdx, topicIdx, currentTopic.title, currentTopic.content,
+                    globalNumQuestions, model, hots, false
+                );
+                
+                if (result.success && result.count > 0) {
+                    const mcqCount = result.count;
+                    if (mcqCount >= threshold) {
+                        // Use Map to prevent memory leak
+                        const mcqMap = new Map();
+                        allMCQs.forEach(row => {
+                            const topicName = row[0] || '';
+                            if (topicName !== currentTopic.title) {
+                                const key = row[1] + row[2] + row[3] + row[4] + row[5];
+                                if (!mcqMap.has(key)) {
+                                    mcqMap.set(key, row);
+                                }
+                            }
+                        });
+                        currentTopic.mcqs = result.mcqs;
+                        currentTopic.done = true;
+                        result.mcqs.forEach(row => {
+                            const key = row[1] + row[2] + row[3] + row[4] + row[5];
+                            if (!mcqMap.has(key)) {
+                                mcqMap.set(key, row);
+                            }
+                        });
+                        allMCQs = Array.from(mcqMap.values());
+                        completed++;
+                        log(`✅ Topic "${currentTopic.title}" generated ${mcqCount} MCQs (requested: ${requestedMcqs})`);
+                    } else {
+                        failed++;
+                        currentTopic.done = false;
+                        failedTopics.push({
+                            chapterIdx: chapterIdx,
+                            topicIdx: topicIdx,
+                            topic: currentTopic,
+                            retryCount: 0,
+                            reason: `Generated ${mcqCount} MCQs (need ${threshold})`
+                        });
+                        log(`⚠️ Topic "${currentTopic.title}" generated only ${mcqCount} MCQs (need ${threshold})`);
+                    }
                 } else {
                     failed++;
                     currentTopic.done = false;
@@ -2618,11 +2716,11 @@ Continue?`;
                         topicIdx: topicIdx,
                         topic: currentTopic,
                         retryCount: 0,
-                        reason: `Generated ${mcqCount} MCQs (need ${threshold})`
+                        reason: result.error || 'Unknown error'
                     });
-                    log(`⚠️ Topic "${currentTopic.title}" generated only ${mcqCount} MCQs (need ${threshold})`);
+                    log(`❌ Topic "${currentTopic.title}" failed: ${result.error || 'Unknown error'}`);
                 }
-            } else {
+            } catch (err) {
                 failed++;
                 currentTopic.done = false;
                 failedTopics.push({
@@ -2630,9 +2728,9 @@ Continue?`;
                     topicIdx: topicIdx,
                     topic: currentTopic,
                     retryCount: 0,
-                    reason: result.error || 'Unknown error'
+                    reason: err.message || 'Unknown error'
                 });
-                log(`❌ Topic "${currentTopic.title}" failed: ${result.error || 'Unknown error'}`);
+                log(`❌ Topic "${currentTopic.title}" error: ${err.message}`);
             }
             
             updateStats();
@@ -2709,7 +2807,8 @@ async function retryFailedTopics(failedTopics) {
     
     let retriedCount = 0;
     let successCount = 0;
-    const globalNumQuestions = questionsPerTopic ? parseInt(questionsPerTopic.value) || 10 : 10;
+    let globalNumQuestions = questionsPerTopic ? parseInt(questionsPerTopic.value) || 10 : 10;
+    globalNumQuestions = Math.max(5, Math.min(30, globalNumQuestions));
     const model = modelSelect ? modelSelect.value : 'llama3.1-8b';
     const hots = includeHOTS ? includeHOTS.checked : true;
     
@@ -2743,32 +2842,50 @@ async function retryFailedTopics(failedTopics) {
         topic.mcqs = [];
         topic.done = false;
         
-        const result = await generateTopicMCQsWithResult(
-            chapterIdx, topicIdx, topic.title, topic.content, 
-            globalNumQuestions, model, hots, true
-        );
-        
-        retriedCount++;
-        
-        if (result.success && result.count > 0) {
-            const mcqCount = result.count;
-            if (mcqCount >= threshold) {
-                allMCQs = allMCQs.filter(row => {
-                    const topicName = row[0] || '';
-                    return topicName !== topic.title;
-                });
-                topic.mcqs = result.mcqs;
-                topic.done = true;
-                result.mcqs.forEach(row => allMCQs.push(row));
-                successCount++;
-                log(`✅ RETRY SUCCESS: "${topic.title}" generated ${mcqCount} MCQs`);
-                showSuccess(`✅ Retry success: "${topic.title}" → ${mcqCount} MCQs`);
+        try {
+            const result = await generateTopicMCQsWithResult(
+                chapterIdx, topicIdx, topic.title, topic.content, 
+                globalNumQuestions, model, hots, true
+            );
+            
+            retriedCount++;
+            
+            if (result.success && result.count > 0) {
+                const mcqCount = result.count;
+                if (mcqCount >= threshold) {
+                    // Use Map to prevent memory leak
+                    const mcqMap = new Map();
+                    allMCQs.forEach(row => {
+                        const topicName = row[0] || '';
+                        if (topicName !== topic.title) {
+                            const key = row[1] + row[2] + row[3] + row[4] + row[5];
+                            if (!mcqMap.has(key)) {
+                                mcqMap.set(key, row);
+                            }
+                        }
+                    });
+                    topic.mcqs = result.mcqs;
+                    topic.done = true;
+                    result.mcqs.forEach(row => {
+                        const key = row[1] + row[2] + row[3] + row[4] + row[5];
+                        if (!mcqMap.has(key)) {
+                            mcqMap.set(key, row);
+                        }
+                    });
+                    allMCQs = Array.from(mcqMap.values());
+                    successCount++;
+                    log(`✅ RETRY SUCCESS: "${topic.title}" generated ${mcqCount} MCQs`);
+                    showSuccess(`✅ Retry success: "${topic.title}" → ${mcqCount} MCQs`);
+                } else {
+                    log(`⚠️ RETRY PARTIAL: "${topic.title}" generated ${mcqCount} MCQs (need ${threshold})`);
+                    item.retryCount = retryCount + 1;
+                }
             } else {
-                log(`⚠️ RETRY PARTIAL: "${topic.title}" generated ${mcqCount} MCQs (need ${threshold})`);
+                log(`❌ RETRY FAILED: "${topic.title}" - ${result.error || 'Unknown error'}`);
                 item.retryCount = retryCount + 1;
             }
-        } else {
-            log(`❌ RETRY FAILED: "${topic.title}" - ${result.error || 'Unknown error'}`);
+        } catch (err) {
+            log(`❌ RETRY ERROR: "${topic.title}" - ${err.message}`);
             item.retryCount = retryCount + 1;
         }
         
@@ -2874,35 +2991,7 @@ function downloadBookCSV() {
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
-// ===== ADD THIS FUNCTION HERE =====
-// Request throttling - tracks last request time to prevent rate limiting
-let lastRequestTime = 0;
 
-async function throttledRequest(fn, delay = 3000) {
-    // Track last request time
-    const now = Date.now();
-    const timeSince = now - lastRequestTime;
-    if (timeSince < delay) {
-        const waitTime = delay - timeSince;
-        // Show rate limit status
-        const rateLimitInfo = document.getElementById('rateLimitInfo');
-        const rateLimitWait = document.getElementById('rateLimitWait');
-        if (rateLimitInfo) {
-            rateLimitInfo.style.display = 'block';
-            if (rateLimitWait) {
-                rateLimitWait.textContent = Math.ceil(waitTime / 1000);
-            }
-            // Auto-hide after 3 seconds
-            setTimeout(() => {
-                rateLimitInfo.style.display = 'none';
-            }, 3000);
-        }
-        await sleep(waitTime);
-    }
-    lastRequestTime = Date.now();
-    return await fn();
-}
-// ===== END OF ADDED FUNCTION =====
 // ============ CLEAR ALL ============
 function clearAll() {
     if (!confirm('Clear all data?')) return;
@@ -2935,6 +3024,7 @@ function clearAll() {
     csvTopicData = [];
     failedTopicsForRetry = [];
     isBatchRunning = false;
+    progressCounter = 0;
     generateAllBtn.disabled = false;
     generateAllBtn2.disabled = false;
 }
