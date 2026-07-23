@@ -1,0 +1,2952 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Book to MCQ Generator - Enhanced Topic Extraction</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f4f8; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        h1 { color: #1a73e8; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 800px) { .grid-2 { grid-template-columns: 1fr; } }
+        .panel { background: #f8f9fa; border-radius: 10px; padding: 20px; border: 1px solid #e0e0e0; margin: 10px 0; }
+        textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; min-height: 150px; font-family: 'Courier New', monospace; }
+        button { padding: 10px 25px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; margin: 3px; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-primary { background: #1a73e8; color: white; }
+        .btn-primary:hover:not(:disabled) { background: #1557b0; }
+        .btn-success { background: #34a853; color: white; }
+        .btn-success:hover:not(:disabled) { background: #2d8f47; }
+        .btn-danger { background: #ea4335; color: white; }
+        .btn-danger:hover:not(:disabled) { background: #d33426; }
+        .btn-warning { background: #fbbc04; color: #333; }
+        .btn-sm { padding: 6px 15px; font-size: 12px; }
+        .btn-purple { background: #8e44ad; color: white; }
+        .btn-purple:hover:not(:disabled) { background: #732d91; }
+        .btn-orange { background: #e67e22; color: white; }
+        .btn-orange:hover:not(:disabled) { background: #d35400; }
+        .btn-teal { background: #1abc9c; color: white; }
+        .btn-teal:hover:not(:disabled) { background: #16a085; }
+        .button-group { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+        .settings-row { display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin: 8px 0; }
+        .settings-row label { font-weight: 500; min-width: 100px; }
+        .settings-row select, .settings-row input { padding: 8px 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; flex: 1; min-width: 120px; }
+        .progress { display: none; margin: 10px 0; }
+        .progress.show { display: block; }
+        .progress-bar { height: 24px; background: #e0e0e0; border-radius: 12px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #1a73e8, #34a853); width: 0%; transition: width 0.5s; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold; }
+        .status-text { margin-top: 8px; color: #555; font-size: 14px; }
+        .results-preview { max-height: 400px; overflow: auto; font-size: 12px; background: #f8f9fa; padding: 10px; border-radius: 8px; border: 1px solid #ddd; display: none; margin: 10px 0; }
+        .results-preview.show { display: block; }
+        .results-preview table { border-collapse: collapse; width: 100%; font-size: 11px; }
+        .results-preview th, .results-preview td { border: 1px solid #ddd; padding: 4px 6px; text-align: left; }
+        .results-preview th { background: #1a73e8; color: white; position: sticky; top: 0; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-weight: bold; margin: 0 2px; }
+        .badge-a { background: #ffcdd2; color: #c62828; }
+        .badge-b { background: #bbdefb; color: #0d47a1; }
+        .badge-c { background: #c8e6c9; color: #1b5e20; }
+        .badge-d { background: #fff9c4; color: #f57f17; }
+        .stats-box { background: #e8f0fe; padding: 15px; border-radius: 8px; margin: 10px 0; display: none; }
+        .stats-box.show { display: block; }
+        .error-msg { background: #f8d7da; color: #721c24; padding: 10px 15px; border-radius: 5px; margin: 10px 0; display: none; border: 1px solid #f5c6cb; }
+        .error-msg.show { display: block; }
+        .success-msg { background: #d4edda; color: #155724; padding: 10px 15px; border-radius: 5px; margin: 10px 0; display: none; border: 1px solid #c3e6cb; }
+        .success-msg.show { display: block; }
+        .debug-box { background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0; border: 1px solid #ddd; max-height: 500px; overflow-y: auto; font-size: 12px; font-family: monospace; white-space: pre-wrap; display: none; }
+        .debug-box.show { display: block; }
+        .api-section { background: #e8f0fe; padding: 15px; border-radius: 8px; border: 1px solid #b3d4fc; margin: 10px 0; }
+        .api-section label { font-weight: 500; }
+        .api-section input { width: 100%; max-width: 500px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; margin-top: 3px; }
+        .topic-selector { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 10px 0; }
+        .topic-selector select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; min-width: 250px; flex: 1; }
+        .tree-container { max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; background: white; }
+        .tree-item { padding: 6px 10px; margin: 2px 0; border-radius: 4px; cursor: pointer; transition: all 0.2s; }
+        .tree-item:hover { background: #e8f0fe; }
+        .tree-item.selected { background: #c5d9f5; font-weight: bold; }
+        .tree-item .chapter { color: #1a73e8; font-weight: bold; }
+        .tree-item .topic { padding-left: 25px; color: #333; font-size: 13px; }
+        .tree-item .subtopic { padding-left: 45px; color: #555; font-size: 12px; }
+        .tree-item .topic .badge-topic { background: #e8f0fe; padding: 1px 8px; border-radius: 10px; font-size: 11px; margin-left: 5px; }
+        .file-info { margin-top: 10px; color: #555; font-size: 14px; }
+        .note { background: #fff3cd; padding: 10px 15px; border-radius: 5px; font-size: 13px; color: #856404; margin: 10px 0; }
+        .note-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .upload-area { border: 2px dashed #ccc; padding: 30px; text-align: center; border-radius: 10px; margin: 10px 0; background: #fafafa; cursor: pointer; transition: all 0.3s; }
+        .upload-area:hover { border-color: #1a73e8; background: #f0f7ff; }
+        .upload-area.dragover { border-color: #1a73e8; background: #e8f0fe; }
+        .upload-area input[type="file"] { display: none; }
+        .file-label { display: inline-block; padding: 10px 25px; background: #1a73e8; color: white; border-radius: 8px; cursor: pointer; font-size: 14px; border: none; }
+        .file-label:hover { background: #1557b0; }
+        .manual-topic { margin: 10px 0; padding: 15px; background: #f0f7ff; border-radius: 8px; border: 1px solid #b3d4fc; }
+        .manual-topic input { width: 100%; max-width: 400px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; }
+        .tab { display: flex; gap: 5px; margin: 10px 0; border-bottom: 2px solid #e0e0e0; flex-wrap: wrap; }
+        .tab-btn { padding: 10px 20px; background: none; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 500; color: #666; }
+        .tab-btn.active { color: #1a73e8; border-bottom-color: #1a73e8; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .checkbox-group { display: flex; gap: 15px; flex-wrap: wrap; margin: 5px 0; }
+        .checkbox-group label { font-weight: normal; display: flex; align-items: center; gap: 5px; cursor: pointer; }
+        .checkbox-group input[type="checkbox"] { width: auto; }
+        .text-info { margin-top: 8px; font-size: 13px; color: #888; }
+        .text-info strong { color: #1a73e8; }
+        @media (max-width: 600px) { .container { padding: 15px; } .settings-row { flex-direction: column; align-items: stretch; } }
+
+        .validation-box { background: #fef9e7; padding: 12px; border-radius: 6px; border: 1px solid #f9e79f; margin: 8px 0; font-size: 13px; }
+        .validation-box .valid { color: #27ae60; }
+        .validation-box .invalid { color: #e74c3c; }
+        .validation-box .warning { color: #e67e22; }
+        .topic-registry { background: #e8f8f5; padding: 15px; border-radius: 8px; border: 1px solid #a3e4d7; margin: 10px 0; }
+        .topic-registry .topic-chip { display: inline-block; background: #d5f5e3; padding: 2px 10px; border-radius: 12px; margin: 2px 4px; font-size: 12px; }
+        .confidence-meter { height: 6px; background: #e0e0e0; border-radius: 3px; margin-top: 4px; overflow: hidden; }
+        .confidence-meter .fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+        .confidence-high { background: #27ae60; }
+        .confidence-medium { background: #f39c12; }
+        .confidence-low { background: #e74c3c; }
+        .subtopic-badge { background: #e3f2fd; padding: 1px 6px; border-radius: 8px; font-size: 10px; margin-left: 4px; }
+
+        .csv-upload-section { background: #f3e8ff; padding: 15px; border-radius: 8px; border: 1px solid #d4b8ff; margin: 10px 0; }
+        .csv-upload-section h4 { color: #6c3483; margin-top: 0; }
+        .csv-upload-section .file-label-csv { display: inline-block; padding: 8px 20px; background: #8e44ad; color: white; border-radius: 6px; cursor: pointer; font-size: 13px; border: none; }
+        .csv-upload-section .file-label-csv:hover { background: #732d91; }
+        .csv-preview { max-height: 150px; overflow-y: auto; background: white; padding: 10px; border-radius: 5px; border: 1px solid #ddd; font-size: 12px; margin-top: 8px; display: none; }
+        .csv-preview.show { display: block; }
+        .batch-progress { background: #e8f0fe; padding: 15px; border-radius: 8px; margin: 10px 0; display: none; border: 1px solid #b3d4fc; }
+        .batch-progress.show { display: block; }
+        .batch-progress .batch-status { font-size: 14px; font-weight: 500; color: #1a73e8; }
+        .batch-progress .batch-detail { font-size: 13px; color: #555; margin-top: 5px; }
+        .batch-progress .batch-bar { height: 20px; background: #e0e0e0; border-radius: 10px; overflow: hidden; margin-top: 8px; }
+        .batch-progress .batch-fill { height: 100%; background: linear-gradient(90deg, #8e44ad, #1a73e8); width: 0%; transition: width 0.5s; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; font-weight: bold; }
+        .csv-format-hint { background: #fff8e1; padding: 8px 12px; border-radius: 5px; font-size: 12px; color: #6d4c41; margin-top: 8px; border: 1px solid #ffe0b2; }
+        .csv-format-hint code { background: #f5f5f5; padding: 1px 5px; border-radius: 3px; font-size: 11px; }
+        .retry-progress { background: #fef9e7; padding: 15px; border-radius: 8px; margin: 10px 0; display: none; border: 1px solid #f9e79f; }
+        .retry-progress.show { display: block; }
+        .retry-progress .retry-status { font-size: 14px; font-weight: 500; color: #e67e22; }
+        .retry-progress .retry-detail { font-size: 13px; color: #555; margin-top: 5px; }
+        .retry-progress .retry-bar { height: 20px; background: #e0e0e0; border-radius: 10px; overflow: hidden; margin-top: 8px; }
+        .retry-progress .retry-fill { height: 100%; background: linear-gradient(90deg, #e67e22, #f39c12); width: 0%; transition: width 0.5s; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; font-weight: bold; }
+        .quality-report { background: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px solid #ddd; margin: 8px 0; font-size: 12px; max-height: 200px; overflow-y: auto; }
+        .quality-report .good { color: #27ae60; }
+        .quality-report .bad { color: #e74c3c; }
+        .quality-report .warn { color: #e67e22; }
+        .stats-bar { display: flex; gap: 20px; flex-wrap: wrap; padding: 10px 0; }
+        .stats-bar .stat { background: #f0f4f8; padding: 4px 12px; border-radius: 12px; font-size: 13px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📄 Book to MCQ Generator <small>Enhanced Topic Extraction</small></h1>
+
+    <div class="error-msg" id="errorMsg"></div>
+    <div class="success-msg" id="successMsg"></div>
+
+    <!-- ===== API KEY ===== -->
+    <div class="api-section">
+        <label>🔑 Cerebras API Key</label>
+        <input type="password" id="apiKey" placeholder="Enter your Cerebras API key..." value="csk-crty6yd2m9p9n2epch3t46j43v6x96v3p89kfrrd6kd26y54">
+        <div style="margin-top:5px;font-size:12px;color:#888;">
+            Free tier: 1M tokens/day
+        </div>
+    </div>
+<!-- ===== ADD THIS NEW SECTION ===== -->
+    <div class="rate-limit-info" id="rateLimitInfo" style="display:none;background:#fff3cd;padding:10px;border-radius:5px;margin:10px 0;border:1px solid #ffc107;">
+        ⏳ Rate limit in effect. Waiting <span id="rateLimitWait">5</span> seconds...
+    </div>
+    <!-- ===== END OF NEW SECTION ===== -->
+    
+    <!-- ===== TABS ===== -->
+    <div class="tab">
+        <button class="tab-btn active" data-tab="input">📥 Input</button>
+        <button class="tab-btn" data-tab="topics">📚 Topics</button>
+        <button class="tab-btn" data-tab="quality">✅ Quality</button>
+        <button class="tab-btn" data-tab="preview">👁️ Preview</button>
+        <button class="tab-btn" data-tab="debug">🐛 Debug</button>
+    </div>
+
+    <!-- ===== TAB 1: INPUT ===== -->
+    <div class="tab-content active" id="tab-input">
+        <div class="grid-2">
+            <div class="panel">
+                <h3>📤 Upload PDF</h3>
+                <div class="upload-area" id="dropZone">
+                    <input type="file" id="pdfInput" accept=".pdf">
+                    <label class="file-label" for="pdfInput">📤 Choose PDF</label>
+                    <p style="margin:10px 0 0;color:#888;">or drag & drop</p>
+                    <div class="file-info" id="fileInfo">
+                        <span class="filename">No file selected</span>
+                        <span class="pages"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="panel">
+                <h3>📝 Paste Text</h3>
+                <textarea id="textInput" placeholder="Paste your book content here..."></textarea>
+            </div>
+        </div>
+
+        <!-- ===== CSV BULK TOPIC UPLOAD ===== -->
+        <div class="csv-upload-section">
+            <h4>📊 Bulk Upload Topics via CSV</h4>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+                <input type="file" id="csvInput" accept=".csv" style="display:none;">
+                <label class="file-label-csv" for="csvInput">📤 Choose CSV File</label>
+                <button class="btn-success btn-sm" onclick="uploadTopicCSV()">📥 Import Topics</button>
+                <button class="btn-warning btn-sm" onclick="clearCSVPreview()">🗑️ Clear</button>
+            </div>
+            <div class="csv-format-hint">
+                📌 CSV Format: Column 1 = Topic, Column 2 = (optional), Column 3 = MCQ Count<br>
+                <code>,(a) Disillusionment and frustration,33</code> → Generates 33 MCQs<br>
+                <code>,(b) There was a wave of strikes in 1919 and 1920,18</code> → Generates 18 MCQs
+            </div>
+            <div class="csv-preview" id="csvPreview"></div>
+        </div>
+
+        <div class="manual-topic">
+            <h4>📌 Add Multiple Topics</h4>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <input type="text" id="manualTopicTitle" placeholder="Enter topic name" style="flex:2;min-width:200px;">
+                <button class="btn-primary btn-sm" onclick="addManualTopic()">➕ Add Topic</button>
+            </div>
+            <div class="text-info">
+                📄 Content: <strong id="contentLength">0</strong> chars &nbsp;|&nbsp; 
+                📊 Topics: <strong id="topicCount">0</strong>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>⚙️ Settings</h3>
+            <div class="settings-row">
+                <label>Default MCQs:</label>
+                <input type="number" id="questionsPerTopic" value="10" min="5" max="30" style="max-width:100px;">
+                <label>Model:</label>
+                <select id="modelSelect" style="max-width:200px;">
+                    <option value="llama3.1-8b">Llama 3.1 8B (Fast)</option>
+                    <option value="gpt-oss-120b" selected>GPT OSS 120B (Best)</option>
+                </select>
+            </div>
+            <div class="checkbox-group">
+                <label><input type="checkbox" id="includeHOTS" checked> Include HOTS</label>
+                <label><input type="checkbox" id="randomizeAnswers" checked> Randomize Answers</label>
+                <label><input type="checkbox" id="enableValidation" checked> Enable Topic Validation</label>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button class="btn-primary" onclick="extractChaptersAndTopics()">📊 Extract Topics</button>
+            <button class="btn-purple" id="generateAllBtn" onclick="generateAllMCQs()">⚡ Generate All MCQs</button>
+            <button class="btn-teal" onclick="validateAllTopics()">✅ Validate Topics</button>
+            <button class="btn-danger" onclick="clearAll()">🗑️ Clear</button>
+        </div>
+
+        <div class="progress" id="progress">
+            <div class="progress-bar"><div class="progress-fill" id="progressFill">0%</div></div>
+            <div class="status-text" id="statusText">Initializing...</div>
+        </div>
+
+        <!-- Batch Generation Progress -->
+        <div class="batch-progress" id="batchProgress">
+            <div class="batch-status" id="batchStatus">⏳ Preparing batch generation...</div>
+            <div class="batch-detail" id="batchDetail">0 / 0 topics completed</div>
+            <div class="batch-bar">
+                <div class="batch-fill" id="batchFill">0%</div>
+            </div>
+        </div>
+
+        <!-- Retry Progress -->
+        <div class="retry-progress" id="retryProgress">
+            <div class="retry-status" id="retryStatus">🔄 Retrying failed topics...</div>
+            <div class="retry-detail" id="retryDetail">0 / 0 topics retried</div>
+            <div class="retry-bar">
+                <div class="retry-fill" id="retryFill">0%</div>
+            </div>
+        </div>
+
+        <div class="stats-box" id="statsBox"><div id="statsContent"></div></div>
+    </div>
+
+    <!-- ===== TAB 2: TOPICS ===== -->
+    <div class="tab-content" id="tab-topics">
+        <div class="panel">
+            <h3>📚 Topics</h3>
+            <div id="bookStats" class="stats-bar"></div>
+            
+            <div class="topic-registry">
+                <strong>📋 Topic Registry</strong>
+                <div id="topicRegistryContent" style="margin-top:8px;"></div>
+            </div>
+            
+            <div class="topic-selector">
+                <select id="topicSelect" style="flex:1;min-width:250px;">
+                    <option value="">-- Select a topic --</option>
+                </select>
+                <button class="btn-primary" id="generateTopicBtn" onclick="generateTopicMCQs()" disabled>🚀 Generate MCQs</button>
+                <button class="btn-success" id="downloadBookBtn" onclick="downloadBookCSV()" disabled>📥 Download CSV</button>
+                <button class="btn-purple" id="generateAllBtn2" onclick="generateAllMCQs()">⚡ Generate All</button>
+            </div>
+            
+            <div class="validation-box" id="topicValidationBox">
+                <strong>🔍 Topic Validation:</strong>
+                <span id="validationStatus">Not validated</span>
+                <div class="confidence-meter" id="confidenceMeter">
+                    <div class="fill" id="confidenceFill" style="width:0%;"></div>
+                </div>
+            </div>
+            
+            <div id="selectedTopicInfo" style="display:none;background:#e8f0fe;padding:8px 15px;border-radius:5px;margin:10px 0;font-size:13px;color:#1a73e8;"></div>
+            <div class="tree-container" id="treeContainer">
+                <p style="color:#888;text-align:center;padding:20px;">Add topics using the Input tab.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TAB 3: QUALITY ===== -->
+    <div class="tab-content" id="tab-quality">
+        <div class="panel">
+            <h3>✅ Quality Report</h3>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin:10px 0;">
+                <button class="btn-primary btn-sm" onclick="generateQualityReport()">📊 Generate Report</button>
+                <button class="btn-warning btn-sm" onclick="exportQualityReport()">📤 Export Report</button>
+            </div>
+            <div id="qualityReportContent" class="quality-report">
+                <p style="color:#888;text-align:center;padding:20px;">Click "Generate Report" to analyze topic quality.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TAB 4: PREVIEW ===== -->
+    <div class="tab-content" id="tab-preview">
+        <div class="panel">
+            <h3>👁️ Generated MCQs</h3>
+            <div class="results-preview" id="resultsPreview">
+                <h4>Book MCQs</h4>
+                <div id="resultsTable"></div>
+            </div>
+            <div id="previewContent" style="padding:20px;text-align:center;color:#888;">No MCQs generated yet.</div>
+        </div>
+    </div>
+
+    <!-- ===== TAB 5: DEBUG ===== -->
+    <div class="tab-content" id="tab-debug">
+        <div class="panel">
+            <h3>🐛 Debug Log</h3>
+            <button class="btn-warning btn-sm" onclick="clearDebug()">Clear Log</button>
+            <div class="debug-box show" id="debugBox" style="max-height:500px;"></div>
+        </div>
+    </div>
+
+    <div class="note note-success">
+        ✅ <strong>Enhanced Topic Extraction:</strong> Now extracts all topics including sub-topics like (a), (b), (c) with validation scores.
+        <br>✅ <strong>CSV MCQ Count:</strong> Column 3 in CSV specifies how many MCQs to generate per topic.
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// ============ STATE ============
+let extractedText = '';
+let bookStructure = { chapters: [] };
+let allMCQs = [];
+let pdfFileName = '';
+let debugLog = [];
+let topicRegistry = {};
+let topicValidationResults = {};
+let csvTopicData = [];
+let failedTopicsForRetry = [];
+let isBatchRunning = false;
+
+// ============ DOM REFS ============
+function getEl(id) { return document.getElementById(id); }
+
+const pdfInput = getEl('pdfInput');
+const dropZone = getEl('dropZone');
+const fileInfo = getEl('fileInfo');
+const textInput = getEl('textInput');
+const apiKey = getEl('apiKey');
+const modelSelect = getEl('modelSelect');
+const questionsPerTopic = getEl('questionsPerTopic');
+const includeHOTS = getEl('includeHOTS');
+const randomizeAnswers = getEl('randomizeAnswers');
+const enableValidation = getEl('enableValidation');
+const topicSelect = getEl('topicSelect');
+const generateTopicBtn = getEl('generateTopicBtn');
+const downloadBookBtn = getEl('downloadBookBtn');
+const treeContainer = getEl('treeContainer');
+const selectedTopicInfo = getEl('selectedTopicInfo');
+const bookStats = getEl('bookStats');
+const resultsPreview = getEl('resultsPreview');
+const resultsTable = getEl('resultsTable');
+const previewContent = getEl('previewContent');
+const progress = getEl('progress');
+const progressFill = getEl('progressFill');
+const statusText = getEl('statusText');
+const statsBox = getEl('statsBox');
+const statsContent = getEl('statsContent');
+const errorMsg = getEl('errorMsg');
+const successMsg = getEl('successMsg');
+const debugBox = getEl('debugBox');
+const manualTopicTitle = getEl('manualTopicTitle');
+const contentLength = getEl('contentLength');
+const topicCount = getEl('topicCount');
+const csvInput = getEl('csvInput');
+const csvPreview = getEl('csvPreview');
+const batchProgress = getEl('batchProgress');
+const batchStatus = getEl('batchStatus');
+const batchDetail = getEl('batchDetail');
+const batchFill = getEl('batchFill');
+const generateAllBtn = getEl('generateAllBtn');
+const generateAllBtn2 = getEl('generateAllBtn2');
+const retryProgress = getEl('retryProgress');
+const retryStatus = getEl('retryStatus');
+const retryDetail = getEl('retryDetail');
+const retryFill = getEl('retryFill');
+const validationStatus = getEl('validationStatus');
+const confidenceFill = getEl('confidenceFill');
+const topicRegistryContent = getEl('topicRegistryContent');
+const qualityReportContent = getEl('qualityReportContent');
+
+// ============ LOGGING ============
+function log(msg) {
+    const timestamp = new Date().toLocaleTimeString();
+    const entry = `[${timestamp}] ${msg}`;
+    debugLog.push(entry);
+    if (debugBox) {
+        debugBox.innerHTML = debugLog.join('\n');
+        debugBox.scrollTop = debugBox.scrollHeight;
+    }
+    console.log(entry);
+}
+
+function clearDebug() {
+    debugLog = [];
+    if (debugBox) debugBox.innerHTML = '';
+}
+
+function showError(msg) {
+    if (errorMsg) {
+        errorMsg.textContent = '⚠️ ' + msg;
+        errorMsg.classList.add('show');
+        setTimeout(() => errorMsg.classList.remove('show'), 8000);
+    }
+    log('ERROR: ' + msg);
+}
+
+function showSuccess(msg) {
+    if (successMsg) {
+        successMsg.textContent = '✅ ' + msg;
+        successMsg.classList.add('show');
+        setTimeout(() => successMsg.classList.remove('show'), 5000);
+    }
+    log('SUCCESS: ' + msg);
+}
+
+// ============ TABS ============
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        const tab = document.getElementById('tab-' + this.dataset.tab);
+        if (tab) tab.classList.add('active');
+        if (this.dataset.tab === 'preview') updatePreview();
+        if (this.dataset.tab === 'quality') generateQualityReport();
+    });
+});
+
+function updatePreview() {
+    if (allMCQs.length === 0) {
+        previewContent.innerHTML = '<p style="color:#888;text-align:center;padding:40px;">No MCQs.</p>';
+        resultsPreview.classList.remove('show');
+        return;
+    }
+    resultsPreview.classList.add('show');
+    const header = ['topic', 'question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'difficulty', 'explanation'];
+    let html = `<table><thead><tr>`;
+    for (let h of header) html += `<th>${h}</th>`;
+    html += '</tr></thead><tbody>';
+    const maxShow = Math.min(20, allMCQs.length);
+    for (let i = 0; i < maxShow; i++) {
+        const row = allMCQs[i];
+        html += '<tr>';
+        for (let j = 0; j < row.length; j++) {
+            let cell = row[j] || '';
+            if (j === 6) cell = `<span class="badge badge-${cell.toLowerCase()}">${cell}</span>`;
+            html += `<td>${cell}</td>`;
+        }
+        html += '</tr>';
+    }
+    if (allMCQs.length > 20) html += `<tr><td colspan="9" style="text-align:center;color:#888;">... and ${allMCQs.length - 20} more</td></tr>`;
+    html += '</tbody></table>';
+    resultsTable.innerHTML = html;
+    previewContent.innerHTML = '';
+}
+
+// ============ PDF HANDLING ============
+if (pdfInput) {
+    pdfInput.addEventListener('change', async function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        await handleFile(file);
+    });
+}
+
+if (dropZone) {
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('dragover'); });
+    dropZone.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        const file = e.dataTransfer.files[0];
+        if (file && file.type === 'application/pdf') {
+            if (pdfInput) pdfInput.files = e.dataTransfer.files;
+            await handleFile(file);
+        } else {
+            showError('Please drop a PDF file only.');
+        }
+    });
+}
+
+async function handleFile(file) {
+    pdfFileName = file.name;
+    if (fileInfo) {
+        fileInfo.querySelector('.filename').textContent = file.name;
+        fileInfo.querySelector('.pages').textContent = '⏳ Reading...';
+    }
+    if (progress) progress.classList.add('show');
+    if (progressFill) { progressFill.style.width = '0%'; progressFill.textContent = '0%'; }
+    if (statusText) statusText.textContent = 'Loading PDF...';
+
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+        let fullText = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items.map(item => item.str).join(' ');
+            fullText += `\n${pageText}\n`;
+            const pct = Math.round((i / pdf.numPages) * 100);
+            if (progressFill) { progressFill.style.width = pct + '%'; progressFill.textContent = pct + '%'; }
+            if (statusText) statusText.textContent = `Reading page ${i} of ${pdf.numPages}...`;
+        }
+
+        extractedText = fullText;
+
+        if (fileInfo) {
+            const charCount = extractedText.replace(/\s/g, '').length;
+            fileInfo.querySelector('.pages').textContent = `📄 ${pdf.numPages} pages, ${charCount} chars`;
+        }
+
+        if (statusText) {
+            if (extractedText.trim().length > 100) {
+                statusText.textContent = '✅ PDF loaded! Add topics below.';
+                showSuccess('PDF loaded!');
+            } else {
+                statusText.textContent = '⚠️ Little text extracted. Try pasting text.';
+                showError('Low text extraction.');
+            }
+        }
+        if (progressFill) { progressFill.style.width = '100%'; progressFill.textContent = '100%'; }
+        setTimeout(() => { if (progress) progress.classList.remove('show'); }, 1500);
+        updateContentStatus();
+
+    } catch (err) {
+        showError('Error reading PDF: ' + err.message);
+        if (statusText) statusText.textContent = '❌ Error: ' + err.message;
+    }
+}
+
+function updateContentStatus() {
+    let content = extractedText || '';
+    if (textInput && textInput.value.trim()) {
+        content = textInput.value.trim();
+    }
+    if (contentLength) contentLength.textContent = content.length;
+    const total = countTopics(bookStructure.chapters);
+    if (topicCount) topicCount.textContent = total;
+    return content;
+}
+
+// ============ COUNT FUNCTIONS ============
+function countTopics(chapters) {
+    let count = 0;
+    if (!chapters) return 0;
+    chapters.forEach(c => {
+        if (c.topics) count += c.topics.length;
+    });
+    return count;
+}
+
+function countMCQs() {
+    let count = 0;
+    if (!bookStructure.chapters) return 0;
+    bookStructure.chapters.forEach(c => {
+        if (c.topics) {
+            c.topics.forEach(t => {
+                count += t.mcqs ? t.mcqs.length : 0;
+            });
+        }
+    });
+    return count;
+}
+
+// ============ FIXED: ENHANCED CSV PARSING WITH MCQ COUNT FROM COLUMN 3 ============
+function parseCSVTopicsWithHierarchy(csvText) {
+    const lines = csvText.split('\n').filter(l => l.trim().length > 0);
+    if (lines.length === 0) return [];
+    
+    const chapters = [];
+    let currentChapter = null;
+    let currentTopic = null;
+    
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        
+        // Check for quoted chapter (like "13.1 WHY WAS MUSSOLINI ABLE TO COME TO POWER?",,,)
+        const quotedMatch = line.match(/^"([^"]+)"\s*,*\s*$/);
+        if (quotedMatch) {
+            const content = quotedMatch[1].trim();
+            const chapterMatch = content.match(/^(\d+\.\d+)\s+(.+)/);
+            if (chapterMatch) {
+                currentChapter = {
+                    number: chapterMatch[1],
+                    title: chapterMatch[2].trim(),
+                    topics: []
+                };
+                currentTopic = null;
+                chapters.push(currentChapter);
+                continue;
+            }
+        }
+        
+        // Check for unquoted chapter (like "13.1 WHY WAS MUSSOLINI ABLE TO COME TO POWER?,")
+        const chapterMatch = line.match(/^(\d+\.\d+)\s+([^,]+),?\s*$/);
+        if (chapterMatch) {
+            currentChapter = {
+                number: chapterMatch[1],
+                title: chapterMatch[2].trim(),
+                topics: []
+            };
+            currentTopic = null;
+            chapters.push(currentChapter);
+            continue;
+        }
+        
+        // ===== FIXED: SUBTOPIC WITH MCQ COUNT FROM COLUMN 3 =====
+        // Format: ,(a) Disillusionment and frustration,33
+        const subTopicMatch = line.match(/^,\(([a-z])\)\s+(.+?)(?:,(\d+))?$/);
+        if (subTopicMatch && currentChapter) {
+            const mcqCount = subTopicMatch[3] ? parseInt(subTopicMatch[3]) : 8;
+            const subTopic = {
+                number: subTopicMatch[1],
+                title: subTopicMatch[2].trim(),
+                content: '',
+                type: 'subtopic',
+                mcq_count: mcqCount
+            };
+            currentChapter.topics.push(subTopic);
+            currentTopic = subTopic;
+            log(`📊 Found subtopic: (${subTopicMatch[1]}) ${subTopicMatch[2].trim()} → ${mcqCount} MCQs`);
+            continue;
+        }
+        
+        // Alternative: Subtopic with comma in title (more complex parsing)
+        const altSubMatch = line.match(/^,\(([a-z])\)\s+(.+?)(?:,\s*(\d+))?$/);
+        if (altSubMatch && currentChapter) {
+            const mcqCount = altSubMatch[3] ? parseInt(altSubMatch[3]) : 8;
+            const subTopic = {
+                number: altSubMatch[1],
+                title: altSubMatch[2].trim(),
+                content: '',
+                type: 'subtopic',
+                mcq_count: mcqCount
+            };
+            currentChapter.topics.push(subTopic);
+            currentTopic = subTopic;
+            log(`📊 Found subtopic: (${altSubMatch[1]}) ${altSubMatch[2].trim()} → ${mcqCount} MCQs`);
+            continue;
+        }
+        
+        // Check for content lines
+        if (line.startsWith(',') && currentTopic) {
+            const content = line.substring(1).trim();
+            if (content.length > 0) {
+                currentTopic.content += (currentTopic.content ? ' ' : '') + content;
+            }
+        }
+    }
+    
+    // Log summary
+    let totalTopics = 0;
+    chapters.forEach(ch => {
+        if (ch.topics) {
+            ch.topics.forEach(t => {
+                totalTopics++;
+                log(`📊 Topic: ${t.title} → ${t.mcq_count} MCQs`);
+            });
+        }
+    });
+    log(`📊 Total: ${chapters.length} chapters, ${totalTopics} topics with MCQ counts`);
+    
+    return chapters;
+}
+
+// ============ CSV UPLOAD HANDLING ============
+if (csvInput) {
+    csvInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const text = event.target.result;
+            csvTopicData = parseCSVTopicsWithHierarchy(text);
+            showCSVPreviewWithHierarchy(csvTopicData);
+            log(`CSV loaded: ${csvTopicData.length} chapters with ${countCSVTopics(csvTopicData)} topics`);
+        };
+        reader.readAsText(file);
+    });
+}
+
+function countCSVTopics(chapters) {
+    let count = 0;
+    chapters.forEach(c => {
+        if (c.topics) count += c.topics.length;
+    });
+    return count;
+}
+
+function showCSVPreviewWithHierarchy(chapters) {
+    if (!csvPreview) return;
+    if (chapters.length === 0) {
+        csvPreview.classList.remove('show');
+        return;
+    }
+    csvPreview.classList.add('show');
+    let html = `<strong>📊 ${chapters.length} chapters with ${countCSVTopics(chapters)} topics found:</strong><br>`;
+    
+    for (let ci = 0; ci < Math.min(chapters.length, 5); ci++) {
+        const chapter = chapters[ci];
+        html += `<div style="padding:4px 0;border-bottom:1px solid #e0e0e0;font-weight:bold;color:#1a73e8;">📚 ${chapter.number}. ${chapter.title}</div>`;
+        
+        if (chapter.topics && chapter.topics.length > 0) {
+            const maxShow = Math.min(chapter.topics.length, 8);
+            for (let ti = 0; ti < maxShow; ti++) {
+                const topic = chapter.topics[ti];
+                const typeLabel = topic.type === 'subtopic' ? ' [sub]' : '';
+                const mcqLabel = topic.mcq_count ? ` → ${topic.mcq_count} MCQs` : '';
+                html += `<div style="padding-left:20px;font-size:12px;color:#555;">  • (${topic.number}) ${topic.title}${typeLabel}${mcqLabel}</div>`;
+            }
+            if (chapter.topics.length > 8) {
+                html += `<div style="padding-left:20px;font-size:11px;color:#888;">  ... and ${chapter.topics.length - 8} more topics</div>`;
+            }
+        }
+    }
+    if (chapters.length > 5) {
+        html += `<div style="color:#888;margin-top:5px;">... and ${chapters.length - 5} more chapters</div>`;
+    }
+    csvPreview.innerHTML = html;
+}
+
+// ============ UPDATED: UPLOAD TOPIC CSV AND MATCH TO PDF CONTENT ============
+function uploadTopicCSV() {
+    if (csvTopicData.length === 0) {
+        showError('No CSV data loaded. Please select a CSV file first.');
+        return;
+    }
+    
+    // Get PDF content
+    let content = extractedText || '';
+    if (textInput && textInput.value.trim()) {
+        content = textInput.value.trim();
+    }
+    
+    if (!content || content.length < 100) {
+        showError('Please upload a PDF or paste at least 100 characters for topic content!');
+        return;
+    }
+    
+    extractedText = content;
+    
+    // Initialize book structure if empty
+    if (!bookStructure.chapters || bookStructure.chapters.length === 0) {
+        bookStructure = { chapters: [] };
+    }
+    
+    let totalTopicsAdded = 0;
+    
+    // First, extract content from PDF using the CSV topic boundaries
+    const textLower = content.toLowerCase();
+    
+    for (let ci = 0; ci < csvTopicData.length; ci++) {
+        const csvChapter = csvTopicData[ci];
+        
+        // Check if chapter already exists
+        let existingChapter = bookStructure.chapters.find(c => 
+            c.number === csvChapter.number
+        );
+        
+        if (!existingChapter) {
+            existingChapter = {
+                number: csvChapter.number || `${bookStructure.chapters.length + 1}`,
+                title: csvChapter.title || `Chapter ${bookStructure.chapters.length + 1}`,
+                topics: []
+            };
+            bookStructure.chapters.push(existingChapter);
+        }
+        
+        // Find the chapter content in the PDF text
+        let chapterStart = content.toLowerCase().indexOf(csvChapter.number.toLowerCase());
+        let chapterEnd = content.length;
+        
+        // Find next chapter number to set boundary
+        for (let j = ci + 1; j < csvTopicData.length; j++) {
+            const nextChapter = csvTopicData[j];
+            const nextPos = content.toLowerCase().indexOf(nextChapter.number.toLowerCase());
+            if (nextPos > chapterStart && nextPos < chapterEnd) {
+                chapterEnd = nextPos;
+                break;
+            }
+        }
+        
+        const chapterContent = content.substring(chapterStart, chapterEnd);
+        
+        // Add topics from CSV to this chapter with extracted content
+        if (csvChapter.topics && csvChapter.topics.length > 0) {
+            for (let ti = 0; ti < csvChapter.topics.length; ti++) {
+                const csvTopic = csvChapter.topics[ti];
+                
+                // Check for duplicate
+                const isDuplicate = existingChapter.topics.some(t => 
+                    t.title.toLowerCase().trim() === csvTopic.title.toLowerCase().trim()
+                );
+                
+                if (isDuplicate) {
+                    log(`⏭️ Skipping duplicate topic: ${csvTopic.title}`);
+                    continue;
+                }
+                
+                const isSubTopic = csvTopic.type === 'subtopic';
+                
+                // Extract content for this specific topic using boundary detection
+                let topicContent = '';
+                const topicTitleLower = csvTopic.title.toLowerCase().trim();
+                const topicNumber = csvTopic.number;
+                
+                // Try to find the topic in the chapter content
+                // Look for the subtopic marker like "(a)" or just the title
+                let searchPattern = '';
+                if (isSubTopic) {
+                    searchPattern = `(${topicNumber}) ${csvTopic.title}`.toLowerCase();
+                } else {
+                    searchPattern = csvTopic.title.toLowerCase();
+                }
+                
+                // Find the topic in the chapter content
+                let topicStart = chapterContent.toLowerCase().indexOf(searchPattern);
+                if (topicStart === -1) {
+                    // Try without the number
+                    const simplePattern = csvTopic.title.toLowerCase();
+                    topicStart = chapterContent.toLowerCase().indexOf(simplePattern);
+                }
+                
+                if (topicStart !== -1) {
+                    // Find the end of this topic (next subtopic or end of chapter)
+                    let topicEnd = chapterContent.length;
+                    
+                    // Look for the next subtopic in the same chapter
+                    for (let k = ti + 1; k < csvChapter.topics.length; k++) {
+                        const nextTopic = csvChapter.topics[k];
+                        let nextPattern = '';
+                        if (nextTopic.type === 'subtopic') {
+                            nextPattern = `(${nextTopic.number}) ${nextTopic.title}`.toLowerCase();
+                        } else {
+                            nextPattern = nextTopic.title.toLowerCase();
+                        }
+                        const nextPos = chapterContent.toLowerCase().indexOf(nextPattern, topicStart + 10);
+                        if (nextPos > topicStart && nextPos < topicEnd) {
+                            topicEnd = nextPos;
+                            break;
+                        }
+                    }
+                    
+                    // Also check for next chapter
+                    if (ci < csvTopicData.length - 1) {
+                        const nextChapterNum = csvTopicData[ci + 1].number;
+                        const nextChapterPos = chapterContent.toLowerCase().indexOf(nextChapterNum.toLowerCase(), topicStart + 10);
+                        if (nextChapterPos > topicStart && nextChapterPos < topicEnd) {
+                            topicEnd = nextChapterPos;
+                        }
+                    }
+                    
+                    topicContent = chapterContent.substring(topicStart, topicEnd).trim();
+                    // Limit content size
+                    if (topicContent.length > 4000) {
+                        topicContent = topicContent.slice(0, 4000);
+                    }
+                } else {
+                    // Fallback: use the chapter content
+                    topicContent = chapterContent.slice(0, 2000);
+                }
+                
+                // If no content found, use a portion of the chapter content
+                if (!topicContent || topicContent.length < 50) {
+                    topicContent = chapterContent.slice(0, 1500);
+                }
+                
+                // ===== UPDATED: Add mcq_count from CSV =====
+                let topicToAdd = {
+                    number: csvTopic.number || `${existingChapter.topics.length + 1}`,
+                    title: csvTopic.title,
+                    content: topicContent,
+                    type: isSubTopic ? 'subtopic' : 'main',
+                    mcq_count: csvTopic.mcq_count || 8,  // Store MCQ count from CSV
+                    done: false,
+                    mcqs: []
+                };
+                
+                existingChapter.topics.push(topicToAdd);
+                totalTopicsAdded++;
+                
+                log(`✅ Added topic: ${csvTopic.title} with ${topicContent.length} chars of content, ${csvTopic.mcq_count || 8} MCQs requested`);
+            }
+        }
+    }
+    
+    renderTree();
+    updateTopicSelect();
+    updateStats();
+    updateContentStatus();
+    updateTopicRegistry();
+    validateAllTopics();
+    
+    if (statsBox) statsBox.classList.add('show');
+    const total = countTopics(bookStructure.chapters);
+    if (statsContent) {
+        statsContent.innerHTML = `
+            <strong>✅ ${totalTopicsAdded} Topics Imported and Matched to PDF!</strong><br>
+            📚 Chapters: ${bookStructure.chapters.length}<br>
+            📊 Total Topics: ${total}<br>
+            📄 Content: ${extractedText.length} chars<br>
+            📝 Each topic has its own MCQ count from CSV column 3
+        `;
+    }
+    
+    showSuccess(`Imported ${totalTopicsAdded} topics with individual MCQ counts from CSV!`);
+    log(`CSV import: ${totalTopicsAdded} topics added with individual MCQ counts`);
+    
+    csvTopicData = [];
+    if (csvPreview) csvPreview.classList.remove('show');
+    if (csvInput) csvInput.value = '';
+}
+
+function clearCSVPreview() {
+    csvTopicData = [];
+    if (csvPreview) {
+        csvPreview.classList.remove('show');
+        csvPreview.innerHTML = '';
+    }
+    if (csvInput) csvInput.value = '';
+}
+
+// ============ ENHANCED RENDER TREE WITH SUB-TOPIC GROUPING ============
+function renderTree() {
+    if (!treeContainer) return;
+    if (!bookStructure.chapters || bookStructure.chapters.length === 0) {
+        treeContainer.innerHTML = '<p style="color:#888;text-align:center;padding:20px;">No topics. Add topics using the Input tab.</p>';
+        return;
+    }
+
+    let html = '';
+    bookStructure.chapters.forEach((chapter, ci) => {
+        html += `<div class="tree-item"><span class="chapter">📚 ${chapter.number}. ${chapter.title}</span>`;
+        if (!chapter.topics || chapter.topics.length === 0) {
+            html += `<div class="tree-item topic" style="padding-left:25px;color:#888;">No topics</div>`;
+        } else {
+            // Group subtopics under their parent main topics
+            const groupedTopics = [];
+            let currentMain = null;
+            
+            for (let ti = 0; ti < chapter.topics.length; ti++) {
+                const topic = chapter.topics[ti];
+                const isSubTopic = topic.type === 'subtopic';
+                
+                if (!isSubTopic) {
+                    currentMain = topic;
+                    groupedTopics.push({ main: topic, subtopics: [] });
+                } else if (currentMain) {
+                    groupedTopics[groupedTopics.length - 1].subtopics.push(topic);
+                } else {
+                    groupedTopics.push({ main: null, subtopics: [topic] });
+                }
+            }
+            
+            // Render grouped topics
+            let topicIndex = 0;
+            for (let gi = 0; gi < groupedTopics.length; gi++) {
+                const group = groupedTopics[gi];
+                
+                if (group.main) {
+                    const mainTopic = group.main;
+                    const isDone = mainTopic.done && mainTopic.mcqs && mainTopic.mcqs.length > 0;
+                    const mcqCount = mainTopic.mcqs ? mainTopic.mcqs.length : 0;
+                    const requestedMcqs = mainTopic.mcq_count || 8;
+                    const valKey = `${ci}|${topicIndex}`;
+                    const valResult = topicValidationResults[valKey];
+                    const isValid = valResult ? valResult.valid : false;
+                    const score = valResult ? valResult.score : 0;
+                    const statusIcon = isValid ? '✅' : (valResult ? '⚠️' : '');
+                    const contentPreview = mainTopic.content ? mainTopic.content.slice(0, 60) + '...' : 'No content';
+                    
+                    html += `<div class="tree-item topic" data-chapter="${ci}" data-topic="${topicIndex}" onclick="selectTopic(${ci}, ${topicIndex})" style="cursor:pointer;padding-left:25px;">
+                        <strong>${mainTopic.number} ${mainTopic.title}</strong>
+                        <span class="badge-topic">${mcqCount}/${requestedMcqs} MCQs ${isDone ? '✅' : ''} ${statusIcon} ${score}%</span>
+                        <div style="font-size:10px;color:#888;padding-left:10px;">${contentPreview}</div>
+                    </div>`;
+                    topicIndex++;
+                    
+                    // Render subtopics under this main topic
+                    for (let sti = 0; sti < group.subtopics.length; sti++) {
+                        const subTopic = group.subtopics[sti];
+                        const subIsDone = subTopic.done && subTopic.mcqs && subTopic.mcqs.length > 0;
+                        const subMcqCount = subTopic.mcqs ? subTopic.mcqs.length : 0;
+                        const subRequestedMcqs = subTopic.mcq_count || 8;
+                        const subValKey = `${ci}|${topicIndex}`;
+                        const subValResult = topicValidationResults[subValKey];
+                        const subIsValid = subValResult ? subValResult.valid : false;
+                        const subScore = subValResult ? subValResult.score : 0;
+                        const subStatusIcon = subIsValid ? '✅' : (subValResult ? '⚠️' : '');
+                        const subContentPreview = subTopic.content ? subTopic.content.slice(0, 50) + '...' : '📌 See parent topic content';
+                        
+                        html += `<div class="tree-item subtopic" data-chapter="${ci}" data-topic="${topicIndex}" onclick="selectTopic(${ci}, ${topicIndex})" style="cursor:pointer;padding-left:45px;font-size:12px;color:#555;">
+                            • (${subTopic.number}) ${subTopic.title}
+                            <span class="subtopic-badge">sub</span>
+                            <span class="badge-topic">${subMcqCount}/${subRequestedMcqs} MCQs ${subIsDone ? '✅' : ''} ${subStatusIcon} ${subScore}%</span>
+                            <div style="font-size:9px;color:#aaa;padding-left:10px;">${subContentPreview}</div>
+                        </div>`;
+                        topicIndex++;
+                    }
+                } else {
+                    // Orphan subtopics
+                    for (let sti = 0; sti < group.subtopics.length; sti++) {
+                        const subTopic = group.subtopics[sti];
+                        const subIsDone = subTopic.done && subTopic.mcqs && subTopic.mcqs.length > 0;
+                        const subMcqCount = subTopic.mcqs ? subTopic.mcqs.length : 0;
+                        const subRequestedMcqs = subTopic.mcq_count || 8;
+                        const subValKey = `${ci}|${topicIndex}`;
+                        const subValResult = topicValidationResults[subValKey];
+                        const subIsValid = subValResult ? subValResult.valid : false;
+                        const subScore = subValResult ? subValResult.score : 0;
+                        const subStatusIcon = subIsValid ? '✅' : (subValResult ? '⚠️' : '');
+                        
+                        html += `<div class="tree-item subtopic" data-chapter="${ci}" data-topic="${topicIndex}" onclick="selectTopic(${ci}, ${topicIndex})" style="cursor:pointer;padding-left:45px;font-size:12px;color:#555;">
+                            • (${subTopic.number}) ${subTopic.title}
+                            <span class="subtopic-badge">sub</span>
+                            <span class="badge-topic">${subMcqCount}/${subRequestedMcqs} MCQs ${subIsDone ? '✅' : ''} ${subStatusIcon} ${subScore}%</span>
+                        </div>`;
+                        topicIndex++;
+                    }
+                }
+            }
+        }
+        html += '</div>';
+    });
+
+    treeContainer.innerHTML = html;
+}
+
+// ============ EXTRACT CHAPTERS AND TOPICS (Original - kept for PDF/Text extraction) ============
+function extractChaptersAndTopics() {
+    let text = extractedText;
+    if (!text || text.length < 100) {
+        if (textInput) text = textInput.value.trim();
+        if (text.length < 100) {
+            showError('Please upload a PDF or paste at least 100 characters!');
+            return;
+        }
+        extractedText = text;
+    }
+
+    if (progress) progress.classList.add('show');
+    if (progressFill) { progressFill.style.width = '0%'; progressFill.textContent = '0%'; }
+    if (statusText) statusText.textContent = '🔍 Extracting topics...';
+
+    setTimeout(() => {
+        try {
+            const lines = text.split('\n').filter(l => l.trim().length > 0);
+            
+            const chapters = [];
+            let currentChapter = null;
+            let currentTopics = [];
+            let currentContent = [];
+            let currentSubTopic = null;
+            let isInSubTopic = false;
+            
+            // Track the current main section
+            let currentMainTopic = null;
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                
+                // --- DETECT CHAPTER (MAIN SECTION) ---
+                const chapterMatch = line.match(/^(\d+\.\d+)\s+([A-Z][A-Z\s\-–—']+)/);
+                if (chapterMatch) {
+                    // Save previous chapter
+                    if (currentChapter && currentTopics.length > 0) {
+                        if (currentContent.length > 0) {
+                            const lastTopic = currentTopics[currentTopics.length - 1];
+                            if (lastTopic && !lastTopic.content) {
+                                lastTopic.content = currentContent.join(' ').slice(0, 4000);
+                            }
+                            currentContent = [];
+                        }
+                        chapters.push({
+                            number: currentChapter.number,
+                            title: currentChapter.title,
+                            topics: currentTopics
+                        });
+                    }
+                    
+                    currentChapter = {
+                        number: chapterMatch[1],
+                        title: chapterMatch[2].trim(),
+                        topics: []
+                    };
+                    currentTopics = [];
+                    currentContent = [];
+                    currentMainTopic = chapterMatch[2].trim();
+                    currentSubTopic = null;
+                    isInSubTopic = false;
+                    log(`📚 Found chapter: ${chapterMatch[1]} ${chapterMatch[2].trim()}`);
+                    continue;
+                }
+                
+                // --- DETECT MAIN TOPIC (like "8.2 CUBA") ---
+                const mainTopicMatch = line.match(/^(\d+\.\d+)\s+([A-Z][A-Z\s\-–—']+)/);
+                if (mainTopicMatch && currentChapter) {
+                    // Save current topic content if any
+                    if (currentContent.length > 0 && currentTopics.length > 0) {
+                        const lastTopic = currentTopics[currentTopics.length - 1];
+                        if (lastTopic && !lastTopic.content) {
+                            lastTopic.content = currentContent.join(' ').slice(0, 4000);
+                        }
+                        currentContent = [];
+                    }
+                    
+                    const topicTitle = mainTopicMatch[2].trim();
+                    currentTopics.push({
+                        number: mainTopicMatch[1],
+                        title: topicTitle,
+                        content: '',
+                        type: 'main',
+                        mcq_count: 8,  // Default
+                        done: false,
+                        mcqs: []
+                    });
+                    currentMainTopic = topicTitle;
+                    currentSubTopic = null;
+                    isInSubTopic = false;
+                    log(`📝 Found main topic: ${mainTopicMatch[1]} ${topicTitle}`);
+                    continue;
+                }
+                
+                // --- DETECT SECTION HEADERS (like "SUMMARY OF EVENTS") ---
+                const sectionMatch = line.match(/^([A-Z][A-Z\s\-–—']+)$/);
+                if (sectionMatch && currentChapter) {
+                    const sectionTitle = sectionMatch[1].trim();
+                    // Only add if it's not a duplicate
+                    if (sectionTitle !== currentChapter.title && 
+                        sectionTitle.length > 5 && 
+                        !sectionTitle.match(/^\d+\.\d+/) &&
+                        !sectionTitle.match(/^[A-Z][a-z]/)) {
+                        
+                        // Save current content
+                        if (currentContent.length > 0 && currentTopics.length > 0) {
+                            const lastTopic = currentTopics[currentTopics.length - 1];
+                            if (lastTopic && !lastTopic.content) {
+                                lastTopic.content = currentContent.join(' ').slice(0, 4000);
+                            }
+                            currentContent = [];
+                        }
+                        
+                        currentTopics.push({
+                            number: `${currentTopics.length + 1}`,
+                            title: sectionTitle,
+                            content: '',
+                            type: 'section',
+                            mcq_count: 8,  // Default
+                            done: false,
+                            mcqs: []
+                        });
+                        currentSubTopic = null;
+                        isInSubTopic = false;
+                        log(`📝 Found section: ${sectionTitle}`);
+                    }
+                    continue;
+                }
+                
+                // --- DETECT SUB-TOPIC (like "(a) Background to the war") ---
+                const subTopicMatch = line.match(/^\(([a-z])\)\s+(.+)/);
+                if (subTopicMatch && currentChapter && currentTopics.length > 0) {
+                    // Save current content for previous topic
+                    if (currentContent.length > 0) {
+                        const lastTopic = currentTopics[currentTopics.length - 1];
+                        if (lastTopic && !lastTopic.content) {
+                            lastTopic.content = currentContent.join(' ').slice(0, 4000);
+                        }
+                        currentContent = [];
+                    }
+                    
+                    const subTitle = subTopicMatch[2].trim();
+                    currentTopics.push({
+                        number: `(${subTopicMatch[1]})`,
+                        title: subTitle,
+                        content: '',
+                        type: 'subtopic',
+                        mcq_count: 8,  // Default
+                        done: false,
+                        mcqs: []
+                    });
+                    currentSubTopic = subTitle;
+                    isInSubTopic = true;
+                    log(`📝 Found sub-topic: (${subTopicMatch[1]}) ${subTitle}`);
+                    continue;
+                }
+                
+                // --- DETECT NUMBERED SUB-TOPIC (like "1. The background") ---
+                const numberedSubMatch = line.match(/^(\d+)\.\s+(.+)/);
+                if (numberedSubMatch && currentChapter && currentTopics.length > 0 && !line.match(/^\d+\.\d+/)) {
+                    // Save current content
+                    if (currentContent.length > 0) {
+                        const lastTopic = currentTopics[currentTopics.length - 1];
+                        if (lastTopic && !lastTopic.content) {
+                            lastTopic.content = currentContent.join(' ').slice(0, 4000);
+                        }
+                        currentContent = [];
+                    }
+                    
+                    const subTitle = numberedSubMatch[2].trim();
+                    if (subTitle.length > 5) {
+                        currentTopics.push({
+                            number: `${numberedSubMatch[1]}`,
+                            title: subTitle,
+                            content: '',
+                            type: 'subtopic',
+                            mcq_count: 8,  // Default
+                            done: false,
+                            mcqs: []
+                        });
+                        currentSubTopic = subTitle;
+                        isInSubTopic = true;
+                        log(`📝 Found numbered sub-topic: ${numberedSubMatch[1]}. ${subTitle}`);
+                    }
+                    continue;
+                }
+                
+                // --- ACCUMULATE CONTENT ---
+                if (currentChapter && currentTopics.length > 0) {
+                    // Check if this line is content (not a header)
+                    if (line.length > 10 && 
+                        !line.match(/^(\d+\.\d+)\s+[A-Z]/) && 
+                        !line.match(/^\([a-z]\)\s+/) &&
+                        !line.match(/^[A-Z][A-Z\s\-–—']+$/) &&
+                        !line.match(/^\d+\.\s+[A-Z]/)) {
+                        currentContent.push(line);
+                    }
+                }
+            }
+            
+            // --- SAVE FINAL CHAPTER ---
+            if (currentChapter) {
+                if (currentContent.length > 0 && currentTopics.length > 0) {
+                    const lastTopic = currentTopics[currentTopics.length - 1];
+                    if (lastTopic && !lastTopic.content) {
+                        lastTopic.content = currentContent.join(' ').slice(0, 4000);
+                    }
+                }
+                if (currentTopics.length > 0) {
+                    chapters.push({
+                        number: currentChapter.number,
+                        title: currentChapter.title,
+                        topics: currentTopics
+                    });
+                }
+            }
+            
+            // --- FALLBACK: If no chapters found, try to extract from the entire text ---
+            if (chapters.length === 0 || chapters.every(c => c.topics.length === 0)) {
+                log('No chapters/topics found with pattern matching, creating fallback...');
+                
+                // Look for numbered sections like "8.1", "8.2", etc.
+                const sectionRegex = /(\d+\.\d+)\s+([A-Z][A-Z\s\-–—']+)/g;
+                const sections = [];
+                let match;
+                
+                while ((match = sectionRegex.exec(text)) !== null) {
+                    sections.push({
+                        number: match[1],
+                        title: match[2].trim(),
+                        startIndex: match.index
+                    });
+                }
+                
+                if (sections.length > 0) {
+                    const fallbackTopics = [];
+                    for (let i = 0; i < sections.length; i++) {
+                        const start = sections[i].startIndex;
+                        const end = i < sections.length - 1 ? sections[i + 1].startIndex : text.length;
+                        const content = text.substring(start, end).slice(0, 4000);
+                        fallbackTopics.push({
+                            number: sections[i].number,
+                            title: sections[i].title,
+                            content: content,
+                            type: 'main',
+                            mcq_count: 8,  // Default
+                            done: false,
+                            mcqs: []
+                        });
+                    }
+                    chapters.push({
+                        number: '8',
+                        title: 'Chapter 8: The spread of communism outside Europe',
+                        topics: fallbackTopics
+                    });
+                } else {
+                    // Ultimate fallback - one topic with all content
+                    chapters.push({
+                        number: '1',
+                        title: 'Main Content',
+                        topics: [{
+                            number: '1.1',
+                            title: 'Content',
+                            content: text.slice(0, 4000),
+                            type: 'main',
+                            mcq_count: 8,  // Default
+                            done: false,
+                            mcqs: []
+                        }]
+                    });
+                }
+            }
+
+            bookStructure = { chapters: chapters };
+
+            if (progressFill) { progressFill.style.width = '100%'; progressFill.textContent = '100%'; }
+            if (statusText) statusText.textContent = `✅ Extracted ${chapters.length} chapters, ${countTopics(chapters)} topics!`;
+
+            renderTree();
+            updateTopicSelect();
+            updateStats();
+            updateContentStatus();
+            updateTopicRegistry();
+
+            if (statsBox) statsBox.classList.add('show');
+            if (statsContent) {
+                statsContent.innerHTML = `
+                    <strong>✅ Extraction Complete</strong><br>
+                    📚 Chapters: ${chapters.length}<br>
+                    📝 Topics: ${countTopics(chapters)}<br>
+                    📄 Text: ${text.length} chars
+                `;
+            }
+
+            // Auto-validate after extraction
+            validateAllTopics();
+
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelector('[data-tab="topics"]').classList.add('active');
+            document.getElementById('tab-topics').classList.add('active');
+
+            if (chapters.length > 0 && chapters[0].topics.length > 0) {
+                setTimeout(() => {
+                    if (topicSelect) {
+                        topicSelect.value = '0|0';
+                        selectTopic(0, 0);
+                    }
+                }, 300);
+            }
+
+            showSuccess(`Extracted ${countTopics(chapters)} topics!`);
+            setTimeout(() => { if (progress) progress.classList.remove('show'); }, 1500);
+
+        } catch (err) {
+            showError('Error extracting: ' + err.message);
+            if (statusText) statusText.textContent = '❌ Error: ' + err.message;
+            if (progress) progress.classList.remove('show');
+        }
+    }, 300);
+}
+
+// ============ TOPIC REGISTRY ============
+function updateTopicRegistry() {
+    topicRegistry = {};
+    if (!bookStructure.chapters) return;
+    
+    bookStructure.chapters.forEach(chapter => {
+        if (!chapter.topics) return;
+        chapter.topics.forEach(topic => {
+            const key = topic.title.toLowerCase().trim();
+            if (!topicRegistry[key]) {
+                topicRegistry[key] = {
+                    title: topic.title,
+                    normalized: key,
+                    content: topic.content || '',
+                    mcqCount: topic.mcqs ? topic.mcqs.length : 0,
+                    chapters: []
+                };
+            }
+            topicRegistry[key].chapters.push(chapter.number);
+        });
+    });
+    
+    renderTopicRegistry();
+}
+
+function renderTopicRegistry() {
+    if (!topicRegistryContent) return;
+    
+    const keys = Object.keys(topicRegistry);
+    if (keys.length === 0) {
+        topicRegistryContent.innerHTML = '<span style="color:#888;">No topics registered.</span>';
+        return;
+    }
+    
+    let html = '';
+    keys.forEach(key => {
+        const t = topicRegistry[key];
+        const status = t.mcqCount > 0 ? '✅' : '⏳';
+        html += `<span class="topic-chip">${status} ${t.title} (${t.mcqCount} MCQs)</span>`;
+    });
+    topicRegistryContent.innerHTML = html;
+}
+
+// ============ ACCURATE TOPIC VALIDATION ============
+function validateTopicContent(topic) {
+    const result = {
+        valid: true,
+        score: 100,
+        issues: [],
+        warnings: [],
+        suggestions: []
+    };
+    
+    if (!topic || !topic.title) {
+        result.valid = false;
+        result.issues.push('Topic has no title');
+        result.score = 0;
+        return result;
+    }
+    
+    // Check 1: Content exists
+    if (!topic.content || topic.content.length === 0) {
+        result.valid = false;
+        result.issues.push('Topic has no content');
+        result.score = 0;
+        return result;
+    }
+    
+    // Check 2: Content length (minimum 100 chars for a valid topic)
+    if (topic.content.length < 100) {
+        result.valid = false;
+        result.issues.push(`Content is too short (${topic.content.length} chars, need 100+)`);
+        result.score = Math.min(50, Math.round((topic.content.length / 100) * 50));
+    } else {
+        result.score = 60;
+    }
+    
+    // Check 3: Topic title appears in content (keyword matching)
+    const titleWords = topic.title.toLowerCase().replace(/[\(\)]/g, '').split(/\s+/);
+    const contentLower = topic.content.toLowerCase();
+    let keywordMatches = 0;
+    let meaningfulWords = titleWords.filter(w => w.length > 3 && !w.match(/^[a-z]$/));
+    
+    if (meaningfulWords.length === 0) {
+        const fullTitle = topic.title.toLowerCase().replace(/[\(\)]/g, '');
+        if (contentLower.includes(fullTitle)) {
+            keywordMatches = 1;
+        }
+    } else {
+        meaningfulWords.forEach(word => {
+            if (contentLower.includes(word)) {
+                keywordMatches++;
+            }
+        });
+    }
+    
+    const keywordRatio = meaningfulWords.length > 0 ? keywordMatches / meaningfulWords.length : 0;
+    if (keywordRatio > 0.3) {
+        result.score += 20;
+    } else if (keywordRatio > 0.1) {
+        result.score += 10;
+        result.warnings.push('Limited keyword overlap between title and content');
+    } else {
+        if (topic.type === 'subtopic') {
+            result.warnings.push('Sub-topic content may be in parent topic');
+        } else {
+            result.warnings.push('Topic keywords not strongly found in content');
+        }
+    }
+    
+    // Check 4: Has question-worthy content
+    const questionPatterns = ['is', 'are', 'was', 'were', 'can', 'will', 'may', 'should', 'would', 'could', 'does', 'do', 'has', 'have', 'been'];
+    let patternCount = 0;
+    questionPatterns.forEach(pattern => {
+        if (contentLower.includes(' ' + pattern + ' ')) patternCount++;
+    });
+    if (patternCount > 2) {
+        result.score += 10;
+    } else {
+        result.warnings.push('Limited question-worthy content patterns');
+    }
+    
+    // Check 5: Has complete sentences
+    const sentences = topic.content.split(/[.!?]+/).filter(s => s.trim().length > 20);
+    if (sentences.length > 3) {
+        result.score += 10;
+    } else {
+        result.warnings.push('Few complete sentences found');
+    }
+    
+    // Check 6: MCQs exist and are valid (bonus points)
+    if (topic.mcqs && topic.mcqs.length > 0) {
+        result.score += 10;
+        const onTopicCount = topic.mcqs.filter(row => {
+            const questionText = row[1] || '';
+            const topicWords = topic.title.toLowerCase().replace(/[\(\)]/g, '').split(/\s+/);
+            let qMatch = 0;
+            topicWords.forEach(word => {
+                if (word.length > 3 && questionText.toLowerCase().includes(word)) qMatch++;
+            });
+            return qMatch > 0;
+        }).length;
+        if (onTopicCount > 0 && topic.mcqs.length > 0) {
+            const ratio = onTopicCount / topic.mcqs.length;
+            if (ratio < 0.3) {
+                result.warnings.push(`Only ${Math.round(ratio * 100)}% of MCQs contain topic keywords`);
+            }
+        }
+    }
+    
+    // Determine validity - more lenient for sub-topics
+    if (topic.type === 'subtopic') {
+        result.valid = topic.content.length >= 50 && result.score >= 40;
+    } else {
+        result.valid = result.score >= 60 && topic.content.length >= 100;
+    }
+    
+    result.score = Math.min(100, result.score);
+    return result;
+}
+
+function validateAllTopics() {
+    if (!bookStructure.chapters || bookStructure.chapters.length === 0) {
+        showError('No topics to validate. Add some topics first.');
+        return;
+    }
+    
+    log('🔍 Starting topic validation...');
+    let validCount = 0;
+    let totalTopics = 0;
+    let totalScore = 0;
+    
+    bookStructure.chapters.forEach((chapter, ci) => {
+        if (!chapter.topics) return;
+        chapter.topics.forEach((topic, ti) => {
+            totalTopics++;
+            const result = validateTopicContent(topic);
+            topicValidationResults[`${ci}|${ti}`] = result;
+            if (result.valid) validCount++;
+            totalScore += result.score;
+            
+            if (result.issues.length > 0) {
+                log(`⚠️ Topic "${topic.title}" issues: ${result.issues.join(', ')}`);
+            }
+            if (result.warnings.length > 0) {
+                log(`⚠️ Topic "${topic.title}" warnings: ${result.warnings.join(', ')}`);
+            }
+        });
+    });
+    
+    // Update validation status
+    if (validationStatus) {
+        const percentage = totalTopics > 0 ? Math.round((validCount / totalTopics) * 100) : 0;
+        const avgScore = totalTopics > 0 ? Math.round(totalScore / totalTopics) : 0;
+        validationStatus.textContent = `${validCount}/${totalTopics} valid (${percentage}%) | Avg Score: ${avgScore}%`;
+        validationStatus.className = percentage >= 70 ? 'valid' : percentage >= 40 ? 'warning' : 'invalid';
+        
+        if (confidenceFill) {
+            const fillPercent = totalTopics > 0 ? Math.round((validCount / totalTopics) * 100) : 0;
+            confidenceFill.style.width = fillPercent + '%';
+            confidenceFill.className = 'fill ' + (fillPercent >= 70 ? 'confidence-high' : fillPercent >= 40 ? 'confidence-medium' : 'confidence-low');
+        }
+    }
+    
+    updateTopicRegistry();
+    
+    if (statsBox) statsBox.classList.add('show');
+    if (statsContent) {
+        const avgScore = totalTopics > 0 ? Math.round(totalScore / totalTopics) : 0;
+        statsContent.innerHTML = `
+            <strong>✅ Validation Complete</strong><br>
+            📊 Topics: ${totalTopics}<br>
+            ✅ Valid: ${validCount}<br>
+            ❌ Invalid: ${totalTopics - validCount}<br>
+            📈 Avg Score: ${avgScore}%<br>
+            📈 Confidence: ${totalTopics > 0 ? Math.round((validCount/totalTopics)*100) : 0}%
+        `;
+    }
+    
+    showSuccess(`Validation complete: ${validCount}/${totalTopics} topics valid (Avg Score: ${totalTopics > 0 ? Math.round(totalScore/totalTopics) : 0}%)`);
+    log(`✅ Validation complete: ${validCount}/${totalTopics} topics valid`);
+}
+
+// ============ SELECT TOPIC ============
+function selectTopic(chapterIdx, topicIdx) {
+    if (!bookStructure.chapters || bookStructure.chapters.length === 0) {
+        showError('No topics available!');
+        return;
+    }
+    
+    const chapter = bookStructure.chapters[chapterIdx];
+    if (!chapter || !chapter.topics) {
+        showError('Chapter not found!');
+        return;
+    }
+    
+    const topic = chapter.topics[topicIdx];
+    if (!topic) {
+        showError('Topic not found!');
+        return;
+    }
+
+    if (selectedTopicInfo) {
+        selectedTopicInfo.style.display = 'block';
+        const valKey = `${chapterIdx}|${topicIdx}`;
+        const valResult = topicValidationResults[valKey];
+        const isValid = valResult ? valResult.valid : false;
+        const score = valResult ? valResult.score : 0;
+        const statusText = isValid ? `✅ Valid (${score}%)` : (valResult ? `⚠️ Issues (${score}%)` : '⏳ Not validated');
+        const contentLen = topic.content ? topic.content.length : 0;
+        const typeLabel = topic.type || 'main';
+        const requestedMcqs = topic.mcq_count || 8;
+        selectedTopicInfo.innerHTML = `
+            <strong>Selected:</strong> ${chapter.number}.${topic.number} ${topic.title} <span class="subtopic-badge">${typeLabel}</span>
+            <span style="margin-left:15px;">📝 ${topic.mcqs ? topic.mcqs.length : 0}/${requestedMcqs} MCQs</span>
+            <span style="margin-left:15px;">${topic.done ? '✅ Done' : '⏳ Pending'}</span>
+            <span style="margin-left:15px;">${statusText}</span>
+            <span style="margin-left:15px;">📄 ${contentLen} chars</span>
+        `;
+    }
+
+    document.querySelectorAll('.tree-item').forEach(el => {
+        el.classList.remove('selected');
+        const tc = parseInt(el.dataset.chapter);
+        const tt = parseInt(el.dataset.topic);
+        if (tc === chapterIdx && tt === topicIdx) {
+            el.classList.add('selected');
+        }
+    });
+
+    if (generateTopicBtn) generateTopicBtn.disabled = false;
+    if (topicSelect) {
+        topicSelect.value = `${chapterIdx}|${topicIdx}`;
+    }
+}
+
+// ============ UPDATE TOPIC SELECT ============
+function updateTopicSelect() {
+    if (!topicSelect) return;
+    topicSelect.innerHTML = '<option value="">-- Select a topic --</option>';
+    if (!bookStructure.chapters) return;
+    
+    bookStructure.chapters.forEach((chapter, ci) => {
+        if (!chapter.topics) return;
+        chapter.topics.forEach((topic, ti) => {
+            const isDone = topic.done && topic.mcqs && topic.mcqs.length > 0;
+            const requestedMcqs = topic.mcq_count || 8;
+            const currentMcqs = topic.mcqs ? topic.mcqs.length : 0;
+            const valKey = `${ci}|${ti}`;
+            const valResult = topicValidationResults[valKey];
+            const isValid = valResult ? valResult.valid : false;
+            const score = valResult ? valResult.score : 0;
+            const statusIcon = isValid ? '✅' : (valResult ? '⚠️' : '');
+            const opt = document.createElement('option');
+            opt.value = `${ci}|${ti}`;
+            const typeLabel = topic.type === 'subtopic' ? ' [sub]' : '';
+            opt.textContent = `${chapter.number}.${topic.number} ${topic.title}${typeLabel} ${currentMcqs}/${requestedMcqs} ${isDone ? '✅' : ''} ${statusIcon} ${score}%`;
+            topicSelect.appendChild(opt);
+        });
+    });
+}
+
+// ============ UPDATE STATS ============
+function updateStats() {
+    if (!bookStats) return;
+    const totalTopics = countTopics(bookStructure.chapters);
+    const doneTopics = bookStructure.chapters.reduce((acc, c) => {
+        if (!c.topics) return acc;
+        return acc + c.topics.filter(t => t.done && t.mcqs && t.mcqs.length > 0).length;
+    }, 0);
+    const totalMCQs = countMCQs();
+    bookStats.innerHTML = `
+        <span class="stat">📚 Chapters: <strong>${bookStructure.chapters ? bookStructure.chapters.length : 0}</strong></span>
+        <span class="stat">📝 Topics: <strong>${totalTopics}</strong></span>
+        <span class="stat">✅ Done: <strong>${doneTopics}/${totalTopics}</strong></span>
+        <span class="stat">📊 Total MCQs: <strong>${totalMCQs}</strong></span>
+    `;
+    if (downloadBookBtn) downloadBookBtn.disabled = (totalMCQs === 0);
+    updateTopicRegistry();
+}
+
+// ============ ADD MANUAL TOPIC ============
+function addManualTopic() {
+    const title = manualTopicTitle ? manualTopicTitle.value.trim() : '';
+    if (!title) {
+        showError('Please enter a topic title!');
+        return;
+    }
+
+    let content = extractedText || '';
+    if (textInput && textInput.value.trim()) {
+        content = textInput.value.trim();
+    }
+
+    if (!content || content.length < 50) {
+        showError('Please upload a PDF or paste at least 50 characters!');
+        return;
+    }
+
+    extractedText = content;
+
+    // Check for duplicate topic
+    const normalizedTitle = title.toLowerCase().trim();
+    let isDuplicate = false;
+    if (bookStructure.chapters) {
+        bookStructure.chapters.forEach(chapter => {
+            if (chapter.topics) {
+                chapter.topics.forEach(t => {
+                    if (t.title.toLowerCase().trim() === normalizedTitle) {
+                        isDuplicate = true;
+                    }
+                });
+            }
+        });
+    }
+    if (isDuplicate) {
+        showError(`Topic "${title}" already exists!`);
+        return;
+    }
+
+    if (!bookStructure.chapters || bookStructure.chapters.length === 0) {
+        bookStructure = {
+            chapters: [{
+                number: '1',
+                title: 'Manual Content',
+                topics: [{
+                    number: '1.1',
+                    title: title,
+                    content: content.slice(0, 4000),
+                    type: 'main',
+                    mcq_count: 8,  // Default
+                    done: false,
+                    mcqs: []
+                }]
+            }]
+        };
+    } else {
+        let chapter = bookStructure.chapters[0];
+        if (!chapter) {
+            chapter = { number: '1', title: 'Manual Content', topics: [] };
+            bookStructure.chapters.push(chapter);
+        }
+        const nextNum = chapter.topics.length + 1;
+        chapter.topics.push({
+            number: `1.${nextNum}`,
+            title: title,
+            content: content.slice(0, 4000),
+            type: 'main',
+            mcq_count: 8,  // Default
+            done: false,
+            mcqs: []
+        });
+    }
+
+    renderTree();
+    updateTopicSelect();
+    updateStats();
+    updateContentStatus();
+    updateTopicRegistry();
+    validateAllTopics();
+
+    showSuccess(`Topic "${title}" added!`);
+    if (manualTopicTitle) manualTopicTitle.value = '';
+}
+
+// ============ GENERATE TOPIC MCQs ============
+async function generateTopicMCQs() {
+    const key = apiKey ? apiKey.value.trim() : '';
+    if (!key) {
+        showError('Please enter your Cerebras API key!');
+        return;
+    }
+
+    let chapterIdx = -1, topicIdx = -1;
+    if (topicSelect && topicSelect.value) {
+        const parts = topicSelect.value.split('|');
+        if (parts.length === 2) {
+            chapterIdx = parseInt(parts[0]);
+            topicIdx = parseInt(parts[1]);
+        }
+    }
+
+    if (chapterIdx === -1 || topicIdx === -1) {
+        showError('Please select a topic first!');
+        return;
+    }
+
+    const chapter = bookStructure.chapters[chapterIdx];
+    const topic = chapter.topics[topicIdx];
+
+    if (!topic.content || topic.content.length < 50) {
+        showError('Topic content is too short. Select a different topic.');
+        return;
+    }
+
+    const numQuestions = questionsPerTopic ? parseInt(questionsPerTopic.value) || 10 : 10;
+    const model = modelSelect ? modelSelect.value : 'llama3.1-8b';
+    const hots = includeHOTS ? includeHOTS.checked : true;
+
+    log(`Generating MCQs for: ${topic.title}`);
+
+    if (progress) progress.classList.add('show');
+    if (progressFill) { progressFill.style.width = '0%'; progressFill.textContent = '0%'; }
+    if (statusText) statusText.textContent = `🧠 Generating MCQs for: ${topic.title}...`;
+    if (generateTopicBtn) generateTopicBtn.disabled = true;
+
+    try {
+        const result = await generateTopicMCQsWithResult(
+            chapterIdx, topicIdx, topic.title, topic.content,
+            numQuestions, model, hots, false
+        );
+        
+        if (result.success && result.count > 0) {
+            const mcqs = result.mcqs;
+            allMCQs = allMCQs.filter(row => {
+                const topicName = row[0] || '';
+                return topicName !== topic.title;
+            });
+            topic.mcqs = mcqs;
+            topic.done = true;
+            mcqs.forEach(row => allMCQs.push(row));
+            
+            if (progressFill) { progressFill.style.width = '100%'; progressFill.textContent = '100%'; }
+            if (statusText) statusText.textContent = `✅ Generated ${mcqs.length} MCQs!`;
+            
+            renderTree();
+            updateTopicSelect();
+            updateStats();
+            updatePreview();
+            validateAllTopics();
+            
+            if (selectedTopicInfo) {
+                const requestedMcqs = topic.mcq_count || 8;
+                selectedTopicInfo.innerHTML = `
+                    <strong>✅ Done!</strong> ${chapter.number}.${topic.number} ${topic.title}
+                    <span style="margin-left:15px;">📝 ${mcqs.length}/${requestedMcqs} MCQs</span>
+                `;
+            }
+            
+            if (downloadBookBtn) downloadBookBtn.disabled = false;
+            showSuccess(`Generated ${mcqs.length} MCQs!`);
+            
+        } else {
+            throw new Error(result.error || 'Generation failed');
+        }
+        
+        setTimeout(() => { if (progress) progress.classList.remove('show'); }, 1500);
+
+    } catch (err) {
+        log(`Error: ${err.message}`);
+        showError('Generation failed: ' + err.message);
+        if (statusText) statusText.textContent = '❌ Error: ' + err.message;
+        if (progress) progress.classList.remove('show');
+    }
+    if (generateTopicBtn) generateTopicBtn.disabled = false;
+}
+
+// ============ FIXED: GENERATE TOPIC MCQS WITH RESULT (with rate limit handling) ============
+async function generateTopicMCQsWithResult(chapterIdx, topicIdx, topicTitle, topicContent, numQuestions, model, hots, isRetry = false) {
+    const key = apiKey ? apiKey.value.trim() : '';
+    if (!key) {
+        return { success: false, mcqs: [], count: 0, error: 'No API key provided' };
+    }
+
+    if (!key.startsWith('csk-') && !key.startsWith('sk-')) {
+        return { success: false, mcqs: [], count: 0, error: 'Invalid API key format. Cerebras keys start with "csk-" or "sk-"' };
+    }
+
+    if (!topicContent || topicContent.length < 50) {
+        return { success: false, mcqs: [], count: 0, error: 'Content too short (minimum 50 characters)' };
+    }
+
+    let actualTopic = null;
+    if (bookStructure.chapters && bookStructure.chapters[chapterIdx]) {
+        actualTopic = bookStructure.chapters[chapterIdx].topics[topicIdx];
+    }
+    const effectiveNumQuestions = (actualTopic && actualTopic.mcq_count) ? actualTopic.mcq_count : numQuestions;
+    
+    log(`${isRetry ? '🔄 RETRY' : '📝'} Generating ${effectiveNumQuestions} MCQs for: ${topicTitle}`);
+
+    try {
+        const hotsInstruction = hots ? 'Include at least 40% scenario-based and analytical questions (HOTS).' : '';
+        const prompt = `Generate EXACTLY ${effectiveNumQuestions} multiple-choice questions. You MUST generate ${effectiveNumQuestions} questions - no more, no less.
+
+TOPIC: ${topicTitle}
+CONTENT:
+${topicContent.slice(0, 3000)}
+
+REQUIREMENTS:
+1. 4 options per question (A, B, C, D)
+2. ${hotsInstruction}
+3. Difficulty: 30% Easy, 45% Medium, 25% Hard
+4. Random correct answers (no AAA, BBB patterns)
+5. Each explanation: 40-80 words
+6. Use \\( ... \\) for all mathematical expressions and equations.
+
+OUTPUT CSV FORMAT (EXACTLY ${effectiveNumQuestions} rows):
+topic,question_text,option_a,option_b,option_c,option_d,correct_answer,difficulty,explanation
+
+IMPORTANT: Return EXACTLY ${effectiveNumQuestions} rows of data. Do not return more or less than ${effectiveNumQuestions} questions. Return ONLY CSV data, no other text.`;
+
+        log(`${isRetry ? '🔄 RETRY' : '📤'} Sending request for: ${topicTitle}`);
+
+        // ===== USE THROTTLED REQUEST =====
+        const response = await throttledRequest(async () => {
+            return await fetch('https://api.cerebras.ai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + key,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: model,
+                    messages: [
+                        { role: 'system', content: 'Return ONLY CSV data. Each question must be on a separate line with fields separated by commas. Use \\( ... \\) for all mathematical expressions and equations.' },
+                        { role: 'user', content: prompt }
+                    ],
+                    temperature: 0.7,
+                    max_tokens: 8000
+                })
+            });
+        }, isRetry ? 5000 : 3000);
+
+        const rawText = await response.text();
+        log(`${isRetry ? '🔄 RETRY' : '📥'} Response for "${topicTitle}": ${rawText.length} chars, status ${response.status}`);
+
+        if (!response.ok) {
+            let errorMessage = `API error (${response.status})`;
+            
+            try {
+                const errorData = JSON.parse(rawText);
+                if (errorData.error) {
+                    errorMessage = errorData.error.message || errorMessage;
+                }
+            } catch (e) {
+                if (rawText.includes('rate limit')) {
+                    errorMessage = 'Rate limit exceeded. Please wait a few seconds and try again.';
+                }
+            }
+            
+            if (response.status === 429) {
+                const waitTime = isRetry ? 8000 : 5000;
+                log(`⏳ Rate limited. Waiting ${waitTime/1000}s before retry...`);
+                
+                const rateLimitInfo = document.getElementById('rateLimitInfo');
+                const rateLimitWait = document.getElementById('rateLimitWait');
+                if (rateLimitInfo) {
+                    rateLimitInfo.style.display = 'block';
+                    if (rateLimitWait) {
+                        rateLimitWait.textContent = Math.ceil(waitTime / 1000);
+                    }
+                    setTimeout(() => {
+                        rateLimitInfo.style.display = 'none';
+                    }, waitTime + 2000);
+                }
+                
+                if (!isRetry) {
+                    await sleep(waitTime);
+                    return await generateTopicMCQsWithResult(
+                        chapterIdx, topicIdx, topicTitle, topicContent, 
+                        numQuestions, model, hots, true
+                    );
+                } else {
+                    return { 
+                        success: false, 
+                        mcqs: [], 
+                        count: 0, 
+                        error: 'Rate limit exceeded. Please wait 60 seconds before generating more MCQs.' 
+                    };
+                }
+            }
+            
+            log(`Error: ${rawText.slice(0, 300)}`);
+            return { success: false, mcqs: [], count: 0, error: errorMessage };
+        }
+
+        let data;
+        try {
+            data = JSON.parse(rawText);
+        } catch (e) {
+            log(`JSON parse error: ${e.message}. Trying to extract CSV directly...`);
+            const directCSV = extractCSVFromRawResponse(rawText, topicTitle);
+            if (directCSV && directCSV.length > 0) {
+                log(`📊 Direct CSV extraction gave ${directCSV.length} MCQs`);
+                const fixedCSV = validateAndFixMCQs(directCSV, topicTitle);
+                return { success: true, mcqs: fixedCSV, count: fixedCSV.length, error: null };
+            }
+            return { success: false, mcqs: [], count: 0, error: 'Invalid JSON response' };
+        }
+
+        const content = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : '';
+
+        if (!content || content.length < 50) {
+            if (data.error) {
+                return { success: false, mcqs: [], count: 0, error: `API error: ${data.error.message || JSON.stringify(data.error)}` };
+            }
+            const directCSV = extractCSVFromRawResponse(rawText, topicTitle);
+            if (directCSV && directCSV.length > 0) {
+                log(`📊 Direct CSV extraction from raw text gave ${directCSV.length} MCQs`);
+                const fixedCSV = validateAndFixMCQs(directCSV, topicTitle);
+                return { success: true, mcqs: fixedCSV, count: fixedCSV.length, error: null };
+            }
+            return { success: false, mcqs: [], count: 0, error: 'API returned empty or invalid response' };
+        }
+
+        let mcqs = parseCSVResponseImproved(content, topicTitle);
+        log(`Parsed ${mcqs.length} MCQs (requested: ${effectiveNumQuestions})`);
+
+        if (mcqs.length < effectiveNumQuestions * 0.7 && mcqs.length > 0) {
+            log(`Only got ${mcqs.length} MCQs, trying lenient parsing...`);
+            mcqs = parseLenientCSV(content, topicTitle);
+            log(`Lenient parsing gave ${mcqs.length} MCQs`);
+        }
+
+        if (mcqs.length === 0) {
+            const directCSV = extractCSVFromRawResponse(rawText, topicTitle);
+            if (directCSV && directCSV.length > 0) {
+                log(`📊 Direct CSV extraction gave ${directCSV.length} MCQs`);
+                mcqs = directCSV;
+            } else {
+                log(`Failed to parse. Content preview: ${content.slice(0, 500)}`);
+                return { success: false, mcqs: [], count: 0, error: 'Failed to parse MCQs from API response' };
+            }
+        }
+
+        if (mcqs.length > effectiveNumQuestions) {
+            log(`Got ${mcqs.length} MCQs, trimming to ${effectiveNumQuestions}`);
+            mcqs = mcqs.slice(0, effectiveNumQuestions);
+        }
+
+        mcqs = validateAndFixMCQs(mcqs, topicTitle);
+
+        return { success: true, mcqs: mcqs, count: mcqs.length, error: null };
+
+    } catch (err) {
+        log(`Error generating for "${topicTitle}": ${err.message}`);
+        return { success: false, mcqs: [], count: 0, error: err.message };
+    }
+}
+// ============ EXTRACT CSV FROM RAW RESPONSE ============
+function extractCSVFromRawResponse(rawText, defaultTopic) {
+    log(`Attempting to extract CSV directly from raw response for "${defaultTopic}"`);
+    
+    const lines = rawText.split('\n').filter(l => l.trim().length > 0);
+    let csvLines = [];
+    
+    for (let line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        const commaCount = (trimmed.match(/,/g) || []).length;
+        if (commaCount >= 3) {
+            csvLines.push(trimmed);
+        }
+    }
+    
+    if (csvLines.length === 0) {
+        const quotedPattern = /"([^"]*)"\s*,\s*"([^"]*)"\s*,\s*"([^"]*)"\s*,\s*"([^"]*)"\s*,\s*"([^"]*)"\s*,\s*"([^"]*)"/g;
+        let matches = [];
+        let match;
+        while ((match = quotedPattern.exec(rawText)) !== null) {
+            matches.push(match);
+        }
+        if (matches.length > 0) {
+            const result = [];
+            for (let m of matches) {
+                const fields = m.slice(1).map(f => f.trim());
+                if (fields.length >= 4) {
+                    let topic = defaultTopic || 'General';
+                    let question = fields[0] || '';
+                    let optA = fields[1] || '';
+                    let optB = fields[2] || '';
+                    let optC = fields[3] || '';
+                    let optD = fields[4] || '';
+                    let correct = fields[5] || 'A';
+                    let difficulty = fields[6] || 'Medium';
+                    let explanation = fields[7] || '';
+                    
+                    if (question.length > 5 && optA.length > 0 && optB.length > 0) {
+                        result.push([
+                            topic, question, optA, optB, optC || 'N/A', optD || 'N/A',
+                            correct.toUpperCase(), difficulty || 'Medium', explanation || ''
+                        ]);
+                    }
+                }
+            }
+            if (result.length > 0) {
+                log(`✅ Quoted pattern extraction found ${result.length} MCQs`);
+                return result;
+            }
+        }
+        return [];
+    }
+    
+    const allRows = [];
+    for (let line of csvLines) {
+        const fields = parseCSVLineAdvanced(line);
+        const cleanFields = fields.map(f => f.trim().replace(/^"|"$/g, ''));
+        if (cleanFields.length >= 6) {
+            allRows.push(cleanFields);
+        }
+    }
+    
+    if (allRows.length > 0) {
+        const result = [];
+        for (let row of allRows) {
+            let topic = defaultTopic || 'General';
+            let question = '';
+            let optA = '';
+            let optB = '';
+            let optC = '';
+            let optD = '';
+            let correct = 'A';
+            let difficulty = 'Medium';
+            let explanation = '';
+            
+            if (row.length >= 7) {
+                const firstField = row[0] || '';
+                const isTopic = firstField.length < 60 && 
+                               !firstField.includes('?') && 
+                               !firstField.toLowerCase().includes('which') &&
+                               !firstField.toLowerCase().includes('what') &&
+                               !firstField.toLowerCase().includes('how');
+                
+                if (isTopic) {
+                    topic = row[0];
+                    question = row[1] || '';
+                    optA = row[2] || '';
+                    optB = row[3] || '';
+                    optC = row[4] || '';
+                    optD = row[5] || '';
+                    correct = row[6] || 'A';
+                    difficulty = row[7] || 'Medium';
+                    explanation = row[8] || '';
+                } else {
+                    question = row[0] || '';
+                    optA = row[1] || '';
+                    optB = row[2] || '';
+                    optC = row[3] || '';
+                    optD = row[4] || '';
+                    correct = row[5] || 'A';
+                    difficulty = row[6] || 'Medium';
+                    explanation = row[7] || '';
+                }
+            } else if (row.length >= 6) {
+                question = row[0] || '';
+                optA = row[1] || '';
+                optB = row[2] || '';
+                optC = row[3] || '';
+                optD = row[4] || '';
+                correct = row[5] || 'A';
+                difficulty = row[6] || 'Medium';
+                explanation = row[7] || '';
+            }
+            
+            if (question.length > 5 && optA.length > 0 && optB.length > 0) {
+                result.push([
+                    topic, question, optA, optB, optC || 'N/A', optD || 'N/A',
+                    correct.toUpperCase(), difficulty || 'Medium', explanation || ''
+                ]);
+            }
+        }
+        if (result.length > 0) {
+            log(`✅ Direct CSV extraction found ${result.length} MCQs`);
+            return result;
+        }
+    }
+    
+    return [];
+}
+
+// ============ CSV PARSER FUNCTIONS ============
+function parseCSVResponseImproved(text, defaultTopic) {
+    let cleanText = text.replace(/```csv\s*/gi, '').replace(/```\s*/g, '').trim();
+    let lines = cleanText.split('\n').filter(l => l.trim().length > 0);
+    
+    if (lines.length < 2) return [];
+    
+    let startIdx = 0;
+    for (let i = 0; i < Math.min(lines.length, 5); i++) {
+        const lower = lines[i].toLowerCase();
+        if (lower.includes('topic') && lower.includes('question')) {
+            startIdx = i + 1;
+            break;
+        }
+    }
+    
+    const result = [];
+    for (let i = startIdx; i < lines.length; i++) {
+        const fields = parseCSVLineAdvanced(lines[i]);
+        if (fields.length < 6) continue;
+        
+        const cleanFields = fields.map(f => f.trim().replace(/^"|"$/g, ''));
+        
+        const firstField = cleanFields[0] || '';
+        const isTopic = firstField.length < 60 && 
+                       !firstField.includes('?') && 
+                       !firstField.toLowerCase().includes('which') &&
+                       !firstField.toLowerCase().includes('what');
+        
+        let topic = defaultTopic;
+        let question = '';
+        let optA = '', optB = '', optC = '', optD = '';
+        let correct = 'A', difficulty = 'Medium', explanation = '';
+        
+        if (isTopic && cleanFields.length >= 7) {
+            topic = cleanFields[0];
+            question = cleanFields[1] || '';
+            optA = cleanFields[2] || '';
+            optB = cleanFields[3] || '';
+            optC = cleanFields[4] || '';
+            optD = cleanFields[5] || '';
+            correct = cleanFields[6] || 'A';
+            difficulty = cleanFields[7] || 'Medium';
+            explanation = cleanFields[8] || '';
+        } else if (cleanFields.length >= 6) {
+            question = cleanFields[0] || '';
+            optA = cleanFields[1] || '';
+            optB = cleanFields[2] || '';
+            optC = cleanFields[3] || '';
+            optD = cleanFields[4] || '';
+            correct = cleanFields[5] || 'A';
+            difficulty = cleanFields[6] || 'Medium';
+            explanation = cleanFields[7] || '';
+        }
+        
+        if (question.length > 5 && optA.length > 0 && optB.length > 0) {
+            result.push([
+                topic,
+                question,
+                optA,
+                optB,
+                optC || 'N/A',
+                optD || 'N/A',
+                correct.toUpperCase(),
+                difficulty || 'Medium',
+                explanation || ''
+            ]);
+        }
+    }
+    
+    return result;
+}
+
+function parseCSVLineAdvanced(line) {
+    const fields = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+            if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
+                current += '"';
+                i++;
+            } else {
+                inQuotes = !inQuotes;
+            }
+        } else if (char === ',' && !inQuotes) {
+            fields.push(current.trim());
+            current = '';
+        } else {
+            current += char;
+        }
+    }
+    fields.push(current.trim());
+    return fields;
+}
+
+function parseLenientCSV(text, defaultTopic) {
+    const result = [];
+    let cleanText = text.replace(/```csv\s*/gi, '').replace(/```\s*/g, '').trim();
+    let lines = cleanText.split('\n').filter(l => l.trim().length > 0);
+    
+    for (let line of lines) {
+        if (line.toLowerCase().includes('topic') && line.toLowerCase().includes('question')) {
+            continue;
+        }
+        const fields = parseCSVLineAdvanced(line);
+        if (fields.length >= 3) {
+            const cleanFields = fields.map(f => f.trim().replace(/^"|"$/g, ''));
+            let topic = defaultTopic || 'General';
+            let question = '';
+            let optA = '', optB = '', optC = '', optD = '';
+            let correct = 'A', difficulty = 'Medium', explanation = '';
+            
+            if (cleanFields.length >= 6) {
+                const firstField = cleanFields[0];
+                const isTopic = firstField.length < 50 && 
+                               !firstField.includes('?') && 
+                               !firstField.toLowerCase().includes('which') &&
+                               !firstField.toLowerCase().includes('what') &&
+                               !firstField.toLowerCase().includes('how') &&
+                               !firstField.toLowerCase().includes('does');
+                
+                if (isTopic && cleanFields.length >= 7) {
+                    topic = cleanFields[0];
+                    question = cleanFields[1] || '';
+                    optA = cleanFields[2] || '';
+                    optB = cleanFields[3] || '';
+                    optC = cleanFields[4] || '';
+                    optD = cleanFields[5] || '';
+                    correct = cleanFields[6] || 'A';
+                    difficulty = cleanFields[7] || 'Medium';
+                    explanation = cleanFields[8] || '';
+                } else {
+                    question = cleanFields[0] || '';
+                    optA = cleanFields[1] || '';
+                    optB = cleanFields[2] || '';
+                    optC = cleanFields[3] || '';
+                    optD = cleanFields[4] || '';
+                    correct = cleanFields[5] || 'A';
+                    difficulty = cleanFields[6] || 'Medium';
+                    explanation = cleanFields[7] || '';
+                }
+            } else if (cleanFields.length >= 3) {
+                question = cleanFields[0] || '';
+                optA = cleanFields[1] || '';
+                optB = cleanFields[2] || '';
+                optC = cleanFields[3] || '';
+                optD = cleanFields[4] || '';
+            }
+            
+            if (question.length > 5 && optA.length > 0 && optB.length > 0) {
+                result.push([
+                    topic, question, optA, optB, optC || 'N/A', optD || 'N/A',
+                    correct.toUpperCase(), difficulty || 'Medium', explanation || ''
+                ]);
+            }
+        }
+    }
+    return result;
+}
+
+// ============ VALIDATE AND FIX MCQS ============
+function validateAndFixMCQs(mcqs, topicTitle) {
+    if (!mcqs || mcqs.length === 0) return mcqs;
+    
+    const fixedMCQs = [];
+    let fixedCount = 0;
+    const validAnswers = ['A', 'B', 'C', 'D'];
+    
+    for (let i = 0; i < mcqs.length; i++) {
+        const row = mcqs[i];
+        if (row.length < 9) {
+            fixedMCQs.push(row);
+            continue;
+        }
+        
+        let topic = row[0] || topicTitle || 'General';
+        const question = row[1] || '';
+        const optA = row[2] || '';
+        const optB = row[3] || '';
+        const optC = row[4] || '';
+        const optD = row[5] || '';
+        let correct = row[6] || 'A';
+        const difficulty = row[7] || 'Medium';
+        const explanation = row[8] || '';
+        
+        // Fix topic if needed
+        if (topic === 'General' || topic === '' || topic === topicTitle + '⚠️') {
+            topic = topicTitle;
+        }
+        
+        // Skip if explanation is empty
+        if (!explanation || explanation.length < 10) {
+            fixedMCQs.push(row);
+            continue;
+        }
+        
+        // Try to detect the correct answer from the explanation
+        let detectedAnswer = null;
+        let detectionMethod = '';
+        
+        const answerPatterns = [
+            /correct\s+answer\s+is\s+([A-D])/i,
+            /answer\s+is\s+([A-D])/i,
+            /correct\s+option\s+is\s+([A-D])/i,
+            /option\s+([A-D])\s+is\s+correct/i,
+            /([A-D])\s+is\s+correct/i,
+            /correct\s+answer\s+([A-D])/i,
+            /answer\s+([A-D])/i,
+            /should\s+be\s+([A-D])/i,
+            /matches\s+option\s+([A-D])/i,
+            /option\s+([A-D])/i,
+            /\(([A-D])\)/i
+        ];
+        
+        for (let pattern of answerPatterns) {
+            const match = explanation.match(pattern);
+            if (match) {
+                const letter = match[1].toUpperCase();
+                if (validAnswers.includes(letter)) {
+                    detectedAnswer = letter;
+                    detectionMethod = `Pattern match`;
+                    break;
+                }
+            }
+        }
+        
+        // Pattern 2: Numeric answer matching
+        if (!detectedAnswer) {
+            const numericMatch = explanation.match(/answer\s+(?:should\s+be\s+)?([\d.]+)/i);
+            if (numericMatch) {
+                const numericValue = numericMatch[1];
+                const options = [optA, optB, optC, optD];
+                for (let j = 0; j < options.length; j++) {
+                    if (options[j] && options[j].includes(numericValue)) {
+                        const letters = ['A', 'B', 'C', 'D'];
+                        detectedAnswer = letters[j];
+                        detectionMethod = `Numeric match: ${numericValue}`;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // If we detected a different answer than what's stored, fix it
+        if (detectedAnswer && detectedAnswer !== correct.toUpperCase()) {
+            log(`🔧 Fixing correct answer for Q${i+1}: "${question.slice(0, 50)}..."`);
+            log(`   Original: ${correct} → Fixed: ${detectedAnswer} (${detectionMethod})`);
+            
+            const newRow = [
+                topic,
+                question,
+                optA,
+                optB,
+                optC,
+                optD,
+                detectedAnswer,
+                difficulty,
+                explanation
+            ];
+            fixedMCQs.push(newRow);
+            fixedCount++;
+        } else {
+            fixedMCQs.push(row);
+        }
+    }
+    
+    if (fixedCount > 0) {
+        log(`✅ Fixed ${fixedCount} MCQs with mismatched correct answers for topic "${topicTitle}"`);
+    }
+    
+    return fixedMCQs;
+}
+
+// ============ GENERATE ALL MCQS ============
+async function generateAllMCQs() {
+    if (isBatchRunning) {
+        showError('Batch generation is already in progress!');
+        return;
+    }
+    
+    const key = apiKey ? apiKey.value.trim() : '';
+    if (!key) {
+        showError('Please enter your Cerebras API key!');
+        return;
+    }
+    
+    const allTopics = [];
+    if (bookStructure.chapters) {
+        bookStructure.chapters.forEach((chapter, ci) => {
+            if (chapter.topics) {
+                chapter.topics.forEach((topic, ti) => {
+                    allTopics.push({
+                        chapterIdx: ci,
+                        topicIdx: ti,
+                        chapter: chapter,
+                        topic: topic
+                    });
+                });
+            }
+        });
+    }
+    
+    if (allTopics.length === 0) {
+        showError('No topics found! Add some topics first.');
+        return;
+    }
+    
+    const globalNumQuestions = questionsPerTopic ? parseInt(questionsPerTopic.value) || 10 : 10;
+    
+    // Validate topics first
+    validateAllTopics();
+    
+    // Filter topics - use topic's mcq_count for threshold
+    const topicsToGenerate = allTopics.filter(item => {
+        const requestedMcqs = item.topic.mcq_count || globalNumQuestions;
+        const threshold = Math.max(3, Math.floor(requestedMcqs * 0.8));
+        const hasEnoughMCQs = item.topic.mcqs && item.topic.mcqs.length >= threshold;
+        const hasContent = item.topic.content && item.topic.content.length >= 50;
+        const valKey = `${item.chapterIdx}|${item.topicIdx}`;
+        const valResult = topicValidationResults[valKey];
+        const minScore = (item.topic.type === 'subtopic') ? 40 : 60;
+        const isValid = valResult ? (valResult.valid || valResult.score >= minScore) : false;
+        return !hasEnoughMCQs && hasContent && isValid;
+    });
+    
+    const invalidTopics = allTopics.filter(item => {
+        const valKey = `${item.chapterIdx}|${item.topicIdx}`;
+        const valResult = topicValidationResults[valKey];
+        return valResult && !valResult.valid && valResult.score < 40;
+    });
+    
+    if (invalidTopics.length > 0) {
+        log(`⚠️ ${invalidTopics.length} topics are invalid and will be skipped`);
+        showError(`${invalidTopics.length} topics have validation issues. Fix them first.`);
+        return;
+    }
+    
+    if (topicsToGenerate.length === 0) {
+        const allDone = allTopics.every(item => {
+            const requestedMcqs = item.topic.mcq_count || globalNumQuestions;
+            const threshold = Math.max(3, Math.floor(requestedMcqs * 0.8));
+            return item.topic.mcqs && item.topic.mcqs.length >= threshold;
+        });
+        if (allDone) {
+            showSuccess('All topics already have enough MCQs generated!');
+        } else {
+            showError('No valid topics with sufficient content (need at least 50 chars and validation).');
+        }
+        return;
+    }
+    
+    const totalRequested = topicsToGenerate.reduce((sum, item) => {
+        return sum + (item.topic.mcq_count || globalNumQuestions);
+    }, 0);
+    
+    const confirmMsg = `This will generate MCQs for ${topicsToGenerate.length} topics sequentially with 10-second pauses between each.
+Total MCQs to generate: ${totalRequested}
+
+Continue?`;
+    if (!confirm(confirmMsg)) {
+        return;
+    }
+    
+    isBatchRunning = true;
+    generateAllBtn.disabled = true;
+    generateAllBtn2.disabled = true;
+    batchProgress.classList.add('show');
+    batchStatus.textContent = '⏳ Starting batch generation...';
+    batchDetail.textContent = `0 / ${topicsToGenerate.length} topics completed`;
+    batchFill.style.width = '0%';
+    batchFill.textContent = '0%';
+    
+    log(`Starting batch generation: ${topicsToGenerate.length} topics`);
+    let completed = 0;
+    let failed = 0;
+    const failedTopics = [];
+    const model = modelSelect ? modelSelect.value : 'llama3.1-8b';
+    const hots = includeHOTS ? includeHOTS.checked : true;
+    
+    try {
+        for (let i = 0; i < topicsToGenerate.length; i++) {
+            const item = topicsToGenerate[i];
+            const currentTopic = item.topic;
+            const chapterIdx = item.chapterIdx;
+            const topicIdx = item.topicIdx;
+            const requestedMcqs = currentTopic.mcq_count || globalNumQuestions;
+            const threshold = Math.max(3, Math.floor(requestedMcqs * 0.8));
+            
+            const progressPct = Math.round((i / topicsToGenerate.length) * 100);
+            batchStatus.textContent = `🧠 Generating ${requestedMcqs} MCQs for: ${currentTopic.title} (${i+1}/${topicsToGenerate.length})`;
+            batchDetail.textContent = `${completed} / ${topicsToGenerate.length} topics completed (${failed} failed)`;
+            batchFill.style.width = progressPct + '%';
+            batchFill.textContent = progressPct + '%';
+            
+            if (topicSelect) {
+                topicSelect.value = `${chapterIdx}|${topicIdx}`;
+                selectTopic(chapterIdx, topicIdx);
+            }
+            
+            const result = await generateTopicMCQsWithResult(
+                chapterIdx, topicIdx, currentTopic.title, currentTopic.content,
+                globalNumQuestions, model, hots, false
+            );
+            
+            if (result.success && result.count > 0) {
+                const mcqCount = result.count;
+                if (mcqCount >= threshold) {
+                    allMCQs = allMCQs.filter(row => {
+                        const topicName = row[0] || '';
+                        return topicName !== currentTopic.title;
+                    });
+                    currentTopic.mcqs = result.mcqs;
+                    currentTopic.done = true;
+                    result.mcqs.forEach(row => allMCQs.push(row));
+                    completed++;
+                    log(`✅ Topic "${currentTopic.title}" generated ${mcqCount} MCQs (requested: ${requestedMcqs})`);
+                } else {
+                    failed++;
+                    currentTopic.done = false;
+                    failedTopics.push({
+                        chapterIdx: chapterIdx,
+                        topicIdx: topicIdx,
+                        topic: currentTopic,
+                        retryCount: 0,
+                        reason: `Generated ${mcqCount} MCQs (need ${threshold})`
+                    });
+                    log(`⚠️ Topic "${currentTopic.title}" generated only ${mcqCount} MCQs (need ${threshold})`);
+                }
+            } else {
+                failed++;
+                currentTopic.done = false;
+                failedTopics.push({
+                    chapterIdx: chapterIdx,
+                    topicIdx: topicIdx,
+                    topic: currentTopic,
+                    retryCount: 0,
+                    reason: result.error || 'Unknown error'
+                });
+                log(`❌ Topic "${currentTopic.title}" failed: ${result.error || 'Unknown error'}`);
+            }
+            
+            updateStats();
+            renderTree();
+            validateAllTopics();
+            
+            if (i < topicsToGenerate.length - 1) {
+                batchStatus.textContent = `⏳ Waiting 10 seconds before next topic... (${i+1}/${topicsToGenerate.length} done)`;
+                await sleep(10000);
+            }
+        }
+        
+        batchStatus.textContent = '✅ Batch generation complete!';
+        batchDetail.textContent = `${completed} topics completed, ${failed} topics need retry`;
+        batchFill.style.width = '100%';
+        batchFill.textContent = '100%';
+        
+        log(`Batch complete: ${completed} succeeded, ${failed} need retry`);
+        
+        if (allMCQs.length > 0 && downloadBookBtn) {
+            downloadBookBtn.disabled = false;
+        }
+        
+        if (failedTopics.length > 0) {
+            log(`🔄 Starting retry phase for ${failedTopics.length} topics...`);
+            batchStatus.textContent = `🔄 Starting retry phase for ${failedTopics.length} topics...`;
+            await sleep(2000);
+            await retryFailedTopics(failedTopics);
+            
+            const stillFailed = failedTopics.filter(item => {
+                const topic = item.topic;
+                const requestedMcqs = topic.mcq_count || globalNumQuestions;
+                const threshold = Math.max(3, Math.floor(requestedMcqs * 0.8));
+                const mcqCount = topic.mcqs ? topic.mcqs.length : 0;
+                return mcqCount < threshold;
+            });
+            
+            if (stillFailed.length === 0) {
+                showSuccess(`✅ All ${failedTopics.length} topics recovered during retry!`);
+            } else {
+                showSuccess(`✅ ${completed + failedTopics.length - stillFailed.length} topics done, ${stillFailed.length} topics still need manual retry.`);
+            }
+            
+            updateStats();
+            renderTree();
+            validateAllTopics();
+        } else {
+            showSuccess(`✅ All ${completed} topics processed successfully!`);
+        }
+        
+    } catch (err) {
+        log(`Batch error: ${err.message}`);
+        showError('Batch generation interrupted: ' + err.message);
+        batchStatus.textContent = '❌ Batch generation interrupted!';
+    } finally {
+        isBatchRunning = false;
+        generateAllBtn.disabled = false;
+        generateAllBtn2.disabled = false;
+        setTimeout(() => { if (batchProgress) batchProgress.classList.remove('show'); }, 8000);
+    }
+}
+
+// ============ RETRY FAILED TOPICS ============
+async function retryFailedTopics(failedTopics) {
+    if (failedTopics.length === 0) return;
+    
+    log(`🔄 Starting retry for ${failedTopics.length} failed topics`);
+    
+    retryProgress.classList.add('show');
+    retryStatus.textContent = `🔄 Retrying ${failedTopics.length} failed topics...`;
+    retryDetail.textContent = `0 / ${failedTopics.length} topics retried`;
+    retryFill.style.width = '0%';
+    retryFill.textContent = '0%';
+    
+    let retriedCount = 0;
+    let successCount = 0;
+    const globalNumQuestions = questionsPerTopic ? parseInt(questionsPerTopic.value) || 10 : 10;
+    const model = modelSelect ? modelSelect.value : 'llama3.1-8b';
+    const hots = includeHOTS ? includeHOTS.checked : true;
+    
+    for (let i = 0; i < failedTopics.length; i++) {
+        const item = failedTopics[i];
+        const topic = item.topic;
+        const chapterIdx = item.chapterIdx;
+        const topicIdx = item.topicIdx;
+        const retryCount = item.retryCount || 0;
+        const requestedMcqs = topic.mcq_count || globalNumQuestions;
+        const threshold = Math.max(3, Math.floor(requestedMcqs * 0.8));
+        
+        if (retryCount >= 2) {
+            log(`⏭️ Skipping "${topic.title}" - already retried ${retryCount} times`);
+            continue;
+        }
+        
+        const progressPct = Math.round((i / failedTopics.length) * 100);
+        retryStatus.textContent = `🔄 Retrying: ${topic.title} (Attempt ${retryCount + 1}) (${i+1}/${failedTopics.length})`;
+        retryDetail.textContent = `${retriedCount} / ${failedTopics.length} topics retried (${successCount} succeeded)`;
+        retryFill.style.width = progressPct + '%';
+        retryFill.textContent = progressPct + '%';
+        
+        if (topicSelect) {
+            topicSelect.value = `${chapterIdx}|${topicIdx}`;
+            selectTopic(chapterIdx, topicIdx);
+        }
+        
+        log(`🔄 Retry attempt ${retryCount + 1} for: ${topic.title}`);
+        
+        topic.mcqs = [];
+        topic.done = false;
+        
+        const result = await generateTopicMCQsWithResult(
+            chapterIdx, topicIdx, topic.title, topic.content, 
+            globalNumQuestions, model, hots, true
+        );
+        
+        retriedCount++;
+        
+        if (result.success && result.count > 0) {
+            const mcqCount = result.count;
+            if (mcqCount >= threshold) {
+                allMCQs = allMCQs.filter(row => {
+                    const topicName = row[0] || '';
+                    return topicName !== topic.title;
+                });
+                topic.mcqs = result.mcqs;
+                topic.done = true;
+                result.mcqs.forEach(row => allMCQs.push(row));
+                successCount++;
+                log(`✅ RETRY SUCCESS: "${topic.title}" generated ${mcqCount} MCQs`);
+                showSuccess(`✅ Retry success: "${topic.title}" → ${mcqCount} MCQs`);
+            } else {
+                log(`⚠️ RETRY PARTIAL: "${topic.title}" generated ${mcqCount} MCQs (need ${threshold})`);
+                item.retryCount = retryCount + 1;
+            }
+        } else {
+            log(`❌ RETRY FAILED: "${topic.title}" - ${result.error || 'Unknown error'}`);
+            item.retryCount = retryCount + 1;
+        }
+        
+        updateStats();
+        renderTree();
+        validateAllTopics();
+        
+        if (i < failedTopics.length - 1) {
+            retryStatus.textContent = `⏳ Waiting before next retry... (${i+1}/${failedTopics.length} done)`;
+            await sleep(10000);
+        }
+    }
+    
+    retryStatus.textContent = `✅ Retry complete! ${successCount} topics succeeded`;
+    retryDetail.textContent = `${retriedCount} topics retried, ${successCount} succeeded`;
+    retryFill.style.width = '100%';
+    retryFill.textContent = '100%';
+    
+    log(`🔄 Retry complete: ${successCount} succeeded out of ${retriedCount} retried`);
+    setTimeout(() => { retryProgress.classList.remove('show'); }, 5000);
+}
+
+// ============ QUALITY REPORT ============
+function generateQualityReport() {
+    if (!qualityReportContent) return;
+    
+    const totalTopics = countTopics(bookStructure.chapters);
+    if (totalTopics === 0) {
+        qualityReportContent.innerHTML = '<p style="color:#888;">No topics to analyze.</p>';
+        return;
+    }
+    
+    let html = `<strong>📊 Quality Report</strong><br><br>`;
+    
+    const totalMCQs = countMCQs();
+    const doneTopics = bookStructure.chapters.reduce((acc, c) => {
+        if (!c.topics) return acc;
+        return acc + c.topics.filter(t => t.done && t.mcqs && t.mcqs.length > 0).length;
+    }, 0);
+    
+    html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;">`;
+    html += `<div><strong>Total Topics:</strong> ${totalTopics}</div>`;
+    html += `<div><strong>Done Topics:</strong> ${doneTopics} (${Math.round(doneTopics/totalTopics*100)}%)</div>`;
+    html += `<div><strong>Total MCQs:</strong> ${totalMCQs}</div>`;
+    html += `<div><strong>Avg MCQs/Topic:</strong> ${totalTopics > 0 ? Math.round(totalMCQs/totalTopics) : 0}</div>`;
+    html += `</div>`;
+    
+    const validTopics = Object.values(topicValidationResults).filter(r => r && r.valid).length;
+    const avgScore = Object.values(topicValidationResults).reduce((acc, r) => acc + (r ? r.score : 0), 0) / Math.max(1, Object.values(topicValidationResults).length);
+    html += `<div style="margin:10px 0;">`;
+    html += `<strong>Validation:</strong> <span class="${validTopics === totalTopics ? 'good' : 'warn'}">${validTopics}/${totalTopics} valid</span>`;
+    html += ` (Avg Score: ${Math.round(avgScore)}%)`;
+    html += `</div>`;
+    
+    qualityReportContent.innerHTML = html;
+}
+
+function exportQualityReport() {
+    const content = qualityReportContent ? qualityReportContent.innerText : '';
+    if (!content || content.includes('No topics')) {
+        showError('No quality report to export.');
+        return;
+    }
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'quality_report.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+    showSuccess('Report exported!');
+}
+
+// ============ DOWNLOAD CSV ============
+function downloadBookCSV() {
+    if (allMCQs.length === 0) {
+        showError('No MCQs to download.');
+        return;
+    }
+
+    const header = ['topic', 'question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'difficulty', 'explanation'];
+    const rows = [header];
+    rows.push(...allMCQs);
+
+    let csvContent = rows.map(row => {
+        return row.map(cell => {
+            const str = String(cell || '');
+            return str.includes(',') || str.includes('"') || str.includes('\n') ? '"' + str.replace(/"/g, '""') + '"' : str;
+        }).join(',');
+    }).join('\n');
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'mcqs.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+// ===== ADD THIS FUNCTION HERE =====
+// Request throttling - tracks last request time to prevent rate limiting
+let lastRequestTime = 0;
+
+async function throttledRequest(fn, delay = 3000) {
+    // Track last request time
+    const now = Date.now();
+    const timeSince = now - lastRequestTime;
+    if (timeSince < delay) {
+        const waitTime = delay - timeSince;
+        // Show rate limit status
+        const rateLimitInfo = document.getElementById('rateLimitInfo');
+        const rateLimitWait = document.getElementById('rateLimitWait');
+        if (rateLimitInfo) {
+            rateLimitInfo.style.display = 'block';
+            if (rateLimitWait) {
+                rateLimitWait.textContent = Math.ceil(waitTime / 1000);
+            }
+            // Auto-hide after 3 seconds
+            setTimeout(() => {
+                rateLimitInfo.style.display = 'none';
+            }, 3000);
+        }
+        await sleep(waitTime);
+    }
+    lastRequestTime = Date.now();
+    return await fn();
+}
+// ===== END OF ADDED FUNCTION =====
+// ============ CLEAR ALL ============
+function clearAll() {
+    if (!confirm('Clear all data?')) return;
+    bookStructure = { chapters: [] };
+    allMCQs = [];
+    extractedText = '';
+    topicRegistry = {};
+    topicValidationResults = {};
+    if (textInput) textInput.value = '';
+    if (resultsPreview) resultsPreview.classList.remove('show');
+    if (statsBox) statsBox.classList.remove('show');
+    if (downloadBookBtn) downloadBookBtn.disabled = true;
+    if (generateTopicBtn) generateTopicBtn.disabled = true;
+    if (progress) progress.classList.remove('show');
+    if (errorMsg) errorMsg.classList.remove('show');
+    if (successMsg) successMsg.classList.remove('show');
+    if (treeContainer) treeContainer.innerHTML = '<p style="color:#888;text-align:center;padding:20px;">No topics.</p>';
+    if (selectedTopicInfo) selectedTopicInfo.style.display = 'none';
+    if (bookStats) bookStats.innerHTML = '';
+    if (topicSelect) topicSelect.innerHTML = '<option value="">-- Select a topic --</option>';
+    if (topicRegistryContent) topicRegistryContent.innerHTML = '<span style="color:#888;">No topics registered.</span>';
+    if (validationStatus) validationStatus.textContent = 'Not validated';
+    if (confidenceFill) confidenceFill.style.width = '0%';
+    if (qualityReportContent) qualityReportContent.innerHTML = '<p style="color:#888;text-align:center;padding:20px;">Click "Generate Report" to analyze topic quality.</p>';
+    previewContent.innerHTML = '<p style="color:#888;text-align:center;padding:40px;">No MCQs.</p>';
+    updateContentStatus();
+    if (batchProgress) batchProgress.classList.remove('show');
+    if (retryProgress) retryProgress.classList.remove('show');
+    if (csvPreview) csvPreview.classList.remove('show');
+    csvTopicData = [];
+    failedTopicsForRetry = [];
+    isBatchRunning = false;
+    generateAllBtn.disabled = false;
+    generateAllBtn2.disabled = false;
+}
+
+// ============ INIT ============
+log('🚀 Book to MCQ Generator loaded - Enhanced Topic Extraction with MCQ Count from CSV');
+log('✨ CSV Column 3 = Number of MCQs to generate per topic');
+log('✨ Example: ,(a) Disillusionment and frustration,33 → generates 33 MCQs');
+log('✨ Auto-validates topics after extraction with accurate scoring');
+log('✨ Automatic validation and fixing of mismatched correct answers!');
+updateContentStatus();
+updateTopicRegistry();
+</script>
+</body>
+</html>
