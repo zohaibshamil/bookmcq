@@ -1885,7 +1885,6 @@ async function generateTopicMCQsWithResult(chapterIdx, topicIdx, topicTitle, top
         return { success: false, mcqs: [], count: 0, error: 'No API key provided' };
     }
 
-    // Validate API key format (basic check)
     if (!key.startsWith('csk-') && !key.startsWith('sk-')) {
         return { success: false, mcqs: [], count: 0, error: 'Invalid API key format. Cerebras keys start with "csk-" or "sk-"' };
     }
@@ -1894,7 +1893,6 @@ async function generateTopicMCQsWithResult(chapterIdx, topicIdx, topicTitle, top
         return { success: false, mcqs: [], count: 0, error: 'Content too short (minimum 50 characters)' };
     }
 
-    // Get MCQ count from topic object
     let actualTopic = null;
     if (bookStructure.chapters && bookStructure.chapters[chapterIdx]) {
         actualTopic = bookStructure.chapters[chapterIdx].topics[topicIdx];
@@ -1926,32 +1924,29 @@ IMPORTANT: Return EXACTLY ${effectiveNumQuestions} rows of data. Do not return m
 
         log(`${isRetry ? '🔄 RETRY' : '📤'} Sending request for: ${topicTitle}`);
 
-        // ===== FIXED: Add delay for rate limiting =====
-        if (isRetry) {
-            await sleep(2000); // 2 second delay before retry
-        }
-
-        const response = await fetch('https://api.cerebras.ai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Authorization': 'Bearer ' + key,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                model: model,
-                messages: [
-                    { role: 'system', content: 'Return ONLY CSV data. Each question must be on a separate line with fields separated by commas. Use \\( ... \\) for all mathematical expressions and equations.' },
-                    { role: 'user', content: prompt }
-                ],
-                temperature: 0.7,
-                max_tokens: 8000
-            })
-        });
+        // ===== USE THROTTLED REQUEST =====
+        const response = await throttledRequest(async () => {
+            return await fetch('https://api.cerebras.ai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + key,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: model,
+                    messages: [
+                        { role: 'system', content: 'Return ONLY CSV data. Each question must be on a separate line with fields separated by commas. Use \\( ... \\) for all mathematical expressions and equations.' },
+                        { role: 'user', content: prompt }
+                    ],
+                    temperature: 0.7,
+                    max_tokens: 8000
+                })
+            });
+        }, isRetry ? 5000 : 3000);
 
         const rawText = await response.text();
         log(`${isRetry ? '🔄 RETRY' : '📥'} Response for "${topicTitle}": ${rawText.length} chars, status ${response.status}`);
 
-        // ===== FIXED: Better error handling for 429 =====
         if (!response.ok) {
             let errorMessage = `API error (${response.status})`;
             
@@ -1961,31 +1956,39 @@ IMPORTANT: Return EXACTLY ${effectiveNumQuestions} rows of data. Do not return m
                     errorMessage = errorData.error.message || errorMessage;
                 }
             } catch (e) {
-                // Not JSON, use raw text
                 if (rawText.includes('rate limit')) {
                     errorMessage = 'Rate limit exceeded. Please wait a few seconds and try again.';
                 }
             }
             
             if (response.status === 429) {
-                // ===== FIXED: Exponential backoff for rate limiting =====
-                const waitTime = isRetry ? 5000 : 3000; // Wait longer on retry
+                const waitTime = isRetry ? 8000 : 5000;
                 log(`⏳ Rate limited. Waiting ${waitTime/1000}s before retry...`);
                 
+                const rateLimitInfo = document.getElementById('rateLimitInfo');
+                const rateLimitWait = document.getElementById('rateLimitWait');
+                if (rateLimitInfo) {
+                    rateLimitInfo.style.display = 'block';
+                    if (rateLimitWait) {
+                        rateLimitWait.textContent = Math.ceil(waitTime / 1000);
+                    }
+                    setTimeout(() => {
+                        rateLimitInfo.style.display = 'none';
+                    }, waitTime + 2000);
+                }
+                
                 if (!isRetry) {
-                    // Try once more with delay
                     await sleep(waitTime);
                     return await generateTopicMCQsWithResult(
                         chapterIdx, topicIdx, topicTitle, topicContent, 
                         numQuestions, model, hots, true
                     );
                 } else {
-                    // Already retrying, give up
                     return { 
                         success: false, 
                         mcqs: [], 
                         count: 0, 
-                        error: 'Rate limit exceeded. Please wait before generating more MCQs.' 
+                        error: 'Rate limit exceeded. Please wait 60 seconds before generating more MCQs.' 
                     };
                 }
             }
@@ -1994,7 +1997,6 @@ IMPORTANT: Return EXACTLY ${effectiveNumQuestions} rows of data. Do not return m
             return { success: false, mcqs: [], count: 0, error: errorMessage };
         }
 
-        // ... rest of the function remains the same ...
         let data;
         try {
             data = JSON.parse(rawText);
@@ -2024,7 +2026,6 @@ IMPORTANT: Return EXACTLY ${effectiveNumQuestions} rows of data. Do not return m
             return { success: false, mcqs: [], count: 0, error: 'API returned empty or invalid response' };
         }
 
-        // ... parse MCQs and return ...
         let mcqs = parseCSVResponseImproved(content, topicTitle);
         log(`Parsed ${mcqs.length} MCQs (requested: ${effectiveNumQuestions})`);
 
