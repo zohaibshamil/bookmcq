@@ -886,6 +886,60 @@
         .deploy-log .log-success { color: #34d399; }
         .deploy-log .log-error { color: #f87171; }
         .deploy-log .log-warning { color: #fbbf24; }
+
+        /* Deploy Path Preview Styles */
+        .deploy-path-preview {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 12px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #166534;
+        }
+        .deploy-path-preview .path-icon {
+            margin-right: 8px;
+        }
+        .deploy-path-preview .path-folder {
+            color: #2563eb;
+            font-weight: 600;
+        }
+        .deploy-path-preview .path-file {
+            color: #7c3aed;
+            font-weight: 600;
+        }
+        .deploy-confirm-modal .modal-content {
+            max-width: 550px;
+        }
+        .deploy-confirm-modal .confirm-warning {
+            background: #fef3c7;
+            border: 1px solid #fcd34d;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 13px;
+            color: #92400e;
+            margin: 10px 0;
+        }
+        .deploy-confirm-modal .file-list {
+            max-height: 150px;
+            overflow-y: auto;
+            background: #f8fafc;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            border: 1px solid #e2e8f0;
+            margin: 8px 0;
+        }
+        .deploy-confirm-modal .file-list .file-item {
+            padding: 2px 0;
+            border-bottom: 1px solid #f1f5f9;
+            color: #1e293b;
+        }
+        .deploy-confirm-modal .file-list .file-item:last-child {
+            border-bottom: none;
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -7457,7 +7511,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     let seoSelectedBookSlug = '';
     let seoSelectedBookTitle = '';
 
-    // ============ GITHUB DEPLOYMENT FUNCTIONS (FIXED) ============
+    // ============ GITHUB DEPLOYMENT FUNCTIONS (FIXED WITH CONFIRMATION AND PATH PREVIEW) ============
     
     // Track selected items for deployment
     let selectedDeployBookId = null;
@@ -7510,7 +7564,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
         return data || [];
     }
 
-    // ============ SHOW DEPLOY BOOK SELECTION MODAL ============
+    // ============ SHOW DEPLOY BOOK SELECTION MODAL WITH PATH PREVIEW ============
     async function showDeployBookSelection() {
         const books = await loadDeployBooks();
         if (books.length === 0) {
@@ -7521,20 +7575,24 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
         // Create modal HTML
         const modal = document.createElement('div');
         modal.id = 'deployBookModal';
-        modal.className = 'modal';
+        modal.className = 'modal deploy-confirm-modal';
         modal.innerHTML = `
-            <div class="modal-content p-6" style="max-width: 500px;">
-                <h3 class="text-xl font-bold mb-4">📚 Select Book to Deploy</h3>
-                <p class="text-sm text-gray-600 mb-4">Choose which book's index page to deploy.</p>
+            <div class="modal-content p-6">
+                <h3 class="text-xl font-bold mb-4">📚 Deploy Book</h3>
+                <p class="text-sm text-gray-600 mb-4">Select which book's index page to deploy to GitHub.</p>
                 <div class="mb-4">
                     <label class="block text-sm font-semibold text-gray-700 mb-2">Select Book:</label>
                     <select id="deployBookSelect" class="w-full p-2 border rounded-lg">
                         <option value="">-- Select a Book --</option>
-                        ${books.map(b => `<option value="${b.id}" data-slug="${b.slug}">${escapeHtml(b.title)}</option>`).join('')}
+                        ${books.map(b => `<option value="${b.id}" data-slug="${b.slug}" data-title="${escapeHtml(b.title)}">${escapeHtml(b.title)}</option>`).join('')}
                     </select>
                 </div>
-                <div class="flex gap-2">
-                    <button id="confirmDeployBookBtn" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition">Deploy Book</button>
+                <div id="deployBookPathPreview" class="deploy-path-preview hidden">
+                    <span class="path-icon">📁</span>
+                    Will be saved to: <span class="path-folder" id="deployBookPath">books/</span><span class="path-file" id="deployBookFile">index.html</span>
+                </div>
+                <div class="flex gap-2 mt-4">
+                    <button id="confirmDeployBookBtn" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition" disabled>Deploy Book</button>
                     <button id="closeDeployBookModal" class="bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-500 transition">Cancel</button>
                 </div>
             </div>
@@ -7542,16 +7600,40 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
         document.body.appendChild(modal);
         modal.classList.remove('hidden');
         
-        // Handle confirm
+        const select = document.getElementById('deployBookSelect');
+        const pathPreview = document.getElementById('deployBookPathPreview');
+        const pathEl = document.getElementById('deployBookPath');
+        const confirmBtn = document.getElementById('confirmDeployBookBtn');
+        
+        // Update path preview when book is selected
+        select.addEventListener('change', function() {
+            const slug = this.options[this.selectedIndex]?.dataset?.slug;
+            const title = this.options[this.selectedIndex]?.dataset?.title;
+            if (slug && title) {
+                pathEl.textContent = `books/${slug}/`;
+                pathPreview.classList.remove('hidden');
+                confirmBtn.disabled = false;
+            } else {
+                pathPreview.classList.add('hidden');
+                confirmBtn.disabled = true;
+            }
+        });
+        
+        // Handle confirm with confirmation dialog
         document.getElementById('confirmDeployBookBtn').addEventListener('click', async function() {
-            const select = document.getElementById('deployBookSelect');
             const bookId = select.value;
             if (!bookId) {
                 showToast('Please select a book', true);
                 return;
             }
             const bookSlug = select.options[select.selectedIndex].dataset.slug;
-            const bookTitle = select.options[select.selectedIndex].text;
+            const bookTitle = select.options[select.selectedIndex].dataset.title;
+            
+            // Final confirmation
+            if (!confirm(`📚 Deploy "${bookTitle}" to:\n\n📁 books/${bookSlug}/index.html\n\nThis will replace the existing file on GitHub. Continue?`)) {
+                return;
+            }
+            
             modal.classList.add('hidden');
             modal.remove();
             await deploySingleBook(bookId, bookSlug, bookTitle);
@@ -7652,7 +7734,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
         }
     }
 
-    // ============ SHOW DEPLOY CHAPTER SELECTION MODAL ============
+    // ============ SHOW DEPLOY CHAPTER SELECTION MODAL WITH PATH PREVIEW ============
     async function showDeployChapterSelection() {
         const books = await loadDeployBooks();
         if (books.length === 0) {
@@ -7662,25 +7744,29 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
         
         const modal = document.createElement('div');
         modal.id = 'deployChapterModal';
-        modal.className = 'modal';
+        modal.className = 'modal deploy-confirm-modal';
         modal.innerHTML = `
-            <div class="modal-content p-6" style="max-width: 500px;">
-                <h3 class="text-xl font-bold mb-4">📖 Select Chapter to Deploy</h3>
-                <p class="text-sm text-gray-600 mb-4">Choose a book and chapter to deploy.</p>
+            <div class="modal-content p-6">
+                <h3 class="text-xl font-bold mb-4">📖 Deploy Chapter</h3>
+                <p class="text-sm text-gray-600 mb-4">Select a book and chapter to deploy to GitHub.</p>
                 <div class="mb-3">
                     <label class="block text-sm font-semibold text-gray-700 mb-2">Select Book:</label>
                     <select id="deployChapterBookSelect" class="w-full p-2 border rounded-lg">
                         <option value="">-- Select a Book --</option>
-                        ${books.map(b => `<option value="${b.id}">${escapeHtml(b.title)}</option>`).join('')}
+                        ${books.map(b => `<option value="${b.id}" data-slug="${b.slug}" data-title="${escapeHtml(b.title)}">${escapeHtml(b.title)}</option>`).join('')}
                     </select>
                 </div>
-                <div class="mb-4">
+                <div class="mb-3">
                     <label class="block text-sm font-semibold text-gray-700 mb-2">Select Chapter:</label>
                     <select id="deployChapterSelect" class="w-full p-2 border rounded-lg" disabled>
                         <option value="">Select a book first</option>
                     </select>
                 </div>
-                <div class="flex gap-2">
+                <div id="deployChapterPathPreview" class="deploy-path-preview hidden">
+                    <span class="path-icon">📁</span>
+                    Will be saved to: <span class="path-folder" id="deployChapterPath">books/</span><span class="path-file" id="deployChapterFile">.html</span>
+                </div>
+                <div class="flex gap-2 mt-4">
                     <button id="confirmDeployChapterBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition" disabled>Deploy Chapter</button>
                     <button id="closeDeployChapterModal" class="bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-500 transition">Cancel</button>
                 </div>
@@ -7691,14 +7777,20 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
         
         const bookSelect = document.getElementById('deployChapterBookSelect');
         const chapterSelect = document.getElementById('deployChapterSelect');
+        const pathPreview = document.getElementById('deployChapterPathPreview');
+        const pathEl = document.getElementById('deployChapterPath');
+        const fileEl = document.getElementById('deployChapterFile');
         const confirmBtn = document.getElementById('confirmDeployChapterBtn');
         
         // Load chapters when book is selected
         bookSelect.addEventListener('change', async function() {
             const bookId = this.value;
+            const bookSlug = this.options[this.selectedIndex]?.dataset?.slug;
+            const bookTitle = this.options[this.selectedIndex]?.dataset?.title;
             if (!bookId) {
                 chapterSelect.innerHTML = '<option value="">Select a book first</option>';
                 chapterSelect.disabled = true;
+                pathPreview.classList.add('hidden');
                 confirmBtn.disabled = true;
                 return;
             }
@@ -7707,17 +7799,29 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
             chapterSelect.innerHTML = '<option value="">-- Select a Chapter --</option>';
             chapters.forEach(ch => {
                 const display = ch.chapter_number ? `Ch ${ch.chapter_number}: ${ch.name}` : ch.name;
-                chapterSelect.innerHTML += `<option value="${ch.id}" data-slug="${ch.slug}">${escapeHtml(display)}</option>`;
+                chapterSelect.innerHTML += `<option value="${ch.id}" data-slug="${ch.slug}" data-name="${escapeHtml(ch.name)}">${escapeHtml(display)}</option>`;
             });
             chapterSelect.disabled = false;
             confirmBtn.disabled = true;
+            pathPreview.classList.add('hidden');
         });
         
+        // Update path preview when chapter is selected
         chapterSelect.addEventListener('change', function() {
-            confirmBtn.disabled = !this.value;
+            const chapterSlug = this.options[this.selectedIndex]?.dataset?.slug;
+            const bookSlug = bookSelect.options[bookSelect.selectedIndex]?.dataset?.slug;
+            if (chapterSlug && bookSlug) {
+                pathEl.textContent = `books/${bookSlug}/`;
+                fileEl.textContent = `${chapterSlug}.html`;
+                pathPreview.classList.remove('hidden');
+                confirmBtn.disabled = false;
+            } else {
+                pathPreview.classList.add('hidden');
+                confirmBtn.disabled = true;
+            }
         });
         
-        // Handle confirm
+        // Handle confirm with confirmation dialog
         confirmBtn.addEventListener('click', async function() {
             const bookId = bookSelect.value;
             const chapterId = chapterSelect.value;
@@ -7728,7 +7832,13 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
             
             const book = books.find(b => b.id == bookId);
             const chapterSlug = chapterSelect.options[chapterSelect.selectedIndex].dataset.slug;
-            const chapterName = chapterSelect.options[chapterSelect.selectedIndex].text;
+            const chapterName = chapterSelect.options[chapterSelect.selectedIndex].dataset.name;
+            const bookTitle = bookSelect.options[bookSelect.selectedIndex].dataset.title;
+            
+            // Final confirmation
+            if (!confirm(`📖 Deploy "${chapterName}" from "${bookTitle}" to:\n\n📁 books/${book.slug}/${chapterSlug}.html\n\nThis will replace the existing file on GitHub. Continue?`)) {
+                return;
+            }
             
             modal.classList.add('hidden');
             modal.remove();
@@ -7816,7 +7926,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
         }
     }
 
-    // ============ SHOW DEPLOY TOPIC SELECTION MODAL ============
+    // ============ SHOW DEPLOY TOPIC SELECTION MODAL WITH PATH PREVIEW ============
     async function showDeployTopicSelection() {
         const books = await loadDeployBooks();
         if (books.length === 0) {
@@ -7826,16 +7936,16 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
         
         const modal = document.createElement('div');
         modal.id = 'deployTopicModal';
-        modal.className = 'modal';
+        modal.className = 'modal deploy-confirm-modal';
         modal.innerHTML = `
-            <div class="modal-content p-6" style="max-width: 500px;">
-                <h3 class="text-xl font-bold mb-4">📝 Select Topic to Deploy</h3>
-                <p class="text-sm text-gray-600 mb-4">Choose a book, chapter, and topic to deploy.</p>
+            <div class="modal-content p-6">
+                <h3 class="text-xl font-bold mb-4">📝 Deploy Topic</h3>
+                <p class="text-sm text-gray-600 mb-4">Select a book, chapter, and topic to deploy to GitHub.</p>
                 <div class="mb-3">
                     <label class="block text-sm font-semibold text-gray-700 mb-2">Select Book:</label>
                     <select id="deployTopicBookSelect" class="w-full p-2 border rounded-lg">
                         <option value="">-- Select a Book --</option>
-                        ${books.map(b => `<option value="${b.id}">${escapeHtml(b.title)}</option>`).join('')}
+                        ${books.map(b => `<option value="${b.id}" data-slug="${b.slug}" data-title="${escapeHtml(b.title)}">${escapeHtml(b.title)}</option>`).join('')}
                     </select>
                 </div>
                 <div class="mb-3">
@@ -7844,13 +7954,17 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
                         <option value="">Select a book first</option>
                     </select>
                 </div>
-                <div class="mb-4">
+                <div class="mb-3">
                     <label class="block text-sm font-semibold text-gray-700 mb-2">Select Topic:</label>
                     <select id="deployTopicSelect" class="w-full p-2 border rounded-lg" disabled>
                         <option value="">Select a chapter first</option>
                     </select>
                 </div>
-                <div class="flex gap-2">
+                <div id="deployTopicPathPreview" class="deploy-path-preview hidden">
+                    <span class="path-icon">📁</span>
+                    Will be saved to: <span class="path-folder" id="deployTopicPath">books/</span><span class="path-file" id="deployTopicFile">.html</span>
+                </div>
+                <div class="flex gap-2 mt-4">
                     <button id="confirmDeployTopicBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition" disabled>Deploy Topic</button>
                     <button id="closeDeployTopicModal" class="bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-500 transition">Cancel</button>
                 </div>
@@ -7862,6 +7976,9 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
         const bookSelect = document.getElementById('deployTopicBookSelect');
         const chapterSelect = document.getElementById('deployTopicChapterSelect');
         const topicSelect = document.getElementById('deployTopicSelect');
+        const pathPreview = document.getElementById('deployTopicPathPreview');
+        const pathEl = document.getElementById('deployTopicPath');
+        const fileEl = document.getElementById('deployTopicFile');
         const confirmBtn = document.getElementById('confirmDeployTopicBtn');
         
         // Load chapters when book is selected
@@ -7872,6 +7989,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
                 chapterSelect.disabled = true;
                 topicSelect.innerHTML = '<option value="">Select a chapter first</option>';
                 topicSelect.disabled = true;
+                pathPreview.classList.add('hidden');
                 confirmBtn.disabled = true;
                 return;
             }
@@ -7880,20 +7998,23 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
             chapterSelect.innerHTML = '<option value="">-- Select a Chapter --</option>';
             chapters.forEach(ch => {
                 const display = ch.chapter_number ? `Ch ${ch.chapter_number}: ${ch.name}` : ch.name;
-                chapterSelect.innerHTML += `<option value="${ch.id}">${escapeHtml(display)}</option>`;
+                chapterSelect.innerHTML += `<option value="${ch.id}" data-slug="${ch.slug}" data-name="${escapeHtml(ch.name)}">${escapeHtml(display)}</option>`;
             });
             chapterSelect.disabled = false;
             topicSelect.innerHTML = '<option value="">Select a chapter first</option>';
             topicSelect.disabled = true;
+            pathPreview.classList.add('hidden');
             confirmBtn.disabled = true;
         });
         
         // Load topics when chapter is selected
         chapterSelect.addEventListener('change', async function() {
             const chapterId = this.value;
+            const chapterSlug = this.options[this.selectedIndex]?.dataset?.slug;
             if (!chapterId) {
                 topicSelect.innerHTML = '<option value="">Select a chapter first</option>';
                 topicSelect.disabled = true;
+                pathPreview.classList.add('hidden');
                 confirmBtn.disabled = true;
                 return;
             }
@@ -7901,17 +8022,30 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
             const topics = await loadDeployTopics(chapterId);
             topicSelect.innerHTML = '<option value="">-- Select a Topic --</option>';
             topics.forEach(t => {
-                topicSelect.innerHTML += `<option value="${t.id}" data-slug="${t.slug}">${escapeHtml(t.name)}</option>`;
+                topicSelect.innerHTML += `<option value="${t.id}" data-slug="${t.slug}" data-name="${escapeHtml(t.name)}">${escapeHtml(t.name)}</option>`;
             });
             topicSelect.disabled = false;
             confirmBtn.disabled = true;
+            pathPreview.classList.add('hidden');
         });
         
+        // Update path preview when topic is selected
         topicSelect.addEventListener('change', function() {
-            confirmBtn.disabled = !this.value;
+            const topicSlug = this.options[this.selectedIndex]?.dataset?.slug;
+            const chapterSlug = chapterSelect.options[chapterSelect.selectedIndex]?.dataset?.slug;
+            const bookSlug = bookSelect.options[bookSelect.selectedIndex]?.dataset?.slug;
+            if (topicSlug && chapterSlug && bookSlug) {
+                pathEl.textContent = `books/${bookSlug}/${chapterSlug}/topics/`;
+                fileEl.textContent = `${topicSlug}.html`;
+                pathPreview.classList.remove('hidden');
+                confirmBtn.disabled = false;
+            } else {
+                pathPreview.classList.add('hidden');
+                confirmBtn.disabled = true;
+            }
         });
         
-        // Handle confirm
+        // Handle confirm with confirmation dialog
         confirmBtn.addEventListener('click', async function() {
             const bookId = bookSelect.value;
             const chapterId = chapterSelect.value;
@@ -7922,9 +8056,15 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
             }
             
             const book = books.find(b => b.id == bookId);
-            const chapterSlug = chapterSelect.options[chapterSelect.selectedIndex].dataset?.slug || '';
+            const chapterSlug = chapterSelect.options[chapterSelect.selectedIndex].dataset.slug;
             const topicSlug = topicSelect.options[topicSelect.selectedIndex].dataset.slug;
-            const topicName = topicSelect.options[topicSelect.selectedIndex].text;
+            const topicName = topicSelect.options[topicSelect.selectedIndex].dataset.name;
+            const chapterName = chapterSelect.options[chapterSelect.selectedIndex].dataset.name;
+            
+            // Final confirmation
+            if (!confirm(`📝 Deploy "${topicName}" from "${chapterName}" to:\n\n📁 books/${book.slug}/${chapterSlug}/topics/${topicSlug}.html\n\nThis will replace the existing file on GitHub. Continue?`)) {
+                return;
+            }
             
             modal.classList.add('hidden');
             modal.remove();
@@ -8083,6 +8223,271 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
         return { repo, branch, token };
     }
 
+    // ============ GITHUB SETTINGS FUNCTIONS ============
+    function loadGitHubSettings() {
+        try {
+            const saved = localStorage.getItem('bookmcq_github_config');
+            if (saved) {
+                const config = JSON.parse(saved);
+                if (config.repo) document.getElementById('githubRepo').value = config.repo;
+                if (config.branch) document.getElementById('githubBranch').value = config.branch;
+                if (config.token) document.getElementById('githubToken').value = config.token;
+            }
+        } catch(e) { /* ignore */ }
+    }
+
+    // Save GitHub Settings
+    document.getElementById('saveGitHubSettings').addEventListener('click', function() {
+        const config = {
+            repo: document.getElementById('githubRepo').value.trim(),
+            branch: document.getElementById('githubBranch').value.trim(),
+            token: document.getElementById('githubToken').value.trim()
+        };
+        
+        if (!config.repo || !config.token) {
+            showToast('Please enter Repository and Token', true);
+            return;
+        }
+        
+        localStorage.setItem('bookmcq_github_config', JSON.stringify(config));
+        showToast('✅ Settings saved!');
+    });
+
+    // ============ DEPLOY ALL FUNCTION (SITEMAP) ============
+    async function deployToGitHub(type) {
+        // Only sitemap and all are handled here now
+        const config = getGitHubConfig();
+        if (!config) return;
+        
+        if (type === 'sitemap') {
+            if (!window.sitemapData) {
+                showToast('Please generate sitemap first (Sitemap tab)', true);
+                addDeployLog('⚠️ Please generate sitemap first', 'warning');
+                return;
+            }
+            
+            addDeployLog('🗺️ Deploying sitemap files...', 'info');
+            updateDeployStatus('sitemap', '⏳ Deploying...');
+            setDeployButtonState('sitemap', true, '<i class="fas fa-spinner fa-spin"></i> Deploying...');
+            
+            try {
+                const files = [];
+                files.push({
+                    path: 'sitemap.xml',
+                    content: window.sitemapData.indexXml
+                });
+                window.sitemapData.files.forEach((file) => {
+                    files.push({
+                        path: file.name,
+                        content: file.content
+                    });
+                });
+                
+                // Show confirmation
+                if (!confirm(`🗺️ Deploy ${files.length} sitemap files to:\n\n📁 Root directory\n\nThis will replace existing sitemap files. Continue?`)) {
+                    setDeployButtonState('sitemap', false, '<i class="fas fa-cloud-upload-alt"></i> Deploy');
+                    return;
+                }
+                
+                const result = await commitToGitHub(files, config);
+                if (result.success) {
+                    addDeployLog(`✅ Deployed ${files.length} sitemap files successfully!`, 'success');
+                    updateDeployStatus('sitemap', `✅ Done`);
+                    showToast(`✅ Deployed ${files.length} sitemap files!`);
+                } else {
+                    throw new Error(result.message || 'Commit failed');
+                }
+            } catch (error) {
+                addDeployLog(`❌ Error deploying sitemap: ${error.message}`, 'error');
+                updateDeployStatus('sitemap', '❌ Failed');
+                showToast('❌ Deployment failed: ' + error.message, true);
+            } finally {
+                setDeployButtonState('sitemap', false, '<i class="fas fa-cloud-upload-alt"></i> Deploy');
+            }
+        } else if (type === 'all') {
+            // Deploy everything - use the existing deployToGitHub for all
+            // We'll keep the original deployToGitHub for backward compatibility
+            // But we need to make sure it shows proper confirmation
+            if (!confirm(`🚀 Deploy ALL pages to GitHub?\n\nThis will deploy books, chapters, topics, and sitemap.\n\nThis action may take a while. Continue?`)) {
+                return;
+            }
+            // Use the original deployToGitHub function
+            originalDeployAll();
+        }
+    }
+
+    // Keep original deploy all as a separate function
+    async function originalDeployAll() {
+        const config = getGitHubConfig();
+        if (!config) return;
+        
+        addDeployLog('🚀 Deploying ALL pages...', 'info');
+        updateDeployStatus('all', '⏳ Deploying...');
+        setDeployButtonState('all', true, '<i class="fas fa-spinner fa-spin"></i> Deploying...');
+        
+        try {
+            // Fetch all data
+            const [booksRes, chaptersRes, topicsRes, questionsRes] = await Promise.all([
+                _supabase.from('books').select('*'),
+                _supabase.from('chapters').select('*, books(*)'),
+                _supabase.from('subtopics').select('*, chapters(*)'),
+                _supabase.from('questions').select('*, chapters(*), subtopics(*)')
+            ]);
+            
+            const books = booksRes.data || [];
+            const chapters = chaptersRes.data || [];
+            const topics = topicsRes.data || [];
+            const questions = questionsRes.data || [];
+            
+            addDeployLog(`📚 Found ${books.length} books, ${chapters.length} chapters, ${topics.length} topics, ${questions.length} questions`, 'info');
+            
+            const files = [];
+            let totalFiles = 0;
+            
+            // Generate books
+            books.forEach(book => {
+                const slug = book.slug || createSlug(book.title);
+                const bookChapters = chapters.filter(c => c.book_id === book.id);
+                const bookTopics = topics.filter(t => bookChapters.some(c => c.id === t.chapter_id));
+                const bookQuestions = questions.filter(q => bookChapters.some(c => c.id === q.chapter_id));
+                
+                const chapterQCounts = {};
+                bookChapters.forEach(ch => {
+                    chapterQCounts[ch.id] = bookQuestions.filter(q => q.chapter_id === ch.id).length;
+                });
+                
+                const stats = { easy: 0, medium: 0, hard: 0 };
+                bookQuestions.forEach(q => {
+                    const diff = (q.difficulty || '').toLowerCase();
+                    if (diff === 'easy') stats.easy++;
+                    else if (diff === 'medium') stats.medium++;
+                    else if (diff === 'hard') stats.hard++;
+                });
+                
+                const content = generateBookIndexPage(book, bookChapters, bookTopics, {}, bookQuestions.length, chapterQCounts, stats);
+                files.push({ path: `books/${slug}/index.html`, content: content });
+                totalFiles++;
+            });
+            
+            // Generate chapters
+            chapters.forEach(chapter => {
+                const book = books.find(b => b.id === chapter.book_id);
+                if (!book) return;
+                
+                const bookSlug = book.slug || createSlug(book.title);
+                const chapterSlug = chapter.slug || createSlug(chapter.name);
+                const chapterQuestions = questions.filter(q => q.chapter_id === chapter.id);
+                const chapterTopics = topics.filter(t => t.chapter_id === chapter.id);
+                
+                const optionsMap = {};
+                chapterQuestions.forEach(q => { optionsMap[q.id] = ['', '', '', '']; });
+                
+                const stats = { easy: 0, medium: 0, hard: 0 };
+                chapterQuestions.forEach(q => {
+                    const diff = (q.difficulty || '').toLowerCase();
+                    if (diff === 'easy') stats.easy++;
+                    else if (diff === 'medium') stats.medium++;
+                    else if (diff === 'hard') stats.hard++;
+                });
+                
+                const content = generateChapterPage(book, chapter, chapterTopics, chapterQuestions, stats, optionsMap);
+                files.push({ path: `books/${bookSlug}/${chapterSlug}.html`, content: content });
+                totalFiles++;
+            });
+            
+            // Generate topics
+            topics.forEach(topic => {
+                const chapter = chapters.find(c => c.id === topic.chapter_id);
+                if (!chapter) return;
+                const book = books.find(b => b.id === chapter.book_id);
+                if (!book) return;
+                
+                const bookSlug = book.slug || createSlug(book.title);
+                const chapterSlug = chapter.slug || createSlug(chapter.name);
+                const topicSlug = topic.slug || createSlug(topic.name);
+                const topicQuestions = questions.filter(q => q.topic_id === topic.id);
+                
+                const optionsMap = {};
+                topicQuestions.forEach(q => { optionsMap[q.id] = ['', '', '', '']; });
+                
+                const stats = { easy: 0, medium: 0, hard: 0 };
+                topicQuestions.forEach(q => {
+                    const diff = (q.difficulty || '').toLowerCase();
+                    if (diff === 'easy') stats.easy++;
+                    else if (diff === 'medium') stats.medium++;
+                    else if (diff === 'hard') stats.hard++;
+                });
+                
+                const allBookTopics = topics.filter(t => t.chapter_id === chapter.id);
+                const content = generateTopicPage(book, chapter, topic, topicQuestions, stats, allBookTopics, optionsMap);
+                files.push({ path: `books/${bookSlug}/${chapterSlug}/topics/${topicSlug}.html`, content: content });
+                totalFiles++;
+            });
+            
+            // Add sitemap
+            if (window.sitemapData) {
+                files.push({ path: 'sitemap.xml', content: window.sitemapData.indexXml });
+                window.sitemapData.files.forEach((file) => {
+                    files.push({ path: file.name, content: file.content });
+                });
+                totalFiles += window.sitemapData.files.length + 1;
+            }
+            
+            addDeployLog(`📦 ${totalFiles} files ready for deployment`, 'success');
+            
+            // Confirmation
+            if (!confirm(`🚀 Deploy ${totalFiles} files to GitHub?\n\nThis includes all books, chapters, topics, and sitemap.\n\nContinue?`)) {
+                setDeployButtonState('all', false, '<i class="fas fa-bolt"></i> Deploy All');
+                return;
+            }
+            
+            const result = await commitToGitHub(files, config);
+            if (result.success) {
+                addDeployLog(`✅ Successfully deployed ${totalFiles} files to GitHub!`, 'success');
+                updateDeployStatus('all', `✅ Done (${totalFiles} files)`);
+                showToast(`✅ Deployed ${totalFiles} files to GitHub!`);
+            } else {
+                throw new Error(result.message || 'Commit failed');
+            }
+            
+        } catch (error) {
+            addDeployLog(`❌ Error: ${error.message}`, 'error');
+            updateDeployStatus('all', '❌ Failed');
+            showToast('❌ Deployment failed: ' + error.message, true);
+        } finally {
+            setDeployButtonState('all', false, '<i class="fas fa-bolt"></i> Deploy All');
+        }
+    }
+
+    // ============ HELPER FUNCTIONS ============
+    function addDeployLog(message, type = 'info') {
+        const log = document.getElementById('deployLogContent');
+        if (!log) return;
+        const colors = {
+            info: 'text-blue-400',
+            success: 'text-green-400',
+            error: 'text-red-400',
+            warning: 'text-yellow-400'
+        };
+        const color = colors[type] || colors.info;
+        const timestamp = new Date().toLocaleTimeString();
+        log.innerHTML += `<div class="${color}">[${timestamp}] ${message}</div>`;
+        log.scrollTop = log.scrollHeight;
+    }
+
+    function updateDeployStatus(type, status) {
+        const el = document.getElementById(`deploy${type.charAt(0).toUpperCase() + type.slice(1)}Status`);
+        if (el) el.textContent = status;
+    }
+
+    function setDeployButtonState(type, disabled, label = null) {
+        const btn = document.getElementById(`deploy${type.charAt(0).toUpperCase() + type.slice(1)}Btn`);
+        if (btn) {
+            btn.disabled = disabled;
+            if (label) btn.innerHTML = label;
+        }
+    }
+
     // ============ EVENT LISTENERS ============
     function setupEventListeners() {
         document.getElementById('loginBtn').addEventListener('click', handleLogin);
@@ -8101,9 +8506,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
         document.getElementById('tabAdminsBtn').addEventListener('click', () => showTab('admins'));
         document.getElementById('tabMessagesBtn').addEventListener('click', () => showTab('messages'));
         
-        // ============ FIXED: SEO Tab Listener ============
         document.getElementById('tabSeoBtn').addEventListener('click', function() {
-            // Directly show the SEO tab without the loop
             showTab('seo');
         });
         
@@ -8290,28 +8693,12 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
         document.getElementById('exportMessagesBtn').addEventListener('click', exportMessagesToCSV);
         document.getElementById('deleteAllMessagesBtn').addEventListener('click', deleteAllMessages);
         
-        // GitHub deploy buttons - FIXED to use selection modals
+        // GitHub deploy buttons - FIXED with selection modals
         document.getElementById('deployBooksBtn').addEventListener('click', showDeployBookSelection);
         document.getElementById('deployChaptersBtn').addEventListener('click', showDeployChapterSelection);
         document.getElementById('deployTopicsBtn').addEventListener('click', showDeployTopicSelection);
-
-        document.getElementById('deploySitemapBtn').addEventListener('click', () => {
-            if (!window.sitemapData || window.sitemapData.totalUrls === 0) {
-                showToast('Please generate sitemap first (Sitemap tab)', true);
-                addDeployLog('⚠️ Please generate sitemap first', 'warning');
-                return;
-            }
-            deployToGitHub('sitemap');
-        });
-
-        document.getElementById('deployAllBtn').addEventListener('click', () => {
-            if (!window.sitemapData || window.sitemapData.totalUrls === 0) {
-                showToast('Please generate sitemap first (Sitemap tab)', true);
-                addDeployLog('⚠️ Please generate sitemap first', 'warning');
-                return;
-            }
-            deployToGitHub('all');
-        });
+        document.getElementById('deploySitemapBtn').addEventListener('click', () => deployToGitHub('sitemap'));
+        document.getElementById('deployAllBtn').addEventListener('click', () => deployToGitHub('all'));
 
         document.getElementById('clearDeployLog').addEventListener('click', function() {
             document.getElementById('deployLogContent').innerHTML = '';
@@ -8323,6 +8710,10 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
         window.toggleSeoDropdown = toggleSeoDropdown;
         window.downloadSelectedSeoFiles = downloadSelectedSeoFiles;
         window.downloadSingleSEOPage = downloadSingleSEOPage;
+        
+        window.showDeployBookSelection = showDeployBookSelection;
+        window.showDeployChapterSelection = showDeployChapterSelection;
+        window.showDeployTopicSelection = showDeployTopicSelection;
     }
 
     // ============ INIT ============
