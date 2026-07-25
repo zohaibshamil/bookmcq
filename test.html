@@ -1,3 +1,5 @@
+[file name]: test (3).html
+[file content begin]
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -940,6 +942,165 @@
         .deploy-confirm-modal .file-list .file-item:last-child {
             border-bottom: none;
         }
+
+        /* ===== DEPLOY MULTI-SELECT DROPDOWN STYLES (ADDED) ===== */
+        .deploy-multi-select-wrapper {
+            position: relative;
+            width: 100%;
+            z-index: 1000;
+        }
+        .deploy-multi-select-btn {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 12px;
+            background: white;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            position: relative;
+            z-index: 1001;
+            min-height: 50px;
+        }
+        .deploy-multi-select-btn span {
+            color: #6b7280;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .deploy-multi-select-btn span.selected {
+            color: #374151;
+        }
+        .deploy-multi-select-btn i {
+            transition: transform 0.2s;
+            color: #6b7280;
+        }
+        .deploy-multi-select-wrapper.active .deploy-multi-select-btn i {
+            transform: rotate(180deg);
+        }
+        .deploy-multi-select-wrapper .deploy-dropdown-content {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 12px;
+            margin-top: 5px;
+            z-index: 999999;
+            max-height: 280px;
+            overflow-y: auto;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2);
+        }
+        .deploy-multi-select-wrapper.active .deploy-dropdown-content {
+            display: block;
+        }
+        .deploy-multi-select-wrapper .deploy-dropdown-content .dropdown-search {
+            padding: 10px;
+            border-bottom: 1px solid #e5e7eb;
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 10;
+        }
+        .deploy-multi-select-wrapper .deploy-dropdown-content .dropdown-search input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 13px;
+            outline: none;
+        }
+        .deploy-multi-select-wrapper .deploy-dropdown-content .dropdown-search input:focus {
+            border-color: #8b5cf6;
+        }
+        .deploy-multi-select-wrapper .deploy-dropdown-content .dropdown-items {
+            max-height: 220px;
+            overflow-y: auto;
+        }
+        .deploy-multi-select-wrapper .deploy-dropdown-content .dropdown-item {
+            padding: 10px 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .deploy-multi-select-wrapper .deploy-dropdown-content .dropdown-item:hover {
+            background: #f3e8ff;
+        }
+        .deploy-multi-select-wrapper .deploy-dropdown-content .dropdown-item:last-child {
+            border-bottom: none;
+        }
+        .deploy-multi-select-wrapper .deploy-dropdown-content .dropdown-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: #8b5cf6;
+            flex-shrink: 0;
+        }
+        .deploy-multi-select-wrapper .deploy-dropdown-content .dropdown-item label {
+            cursor: pointer;
+            flex: 1;
+            color: #374151;
+            font-size: 14px;
+        }
+        .deploy-multi-select-wrapper .deploy-dropdown-content .dropdown-item .item-badge {
+            font-size: 10px;
+            color: #6b7280;
+            background: #f3f4f6;
+            padding: 1px 8px;
+            border-radius: 12px;
+            margin-left: auto;
+        }
+        .deploy-multi-select-wrapper .deploy-dropdown-content .select-all-item {
+            background: #f5f3ff;
+            border-bottom: 2px solid #e5e7eb;
+            font-weight: 500;
+        }
+        .deploy-multi-select-wrapper .deploy-dropdown-content .select-all-item:hover {
+            background: #ede9fe;
+        }
+        .deploy-selected-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 6px;
+        }
+        .deploy-selected-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #ede9fe;
+            color: #7c3aed;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .deploy-selected-tag .remove-tag {
+            cursor: pointer;
+            font-size: 12px;
+            color: #7c3aed;
+            margin-left: 2px;
+        }
+        .deploy-selected-tag .remove-tag:hover {
+            color: #5b21b6;
+        }
+        .deploy-btn-container {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        .deploy-btn-container .deploy-action-btn {
+            flex: 1;
+            min-width: 120px;
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -1788,7 +1949,7 @@
     </div>
 </div>
 
-<!-- ========== GITHUB DEPLOYMENT TAB (ADDED FROM TEST FILE) ========== -->
+<!-- ========== GITHUB DEPLOYMENT TAB (UPDATED WITH MULTI-SELECT) ========== -->
 <div id="githubTab" class="hidden">
     <div class="text-center py-8">
         <i class="fab fa-github text-6xl text-gray-800 mb-4"></i>
@@ -1798,14 +1959,37 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 max-w-5xl mx-auto">
         
-        <!-- Book Indexes -->
+        <!-- Books -->
         <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 hover:border-purple-400 transition deploy-card">
             <div class="text-3xl mb-2">📚</div>
             <h3 class="font-bold text-gray-800 text-sm">Books</h3>
             <p class="text-xs text-gray-500 mt-1 mb-3">Index pages</p>
-            <button id="deployBooksBtn" class="w-full bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2">
-                <i class="fas fa-cloud-upload-alt"></i> Deploy
-            </button>
+            
+            <!-- Multi-select dropdown for Books -->
+            <div class="deploy-multi-select-wrapper" id="deployBookMultiSelect">
+                <div class="deploy-multi-select-btn" data-dropdown="deployBooks">
+                    <span id="deployBookSelectedText">Select Books</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="deploy-dropdown-content" id="deployBookDropdownContent">
+                    <div class="dropdown-search">
+                        <input type="text" id="deployBookSearchInput" placeholder="Search books..." autocomplete="off">
+                    </div>
+                    <div id="deployBookDropdownItems" class="dropdown-items">
+                        <div class="dropdown-item">Loading books...</div>
+                    </div>
+                </div>
+            </div>
+            <div id="deployBookTags" class="deploy-selected-tags"></div>
+            
+            <div class="deploy-btn-container">
+                <button id="deployBooksBtn" class="deploy-action-btn w-full bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2">
+                    <i class="fas fa-cloud-upload-alt"></i> Deploy Selected
+                </button>
+                <button id="deployAllBooksBtn" class="deploy-action-btn w-full bg-purple-800 hover:bg-purple-900 text-white px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2">
+                    <i class="fas fa-bolt"></i> Deploy All
+                </button>
+            </div>
             <div id="deployBooksStatus" class="text-xs text-gray-400 mt-2 h-4"></div>
         </div>
 
@@ -1814,9 +1998,39 @@
             <div class="text-3xl mb-2">📖</div>
             <h3 class="font-bold text-gray-800 text-sm">Chapters</h3>
             <p class="text-xs text-gray-500 mt-1 mb-3">Chapter pages</p>
-            <button id="deployChaptersBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2">
-                <i class="fas fa-cloud-upload-alt"></i> Deploy
-            </button>
+            
+            <!-- Book filter first -->
+            <div class="mb-2">
+                <select id="deployChapterBookFilter" class="w-full p-2 border rounded-lg text-sm">
+                    <option value="">-- Select Book --</option>
+                </select>
+            </div>
+            
+            <!-- Multi-select dropdown for Chapters -->
+            <div class="deploy-multi-select-wrapper" id="deployChapterMultiSelect">
+                <div class="deploy-multi-select-btn" data-dropdown="deployChapters">
+                    <span id="deployChapterSelectedText">Select Chapters</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="deploy-dropdown-content" id="deployChapterDropdownContent">
+                    <div class="dropdown-search">
+                        <input type="text" id="deployChapterSearchInput" placeholder="Search chapters..." autocomplete="off">
+                    </div>
+                    <div id="deployChapterDropdownItems" class="dropdown-items">
+                        <div class="dropdown-item">Select a book first</div>
+                    </div>
+                </div>
+            </div>
+            <div id="deployChapterTags" class="deploy-selected-tags"></div>
+            
+            <div class="deploy-btn-container">
+                <button id="deployChaptersBtn" class="deploy-action-btn w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2">
+                    <i class="fas fa-cloud-upload-alt"></i> Deploy Selected
+                </button>
+                <button id="deployAllChaptersBtn" class="deploy-action-btn w-full bg-blue-800 hover:bg-blue-900 text-white px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2">
+                    <i class="fas fa-bolt"></i> Deploy All
+                </button>
+            </div>
             <div id="deployChaptersStatus" class="text-xs text-gray-400 mt-2 h-4"></div>
         </div>
 
@@ -1825,9 +2039,45 @@
             <div class="text-3xl mb-2">📝</div>
             <h3 class="font-bold text-gray-800 text-sm">Topics</h3>
             <p class="text-xs text-gray-500 mt-1 mb-3">Topic pages</p>
-            <button id="deployTopicsBtn" class="w-full bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2">
-                <i class="fas fa-cloud-upload-alt"></i> Deploy
-            </button>
+            
+            <!-- Book filter first -->
+            <div class="mb-2">
+                <select id="deployTopicBookFilter" class="w-full p-2 border rounded-lg text-sm">
+                    <option value="">-- Select Book --</option>
+                </select>
+            </div>
+            <!-- Chapter filter second -->
+            <div class="mb-2">
+                <select id="deployTopicChapterFilter" class="w-full p-2 border rounded-lg text-sm" disabled>
+                    <option value="">Select book first</option>
+                </select>
+            </div>
+            
+            <!-- Multi-select dropdown for Topics -->
+            <div class="deploy-multi-select-wrapper" id="deployTopicMultiSelect">
+                <div class="deploy-multi-select-btn" data-dropdown="deployTopics">
+                    <span id="deployTopicSelectedText">Select Topics</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="deploy-dropdown-content" id="deployTopicDropdownContent">
+                    <div class="dropdown-search">
+                        <input type="text" id="deployTopicSearchInput" placeholder="Search topics..." autocomplete="off">
+                    </div>
+                    <div id="deployTopicDropdownItems" class="dropdown-items">
+                        <div class="dropdown-item">Select a chapter first</div>
+                    </div>
+                </div>
+            </div>
+            <div id="deployTopicTags" class="deploy-selected-tags"></div>
+            
+            <div class="deploy-btn-container">
+                <button id="deployTopicsBtn" class="deploy-action-btn w-full bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2">
+                    <i class="fas fa-cloud-upload-alt"></i> Deploy Selected
+                </button>
+                <button id="deployAllTopicsBtn" class="deploy-action-btn w-full bg-green-800 hover:bg-green-900 text-white px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2">
+                    <i class="fas fa-bolt"></i> Deploy All
+                </button>
+            </div>
             <div id="deployTopicsStatus" class="text-xs text-gray-400 mt-2 h-4"></div>
         </div>
 
@@ -5690,54 +5940,472 @@ function generateUrlItemHtml(url, type, isIndented = false) {
             } else {
                 addDeployLog('✅ Sitemap available. Ready to deploy.', 'success');
             }
+            // Load deploy dropdowns
+            loadDeployBooksForDropdown();
+            loadDeployChapterBookFilter();
+            loadDeployTopicBookFilter();
         }
     }
     
-    async function checkSession() {
-        const { data: { session } } = await _supabase.auth.getSession();
-        if (session) {
-            _currentUser = session.user;
-            _isAdmin = await checkIsAdmin(_currentUser.id);
-            
-            document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('adminDashboard').classList.remove('hidden');
-            document.getElementById('userEmail').textContent = _currentUser.email;
-            
-            if (_isAdmin) {
-                document.getElementById('adminBadge').classList.remove('hidden');
-                document.getElementById('adminFeatures').classList.remove('hidden');
-                document.getElementById('nonAdminView').classList.add('hidden');
-                
-                _permissions = await loadUserPermissions(_currentUser.id);
-                _permissionsLoaded = true;
-                updateUIByPermissions();
-                
-                await Promise.all([
-                    loadBooksCached(),
-                    loadChaptersCached(),
-                    loadSubTopicsCached(),
-                    loadQuestions(),
-                    loadAdmins(),
-                    loadBookSelectsCached(),
-                    loadFilterBooksCached(),
-                    loadChapterFilterBooksCached(),
-                    loadCategoriesCached(),
-                    loadBulkDeleteBooks(),
-                    loadMessages(),
-                    loadDashboardStats()
-                ]);
-                setupBookFilters();
-                setupMathPreviews();
-                resetSessionTimer();
-                
-                showTab('dashboard');
-            } else {
-                document.getElementById('adminBadge').classList.add('hidden');
-                document.getElementById('adminFeatures').classList.add('hidden');
-                document.getElementById('nonAdminView').classList.remove('hidden');
-            }
+    // ============ DEPLOY DROPDOWN FUNCTIONS ============
+    
+    // Load deploy books dropdown
+    async function loadDeployBooksForDropdown() {
+        const wrapper = document.getElementById('deployBookMultiSelect');
+        const toggle = wrapper.querySelector('.deploy-multi-select-btn');
+        const searchInput = document.getElementById('deployBookSearchInput');
+        const itemsContainer = document.getElementById('deployBookDropdownItems');
+        
+        const { data: books, error } = await _supabase.from('books').select('id, title, slug').order('title');
+        if (error || !books || books.length === 0) {
+            itemsContainer.innerHTML = '<div class="dropdown-item">No books available</div>';
+            return;
         }
+        
+        let html = '<div class="dropdown-item select-all-item"><input type="checkbox" id="deployBookSelectAll" value="all"><label for="deployBookSelectAll">📚 Select All Books</label></div>';
+        
+        books.forEach(book => {
+            html += `<div class="dropdown-item"><input type="checkbox" id="deployBook_${book.id}" value="${book.id}" data-slug="${book.slug}" data-title="${escapeHtml(book.title)}"><label for="deployBook_${book.id}">${escapeHtml(book.title)}</label></div>`;
+        });
+        
+        itemsContainer.innerHTML = html;
+        
+        // Event listeners for checkboxes
+        itemsContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            cb.addEventListener('change', function() {
+                if (this.id === 'deployBookSelectAll') {
+                    const allCbs = itemsContainer.querySelectorAll('input[type="checkbox"]:not(#deployBookSelectAll)');
+                    allCbs.forEach(c => c.checked = this.checked);
+                }
+                updateDeployBookTags();
+            });
+        });
+        
+        // Search
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                const term = this.value.toLowerCase();
+                itemsContainer.querySelectorAll('.dropdown-item').forEach(item => {
+                    const text = item.textContent.toLowerCase();
+                    item.style.display = text.includes(term) ? 'flex' : 'none';
+                });
+            });
+        }
+        
+        // Toggle dropdown
+        if (toggle) {
+            const newToggle = toggle.cloneNode(true);
+            toggle.parentNode.replaceChild(newToggle, toggle);
+            
+            const freshToggle = document.getElementById('deployBookMultiSelect').querySelector('.deploy-multi-select-btn');
+            freshToggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const wrapperEl = document.getElementById('deployBookMultiSelect');
+                const isActive = wrapperEl.classList.contains('active');
+                document.querySelectorAll('.deploy-multi-select-wrapper').forEach(w => w.classList.remove('active'));
+                if (!isActive) {
+                    wrapperEl.classList.add('active');
+                    setTimeout(() => {
+                        const input = document.getElementById('deployBookSearchInput');
+                        if (input) input.focus();
+                    }, 100);
+                }
+            });
+        }
+        
+        updateDeployBookTags();
     }
+    
+    function updateDeployBookTags() {
+        const tagsContainer = document.getElementById('deployBookTags');
+        const selectedText = document.getElementById('deployBookSelectedText');
+        const checkedBoxes = document.querySelectorAll('#deployBookDropdownItems input[type="checkbox"]:checked:not(#deployBookSelectAll)');
+        const selected = Array.from(checkedBoxes);
+        
+        if (selected.length === 0) {
+            tagsContainer.innerHTML = '';
+            selectedText.textContent = 'Select Books';
+            selectedText.style.color = '#6b7280';
+            return;
+        }
+        
+        selectedText.textContent = `${selected.length} book${selected.length > 1 ? 's' : ''} selected`;
+        selectedText.style.color = '#374151';
+        
+        tagsContainer.innerHTML = selected.map(cb => {
+            const title = cb.dataset.title || cb.value;
+            return `<span class="deploy-selected-tag">${escapeHtml(title)} <span class="remove-tag" data-id="${cb.value}">×</span></span>`;
+        }).join('');
+        
+        tagsContainer.querySelectorAll('.remove-tag').forEach(span => {
+            span.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const cb = document.getElementById(`deployBook_${id}`);
+                if (cb) {
+                    cb.checked = false;
+                    updateDeployBookTags();
+                    // Update select all
+                    const allCbs = document.querySelectorAll('#deployBookDropdownItems input[type="checkbox"]:not(#deployBookSelectAll)');
+                    const selectAll = document.getElementById('deployBookSelectAll');
+                    if (selectAll) {
+                        const checked = document.querySelectorAll('#deployBookDropdownItems input[type="checkbox"]:checked:not(#deployBookSelectAll)');
+                        selectAll.checked = checked.length === allCbs.length;
+                    }
+                }
+            });
+        });
+    }
+    
+    function getSelectedDeployBooks() {
+        const checkedBoxes = document.querySelectorAll('#deployBookDropdownItems input[type="checkbox"]:checked:not(#deployBookSelectAll)');
+        return Array.from(checkedBoxes).map(cb => ({
+            id: cb.value,
+            slug: cb.dataset.slug,
+            title: cb.dataset.title
+        }));
+    }
+    
+    // ============ DEPLOY CHAPTER DROPDOWN ============
+    async function loadDeployChapterBookFilter() {
+        const select = document.getElementById('deployChapterBookFilter');
+        const { data: books, error } = await _supabase.from('books').select('id, title, slug').order('title');
+        if (error || !books || books.length === 0) {
+            select.innerHTML = '<option value="">-- No Books --</option>';
+            return;
+        }
+        select.innerHTML = '<option value="">-- Select Book --</option>';
+        books.forEach(book => {
+            select.innerHTML += `<option value="${book.id}" data-slug="${book.slug}">${escapeHtml(book.title)}</option>`;
+        });
+        
+        // Auto-select first book
+        if (books.length > 0) {
+            select.value = books[0].id;
+            loadDeployChaptersDropdown(books[0].id);
+        }
+        
+        select.addEventListener('change', function() {
+            loadDeployChaptersDropdown(this.value);
+        });
+    }
+    
+    async function loadDeployChaptersDropdown(bookId) {
+        const wrapper = document.getElementById('deployChapterMultiSelect');
+        const toggle = wrapper.querySelector('.deploy-multi-select-btn');
+        const searchInput = document.getElementById('deployChapterSearchInput');
+        const itemsContainer = document.getElementById('deployChapterDropdownItems');
+        
+        if (!bookId) {
+            itemsContainer.innerHTML = '<div class="dropdown-item">Select a book first</div>';
+            return;
+        }
+        
+        const { data: chapters, error } = await _supabase.from('chapters')
+            .select('id, name, chapter_number, slug')
+            .eq('book_id', parseInt(bookId))
+            .order('chapter_number', { ascending: true });
+        
+        if (error || !chapters || chapters.length === 0) {
+            itemsContainer.innerHTML = '<div class="dropdown-item">No chapters found</div>';
+            return;
+        }
+        
+        let html = '<div class="dropdown-item select-all-item"><input type="checkbox" id="deployChapterSelectAll" value="all"><label for="deployChapterSelectAll">📖 Select All Chapters</label></div>';
+        
+        chapters.forEach(ch => {
+            const display = ch.chapter_number ? `Ch ${ch.chapter_number}: ${ch.name}` : ch.name;
+            html += `<div class="dropdown-item"><input type="checkbox" id="deployChapter_${ch.id}" value="${ch.id}" data-slug="${ch.slug}" data-name="${escapeHtml(ch.name)}"><label for="deployChapter_${ch.id}">${escapeHtml(display)}</label></div>`;
+        });
+        
+        itemsContainer.innerHTML = html;
+        
+        itemsContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            cb.addEventListener('change', function() {
+                if (this.id === 'deployChapterSelectAll') {
+                    const allCbs = itemsContainer.querySelectorAll('input[type="checkbox"]:not(#deployChapterSelectAll)');
+                    allCbs.forEach(c => c.checked = this.checked);
+                }
+                updateDeployChapterTags();
+            });
+        });
+        
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                const term = this.value.toLowerCase();
+                itemsContainer.querySelectorAll('.dropdown-item').forEach(item => {
+                    const text = item.textContent.toLowerCase();
+                    item.style.display = text.includes(term) ? 'flex' : 'none';
+                });
+            });
+        }
+        
+        // Toggle dropdown
+        if (toggle) {
+            const newToggle = toggle.cloneNode(true);
+            toggle.parentNode.replaceChild(newToggle, toggle);
+            
+            const freshToggle = document.getElementById('deployChapterMultiSelect').querySelector('.deploy-multi-select-btn');
+            freshToggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const wrapperEl = document.getElementById('deployChapterMultiSelect');
+                const isActive = wrapperEl.classList.contains('active');
+                document.querySelectorAll('.deploy-multi-select-wrapper').forEach(w => w.classList.remove('active'));
+                if (!isActive) {
+                    wrapperEl.classList.add('active');
+                    setTimeout(() => {
+                        const input = document.getElementById('deployChapterSearchInput');
+                        if (input) input.focus();
+                    }, 100);
+                }
+            });
+        }
+        
+        updateDeployChapterTags();
+    }
+    
+    function updateDeployChapterTags() {
+        const tagsContainer = document.getElementById('deployChapterTags');
+        const selectedText = document.getElementById('deployChapterSelectedText');
+        const checkedBoxes = document.querySelectorAll('#deployChapterDropdownItems input[type="checkbox"]:checked:not(#deployChapterSelectAll)');
+        const selected = Array.from(checkedBoxes);
+        
+        if (selected.length === 0) {
+            tagsContainer.innerHTML = '';
+            selectedText.textContent = 'Select Chapters';
+            selectedText.style.color = '#6b7280';
+            return;
+        }
+        
+        selectedText.textContent = `${selected.length} chapter${selected.length > 1 ? 's' : ''} selected`;
+        selectedText.style.color = '#374151';
+        
+        tagsContainer.innerHTML = selected.map(cb => {
+            const name = cb.dataset.name || cb.value;
+            return `<span class="deploy-selected-tag">${escapeHtml(name)} <span class="remove-tag" data-id="${cb.value}">×</span></span>`;
+        }).join('');
+        
+        tagsContainer.querySelectorAll('.remove-tag').forEach(span => {
+            span.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const cb = document.getElementById(`deployChapter_${id}`);
+                if (cb) {
+                    cb.checked = false;
+                    updateDeployChapterTags();
+                    const allCbs = document.querySelectorAll('#deployChapterDropdownItems input[type="checkbox"]:not(#deployChapterSelectAll)');
+                    const selectAll = document.getElementById('deployChapterSelectAll');
+                    if (selectAll) {
+                        const checked = document.querySelectorAll('#deployChapterDropdownItems input[type="checkbox"]:checked:not(#deployChapterSelectAll)');
+                        selectAll.checked = checked.length === allCbs.length;
+                    }
+                }
+            });
+        });
+    }
+    
+    function getSelectedDeployChapters() {
+        const bookSelect = document.getElementById('deployChapterBookFilter');
+        const bookSlug = bookSelect.options[bookSelect.selectedIndex]?.dataset?.slug || '';
+        const checkedBoxes = document.querySelectorAll('#deployChapterDropdownItems input[type="checkbox"]:checked:not(#deployChapterSelectAll)');
+        return Array.from(checkedBoxes).map(cb => ({
+            id: cb.value,
+            slug: cb.dataset.slug,
+            name: cb.dataset.name,
+            bookSlug: bookSlug
+        }));
+    }
+    
+    // ============ DEPLOY TOPIC DROPDOWN ============
+    async function loadDeployTopicBookFilter() {
+        const select = document.getElementById('deployTopicBookFilter');
+        const { data: books, error } = await _supabase.from('books').select('id, title, slug').order('title');
+        if (error || !books || books.length === 0) {
+            select.innerHTML = '<option value="">-- No Books --</option>';
+            return;
+        }
+        select.innerHTML = '<option value="">-- Select Book --</option>';
+        books.forEach(book => {
+            select.innerHTML += `<option value="${book.id}" data-slug="${book.slug}">${escapeHtml(book.title)}</option>`;
+        });
+        
+        select.addEventListener('change', function() {
+            loadDeployTopicChapterFilter(this.value);
+        });
+    }
+    
+    async function loadDeployTopicChapterFilter(bookId) {
+        const chapterSelect = document.getElementById('deployTopicChapterFilter');
+        const itemsContainer = document.getElementById('deployTopicDropdownItems');
+        
+        if (!bookId) {
+            chapterSelect.innerHTML = '<option value="">Select book first</option>';
+            chapterSelect.disabled = true;
+            itemsContainer.innerHTML = '<div class="dropdown-item">Select a book first</div>';
+            return;
+        }
+        
+        chapterSelect.disabled = false;
+        const { data: chapters, error } = await _supabase.from('chapters')
+            .select('id, name, chapter_number, slug')
+            .eq('book_id', parseInt(bookId))
+            .order('chapter_number', { ascending: true });
+        
+        if (error || !chapters || chapters.length === 0) {
+            chapterSelect.innerHTML = '<option value="">-- No Chapters --</option>';
+            itemsContainer.innerHTML = '<div class="dropdown-item">No chapters found</div>';
+            return;
+        }
+        
+        chapterSelect.innerHTML = '<option value="">-- Select Chapter --</option>';
+        chapters.forEach(ch => {
+            const display = ch.chapter_number ? `Ch ${ch.chapter_number}: ${ch.name}` : ch.name;
+            chapterSelect.innerHTML += `<option value="${ch.id}" data-slug="${ch.slug}">${escapeHtml(display)}</option>`;
+        });
+        
+        // Auto-select first chapter
+        if (chapters.length > 0) {
+            chapterSelect.value = chapters[0].id;
+            loadDeployTopicsDropdown(chapters[0].id);
+        }
+        
+        chapterSelect.addEventListener('change', function() {
+            loadDeployTopicsDropdown(this.value);
+        });
+    }
+    
+    async function loadDeployTopicsDropdown(chapterId) {
+        const wrapper = document.getElementById('deployTopicMultiSelect');
+        const toggle = wrapper.querySelector('.deploy-multi-select-btn');
+        const searchInput = document.getElementById('deployTopicSearchInput');
+        const itemsContainer = document.getElementById('deployTopicDropdownItems');
+        const bookSelect = document.getElementById('deployTopicBookFilter');
+        const chapterSelect = document.getElementById('deployTopicChapterFilter');
+        const bookSlug = bookSelect.options[bookSelect.selectedIndex]?.dataset?.slug || '';
+        const chapterSlug = chapterSelect.options[chapterSelect.selectedIndex]?.dataset?.slug || '';
+        
+        if (!chapterId) {
+            itemsContainer.innerHTML = '<div class="dropdown-item">Select a chapter first</div>';
+            return;
+        }
+        
+        const { data: topics, error } = await _supabase.from('subtopics')
+            .select('id, name, slug')
+            .eq('chapter_id', parseInt(chapterId))
+            .order('name', { ascending: true });
+        
+        if (error || !topics || topics.length === 0) {
+            itemsContainer.innerHTML = '<div class="dropdown-item">No topics found</div>';
+            return;
+        }
+        
+        let html = '<div class="dropdown-item select-all-item"><input type="checkbox" id="deployTopicSelectAll" value="all"><label for="deployTopicSelectAll">📝 Select All Topics</label></div>';
+        
+        topics.forEach(topic => {
+            html += `<div class="dropdown-item"><input type="checkbox" id="deployTopic_${topic.id}" value="${topic.id}" data-slug="${topic.slug}" data-name="${escapeHtml(topic.name)}" data-chapter-slug="${chapterSlug}" data-book-slug="${bookSlug}"><label for="deployTopic_${topic.id}">${escapeHtml(topic.name)}</label></div>`;
+        });
+        
+        itemsContainer.innerHTML = html;
+        
+        itemsContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            cb.addEventListener('change', function() {
+                if (this.id === 'deployTopicSelectAll') {
+                    const allCbs = itemsContainer.querySelectorAll('input[type="checkbox"]:not(#deployTopicSelectAll)');
+                    allCbs.forEach(c => c.checked = this.checked);
+                }
+                updateDeployTopicTags();
+            });
+        });
+        
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                const term = this.value.toLowerCase();
+                itemsContainer.querySelectorAll('.dropdown-item').forEach(item => {
+                    const text = item.textContent.toLowerCase();
+                    item.style.display = text.includes(term) ? 'flex' : 'none';
+                });
+            });
+        }
+        
+        if (toggle) {
+            const newToggle = toggle.cloneNode(true);
+            toggle.parentNode.replaceChild(newToggle, toggle);
+            
+            const freshToggle = document.getElementById('deployTopicMultiSelect').querySelector('.deploy-multi-select-btn');
+            freshToggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const wrapperEl = document.getElementById('deployTopicMultiSelect');
+                const isActive = wrapperEl.classList.contains('active');
+                document.querySelectorAll('.deploy-multi-select-wrapper').forEach(w => w.classList.remove('active'));
+                if (!isActive) {
+                    wrapperEl.classList.add('active');
+                    setTimeout(() => {
+                        const input = document.getElementById('deployTopicSearchInput');
+                        if (input) input.focus();
+                    }, 100);
+                }
+            });
+        }
+        
+        updateDeployTopicTags();
+    }
+    
+    function updateDeployTopicTags() {
+        const tagsContainer = document.getElementById('deployTopicTags');
+        const selectedText = document.getElementById('deployTopicSelectedText');
+        const checkedBoxes = document.querySelectorAll('#deployTopicDropdownItems input[type="checkbox"]:checked:not(#deployTopicSelectAll)');
+        const selected = Array.from(checkedBoxes);
+        
+        if (selected.length === 0) {
+            tagsContainer.innerHTML = '';
+            selectedText.textContent = 'Select Topics';
+            selectedText.style.color = '#6b7280';
+            return;
+        }
+        
+        selectedText.textContent = `${selected.length} topic${selected.length > 1 ? 's' : ''} selected`;
+        selectedText.style.color = '#374151';
+        
+        tagsContainer.innerHTML = selected.map(cb => {
+            const name = cb.dataset.name || cb.value;
+            return `<span class="deploy-selected-tag">${escapeHtml(name)} <span class="remove-tag" data-id="${cb.value}">×</span></span>`;
+        }).join('');
+        
+        tagsContainer.querySelectorAll('.remove-tag').forEach(span => {
+            span.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const cb = document.getElementById(`deployTopic_${id}`);
+                if (cb) {
+                    cb.checked = false;
+                    updateDeployTopicTags();
+                    const allCbs = document.querySelectorAll('#deployTopicDropdownItems input[type="checkbox"]:not(#deployTopicSelectAll)');
+                    const selectAll = document.getElementById('deployTopicSelectAll');
+                    if (selectAll) {
+                        const checked = document.querySelectorAll('#deployTopicDropdownItems input[type="checkbox"]:checked:not(#deployTopicSelectAll)');
+                        selectAll.checked = checked.length === allCbs.length;
+                    }
+                }
+            });
+        });
+    }
+    
+    function getSelectedDeployTopics() {
+        const checkedBoxes = document.querySelectorAll('#deployTopicDropdownItems input[type="checkbox"]:checked:not(#deployTopicSelectAll)');
+        return Array.from(checkedBoxes).map(cb => ({
+            id: cb.value,
+            slug: cb.dataset.slug,
+            name: cb.dataset.name,
+            chapterSlug: cb.dataset.chapterSlug || '',
+            bookSlug: cb.dataset.bookSlug || ''
+        }));
+    }
+
+    // ============ CLOSE ALL DEPLOY DROPDOWNS ============
+    document.addEventListener('click', function(e) {
+        document.querySelectorAll('.deploy-multi-select-wrapper').forEach(w => {
+            if (!w.contains(e.target)) {
+                w.classList.remove('active');
+            }
+        });
+    });
 
     // ============ SEO PAGE GENERATION FUNCTIONS ============
     let seoGeneratedFiles = [];
@@ -7511,701 +8179,602 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     let seoSelectedBookSlug = '';
     let seoSelectedBookTitle = '';
 
-    // ============ GITHUB DEPLOYMENT FUNCTIONS (FIXED WITH CONFIRMATION AND PATH PREVIEW) ============
+    // ============ GITHUB DEPLOYMENT FUNCTIONS (UPDATED WITH MULTI-SELECT) ============
     
     // Track selected items for deployment
     let selectedDeployBookId = null;
     let selectedDeployChapterId = null;
     let selectedDeployTopicId = null;
 
-    // ============ LOAD BOOKS FOR DEPLOYMENT SELECTION ============
-    async function loadDeployBooks() {
-        const { data, error } = await _supabase
-            .from('books')
-            .select('id, title, slug')
-            .order('title');
-        
-        if (error) {
-            showToast('Error loading books: ' + error.message, true);
-            return [];
+    // ============ DEPLOY SELECTED BOOKS ============
+    async function deploySelectedBooks() {
+        const selected = getSelectedDeployBooks();
+        if (selected.length === 0) {
+            showToast('Please select at least one book to deploy', true);
+            return;
         }
-        return data || [];
+        
+        const config = getGitHubConfig();
+        if (!config) return;
+        
+        // Show confirmation with file list
+        let confirmMsg = `📚 Deploy ${selected.length} book(s):\n\n`;
+        selected.forEach(b => {
+            confirmMsg += `  • ${b.title} → books/${b.slug}/index.html\n`;
+        });
+        confirmMsg += `\nThis will replace existing files on GitHub. Continue?`;
+        
+        if (!confirm(confirmMsg)) return;
+        
+        addDeployLog(`📚 Deploying ${selected.length} books...`, 'info');
+        updateDeployStatus('books', '⏳ Deploying...');
+        setDeployButtonState('books', true, '<i class="fas fa-spinner fa-spin"></i> Deploying...');
+        
+        let successCount = 0;
+        let failCount = 0;
+        
+        for (const book of selected) {
+            try {
+                const { data: bookData, error: bookError } = await _supabase
+                    .from('books')
+                    .select('*')
+                    .eq('id', parseInt(book.id))
+                    .single();
+                
+                if (bookError) throw bookError;
+                
+                const { data: chapters, error: chaptersError } = await _supabase
+                    .from('chapters')
+                    .select('*')
+                    .eq('book_id', parseInt(book.id))
+                    .order('chapter_number', { ascending: true });
+                
+                if (chaptersError) throw chaptersError;
+                
+                let topics = [];
+                if (chapters && chapters.length > 0) {
+                    const chapterIds = chapters.map(c => c.id);
+                    const { data: topicsData, error: topicsError } = await _supabase
+                        .from('subtopics')
+                        .select('*')
+                        .in('chapter_id', chapterIds);
+                    
+                    if (!topicsError) topics = topicsData || [];
+                }
+                
+                const allQuestions = await fetchQuestionsForBook(book.id);
+                
+                const chapterQCounts = {};
+                chapters.forEach(ch => {
+                    chapterQCounts[ch.id] = allQuestions.filter(q => q.chapter_id === ch.id).length;
+                });
+                
+                const stats = { easy: 0, medium: 0, hard: 0 };
+                allQuestions.forEach(q => {
+                    const diff = (q.difficulty || '').toLowerCase();
+                    if (diff === 'easy') stats.easy++;
+                    else if (diff === 'medium') stats.medium++;
+                    else if (diff === 'hard') stats.hard++;
+                });
+                
+                const content = generateBookIndexPage(bookData, chapters, topics, {}, allQuestions.length, chapterQCounts, stats);
+                
+                const files = [{ path: `books/${book.slug}/index.html`, content: content }];
+                const result = await commitToGitHub(files, config);
+                
+                if (result.success) {
+                    successCount++;
+                    addDeployLog(`✅ Deployed "${book.title}"`, 'success');
+                } else {
+                    failCount++;
+                    addDeployLog(`❌ Failed "${book.title}": ${result.message}`, 'error');
+                }
+            } catch (error) {
+                failCount++;
+                addDeployLog(`❌ Error deploying "${book.title}": ${error.message}`, 'error');
+            }
+        }
+        
+        const statusMsg = successCount > 0 ? `✅ ${successCount} books deployed` : '';
+        const failMsg = failCount > 0 ? `❌ ${failCount} failed` : '';
+        updateDeployStatus('books', [statusMsg, failMsg].filter(Boolean).join(' | '));
+        showToast(`${successCount} books deployed successfully! ${failCount > 0 ? failCount + ' failed' : ''}`);
+        setDeployButtonState('books', false, '<i class="fas fa-cloud-upload-alt"></i> Deploy Selected');
     }
 
-    // ============ LOAD CHAPTERS FOR DEPLOYMENT SELECTION ============
-    async function loadDeployChapters(bookId) {
-        if (!bookId) return [];
-        const { data, error } = await _supabase
+    // ============ DEPLOY ALL BOOKS ============
+    async function deployAllBooks() {
+        const config = getGitHubConfig();
+        if (!config) return;
+        
+        const { data: allBooks, error } = await _supabase.from('books').select('id, title, slug').order('title');
+        if (error || !allBooks || allBooks.length === 0) {
+            showToast('No books found to deploy', true);
+            return;
+        }
+        
+        if (!confirm(`📚 Deploy ALL ${allBooks.length} books to GitHub?\n\nThis will deploy all book index pages. Continue?`)) return;
+        
+        addDeployLog(`📚 Deploying all ${allBooks.length} books...`, 'info');
+        updateDeployStatus('books', '⏳ Deploying all...');
+        setDeployButtonState('books', true, '<i class="fas fa-spinner fa-spin"></i> Deploying...');
+        
+        let successCount = 0;
+        let failCount = 0;
+        
+        for (const book of allBooks) {
+            try {
+                const { data: bookData, error: bookError } = await _supabase
+                    .from('books')
+                    .select('*')
+                    .eq('id', book.id)
+                    .single();
+                
+                if (bookError) throw bookError;
+                
+                const { data: chapters, error: chaptersError } = await _supabase
+                    .from('chapters')
+                    .select('*')
+                    .eq('book_id', book.id)
+                    .order('chapter_number', { ascending: true });
+                
+                if (chaptersError) throw chaptersError;
+                
+                let topics = [];
+                if (chapters && chapters.length > 0) {
+                    const chapterIds = chapters.map(c => c.id);
+                    const { data: topicsData, error: topicsError } = await _supabase
+                        .from('subtopics')
+                        .select('*')
+                        .in('chapter_id', chapterIds);
+                    
+                    if (!topicsError) topics = topicsData || [];
+                }
+                
+                const allQuestions = await fetchQuestionsForBook(book.id);
+                
+                const chapterQCounts = {};
+                chapters.forEach(ch => {
+                    chapterQCounts[ch.id] = allQuestions.filter(q => q.chapter_id === ch.id).length;
+                });
+                
+                const stats = { easy: 0, medium: 0, hard: 0 };
+                allQuestions.forEach(q => {
+                    const diff = (q.difficulty || '').toLowerCase();
+                    if (diff === 'easy') stats.easy++;
+                    else if (diff === 'medium') stats.medium++;
+                    else if (diff === 'hard') stats.hard++;
+                });
+                
+                const content = generateBookIndexPage(bookData, chapters, topics, {}, allQuestions.length, chapterQCounts, stats);
+                const files = [{ path: `books/${book.slug}/index.html`, content: content }];
+                const result = await commitToGitHub(files, config);
+                
+                if (result.success) {
+                    successCount++;
+                    addDeployLog(`✅ Deployed "${book.title}"`, 'success');
+                } else {
+                    failCount++;
+                    addDeployLog(`❌ Failed "${book.title}": ${result.message}`, 'error');
+                }
+            } catch (error) {
+                failCount++;
+                addDeployLog(`❌ Error deploying "${book.title}": ${error.message}`, 'error');
+            }
+        }
+        
+        const statusMsg = successCount > 0 ? `✅ ${successCount} books deployed` : '';
+        const failMsg = failCount > 0 ? `❌ ${failCount} failed` : '';
+        updateDeployStatus('books', [statusMsg, failMsg].filter(Boolean).join(' | '));
+        showToast(`${successCount} books deployed successfully! ${failCount > 0 ? failCount + ' failed' : ''}`);
+        setDeployButtonState('books', false, '<i class="fas fa-cloud-upload-alt"></i> Deploy Selected');
+    }
+
+    // ============ DEPLOY SELECTED CHAPTERS ============
+    async function deploySelectedChapters() {
+        const selected = getSelectedDeployChapters();
+        if (selected.length === 0) {
+            showToast('Please select at least one chapter to deploy', true);
+            return;
+        }
+        
+        const config = getGitHubConfig();
+        if (!config) return;
+        
+        const bookSelect = document.getElementById('deployChapterBookFilter');
+        const bookTitle = bookSelect.options[bookSelect.selectedIndex]?.text || 'Selected Book';
+        
+        let confirmMsg = `📖 Deploy ${selected.length} chapter(s) from "${bookTitle}":\n\n`;
+        selected.forEach(ch => {
+            confirmMsg += `  • ${ch.name} → books/${ch.bookSlug}/${ch.slug}.html\n`;
+        });
+        confirmMsg += `\nThis will replace existing files on GitHub. Continue?`;
+        
+        if (!confirm(confirmMsg)) return;
+        
+        addDeployLog(`📖 Deploying ${selected.length} chapters from "${bookTitle}"...`, 'info');
+        updateDeployStatus('chapters', '⏳ Deploying...');
+        setDeployButtonState('chapters', true, '<i class="fas fa-spinner fa-spin"></i> Deploying...');
+        
+        let successCount = 0;
+        let failCount = 0;
+        
+        for (const chapter of selected) {
+            try {
+                const { data: bookData, error: bookError } = await _supabase
+                    .from('books')
+                    .select('*')
+                    .eq('slug', chapter.bookSlug)
+                    .single();
+                
+                if (bookError) throw bookError;
+                
+                const { data: chapterData, error: chapterError } = await _supabase
+                    .from('chapters')
+                    .select('*')
+                    .eq('id', parseInt(chapter.id))
+                    .single();
+                
+                if (chapterError) throw chapterError;
+                
+                const { data: topics, error: topicsError } = await _supabase
+                    .from('subtopics')
+                    .select('*')
+                    .eq('chapter_id', parseInt(chapter.id));
+                
+                if (topicsError) throw topicsError;
+                
+                const chapterQuestions = await fetchQuestionsForChapter(chapter.id);
+                
+                const optionsMap = {};
+                chapterQuestions.forEach(q => {
+                    optionsMap[q.id] = q.options_array || ['', '', '', ''];
+                });
+                
+                const stats = { easy: 0, medium: 0, hard: 0 };
+                chapterQuestions.forEach(q => {
+                    const diff = (q.difficulty || '').toLowerCase();
+                    if (diff === 'easy') stats.easy++;
+                    else if (diff === 'medium') stats.medium++;
+                    else if (diff === 'hard') stats.hard++;
+                });
+                
+                const content = generateChapterPage(bookData, chapterData, topics || [], chapterQuestions, stats, optionsMap);
+                const files = [{ path: `books/${chapter.bookSlug}/${chapter.slug}.html`, content: content }];
+                const result = await commitToGitHub(files, config);
+                
+                if (result.success) {
+                    successCount++;
+                    addDeployLog(`✅ Deployed "${chapter.name}"`, 'success');
+                } else {
+                    failCount++;
+                    addDeployLog(`❌ Failed "${chapter.name}": ${result.message}`, 'error');
+                }
+            } catch (error) {
+                failCount++;
+                addDeployLog(`❌ Error deploying "${chapter.name}": ${error.message}`, 'error');
+            }
+        }
+        
+        const statusMsg = successCount > 0 ? `✅ ${successCount} chapters deployed` : '';
+        const failMsg = failCount > 0 ? `❌ ${failCount} failed` : '';
+        updateDeployStatus('chapters', [statusMsg, failMsg].filter(Boolean).join(' | '));
+        showToast(`${successCount} chapters deployed successfully! ${failCount > 0 ? failCount + ' failed' : ''}`);
+        setDeployButtonState('chapters', false, '<i class="fas fa-cloud-upload-alt"></i> Deploy Selected');
+    }
+
+    // ============ DEPLOY ALL CHAPTERS ============
+    async function deployAllChapters() {
+        const config = getGitHubConfig();
+        if (!config) return;
+        
+        const bookSelect = document.getElementById('deployChapterBookFilter');
+        const bookId = bookSelect.value;
+        const bookTitle = bookSelect.options[bookSelect.selectedIndex]?.text || 'Selected Book';
+        const bookSlug = bookSelect.options[bookSelect.selectedIndex]?.dataset?.slug || '';
+        
+        if (!bookId) {
+            showToast('Please select a book first', true);
+            return;
+        }
+        
+        const { data: allChapters, error } = await _supabase
             .from('chapters')
-            .select('id, name, chapter_number, slug')
+            .select('id, name, slug')
             .eq('book_id', parseInt(bookId))
             .order('chapter_number', { ascending: true });
         
-        if (error) {
-            showToast('Error loading chapters: ' + error.message, true);
-            return [];
+        if (error || !allChapters || allChapters.length === 0) {
+            showToast('No chapters found for this book', true);
+            return;
         }
-        return data || [];
+        
+        if (!confirm(`📖 Deploy ALL ${allChapters.length} chapters from "${bookTitle}"?\n\nThis will deploy all chapter pages. Continue?`)) return;
+        
+        addDeployLog(`📖 Deploying all ${allChapters.length} chapters from "${bookTitle}"...`, 'info');
+        updateDeployStatus('chapters', '⏳ Deploying all...');
+        setDeployButtonState('chapters', true, '<i class="fas fa-spinner fa-spin"></i> Deploying...');
+        
+        let successCount = 0;
+        let failCount = 0;
+        
+        for (const chapter of allChapters) {
+            try {
+                const { data: bookData, error: bookError } = await _supabase
+                    .from('books')
+                    .select('*')
+                    .eq('id', parseInt(bookId))
+                    .single();
+                
+                if (bookError) throw bookError;
+                
+                const { data: chapterData, error: chapterError } = await _supabase
+                    .from('chapters')
+                    .select('*')
+                    .eq('id', chapter.id)
+                    .single();
+                
+                if (chapterError) throw chapterError;
+                
+                const { data: topics, error: topicsError } = await _supabase
+                    .from('subtopics')
+                    .select('*')
+                    .eq('chapter_id', chapter.id);
+                
+                if (topicsError) throw topicsError;
+                
+                const chapterQuestions = await fetchQuestionsForChapter(chapter.id);
+                
+                const optionsMap = {};
+                chapterQuestions.forEach(q => {
+                    optionsMap[q.id] = q.options_array || ['', '', '', ''];
+                });
+                
+                const stats = { easy: 0, medium: 0, hard: 0 };
+                chapterQuestions.forEach(q => {
+                    const diff = (q.difficulty || '').toLowerCase();
+                    if (diff === 'easy') stats.easy++;
+                    else if (diff === 'medium') stats.medium++;
+                    else if (diff === 'hard') stats.hard++;
+                });
+                
+                const content = generateChapterPage(bookData, chapterData, topics || [], chapterQuestions, stats, optionsMap);
+                const files = [{ path: `books/${bookSlug}/${chapter.slug}.html`, content: content }];
+                const result = await commitToGitHub(files, config);
+                
+                if (result.success) {
+                    successCount++;
+                    addDeployLog(`✅ Deployed "${chapter.name}"`, 'success');
+                } else {
+                    failCount++;
+                    addDeployLog(`❌ Failed "${chapter.name}": ${result.message}`, 'error');
+                }
+            } catch (error) {
+                failCount++;
+                addDeployLog(`❌ Error deploying "${chapter.name}": ${error.message}`, 'error');
+            }
+        }
+        
+        const statusMsg = successCount > 0 ? `✅ ${successCount} chapters deployed` : '';
+        const failMsg = failCount > 0 ? `❌ ${failCount} failed` : '';
+        updateDeployStatus('chapters', [statusMsg, failMsg].filter(Boolean).join(' | '));
+        showToast(`${successCount} chapters deployed successfully! ${failCount > 0 ? failCount + ' failed' : ''}`);
+        setDeployButtonState('chapters', false, '<i class="fas fa-cloud-upload-alt"></i> Deploy Selected');
     }
 
-    // ============ LOAD TOPICS FOR DEPLOYMENT SELECTION ============
-    async function loadDeployTopics(chapterId) {
-        if (!chapterId) return [];
-        const { data, error } = await _supabase
+    // ============ DEPLOY SELECTED TOPICS ============
+    async function deploySelectedTopics() {
+        const selected = getSelectedDeployTopics();
+        if (selected.length === 0) {
+            showToast('Please select at least one topic to deploy', true);
+            return;
+        }
+        
+        const config = getGitHubConfig();
+        if (!config) return;
+        
+        const bookSelect = document.getElementById('deployTopicBookFilter');
+        const chapterSelect = document.getElementById('deployTopicChapterFilter');
+        const bookTitle = bookSelect.options[bookSelect.selectedIndex]?.text || 'Selected Book';
+        const chapterName = chapterSelect.options[chapterSelect.selectedIndex]?.text || 'Selected Chapter';
+        
+        let confirmMsg = `📝 Deploy ${selected.length} topic(s) from "${chapterName}" (${bookTitle}):\n\n`;
+        selected.forEach(t => {
+            confirmMsg += `  • ${t.name} → books/${t.bookSlug}/${t.chapterSlug}/topics/${t.slug}.html\n`;
+        });
+        confirmMsg += `\nThis will replace existing files on GitHub. Continue?`;
+        
+        if (!confirm(confirmMsg)) return;
+        
+        addDeployLog(`📝 Deploying ${selected.length} topics from "${chapterName}"...`, 'info');
+        updateDeployStatus('topics', '⏳ Deploying...');
+        setDeployButtonState('topics', true, '<i class="fas fa-spinner fa-spin"></i> Deploying...');
+        
+        let successCount = 0;
+        let failCount = 0;
+        
+        for (const topic of selected) {
+            try {
+                const { data: bookData, error: bookError } = await _supabase
+                    .from('books')
+                    .select('*')
+                    .eq('slug', topic.bookSlug)
+                    .single();
+                
+                if (bookError) throw bookError;
+                
+                const { data: chapterData, error: chapterError } = await _supabase
+                    .from('chapters')
+                    .select('*')
+                    .eq('slug', topic.chapterSlug)
+                    .eq('book_id', bookData.id)
+                    .single();
+                
+                if (chapterError) throw chapterError;
+                
+                const { data: topicData, error: topicError } = await _supabase
+                    .from('subtopics')
+                    .select('*')
+                    .eq('id', parseInt(topic.id))
+                    .single();
+                
+                if (topicError) throw topicError;
+                
+                const topicQuestions = await fetchQuestionsForTopic(topic.id);
+                
+                const { data: allTopics, error: allTopicsError } = await _supabase
+                    .from('subtopics')
+                    .select('*')
+                    .eq('chapter_id', chapterData.id);
+                
+                if (allTopicsError) throw allTopicsError;
+                
+                const optionsMap = {};
+                topicQuestions.forEach(q => {
+                    optionsMap[q.id] = q.options_array || ['', '', '', ''];
+                });
+                
+                const stats = { easy: 0, medium: 0, hard: 0 };
+                topicQuestions.forEach(q => {
+                    const diff = (q.difficulty || '').toLowerCase();
+                    if (diff === 'easy') stats.easy++;
+                    else if (diff === 'medium') stats.medium++;
+                    else if (diff === 'hard') stats.hard++;
+                });
+                
+                const content = generateTopicPage(bookData, chapterData, topicData, topicQuestions, stats, allTopics || [], optionsMap);
+                const files = [{ path: `books/${topic.bookSlug}/${topic.chapterSlug}/topics/${topic.slug}.html`, content: content }];
+                const result = await commitToGitHub(files, config);
+                
+                if (result.success) {
+                    successCount++;
+                    addDeployLog(`✅ Deployed "${topic.name}"`, 'success');
+                } else {
+                    failCount++;
+                    addDeployLog(`❌ Failed "${topic.name}": ${result.message}`, 'error');
+                }
+            } catch (error) {
+                failCount++;
+                addDeployLog(`❌ Error deploying "${topic.name}": ${error.message}`, 'error');
+            }
+        }
+        
+        const statusMsg = successCount > 0 ? `✅ ${successCount} topics deployed` : '';
+        const failMsg = failCount > 0 ? `❌ ${failCount} failed` : '';
+        updateDeployStatus('topics', [statusMsg, failMsg].filter(Boolean).join(' | '));
+        showToast(`${successCount} topics deployed successfully! ${failCount > 0 ? failCount + ' failed' : ''}`);
+        setDeployButtonState('topics', false, '<i class="fas fa-cloud-upload-alt"></i> Deploy Selected');
+    }
+
+    // ============ DEPLOY ALL TOPICS ============
+    async function deployAllTopics() {
+        const config = getGitHubConfig();
+        if (!config) return;
+        
+        const bookSelect = document.getElementById('deployTopicBookFilter');
+        const chapterSelect = document.getElementById('deployTopicChapterFilter');
+        const bookId = bookSelect.value;
+        const chapterId = chapterSelect.value;
+        const bookTitle = bookSelect.options[bookSelect.selectedIndex]?.text || 'Selected Book';
+        const chapterName = chapterSelect.options[chapterSelect.selectedIndex]?.text || 'Selected Chapter';
+        const bookSlug = bookSelect.options[bookSelect.selectedIndex]?.dataset?.slug || '';
+        const chapterSlug = chapterSelect.options[chapterSelect.selectedIndex]?.dataset?.slug || '';
+        
+        if (!bookId || !chapterId) {
+            showToast('Please select a book and chapter first', true);
+            return;
+        }
+        
+        const { data: allTopics, error } = await _supabase
             .from('subtopics')
             .select('id, name, slug')
             .eq('chapter_id', parseInt(chapterId))
             .order('name', { ascending: true });
         
-        if (error) {
-            showToast('Error loading topics: ' + error.message, true);
-            return [];
-        }
-        return data || [];
-    }
-
-    // ============ SHOW DEPLOY BOOK SELECTION MODAL WITH PATH PREVIEW ============
-    async function showDeployBookSelection() {
-        const books = await loadDeployBooks();
-        if (books.length === 0) {
-            showToast('No books found to deploy.', true);
+        if (error || !allTopics || allTopics.length === 0) {
+            showToast('No topics found for this chapter', true);
             return;
         }
         
-        // Create modal HTML
-        const modal = document.createElement('div');
-        modal.id = 'deployBookModal';
-        modal.className = 'modal deploy-confirm-modal';
-        modal.innerHTML = `
-            <div class="modal-content p-6">
-                <h3 class="text-xl font-bold mb-4">📚 Deploy Book</h3>
-                <p class="text-sm text-gray-600 mb-4">Select which book's index page to deploy to GitHub.</p>
-                <div class="mb-4">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Select Book:</label>
-                    <select id="deployBookSelect" class="w-full p-2 border rounded-lg">
-                        <option value="">-- Select a Book --</option>
-                        ${books.map(b => `<option value="${b.id}" data-slug="${b.slug}" data-title="${escapeHtml(b.title)}">${escapeHtml(b.title)}</option>`).join('')}
-                    </select>
-                </div>
-                <div id="deployBookPathPreview" class="deploy-path-preview hidden">
-                    <span class="path-icon">📁</span>
-                    Will be saved to: <span class="path-folder" id="deployBookPath">books/</span><span class="path-file" id="deployBookFile">index.html</span>
-                </div>
-                <div class="flex gap-2 mt-4">
-                    <button id="confirmDeployBookBtn" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition" disabled>Deploy Book</button>
-                    <button id="closeDeployBookModal" class="bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-500 transition">Cancel</button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        modal.classList.remove('hidden');
+        if (!confirm(`📝 Deploy ALL ${allTopics.length} topics from "${chapterName}"?\n\nThis will deploy all topic pages. Continue?`)) return;
         
-        const select = document.getElementById('deployBookSelect');
-        const pathPreview = document.getElementById('deployBookPathPreview');
-        const pathEl = document.getElementById('deployBookPath');
-        const confirmBtn = document.getElementById('confirmDeployBookBtn');
-        
-        // Update path preview when book is selected
-        select.addEventListener('change', function() {
-            const slug = this.options[this.selectedIndex]?.dataset?.slug;
-            const title = this.options[this.selectedIndex]?.dataset?.title;
-            if (slug && title) {
-                pathEl.textContent = `books/${slug}/`;
-                pathPreview.classList.remove('hidden');
-                confirmBtn.disabled = false;
-            } else {
-                pathPreview.classList.add('hidden');
-                confirmBtn.disabled = true;
-            }
-        });
-        
-        // Handle confirm with confirmation dialog
-        document.getElementById('confirmDeployBookBtn').addEventListener('click', async function() {
-            const bookId = select.value;
-            if (!bookId) {
-                showToast('Please select a book', true);
-                return;
-            }
-            const bookSlug = select.options[select.selectedIndex].dataset.slug;
-            const bookTitle = select.options[select.selectedIndex].dataset.title;
-            
-            // Final confirmation
-            if (!confirm(`📚 Deploy "${bookTitle}" to:\n\n📁 books/${bookSlug}/index.html\n\nThis will replace the existing file on GitHub. Continue?`)) {
-                return;
-            }
-            
-            modal.classList.add('hidden');
-            modal.remove();
-            await deploySingleBook(bookId, bookSlug, bookTitle);
-        });
-        
-        // Handle close
-        document.getElementById('closeDeployBookModal').addEventListener('click', function() {
-            modal.classList.add('hidden');
-            modal.remove();
-        });
-    }
-
-    // ============ DEPLOY SINGLE BOOK ============
-    async function deploySingleBook(bookId, bookSlug, bookTitle) {
-        addDeployLog(`📚 Deploying book: "${bookTitle}"...`, 'info');
-        updateDeployStatus('books', '⏳ Deploying...');
-        setDeployButtonState('books', true, '<i class="fas fa-spinner fa-spin"></i> Deploying...');
-        
-        try {
-            // Fetch book data
-            const { data: book, error: bookError } = await _supabase
-                .from('books')
-                .select('*')
-                .eq('id', bookId)
-                .single();
-            
-            if (bookError) throw bookError;
-            
-            // Fetch chapters for this book
-            const { data: chapters, error: chaptersError } = await _supabase
-                .from('chapters')
-                .select('*')
-                .eq('book_id', bookId)
-                .order('chapter_number', { ascending: true });
-            
-            if (chaptersError) throw chaptersError;
-            
-            // Fetch topics for this book
-            let topics = [];
-            if (chapters && chapters.length > 0) {
-                const chapterIds = chapters.map(c => c.id);
-                const { data: topicsData, error: topicsError } = await _supabase
-                    .from('subtopics')
-                    .select('*')
-                    .in('chapter_id', chapterIds)
-                    .order('chapter_id')
-                    .order('name');
-                
-                if (!topicsError) topics = topicsData || [];
-            }
-            
-            // Fetch questions for this book
-            const allQuestions = await fetchQuestionsForBook(bookId);
-            
-            // Build chapter question counts
-            const chapterQCounts = {};
-            chapters.forEach(ch => {
-                chapterQCounts[ch.id] = allQuestions.filter(q => q.chapter_id === ch.id).length;
-            });
-            
-            // Difficulty stats
-            const stats = { easy: 0, medium: 0, hard: 0 };
-            allQuestions.forEach(q => {
-                const diff = (q.difficulty || '').toLowerCase();
-                if (diff === 'easy') stats.easy++;
-                else if (diff === 'medium') stats.medium++;
-                else if (diff === 'hard') stats.hard++;
-            });
-            
-            // Generate book index page
-            const content = generateBookIndexPage(book, chapters, topics, {}, allQuestions.length, chapterQCounts, stats);
-            
-            // Commit to GitHub
-            const config = getGitHubConfig();
-            if (!config) return;
-            
-            const files = [{
-                path: `books/${bookSlug}/index.html`,
-                content: content
-            }];
-            
-            const result = await commitToGitHub(files, config);
-            
-            if (result.success) {
-                addDeployLog(`✅ Deployed "${bookTitle}" to books/${bookSlug}/index.html`, 'success');
-                updateDeployStatus('books', `✅ Done`);
-                showToast(`✅ Deployed "${bookTitle}" successfully!`);
-            } else {
-                throw new Error(result.message || 'Commit failed');
-            }
-            
-        } catch (error) {
-            addDeployLog(`❌ Error deploying book: ${error.message}`, 'error');
-            updateDeployStatus('books', '❌ Failed');
-            showToast('❌ Deployment failed: ' + error.message, true);
-        } finally {
-            setDeployButtonState('books', false, '<i class="fas fa-cloud-upload-alt"></i> Deploy');
-        }
-    }
-
-    // ============ SHOW DEPLOY CHAPTER SELECTION MODAL WITH PATH PREVIEW ============
-    async function showDeployChapterSelection() {
-        const books = await loadDeployBooks();
-        if (books.length === 0) {
-            showToast('No books found.', true);
-            return;
-        }
-        
-        const modal = document.createElement('div');
-        modal.id = 'deployChapterModal';
-        modal.className = 'modal deploy-confirm-modal';
-        modal.innerHTML = `
-            <div class="modal-content p-6">
-                <h3 class="text-xl font-bold mb-4">📖 Deploy Chapter</h3>
-                <p class="text-sm text-gray-600 mb-4">Select a book and chapter to deploy to GitHub.</p>
-                <div class="mb-3">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Select Book:</label>
-                    <select id="deployChapterBookSelect" class="w-full p-2 border rounded-lg">
-                        <option value="">-- Select a Book --</option>
-                        ${books.map(b => `<option value="${b.id}" data-slug="${b.slug}" data-title="${escapeHtml(b.title)}">${escapeHtml(b.title)}</option>`).join('')}
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Select Chapter:</label>
-                    <select id="deployChapterSelect" class="w-full p-2 border rounded-lg" disabled>
-                        <option value="">Select a book first</option>
-                    </select>
-                </div>
-                <div id="deployChapterPathPreview" class="deploy-path-preview hidden">
-                    <span class="path-icon">📁</span>
-                    Will be saved to: <span class="path-folder" id="deployChapterPath">books/</span><span class="path-file" id="deployChapterFile">.html</span>
-                </div>
-                <div class="flex gap-2 mt-4">
-                    <button id="confirmDeployChapterBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition" disabled>Deploy Chapter</button>
-                    <button id="closeDeployChapterModal" class="bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-500 transition">Cancel</button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        modal.classList.remove('hidden');
-        
-        const bookSelect = document.getElementById('deployChapterBookSelect');
-        const chapterSelect = document.getElementById('deployChapterSelect');
-        const pathPreview = document.getElementById('deployChapterPathPreview');
-        const pathEl = document.getElementById('deployChapterPath');
-        const fileEl = document.getElementById('deployChapterFile');
-        const confirmBtn = document.getElementById('confirmDeployChapterBtn');
-        
-        // Load chapters when book is selected
-        bookSelect.addEventListener('change', async function() {
-            const bookId = this.value;
-            const bookSlug = this.options[this.selectedIndex]?.dataset?.slug;
-            const bookTitle = this.options[this.selectedIndex]?.dataset?.title;
-            if (!bookId) {
-                chapterSelect.innerHTML = '<option value="">Select a book first</option>';
-                chapterSelect.disabled = true;
-                pathPreview.classList.add('hidden');
-                confirmBtn.disabled = true;
-                return;
-            }
-            
-            const chapters = await loadDeployChapters(bookId);
-            chapterSelect.innerHTML = '<option value="">-- Select a Chapter --</option>';
-            chapters.forEach(ch => {
-                const display = ch.chapter_number ? `Ch ${ch.chapter_number}: ${ch.name}` : ch.name;
-                chapterSelect.innerHTML += `<option value="${ch.id}" data-slug="${ch.slug}" data-name="${escapeHtml(ch.name)}">${escapeHtml(display)}</option>`;
-            });
-            chapterSelect.disabled = false;
-            confirmBtn.disabled = true;
-            pathPreview.classList.add('hidden');
-        });
-        
-        // Update path preview when chapter is selected
-        chapterSelect.addEventListener('change', function() {
-            const chapterSlug = this.options[this.selectedIndex]?.dataset?.slug;
-            const bookSlug = bookSelect.options[bookSelect.selectedIndex]?.dataset?.slug;
-            if (chapterSlug && bookSlug) {
-                pathEl.textContent = `books/${bookSlug}/`;
-                fileEl.textContent = `${chapterSlug}.html`;
-                pathPreview.classList.remove('hidden');
-                confirmBtn.disabled = false;
-            } else {
-                pathPreview.classList.add('hidden');
-                confirmBtn.disabled = true;
-            }
-        });
-        
-        // Handle confirm with confirmation dialog
-        confirmBtn.addEventListener('click', async function() {
-            const bookId = bookSelect.value;
-            const chapterId = chapterSelect.value;
-            if (!bookId || !chapterId) {
-                showToast('Please select a book and chapter', true);
-                return;
-            }
-            
-            const book = books.find(b => b.id == bookId);
-            const chapterSlug = chapterSelect.options[chapterSelect.selectedIndex].dataset.slug;
-            const chapterName = chapterSelect.options[chapterSelect.selectedIndex].dataset.name;
-            const bookTitle = bookSelect.options[bookSelect.selectedIndex].dataset.title;
-            
-            // Final confirmation
-            if (!confirm(`📖 Deploy "${chapterName}" from "${bookTitle}" to:\n\n📁 books/${book.slug}/${chapterSlug}.html\n\nThis will replace the existing file on GitHub. Continue?`)) {
-                return;
-            }
-            
-            modal.classList.add('hidden');
-            modal.remove();
-            await deploySingleChapter(bookId, chapterId, book.slug, chapterSlug, book.title, chapterName);
-        });
-        
-        document.getElementById('closeDeployChapterModal').addEventListener('click', function() {
-            modal.classList.add('hidden');
-            modal.remove();
-        });
-    }
-
-    // ============ DEPLOY SINGLE CHAPTER ============
-    async function deploySingleChapter(bookId, chapterId, bookSlug, chapterSlug, bookTitle, chapterName) {
-        addDeployLog(`📖 Deploying chapter: "${chapterName}" from "${bookTitle}"...`, 'info');
-        updateDeployStatus('chapters', '⏳ Deploying...');
-        setDeployButtonState('chapters', true, '<i class="fas fa-spinner fa-spin"></i> Deploying...');
-        
-        try {
-            // Fetch data
-            const { data: book, error: bookError } = await _supabase
-                .from('books')
-                .select('*')
-                .eq('id', bookId)
-                .single();
-            if (bookError) throw bookError;
-            
-            const { data: chapter, error: chapterError } = await _supabase
-                .from('chapters')
-                .select('*')
-                .eq('id', chapterId)
-                .single();
-            if (chapterError) throw chapterError;
-            
-            const { data: topics, error: topicsError } = await _supabase
-                .from('subtopics')
-                .select('*')
-                .eq('chapter_id', chapterId)
-                .order('name');
-            if (topicsError) throw topicsError;
-            
-            const chapterQuestions = await fetchQuestionsForChapter(chapterId);
-            
-            // Build options map
-            const optionsMap = {};
-            chapterQuestions.forEach(q => {
-                optionsMap[q.id] = q.options_array || ['', '', '', ''];
-            });
-            
-            const stats = { easy: 0, medium: 0, hard: 0 };
-            chapterQuestions.forEach(q => {
-                const diff = (q.difficulty || '').toLowerCase();
-                if (diff === 'easy') stats.easy++;
-                else if (diff === 'medium') stats.medium++;
-                else if (diff === 'hard') stats.hard++;
-            });
-            
-            // Generate chapter page
-            const content = generateChapterPage(book, chapter, topics || [], chapterQuestions, stats, optionsMap);
-            
-            const config = getGitHubConfig();
-            if (!config) return;
-            
-            const files = [{
-                path: `books/${bookSlug}/${chapterSlug}.html`,
-                content: content
-            }];
-            
-            const result = await commitToGitHub(files, config);
-            
-            if (result.success) {
-                addDeployLog(`✅ Deployed "${chapterName}" to books/${bookSlug}/${chapterSlug}.html`, 'success');
-                updateDeployStatus('chapters', `✅ Done`);
-                showToast(`✅ Deployed "${chapterName}" successfully!`);
-            } else {
-                throw new Error(result.message || 'Commit failed');
-            }
-            
-        } catch (error) {
-            addDeployLog(`❌ Error deploying chapter: ${error.message}`, 'error');
-            updateDeployStatus('chapters', '❌ Failed');
-            showToast('❌ Deployment failed: ' + error.message, true);
-        } finally {
-            setDeployButtonState('chapters', false, '<i class="fas fa-cloud-upload-alt"></i> Deploy');
-        }
-    }
-
-    // ============ SHOW DEPLOY TOPIC SELECTION MODAL WITH PATH PREVIEW ============
-    async function showDeployTopicSelection() {
-        const books = await loadDeployBooks();
-        if (books.length === 0) {
-            showToast('No books found.', true);
-            return;
-        }
-        
-        const modal = document.createElement('div');
-        modal.id = 'deployTopicModal';
-        modal.className = 'modal deploy-confirm-modal';
-        modal.innerHTML = `
-            <div class="modal-content p-6">
-                <h3 class="text-xl font-bold mb-4">📝 Deploy Topic</h3>
-                <p class="text-sm text-gray-600 mb-4">Select a book, chapter, and topic to deploy to GitHub.</p>
-                <div class="mb-3">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Select Book:</label>
-                    <select id="deployTopicBookSelect" class="w-full p-2 border rounded-lg">
-                        <option value="">-- Select a Book --</option>
-                        ${books.map(b => `<option value="${b.id}" data-slug="${b.slug}" data-title="${escapeHtml(b.title)}">${escapeHtml(b.title)}</option>`).join('')}
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Select Chapter:</label>
-                    <select id="deployTopicChapterSelect" class="w-full p-2 border rounded-lg" disabled>
-                        <option value="">Select a book first</option>
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Select Topic:</label>
-                    <select id="deployTopicSelect" class="w-full p-2 border rounded-lg" disabled>
-                        <option value="">Select a chapter first</option>
-                    </select>
-                </div>
-                <div id="deployTopicPathPreview" class="deploy-path-preview hidden">
-                    <span class="path-icon">📁</span>
-                    Will be saved to: <span class="path-folder" id="deployTopicPath">books/</span><span class="path-file" id="deployTopicFile">.html</span>
-                </div>
-                <div class="flex gap-2 mt-4">
-                    <button id="confirmDeployTopicBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition" disabled>Deploy Topic</button>
-                    <button id="closeDeployTopicModal" class="bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-500 transition">Cancel</button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        modal.classList.remove('hidden');
-        
-        const bookSelect = document.getElementById('deployTopicBookSelect');
-        const chapterSelect = document.getElementById('deployTopicChapterSelect');
-        const topicSelect = document.getElementById('deployTopicSelect');
-        const pathPreview = document.getElementById('deployTopicPathPreview');
-        const pathEl = document.getElementById('deployTopicPath');
-        const fileEl = document.getElementById('deployTopicFile');
-        const confirmBtn = document.getElementById('confirmDeployTopicBtn');
-        
-        // Load chapters when book is selected
-        bookSelect.addEventListener('change', async function() {
-            const bookId = this.value;
-            if (!bookId) {
-                chapterSelect.innerHTML = '<option value="">Select a book first</option>';
-                chapterSelect.disabled = true;
-                topicSelect.innerHTML = '<option value="">Select a chapter first</option>';
-                topicSelect.disabled = true;
-                pathPreview.classList.add('hidden');
-                confirmBtn.disabled = true;
-                return;
-            }
-            
-            const chapters = await loadDeployChapters(bookId);
-            chapterSelect.innerHTML = '<option value="">-- Select a Chapter --</option>';
-            chapters.forEach(ch => {
-                const display = ch.chapter_number ? `Ch ${ch.chapter_number}: ${ch.name}` : ch.name;
-                chapterSelect.innerHTML += `<option value="${ch.id}" data-slug="${ch.slug}" data-name="${escapeHtml(ch.name)}">${escapeHtml(display)}</option>`;
-            });
-            chapterSelect.disabled = false;
-            topicSelect.innerHTML = '<option value="">Select a chapter first</option>';
-            topicSelect.disabled = true;
-            pathPreview.classList.add('hidden');
-            confirmBtn.disabled = true;
-        });
-        
-        // Load topics when chapter is selected
-        chapterSelect.addEventListener('change', async function() {
-            const chapterId = this.value;
-            const chapterSlug = this.options[this.selectedIndex]?.dataset?.slug;
-            if (!chapterId) {
-                topicSelect.innerHTML = '<option value="">Select a chapter first</option>';
-                topicSelect.disabled = true;
-                pathPreview.classList.add('hidden');
-                confirmBtn.disabled = true;
-                return;
-            }
-            
-            const topics = await loadDeployTopics(chapterId);
-            topicSelect.innerHTML = '<option value="">-- Select a Topic --</option>';
-            topics.forEach(t => {
-                topicSelect.innerHTML += `<option value="${t.id}" data-slug="${t.slug}" data-name="${escapeHtml(t.name)}">${escapeHtml(t.name)}</option>`;
-            });
-            topicSelect.disabled = false;
-            confirmBtn.disabled = true;
-            pathPreview.classList.add('hidden');
-        });
-        
-        // Update path preview when topic is selected
-        topicSelect.addEventListener('change', function() {
-            const topicSlug = this.options[this.selectedIndex]?.dataset?.slug;
-            const chapterSlug = chapterSelect.options[chapterSelect.selectedIndex]?.dataset?.slug;
-            const bookSlug = bookSelect.options[bookSelect.selectedIndex]?.dataset?.slug;
-            if (topicSlug && chapterSlug && bookSlug) {
-                pathEl.textContent = `books/${bookSlug}/${chapterSlug}/topics/`;
-                fileEl.textContent = `${topicSlug}.html`;
-                pathPreview.classList.remove('hidden');
-                confirmBtn.disabled = false;
-            } else {
-                pathPreview.classList.add('hidden');
-                confirmBtn.disabled = true;
-            }
-        });
-        
-        // Handle confirm with confirmation dialog
-        confirmBtn.addEventListener('click', async function() {
-            const bookId = bookSelect.value;
-            const chapterId = chapterSelect.value;
-            const topicId = topicSelect.value;
-            if (!bookId || !chapterId || !topicId) {
-                showToast('Please select a book, chapter, and topic', true);
-                return;
-            }
-            
-            const book = books.find(b => b.id == bookId);
-            const chapterSlug = chapterSelect.options[chapterSelect.selectedIndex].dataset.slug;
-            const topicSlug = topicSelect.options[topicSelect.selectedIndex].dataset.slug;
-            const topicName = topicSelect.options[topicSelect.selectedIndex].dataset.name;
-            const chapterName = chapterSelect.options[chapterSelect.selectedIndex].dataset.name;
-            
-            // Final confirmation
-            if (!confirm(`📝 Deploy "${topicName}" from "${chapterName}" to:\n\n📁 books/${book.slug}/${chapterSlug}/topics/${topicSlug}.html\n\nThis will replace the existing file on GitHub. Continue?`)) {
-                return;
-            }
-            
-            modal.classList.add('hidden');
-            modal.remove();
-            await deploySingleTopic(bookId, chapterId, topicId, book.slug, chapterSlug, topicSlug, book.title, topicName);
-        });
-        
-        document.getElementById('closeDeployTopicModal').addEventListener('click', function() {
-            modal.classList.add('hidden');
-            modal.remove();
-        });
-    }
-
-    // ============ DEPLOY SINGLE TOPIC ============
-    async function deploySingleTopic(bookId, chapterId, topicId, bookSlug, chapterSlug, topicSlug, bookTitle, topicName) {
-        addDeployLog(`📝 Deploying topic: "${topicName}" from "${bookTitle}"...`, 'info');
-        updateDeployStatus('topics', '⏳ Deploying...');
+        addDeployLog(`📝 Deploying all ${allTopics.length} topics from "${chapterName}"...`, 'info');
+        updateDeployStatus('topics', '⏳ Deploying all...');
         setDeployButtonState('topics', true, '<i class="fas fa-spinner fa-spin"></i> Deploying...');
         
-        try {
-            // Fetch data
-            const { data: book, error: bookError } = await _supabase
-                .from('books')
-                .select('*')
-                .eq('id', bookId)
-                .single();
-            if (bookError) throw bookError;
-            
-            const { data: chapter, error: chapterError } = await _supabase
-                .from('chapters')
-                .select('*')
-                .eq('id', chapterId)
-                .single();
-            if (chapterError) throw chapterError;
-            
-            const { data: topic, error: topicError } = await _supabase
-                .from('subtopics')
-                .select('*')
-                .eq('id', topicId)
-                .single();
-            if (topicError) throw topicError;
-            
-            const topicQuestions = await fetchQuestionsForTopic(topicId);
-            
-            // Get all topics in the chapter for "Related Topics"
-            const { data: allTopics, error: allTopicsError } = await _supabase
-                .from('subtopics')
-                .select('*')
-                .eq('chapter_id', chapterId)
-                .order('name');
-            if (allTopicsError) throw allTopicsError;
-            
-            // Build options map
-            const optionsMap = {};
-            topicQuestions.forEach(q => {
-                optionsMap[q.id] = q.options_array || ['', '', '', ''];
-            });
-            
-            const stats = { easy: 0, medium: 0, hard: 0 };
-            topicQuestions.forEach(q => {
-                const diff = (q.difficulty || '').toLowerCase();
-                if (diff === 'easy') stats.easy++;
-                else if (diff === 'medium') stats.medium++;
-                else if (diff === 'hard') stats.hard++;
-            });
-            
-            // Generate topic page
-            const content = generateTopicPage(book, chapter, topic, topicQuestions, stats, allTopics || [], optionsMap);
-            
-            const config = getGitHubConfig();
-            if (!config) return;
-            
-            const files = [{
-                path: `books/${bookSlug}/${chapterSlug}/topics/${topicSlug}.html`,
-                content: content
-            }];
-            
-            const result = await commitToGitHub(files, config);
-            
-            if (result.success) {
-                addDeployLog(`✅ Deployed "${topicName}" to books/${bookSlug}/${chapterSlug}/topics/${topicSlug}.html`, 'success');
-                updateDeployStatus('topics', `✅ Done`);
-                showToast(`✅ Deployed "${topicName}" successfully!`);
-            } else {
-                throw new Error(result.message || 'Commit failed');
-            }
-            
-        } catch (error) {
-            addDeployLog(`❌ Error deploying topic: ${error.message}`, 'error');
-            updateDeployStatus('topics', '❌ Failed');
-            showToast('❌ Deployment failed: ' + error.message, true);
-        } finally {
-            setDeployButtonState('topics', false, '<i class="fas fa-cloud-upload-alt"></i> Deploy');
-        }
-    }
-
-    // ============ HELPER: Fetch questions for a chapter ============
-    async function fetchQuestionsForChapter(chapterId) {
-        const { data, error } = await _supabase
-            .from('questions')
-            .select('id, chapter_id, topic_id, difficulty, question_text, correct_answer, options (option_text, option_index)')
-            .eq('chapter_id', parseInt(chapterId));
+        let successCount = 0;
+        let failCount = 0;
         
-        if (error) {
-            console.error('Error fetching chapter questions:', error);
-            return [];
+        for (const topic of allTopics) {
+            try {
+                const { data: bookData, error: bookError } = await _supabase
+                    .from('books')
+                    .select('*')
+                    .eq('id', parseInt(bookId))
+                    .single();
+                
+                if (bookError) throw bookError;
+                
+                const { data: chapterData, error: chapterError } = await _supabase
+                    .from('chapters')
+                    .select('*')
+                    .eq('id', parseInt(chapterId))
+                    .single();
+                
+                if (chapterError) throw chapterError;
+                
+                const { data: topicData, error: topicError } = await _supabase
+                    .from('subtopics')
+                    .select('*')
+                    .eq('id', topic.id)
+                    .single();
+                
+                if (topicError) throw topicError;
+                
+                const topicQuestions = await fetchQuestionsForTopic(topic.id);
+                
+                const { data: allTopicsInChapter, error: allTopicsError } = await _supabase
+                    .from('subtopics')
+                    .select('*')
+                    .eq('chapter_id', parseInt(chapterId));
+                
+                if (allTopicsError) throw allTopicsError;
+                
+                const optionsMap = {};
+                topicQuestions.forEach(q => {
+                    optionsMap[q.id] = q.options_array || ['', '', '', ''];
+                });
+                
+                const stats = { easy: 0, medium: 0, hard: 0 };
+                topicQuestions.forEach(q => {
+                    const diff = (q.difficulty || '').toLowerCase();
+                    if (diff === 'easy') stats.easy++;
+                    else if (diff === 'medium') stats.medium++;
+                    else if (diff === 'hard') stats.hard++;
+                });
+                
+                const content = generateTopicPage(bookData, chapterData, topicData, topicQuestions, stats, allTopicsInChapter || [], optionsMap);
+                const files = [{ path: `books/${bookSlug}/${chapterSlug}/topics/${topic.slug}.html`, content: content }];
+                const result = await commitToGitHub(files, config);
+                
+                if (result.success) {
+                    successCount++;
+                    addDeployLog(`✅ Deployed "${topic.name}"`, 'success');
+                } else {
+                    failCount++;
+                    addDeployLog(`❌ Failed "${topic.name}": ${result.message}`, 'error');
+                }
+            } catch (error) {
+                failCount++;
+                addDeployLog(`❌ Error deploying "${topic.name}": ${error.message}`, 'error');
+            }
         }
         
-        data.forEach(q => {
-            if (q.options && q.options.length > 0) {
-                const opts = q.options.sort((a, b) => a.option_index - b.option_index);
-                q.options_array = opts.map(o => o.option_text);
-            } else {
-                q.options_array = ['', '', '', ''];
-            }
-        });
-        
-        return data || [];
-    }
-
-    // ============ HELPER: Fetch questions for a topic ============
-    async function fetchQuestionsForTopic(topicId) {
-        const { data, error } = await _supabase
-            .from('questions')
-            .select('id, chapter_id, topic_id, difficulty, question_text, correct_answer, options (option_text, option_index)')
-            .eq('topic_id', parseInt(topicId));
-        
-        if (error) {
-            console.error('Error fetching topic questions:', error);
-            return [];
-        }
-        
-        data.forEach(q => {
-            if (q.options && q.options.length > 0) {
-                const opts = q.options.sort((a, b) => a.option_index - b.option_index);
-                q.options_array = opts.map(o => o.option_text);
-            } else {
-                q.options_array = ['', '', '', ''];
-            }
-        });
-        
-        return data || [];
+        const statusMsg = successCount > 0 ? `✅ ${successCount} topics deployed` : '';
+        const failMsg = failCount > 0 ? `❌ ${failCount} failed` : '';
+        updateDeployStatus('topics', [statusMsg, failMsg].filter(Boolean).join(' | '));
+        showToast(`${successCount} topics deployed successfully! ${failCount > 0 ? failCount + ' failed' : ''}`);
+        setDeployButtonState('topics', false, '<i class="fas fa-cloud-upload-alt"></i> Deploy Selected');
     }
 
     // ============ HELPER: Get GitHub config ============
@@ -8818,10 +9387,13 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
         document.getElementById('exportMessagesBtn').addEventListener('click', exportMessagesToCSV);
         document.getElementById('deleteAllMessagesBtn').addEventListener('click', deleteAllMessages);
         
-        // GitHub deploy buttons - FIXED with selection modals
-        document.getElementById('deployBooksBtn').addEventListener('click', showDeployBookSelection);
-        document.getElementById('deployChaptersBtn').addEventListener('click', showDeployChapterSelection);
-        document.getElementById('deployTopicsBtn').addEventListener('click', showDeployTopicSelection);
+        // GitHub deploy buttons - UPDATED with multi-select
+        document.getElementById('deployBooksBtn').addEventListener('click', deploySelectedBooks);
+        document.getElementById('deployAllBooksBtn').addEventListener('click', deployAllBooks);
+        document.getElementById('deployChaptersBtn').addEventListener('click', deploySelectedChapters);
+        document.getElementById('deployAllChaptersBtn').addEventListener('click', deployAllChapters);
+        document.getElementById('deployTopicsBtn').addEventListener('click', deploySelectedTopics);
+        document.getElementById('deployAllTopicsBtn').addEventListener('click', deployAllTopics);
         document.getElementById('deploySitemapBtn').addEventListener('click', () => deployToGitHub('sitemap'));
         document.getElementById('deployAllBtn').addEventListener('click', () => deployToGitHub('all'));
 
@@ -8836,9 +9408,14 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
         window.downloadSelectedSeoFiles = downloadSelectedSeoFiles;
         window.downloadSingleSEOPage = downloadSingleSEOPage;
         
-        window.showDeployBookSelection = showDeployBookSelection;
-        window.showDeployChapterSelection = showDeployChapterSelection;
-        window.showDeployTopicSelection = showDeployTopicSelection;
+        // Close all deploy dropdowns on outside click
+        document.addEventListener('click', function(e) {
+            document.querySelectorAll('.deploy-multi-select-wrapper').forEach(w => {
+                if (!w.contains(e.target)) {
+                    w.classList.remove('active');
+                }
+            });
+        });
     }
 
     // ============ INIT ============
