@@ -1903,19 +1903,40 @@ async function generateTopicMCQsWithResult(chapterIdx, topicIdx, topicTitle, top
 
     try {
         const hotsInstruction = hots ? 'Include at least 40% scenario-based and analytical questions (HOTS).' : '';
-        const prompt = `Generate EXACTLY ${effectiveNumQuestions} multiple-choice questions. You MUST generate ${effectiveNumQuestions} questions - no more, no less.
+const prompt = `Generate EXACTLY ${effectiveNumQuestions} multiple-choice questions. You MUST generate ${effectiveNumQuestions} questions - no more, no less.
 
 TOPIC: ${topicTitle}
 CONTENT:
 ${topicContent.slice(0, 3000)}
 
-REQUIREMENTS:
-1. 4 options per question (A, B, C, D)
-2. ${hotsInstruction}
-3. Difficulty: 30% Easy, 45% Medium, 25% Hard
-4. Random correct answers (no AAA, BBB patterns)
-5. Each explanation: 40-80 words
-6. Use \\( ... \\) for all mathematical expressions and equations.
+CRITICAL REQUIREMENTS:
+
+1. **DO NOT ask simple recall/definition questions.** (e.g., "What year did X happen?" or "Who was Y?")
+   
+2. **50% of questions MUST be APPLICATION/ANALYSIS/SCENARIO-BASED.**
+   - Give real-world situations where the student must USE the information to solve a problem.
+   - Ask "What if..." or "Which of the following scenarios..." questions.
+   - Example: "If Country A did X instead of Y, which outcome would most likely occur?"
+   - Example: "A student is asked to solve Z. Which approach correctly applies the concept?"
+   - Example: "Given the following data, which conclusion is most valid?"
+
+3. **40% of questions MUST be CONCEPTUAL UNDERSTANDING** (not just facts).
+   - Ask "Why did X happen?" or "What was the main cause of Y?"
+   - Ask "How does concept A relate to concept B?"
+
+4. **Only 10% of questions may be simple recall** (dates, names, definitions).
+
+5. **EACH question must have a 60-100 word explanation** that:
+   - Explains WHY the correct answer is right
+   - Explains WHY the wrong answers are wrong
+   - Connects the answer back to the real-world scenario
+   - Uses plain English that a student can understand
+
+6. **Difficulty distribution:** 20% Easy, 50% Medium, 30% Hard
+
+7. 4 options per question (A, B, C, D) with random correct answers (no AAA, BBB patterns).
+
+8. Use \\( ... \\) for all mathematical expressions and equations.
 
 OUTPUT CSV FORMAT (EXACTLY ${effectiveNumQuestions} rows):
 topic,question_text,option_a,option_b,option_c,option_d,correct_answer,difficulty,explanation
