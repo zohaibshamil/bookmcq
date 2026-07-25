@@ -4997,6 +4997,7 @@ async function generateSitemap() {
     logContent.innerHTML += '<div>📦 Fetching books, chapters, and topics...</div>';
     
     try {
+        // Fetch books
         const { data: books, error: booksError } = await _supabase
             .from('books')
             .select('id, title, slug, created_at')
@@ -5004,6 +5005,7 @@ async function generateSitemap() {
         
         if (booksError) throw booksError;
         
+        // Fetch chapters
         const { data: chapters, error: chaptersError } = await _supabase
             .from('chapters')
             .select('id, name, slug, book_id, chapter_number, created_at, books(title, slug)')
@@ -5012,13 +5014,42 @@ async function generateSitemap() {
         
         if (chaptersError) throw chaptersError;
         
-        const { data: topics, error: topicsError } = await _supabase
-            .from('subtopics')
-            .select('id, name, slug, chapter_id, created_at, chapters(book_id, name, chapter_number, slug, books(title, slug))')
-            .order('chapter_id')
-            .order('name');
+        // ============ FIX: FETCH ALL TOPICS WITH PAGINATION ============
+        const allTopics = [];
+        let page = 0;
+        const pageSize = 1000;
+        let hasMore = true;
         
-        if (topicsError) throw topicsError;
+        logContent.innerHTML += '<div>🔄 Fetching topics with pagination...</div>';
+        
+        while (hasMore) {
+            const from = page * pageSize;
+            const to = from + pageSize - 1;
+            
+            const { data: topicsPage, error: topicsError } = await _supabase
+                .from('subtopics')
+                .select('id, name, slug, chapter_id, created_at, chapters(book_id, name, chapter_number, slug, books(title, slug))')
+                .order('chapter_id')
+                .order('name')
+                .range(from, to);
+            
+            if (topicsError) throw topicsError;
+            
+            if (!topicsPage || topicsPage.length === 0) {
+                hasMore = false;
+            } else {
+                allTopics.push(...topicsPage);
+                page++;
+                logContent.innerHTML += `<div>📥 Fetched ${allTopics.length} topics so far...</div>`;
+                
+                if (topicsPage.length < pageSize) {
+                    hasMore = false;
+                }
+            }
+        }
+        
+        const topics = allTopics;
+        // ============ END FIX ============
         
         logContent.innerHTML += `<div>📚 Found ${books.length} books, ${chapters.length} chapters, ${topics.length} topics</div>`;
         statusEl.textContent = '📄 Generating sitemap URLs...';
