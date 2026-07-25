@@ -8459,6 +8459,131 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
         }
     }
 
+    // ============ GITHUB API COMMIT FUNCTION (GLOBAL) ============
+    async function commitToGitHub(files, config) {
+        const [owner, repo] = config.repo.split('/');
+        if (!owner || !repo) {
+            return { success: false, message: 'Invalid repository format. Use "username/repo"' };
+        }
+        
+        try {
+            // Get current commit SHA
+            const refResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/ref/heads/${config.branch}`, {
+                headers: {
+                    'Authorization': `token ${config.token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+            
+            if (!refResponse.ok) {
+                throw new Error(`Failed to get branch reference: ${refResponse.status}`);
+            }
+            
+            const refData = await refResponse.json();
+            const baseSha = refData.object.sha;
+            
+            // Create blobs for each file
+            const blobs = [];
+            for (const file of files) {
+                const path = file.path;
+                const content = file.content;
+                
+                const blobResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/blobs`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `token ${config.token}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/vnd.github.v3+json'
+                    },
+                    body: JSON.stringify({
+                        content: btoa(unescape(encodeURIComponent(content))),
+                        encoding: 'base64'
+                    })
+                });
+                
+                if (!blobResponse.ok) {
+                    const errorData = await blobResponse.json();
+                    throw new Error(`Failed to create blob for ${path}: ${errorData.message || blobResponse.status}`);
+                }
+                
+                const blobData = await blobResponse.json();
+                blobs.push({
+                    path: path,
+                    sha: blobData.sha,
+                    mode: '100644',
+                    type: 'blob'
+                });
+            }
+            
+            // Create a new tree
+            const treeResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `token ${config.token}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/vnd.github.v3+json'
+                },
+                body: JSON.stringify({
+                    base_tree: baseSha,
+                    tree: blobs
+                })
+            });
+            
+            if (!treeResponse.ok) {
+                const errorData = await treeResponse.json();
+                throw new Error(`Failed to create tree: ${errorData.message || treeResponse.status}`);
+            }
+            
+            const treeData = await treeResponse.json();
+            
+            // Create a commit
+            const commitResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/commits`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `token ${config.token}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/vnd.github.v3+json'
+                },
+                body: JSON.stringify({
+                    message: `Auto-deploy: ${files.length} files (${new Date().toISOString()})`,
+                    tree: treeData.sha,
+                    parents: [baseSha]
+                })
+            });
+            
+            if (!commitResponse.ok) {
+                const errorData = await commitResponse.json();
+                throw new Error(`Failed to create commit: ${errorData.message || commitResponse.status}`);
+            }
+            
+            const commitData = await commitResponse.json();
+            
+            // Update the branch reference
+            const updateResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/refs/heads/${config.branch}`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `token ${config.token}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/vnd.github.v3+json'
+                },
+                body: JSON.stringify({
+                    sha: commitData.sha,
+                    force: false
+                })
+            });
+            
+            if (!updateResponse.ok) {
+                const errorData = await updateResponse.json();
+                throw new Error(`Failed to update branch: ${errorData.message || updateResponse.status}`);
+            }
+            
+            return { success: true, commitSha: commitData.sha };
+            
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
     // ============ HELPER FUNCTIONS ============
     function addDeployLog(message, type = 'info') {
         const log = document.getElementById('deployLogContent');
