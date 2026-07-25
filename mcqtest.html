@@ -352,6 +352,7 @@
         <br>✅ <strong>CSV MCQ Count:</strong> Column 3 in CSV specifies how many MCQs to generate per topic.
         <br>✅ <strong>Application-Based Questions:</strong> 50% application/scenario-based, 40% conceptual, 10% recall.
         <br>✅ <strong>Quality Monitoring:</strong> Automatically tracks and reports application question rates.
+        <br>✅ <strong>MCQ Ordering:</strong> MCQs are now ordered by topic as they appear in the book structure.
     </div>
 </div>
 
@@ -457,6 +458,30 @@ function showSuccess(msg) {
         setTimeout(() => successMsg.classList.remove('show'), 5000);
     }
     log('SUCCESS: ' + msg);
+}
+
+// ============ GET MCQS IN TOPIC ORDER (FIX) ============
+function getMCQsInTopicOrder() {
+    const orderedMCQs = [];
+    if (!bookStructure.chapters) return orderedMCQs;
+    
+    bookStructure.chapters.forEach(chapter => {
+        if (chapter.topics) {
+            chapter.topics.forEach(topic => {
+                if (topic.mcqs && topic.mcqs.length > 0) {
+                    // Ensure each MCQ has the correct topic name
+                    const mcqsWithTopic = topic.mcqs.map(row => {
+                        const newRow = [...row];
+                        newRow[0] = topic.title; // Ensure topic name is correct
+                        return newRow;
+                    });
+                    orderedMCQs.push(...mcqsWithTopic);
+                }
+            });
+        }
+    });
+    
+    return orderedMCQs;
 }
 
 // ============ DETECT APPLICATION/SCENARIO-BASED QUESTIONS ============
@@ -722,8 +747,11 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     });
 });
 
+// ============ UPDATED: UPDATE PREVIEW USING ORDERED MCQS ============
 function updatePreview() {
-    if (allMCQs.length === 0) {
+    const mcqsInOrder = getMCQsInTopicOrder();
+    
+    if (mcqsInOrder.length === 0) {
         previewContent.innerHTML = '<p style="color:#888;text-align:center;padding:40px;">No MCQs.</p>';
         resultsPreview.classList.remove('show');
         return;
@@ -733,9 +761,9 @@ function updatePreview() {
     let html = `<table><thead><tr>`;
     for (let h of header) html += `<th>${h}</th>`;
     html += '</tr></thead><tbody>';
-    const maxShow = Math.min(20, allMCQs.length);
+    const maxShow = Math.min(20, mcqsInOrder.length);
     for (let i = 0; i < maxShow; i++) {
-        const row = allMCQs[i];
+        const row = mcqsInOrder[i];
         html += '<tr>';
         for (let j = 0; j < row.length; j++) {
             let cell = row[j] || '';
@@ -744,7 +772,7 @@ function updatePreview() {
         }
         html += '</tr>';
     }
-    if (allMCQs.length > 20) html += `<tr><td colspan="9" style="text-align:center;color:#888;">... and ${allMCQs.length - 20} more</td></tr>`;
+    if (mcqsInOrder.length > 20) html += `<tr><td colspan="9" style="text-align:center;color:#888;">... and ${mcqsInOrder.length - 20} more</td></tr>`;
     html += '</tbody></table>';
     resultsTable.innerHTML = html;
     previewContent.innerHTML = '';
@@ -2071,6 +2099,7 @@ async function generateTopicMCQs() {
         
         if (result.success && result.count > 0) {
             const mcqs = result.mcqs;
+            // Remove old MCQs for this topic from allMCQs
             allMCQs = allMCQs.filter(row => {
                 const topicName = row[0] || '';
                 return topicName !== topic.title;
@@ -3181,16 +3210,19 @@ function exportQualityReport() {
     showSuccess('Report exported!');
 }
 
-// ============ DOWNLOAD CSV ============
+// ============ UPDATED: DOWNLOAD CSV USING ORDERED MCQS ============
 function downloadBookCSV() {
-    if (allMCQs.length === 0) {
+    // Get MCQs in topic order
+    const mcqsInOrder = getMCQsInTopicOrder();
+    
+    if (mcqsInOrder.length === 0) {
         showError('No MCQs to download.');
         return;
     }
 
     const header = ['topic', 'question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'difficulty', 'explanation'];
     const rows = [header];
-    rows.push(...allMCQs);
+    rows.push(...mcqsInOrder);
 
     let csvContent = rows.map(row => {
         return row.map(cell => {
@@ -3286,6 +3318,7 @@ log('✨ Auto-validates topics after extraction with accurate scoring');
 log('✨ Automatic validation and fixing of mismatched correct answers!');
 log('✨ 50% application-based, 40% conceptual, 10% recall distribution');
 log('✨ Quality monitoring tracks application rate per topic');
+log('✨ MCQs are now ordered by topic as they appear in the book structure');
 updateContentStatus();
 updateTopicRegistry();
 </script>
