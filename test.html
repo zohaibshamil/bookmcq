@@ -5272,7 +5272,7 @@ async function generateSitemap() {
         statusEl.textContent = '📄 Generating sitemap URLs...';
         progressBar.style.width = '30%';
         
-        // Static pages
+        // Static pages (always first)
         const staticPages = [
             { url: '/', priority: '1.0', changefreq: 'daily' },
             { url: '/quiz', priority: '0.9', changefreq: 'weekly' },
@@ -5289,10 +5289,10 @@ async function generateSitemap() {
             { url: '/za', priority: '0.9', changefreq: 'weekly' }
         ];
         
-        // Build all URLs
+        // Build all URLs (books, chapters, topics) - NO GROUPING, ALL IN ONE ARRAY
         const allUrls = [];
         
-        // Add static pages
+        // Add static pages first
         staticPages.forEach(page => {
             allUrls.push({
                 loc: `https://www.bookmcq.com${page.url}`,
@@ -5313,7 +5313,8 @@ async function generateSitemap() {
                 lastmod: book.created_at ? new Date(book.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
                 type: 'book',
                 bookTitle: book.title,
-                bookSlug: slug
+                bookSlug: slug,
+                created_at: book.created_at || new Date().toISOString()
             });
         });
         
@@ -5330,7 +5331,8 @@ async function generateSitemap() {
                     type: 'chapter',
                     bookSlug: bookSlug,
                     chapterSlug: chapterSlug,
-                    chapterName: chapter.name
+                    chapterName: chapter.name,
+                    created_at: chapter.created_at || new Date().toISOString()
                 });
             }
         });
@@ -5350,10 +5352,30 @@ async function generateSitemap() {
                     bookSlug: bookSlug,
                     chapterSlug: chapterSlug,
                     topicSlug: topicSlug,
-                    topicName: topic.name
+                    topicName: topic.name,
+                    created_at: topic.created_at || new Date().toISOString()
                 });
             }
         });
+        
+        // ============ NEW: Sort all non-static URLs by created_at (oldest first) ============
+        // Separate static pages (keep them first) from dynamic URLs
+        const staticUrls = allUrls.filter(url => url.type === 'static');
+        const dynamicUrls = allUrls.filter(url => url.type !== 'static');
+        
+        // Sort dynamic URLs by created_at (oldest first)
+        dynamicUrls.sort((a, b) => {
+            const dateA = new Date(a.created_at);
+            const dateB = new Date(b.created_at);
+            return dateA - dateB; // Oldest first
+        });
+        
+        // Combine: static pages first, then sorted dynamic URLs
+        const sortedUrls = [...staticUrls, ...dynamicUrls];
+        
+        // Replace allUrls with sorted version
+        allUrls.length = 0;
+        allUrls.push(...sortedUrls);
         
         // Store for preview
         window.sitemapUrls = allUrls;
@@ -5439,6 +5461,7 @@ async function generateSitemap() {
         countEl.textContent = `${allUrls.length} URLs in ${sitemapFiles.length} files`;
         logContent.innerHTML += `<div class="text-green-600">✅ Generated ${sitemapFiles.length} sitemap files with ${allUrls.length} total URLs</div>`;
         logContent.innerHTML += `<div>📊 ${staticPages.length} static, ${books.length} books, ${chapters.length} chapters, ${topics.length} topics</div>`;
+        logContent.innerHTML += `<div>⏱️ Sorted by created_at (oldest first)</div>`;
         
         resultEl.classList.remove('hidden');
         downloadBtn.classList.remove('hidden');
@@ -5453,7 +5476,6 @@ async function generateSitemap() {
         logContent.innerHTML += `<div class="text-red-500">❌ Error: ${error.message}</div>`;
     }
 }
-
 function downloadSitemap() {
     if (!window.sitemapData) {
         showToast('Please generate sitemap first', true);
