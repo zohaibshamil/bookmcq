@@ -9515,6 +9515,210 @@ async function commitToGitHub(files, config) {
         }
     }
 
+// ============ DEPLOY SITEMAP ============
+async function deploySitemap() {
+    if (!window.sitemapData) {
+        showToast('Please generate sitemap first (Sitemap tab)', true);
+        addDeployLog('⚠️ Please generate sitemap first', 'warning');
+        return;
+    }
+    
+    const config = getGitHubConfig();
+    if (!config) return;
+    
+    if (!confirm(`🗺️ Deploy sitemap files to GitHub?\n\nThis will deploy ${window.sitemapData.files.length + 1} sitemap files. Continue?`)) return;
+    
+    addDeployLog('🗺️ Preparing sitemap files...', 'info');
+    updateDeployStatus('sitemap', '⏳ Deploying...');
+    setDeployButtonState('sitemap', true, '<i class="fas fa-spinner fa-spin"></i> Deploying...');
+    
+    try {
+        const files = [];
+        files.push({
+            path: 'sitemap.xml',
+            content: window.sitemapData.indexXml
+        });
+        window.sitemapData.files.forEach((file) => {
+            files.push({
+                path: file.name,
+                content: file.content
+            });
+        });
+        
+        const result = await commitToGitHub(files, config);
+        
+        if (result.success) {
+            addDeployLog(`✅ Deployed ${result.fileCount} sitemap files successfully!`, 'success');
+            updateDeployStatus('sitemap', `✅ Done (${result.fileCount} files)`);
+            showToast(`✅ Deployed ${result.fileCount} sitemap files!`);
+        } else {
+            throw new Error(result.message || 'Commit failed');
+        }
+    } catch (error) {
+        addDeployLog(`❌ Error deploying sitemap: ${error.message}`, 'error');
+        updateDeployStatus('sitemap', '❌ Failed');
+        showToast(`❌ Deployment failed: ${error.message}`, true);
+    } finally {
+        setDeployButtonState('sitemap', false, '<i class="fas fa-cloud-upload-alt"></i> Deploy');
+    }
+}
+
+// ============ DEPLOY ALL PAGES (BATCHED) ============
+async function deployAllPages() {
+    const config = getGitHubConfig();
+    if (!config) return;
+    
+    if (!confirm(`🚀 Deploy ALL pages to GitHub?\n\nThis will deploy books, chapters, topics, and sitemap in a single commit.\n\nThis may take a while. Continue?`)) return;
+    
+    addDeployLog('🚀 Preparing ALL pages for batch deployment...', 'info');
+    updateDeployStatus('all', '⏳ Preparing files...');
+    setDeployButtonState('all', true, '<i class="fas fa-spinner fa-spin"></i> Preparing...');
+    
+    try {
+        // Fetch all data
+        const [booksRes, chaptersRes, topicsRes, questionsRes] = await Promise.all([
+            _supabase.from('books').select('*'),
+            _supabase.from('chapters').select('*, books(*)'),
+            _supabase.from('subtopics').select('*, chapters(*)'),
+            _supabase.from('questions').select('*, chapters(*), subtopics(*)')
+        ]);
+        
+        const books = booksRes.data || [];
+        const chapters = chaptersRes.data || [];
+        const topics = topicsRes.data || [];
+        const questions = questionsRes.data || [];
+        
+        addDeployLog(`📚 Found ${books.length} books, ${chapters.length} chapters, ${topics.length} topics, ${questions.length} questions`, 'info');
+        
+        const allFiles = [];
+        let totalFiles = 0;
+        
+        // Generate books
+        for (const book of books) {
+            const slug = book.slug || createSlug(book.title);
+            const bookChapters = chapters.filter(c => c.book_id === book.id);
+            const bookTopics = topics.filter(t => bookChapters.some(c => c.id === t.chapter_id));
+            const bookQuestions = questions.filter(q => bookChapters.some(c => c.id === q.chapter_id));
+            
+            const chapterQCounts = {};
+            bookChapters.forEach(ch => {
+                chapterQCounts[ch.id] = bookQuestions.filter(q => q.chapter_id === ch.id).length;
+            });
+            
+            const stats = { easy: 0, medium: 0, hard: 0 };
+            bookQuestions.forEach(q => {
+                const diff = (q.difficulty || '').toLowerCase();
+                if (diff === 'easy') stats.easy++;
+                else if (diff === 'medium') stats.medium++;
+                else if (diff === 'hard') stats.hard++;
+            });
+            
+            const content = generateBookIndexPage(book, bookChapters, bookTopics, {}, bookQuestions.length, chapterQCounts, stats);
+            allFiles.push({ path: `books/${slug}/index.html`, content: content });
+            totalFiles++;
+        }
+        
+        // Generate chapters
+        for (const chapter of chapters) {
+            const book = books.find(b => b.id === chapter.book_id);
+            if (!book) continue;
+            
+            const bookSlug = book.slug || createSlug(book.title);
+            const chapterSlug = chapter.slug || createSlug(chapter.name);
+            const chapterQuestions = questions.filter(q => q.chapter_id === chapter.id);
+            const chapterTopics = topics.filter(t => t.chapter_id === chapter.id);
+            
+            const optionsMap = {};
+            chapterQuestions.forEach(q => { 
+                optionsMap[q.id] = ['', '', '', '']; 
+            });
+            
+            const stats = { easy: 0, medium: 0, hard: 0 };
+            chapterQuestions.forEach(q => {
+                const diff = (q.difficulty || '').toLowerCase();
+                if (diff === 'easy') stats.easy++;
+                else if (diff === 'medium') stats.medium++;
+                else if (diff === 'hard') stats.hard++;
+            });
+            
+            const content = generateChapterPage(book, chapter, chapterTopics, chapterQuestions, stats, optionsMap);
+            allFiles.push({ path: `books/${bookSlug}/${chapterSlug}.html`, content: content });
+            totalFiles++;
+        }
+        
+        // Generate topics
+        for (const topic of topics) {
+            const chapter = chapters.find(c => c.id === topic.chapter_id);
+            if (!chapter) continue;
+            const book = books.find(b => b.id === chapter.book_id);
+            if (!book) continue;
+            
+            const bookSlug = book.slug || createSlug(book.title);
+            const chapterSlug = chapter.slug || createSlug(chapter.name);
+            const topicSlug = topic.slug || createSlug(topic.name);
+            const topicQuestions = questions.filter(q => q.topic_id === topic.id);
+            
+            const optionsMap = {};
+            topicQuestions.forEach(q => { 
+                optionsMap[q.id] = ['', '', '', '']; 
+            });
+            
+            const stats = { easy: 0, medium: 0, hard: 0 };
+            topicQuestions.forEach(q => {
+                const diff = (q.difficulty || '').toLowerCase();
+                if (diff === 'easy') stats.easy++;
+                else if (diff === 'medium') stats.medium++;
+                else if (diff === 'hard') stats.hard++;
+            });
+            
+            const allBookTopics = topics.filter(t => t.chapter_id === chapter.id);
+            const content = generateTopicPage(book, chapter, topic, topicQuestions, stats, allBookTopics, optionsMap);
+            allFiles.push({ path: `books/${bookSlug}/${chapterSlug}/topics/${topicSlug}.html`, content: content });
+            totalFiles++;
+        }
+        
+        // Add sitemap
+        if (window.sitemapData) {
+            allFiles.push({ path: 'sitemap.xml', content: window.sitemapData.indexXml });
+            window.sitemapData.files.forEach((file) => {
+                allFiles.push({ path: file.name, content: file.content });
+            });
+            totalFiles += window.sitemapData.files.length + 1;
+        }
+        
+        addDeployLog(`📦 ${totalFiles} files ready for deployment`, 'success');
+        
+        // Final confirmation with file count
+        if (!confirm(`🚀 Deploy ${totalFiles} files to GitHub in a single commit?\n\nContinue?`)) {
+            setDeployButtonState('all', false, '<i class="fas fa-bolt"></i> Deploy All');
+            return;
+        }
+        
+        updateDeployStatus('all', '⏳ Committing...');
+        setDeployButtonState('all', true, '<i class="fas fa-spinner fa-spin"></i> Committing...');
+        
+        const result = await commitToGitHub(allFiles, config);
+        
+        if (result.success) {
+            addDeployLog(`✅ Successfully deployed ${result.fileCount} files to GitHub!`, 'success');
+            updateDeployStatus('all', `✅ Done (${result.fileCount} files)`);
+            showToast(`✅ Deployed ${result.fileCount} files to GitHub!`);
+        } else {
+            throw new Error(result.message || 'Commit failed');
+        }
+        
+    } catch (error) {
+        addDeployLog(`❌ Error: ${error.message}`, 'error');
+        updateDeployStatus('all', '❌ Failed');
+        showToast(`❌ Deployment failed: ${error.message}`, true);
+    } finally {
+        setDeployButtonState('all', false, '<i class="fas fa-bolt"></i> Deploy All');
+    }
+}
+
+// ============ END OF DEPLOY FUNCTIONS ============
+
+    
     // ============ EVENT LISTENERS ============
     function setupEventListeners() {
         document.getElementById('loginBtn').addEventListener('click', handleLogin);
