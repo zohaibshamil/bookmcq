@@ -6913,63 +6913,232 @@ async function loadBooksForSeoDropdown() {
         }
     }
 
-    // ============ Fetch questions for a specific book ============
-    async function fetchQuestionsForBook(bookId) {
-        let allQuestions = [];
-        let page = 0;
-        const pageSize = 1000;
-        let hasMore = true;
-        
-        // First get all chapter IDs for this book
-        const { data: chapters } = await _supabase
-            .from('chapters')
-            .select('id')
-            .eq('book_id', bookId);
-        
-        if (!chapters || chapters.length === 0) {
-            return [];
+// ============ FETCH QUESTIONS FOR BOOK WITH PAGINATION ============
+async function fetchQuestionsForBook(bookId) {
+    const statusEl = document.getElementById('deployStatus') || document.getElementById('sitemapStatus');
+    const logContent = document.getElementById('deployLogContent') || document.getElementById('sitemapLogContent');
+    
+    let allQuestions = [];
+    let page = 0;
+    const pageSize = 1000;
+    let hasMore = true;
+    
+    // First get all chapter IDs for this book
+    const { data: chapters, error: chaptersError } = await _supabase
+        .from('chapters')
+        .select('id')
+        .eq('book_id', parseInt(bookId));
+    
+    if (chaptersError) {
+        console.error('Error fetching chapters:', chaptersError);
+        if (logContent) {
+            logContent.innerHTML += `<div class="text-red-500">❌ Error fetching chapters: ${chaptersError.message}</div>`;
         }
-        
-        const chapterIds = chapters.map(c => c.id);
-        
-        while (hasMore) {
-            const from = page * pageSize;
-            const to = from + pageSize - 1;
-            
-            const { data, error } = await _supabase
-                .from('questions')
-                .select('id, chapter_id, topic_id, difficulty, question_text, created_at, correct_answer, options (option_text, option_index)')
-                .in('chapter_id', chapterIds)
-                .range(from, to);
-            
-            if (error) {
-                console.error('Error fetching questions:', error);
-                break;
-            }
-            
-            if (!data || data.length === 0) {
-                hasMore = false;
-            } else {
-                data.forEach(function(q) {
-                    q.chapter_id = q.chapter_id ? Number(q.chapter_id) : null;
-                    q.topic_id = q.topic_id ? Number(q.topic_id) : null;
-                    if (q.options && q.options.length > 0) {
-                        var opts = q.options.sort(function(a, b) { return a.option_index - b.option_index; });
-                        q.options_array = opts.map(function(o) { return o.option_text; });
-                    } else {
-                        q.options_array = ['', '', '', ''];
-                    }
-                });
-                allQuestions = allQuestions.concat(data);
-                page++;
-                if (data.length < pageSize) {
-                    hasMore = false;
-                }
-            }
-        }
-        return allQuestions;
+        return [];
     }
+    
+    if (!chapters || chapters.length === 0) {
+        if (logContent) {
+            logContent.innerHTML += `<div>⚠️ No chapters found for book ${bookId}</div>`;
+        }
+        return [];
+    }
+    
+    const chapterIds = chapters.map(c => c.id);
+    
+    if (logContent) {
+        logContent.innerHTML += `<div>🔄 Fetching questions for ${chapterIds.length} chapters in book...</div>`;
+    }
+    
+    while (hasMore) {
+        const from = page * pageSize;
+        const to = from + pageSize - 1;
+        
+        const { data, error } = await _supabase
+            .from('questions')
+            .select('id, chapter_id, topic_id, difficulty, question_text, created_at, correct_answer, options (option_text, option_index)')
+            .in('chapter_id', chapterIds)
+            .order('id', { ascending: true })
+            .range(from, to);
+        
+        if (error) {
+            console.error('Error fetching questions for book:', error);
+            if (logContent) {
+                logContent.innerHTML += `<div class="text-red-500">❌ Error fetching questions: ${error.message}</div>`;
+            }
+            break;
+        }
+        
+        if (!data || data.length === 0) {
+            hasMore = false;
+        } else {
+            // Process questions
+            data.forEach(function(q) {
+                q.chapter_id = q.chapter_id ? Number(q.chapter_id) : null;
+                q.topic_id = q.topic_id ? Number(q.topic_id) : null;
+                if (q.options && q.options.length > 0) {
+                    var opts = q.options.sort(function(a, b) { return a.option_index - b.option_index; });
+                    q.options_array = opts.map(function(o) { return o.option_text; });
+                } else {
+                    q.options_array = ['', '', '', ''];
+                }
+            });
+            
+            allQuestions = allQuestions.concat(data);
+            page++;
+            
+            if (logContent) {
+                logContent.innerHTML += `<div>📥 Fetched ${allQuestions.length} questions so far...</div>`;
+            }
+            
+            if (data.length < pageSize) {
+                hasMore = false;
+            }
+        }
+    }
+    
+    if (logContent) {
+        logContent.innerHTML += `<div>✅ Found ${allQuestions.length} total questions for book</div>`;
+    }
+    
+    return allQuestions;
+}
 
+// ============ FETCH QUESTIONS FOR CHAPTER WITH PAGINATION ============
+async function fetchQuestionsForChapter(chapterId) {
+    const statusEl = document.getElementById('deployStatus') || document.getElementById('sitemapStatus');
+    const logContent = document.getElementById('deployLogContent') || document.getElementById('sitemapLogContent');
+    
+    let allQuestions = [];
+    let page = 0;
+    const pageSize = 1000;
+    let hasMore = true;
+    
+    if (logContent) {
+        logContent.innerHTML += `<div>🔄 Fetching questions for chapter ID ${chapterId}...</div>`;
+    }
+    
+    while (hasMore) {
+        const from = page * pageSize;
+        const to = from + pageSize - 1;
+        
+        const { data, error } = await _supabase
+            .from('questions')
+            .select('id, chapter_id, topic_id, difficulty, question_text, created_at, correct_answer, options (option_text, option_index)')
+            .eq('chapter_id', parseInt(chapterId))
+            .order('id', { ascending: true })
+            .range(from, to);
+        
+        if (error) {
+            console.error('Error fetching questions for chapter:', error);
+            if (logContent) {
+                logContent.innerHTML += `<div class="text-red-500">❌ Error fetching questions: ${error.message}</div>`;
+            }
+            break;
+        }
+        
+        if (!data || data.length === 0) {
+            hasMore = false;
+        } else {
+            // Process questions
+            data.forEach(function(q) {
+                q.chapter_id = q.chapter_id ? Number(q.chapter_id) : null;
+                q.topic_id = q.topic_id ? Number(q.topic_id) : null;
+                if (q.options && q.options.length > 0) {
+                    var opts = q.options.sort(function(a, b) { return a.option_index - b.option_index; });
+                    q.options_array = opts.map(function(o) { return o.option_text; });
+                } else {
+                    q.options_array = ['', '', '', ''];
+                }
+            });
+            
+            allQuestions = allQuestions.concat(data);
+            page++;
+            
+            if (logContent) {
+                logContent.innerHTML += `<div>📥 Fetched ${allQuestions.length} questions so far...</div>`;
+            }
+            
+            if (data.length < pageSize) {
+                hasMore = false;
+            }
+        }
+    }
+    
+    if (logContent) {
+        logContent.innerHTML += `<div>✅ Found ${allQuestions.length} questions for chapter ${chapterId}</div>`;
+    }
+    
+    return allQuestions;
+}
+
+// ============ FETCH QUESTIONS FOR TOPIC WITH PAGINATION ============
+async function fetchQuestionsForTopic(topicId) {
+    const statusEl = document.getElementById('deployStatus') || document.getElementById('sitemapStatus');
+    const logContent = document.getElementById('deployLogContent') || document.getElementById('sitemapLogContent');
+    
+    let allQuestions = [];
+    let page = 0;
+    const pageSize = 1000;
+    let hasMore = true;
+    
+    if (logContent) {
+        logContent.innerHTML += `<div>🔄 Fetching questions for topic ID ${topicId}...</div>`;
+    }
+    
+    while (hasMore) {
+        const from = page * pageSize;
+        const to = from + pageSize - 1;
+        
+        const { data, error } = await _supabase
+            .from('questions')
+            .select('id, chapter_id, topic_id, difficulty, question_text, created_at, correct_answer, options (option_text, option_index)')
+            .eq('topic_id', parseInt(topicId))
+            .order('id', { ascending: true })
+            .range(from, to);
+        
+        if (error) {
+            console.error('Error fetching questions for topic:', error);
+            if (logContent) {
+                logContent.innerHTML += `<div class="text-red-500">❌ Error fetching questions: ${error.message}</div>`;
+            }
+            break;
+        }
+        
+        if (!data || data.length === 0) {
+            hasMore = false;
+        } else {
+            // Process questions
+            data.forEach(function(q) {
+                q.chapter_id = q.chapter_id ? Number(q.chapter_id) : null;
+                q.topic_id = q.topic_id ? Number(q.topic_id) : null;
+                if (q.options && q.options.length > 0) {
+                    var opts = q.options.sort(function(a, b) { return a.option_index - b.option_index; });
+                    q.options_array = opts.map(function(o) { return o.option_text; });
+                } else {
+                    q.options_array = ['', '', '', ''];
+                }
+            });
+            
+            allQuestions = allQuestions.concat(data);
+            page++;
+            
+            if (logContent) {
+                logContent.innerHTML += `<div>📥 Fetched ${allQuestions.length} questions so far...</div>`;
+            }
+            
+            if (data.length < pageSize) {
+                hasMore = false;
+            }
+        }
+    }
+    
+    if (logContent) {
+        logContent.innerHTML += `<div>✅ Found ${allQuestions.length} questions for topic ${topicId}</div>`;
+    }
+    
+    return allQuestions;
+}
     // ============ FIXED: SEO Dropdown Initialization ============
 function initSeoBookDropdown() {
     // IMPORTANT: This function now ONLY updates the "Your Books" section
