@@ -202,7 +202,8 @@
             <div class="csv-format-hint">
                 📌 CSV Format: Column 1 = Topic, Column 2 = (optional), Column 3 = MCQ Count<br>
                 <code>,(a) Disillusionment and frustration,33</code> → Generates 33 MCQs<br>
-                <code>,(b) There was a wave of strikes in 1919 and 1920,18</code> → Generates 18 MCQs
+                <code>,(b) There was a wave of strikes in 1919 and 1920,18</code> → Generates 18 MCQs<br>
+                <code>,(9.2.1) Basic concepts,23</code> → Generates 23 MCQs (new format)
             </div>
             <div class="csv-preview" id="csvPreview"></div>
         </div>
@@ -353,6 +354,7 @@
         <br>✅ <strong>Application-Based Questions:</strong> 50% application/scenario-based, 40% conceptual, 10% recall.
         <br>✅ <strong>Quality Monitoring:</strong> Automatically tracks and reports application question rates.
         <br>✅ <strong>MCQ Ordering:</strong> MCQs are now ordered by topic as they appear in the book structure.
+        <br>✅ <strong>Flexible CSV Parsing:</strong> Supports both letter-based (a) and number-based (9.2.1) subtopics.
     </div>
 </div>
 
@@ -469,10 +471,9 @@ function getMCQsInTopicOrder() {
         if (chapter.topics) {
             chapter.topics.forEach(topic => {
                 if (topic.mcqs && topic.mcqs.length > 0) {
-                    // Ensure each MCQ has the correct topic name
                     const mcqsWithTopic = topic.mcqs.map(row => {
                         const newRow = [...row];
-                        newRow[0] = topic.title; // Ensure topic name is correct
+                        newRow[0] = topic.title;
                         return newRow;
                     });
                     orderedMCQs.push(...mcqsWithTopic);
@@ -490,7 +491,6 @@ function detectApplicationQuestion(questionText) {
     
     const lowerQ = questionText.toLowerCase();
     
-    // Application/Scenario indicators
     const applicationPatterns = [
         /if\s+\w+\s+(was|were|did|had|would|could|should)/i,
         /given\s+(the|this|these|that)/i,
@@ -556,7 +556,6 @@ function detectApplicationQuestion(questionText) {
         /concept/i
     ];
     
-    // Recall indicators
     const recallPatterns = [
         /what\s+(is|are|was|were)\s+(the|a|an)/i,
         /who\s+(is|are|was|were)/i,
@@ -631,7 +630,6 @@ function analyzeMCQQuality(mcqs) {
         const difficulty = row[7] || 'Medium';
         const hasExplanation = row[8] && row[8].length > 30;
         
-        // Check if conceptual (has "why" or "how" or "explain")
         const isConceptual = /why|how|explain|describe|what\s+(is|are)\s+the\s+(reason|cause|effect|impact|role|function)/i.test(questionText);
         
         if (isApplication) {
@@ -664,7 +662,7 @@ function analyzeMCQQuality(mcqs) {
         applicationRate: applicationRate,
         conceptualRate: conceptualRate,
         recallRate: recallRate,
-        meetsRequirement: applicationRate >= 45, // 50% with 5% tolerance
+        meetsRequirement: applicationRate >= 45,
         details
     };
 }
@@ -888,7 +886,7 @@ function countMCQs() {
     return count;
 }
 
-// ============ FIXED: ENHANCED CSV PARSING WITH MCQ COUNT FROM COLUMN 3 ============
+// ============ ENHANCED CSV PARSING WITH GENERIC COLUMN DETECTION ============
 function parseCSVTopicsWithHierarchy(csvText) {
     const lines = csvText.split('\n').filter(l => l.trim().length > 0);
     if (lines.length === 0) return [];
@@ -896,76 +894,234 @@ function parseCSVTopicsWithHierarchy(csvText) {
     const chapters = [];
     let currentChapter = null;
     let currentTopic = null;
+    let currentContent = [];
     
-    for (let i = 0; i < lines.length; i++) {
+    // Helper function to parse a CSV line respecting quotes
+    function parseCSVLine(line) {
+        const fields = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+                if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
+                    current += '"';
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (char === ',' && !inQuotes) {
+                fields.push(current.trim());
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        fields.push(current.trim());
+        return fields;
+    }
+    
+    // Helper to detect if a field looks like a chapter
+    function isChapterField(field) {
+        if (!field) return false;
+        const trimmed = field.trim();
+        return /^\d+\.\d+\s+/.test(trimmed) || 
+               /^Chapter\s+\d+/.test(trimmed) ||
+               /^[A-Z][A-Z\s\-–—']+$/.test(trimmed) ||
+               /^\d+\.\s*[A-Z]/.test(trimmed);
+    }
+    
+    // Helper to extract a clean chapter title
+    function extractChapterTitle(field) {
+        if (!field) return 'Chapter';
+        const trimmed = field.trim();
+        const clean = trimmed.replace(/,\s*$/, '');
+        if (/^\d+\.\d+\s+/.test(clean) || /^Chapter\s+\d+/.test(clean)) {
+            return clean;
+        }
+        if (/^[A-Z][A-Z\s\-–—']+$/.test(clean)) {
+            return clean;
+        }
+        return clean;
+    }
+    
+    // Helper to extract chapter number
+    function extractChapterNumber(field) {
+        if (!field) return '1';
+        const trimmed = field.trim();
+        const numberMatch = trimmed.match(/^(\d+\.\d+)/);
+        if (numberMatch) return numberMatch[1];
+        const chapterMatch = trimmed.match(/^Chapter\s+(\d+)/i);
+        if (chapterMatch) return chapterMatch[1];
+        return String(chapters.length + 1);
+    }
+    
+    // Helper to detect if a field is a subtopic
+    function isSubtopicField(field) {
+        if (!field) return false;
+        const trimmed = field.trim();
+        return trimmed.length > 0 && !isChapterField(trimmed);
+    }
+    
+    // Helper to extract MCQ count
+    function extractMCQCount(field) {
+        if (!field) return 8;
+        const num = parseInt(field.trim());
+        return isNaN(num) ? 8 : (num > 0 ? num : 8);
+    }
+    
+    // Check for header row
+    let startIdx = 0;
+    if (lines.length > 0) {
+        const firstLine = lines[0].trim();
+        const lowerFirst = firstLine.toLowerCase();
+        if (lowerFirst.includes('topic') || lowerFirst.includes('chapter') || lowerFirst.includes('subtopic')) {
+            startIdx = 1;
+            log('📊 Detected header row, skipping...');
+        }
+    }
+    
+    // Process each line
+    for (let i = startIdx; i < lines.length; i++) {
         const line = lines[i].trim();
         if (!line) continue;
         
-        const quotedMatch = line.match(/^"([^"]+)"\s*,*\s*$/);
-        if (quotedMatch) {
-            const content = quotedMatch[1].trim();
-            const chapterMatch = content.match(/^(\d+\.\d+)\s+(.+)/);
-            if (chapterMatch) {
-                currentChapter = {
-                    number: chapterMatch[1],
-                    title: chapterMatch[2].trim(),
-                    topics: []
-                };
-                currentTopic = null;
-                chapters.push(currentChapter);
-                continue;
-            }
+        const fields = parseCSVLine(line);
+        
+        if (fields.length === 0 || (fields.length === 1 && fields[0] === '')) {
+            continue;
         }
         
-        const chapterMatch = line.match(/^(\d+\.\d+)\s+([^,]+),?\s*$/);
-        if (chapterMatch) {
+        const col1 = fields[0] || '';
+        const col2 = fields[1] || '';
+        const col3 = fields[2] || '';
+        
+        // CASE 1: CHAPTER row (col1 has chapter format)
+        if (isChapterField(col1)) {
+            if (currentChapter && currentChapter.topics && currentChapter.topics.length > 0) {
+                if (currentContent.length > 0 && currentChapter.topics.length > 0) {
+                    const lastTopic = currentChapter.topics[currentChapter.topics.length - 1];
+                    if (lastTopic && !lastTopic.content) {
+                        lastTopic.content = currentContent.join(' ').slice(0, 4000);
+                    }
+                    currentContent = [];
+                }
+                chapters.push(currentChapter);
+            }
+            
             currentChapter = {
-                number: chapterMatch[1],
-                title: chapterMatch[2].trim(),
+                number: extractChapterNumber(col1),
+                title: extractChapterTitle(col1),
                 topics: []
             };
             currentTopic = null;
-            chapters.push(currentChapter);
+            currentContent = [];
+            log(`📚 Found chapter: ${currentChapter.number} ${currentChapter.title}`);
             continue;
         }
         
-        const subTopicMatch = line.match(/^,\(([a-z])\)\s+(.+?)(?:,(\d+))?$/);
-        if (subTopicMatch && currentChapter) {
-            const mcqCount = subTopicMatch[3] ? parseInt(subTopicMatch[3]) : 8;
-            const subTopic = {
-                number: subTopicMatch[1],
-                title: subTopicMatch[2].trim(),
-                content: '',
-                type: 'subtopic',
-                mcq_count: mcqCount
-            };
-            currentChapter.topics.push(subTopic);
-            currentTopic = subTopic;
-            log(`📊 Found subtopic: (${subTopicMatch[1]}) ${subTopicMatch[2].trim()} → ${mcqCount} MCQs`);
-            continue;
-        }
-        
-        const altSubMatch = line.match(/^,\(([a-z])\)\s+(.+?)(?:,\s*(\d+))?$/);
-        if (altSubMatch && currentChapter) {
-            const mcqCount = altSubMatch[3] ? parseInt(altSubMatch[3]) : 8;
-            const subTopic = {
-                number: altSubMatch[1],
-                title: altSubMatch[2].trim(),
-                content: '',
-                type: 'subtopic',
-                mcq_count: mcqCount
-            };
-            currentChapter.topics.push(subTopic);
-            currentTopic = subTopic;
-            log(`📊 Found subtopic: (${altSubMatch[1]}) ${altSubMatch[2].trim()} → ${mcqCount} MCQs`);
-            continue;
-        }
-        
-        if (line.startsWith(',') && currentTopic) {
-            const content = line.substring(1).trim();
-            if (content.length > 0) {
-                currentTopic.content += (currentTopic.content ? ' ' : '') + content;
+        // CASE 2: SUBTOPIC row (col2 has content)
+        if (isSubtopicField(col2) && currentChapter) {
+            if (currentContent.length > 0 && currentChapter.topics.length > 0) {
+                const lastTopic = currentChapter.topics[currentChapter.topics.length - 1];
+                if (lastTopic && !lastTopic.content) {
+                    lastTopic.content = currentContent.join(' ').slice(0, 4000);
+                }
+                currentContent = [];
             }
+            
+            const subtopicTitle = col2.trim();
+            const mcqCount = extractMCQCount(col3);
+            
+            let subtopicNumber = '';
+            const numberMatch = subtopicTitle.match(/^\(?([\d.]+)\)?\s*/);
+            if (numberMatch) {
+                subtopicNumber = numberMatch[1];
+            } else {
+                const letterMatch = subtopicTitle.match(/^\(([a-z])\)\s*/);
+                if (letterMatch) {
+                    subtopicNumber = letterMatch[1];
+                }
+            }
+            
+            const newTopic = {
+                number: subtopicNumber || `${currentChapter.topics.length + 1}`,
+                title: subtopicTitle,
+                content: '',
+                type: 'subtopic',
+                mcq_count: mcqCount,
+                done: false,
+                mcqs: [],
+                _qualityMetrics: null
+            };
+            
+            currentChapter.topics.push(newTopic);
+            currentTopic = newTopic;
+            log(`📊 Found subtopic: "${subtopicTitle}" → ${mcqCount} MCQs`);
+            continue;
+        }
+        
+        // CASE 3: Content text for the current topic
+        if (currentChapter && currentChapter.topics.length > 0 && col1.trim().length > 0) {
+            // Check if this is a standalone subtopic in col1
+            if (!col2.trim() && isSubtopicField(col1) && !isChapterField(col1)) {
+                if (currentContent.length > 0 && currentChapter.topics.length > 0) {
+                    const lastTopic = currentChapter.topics[currentChapter.topics.length - 1];
+                    if (lastTopic && !lastTopic.content) {
+                        lastTopic.content = currentContent.join(' ').slice(0, 4000);
+                    }
+                    currentContent = [];
+                }
+                
+                const subtopicTitle = col1.trim();
+                const mcqCount = extractMCQCount(fields[1] || '8');
+                
+                let subtopicNumber = '';
+                const numberMatch = subtopicTitle.match(/^\(?([\d.]+)\)?\s*/);
+                if (numberMatch) {
+                    subtopicNumber = numberMatch[1];
+                } else {
+                    const letterMatch = subtopicTitle.match(/^\(([a-z])\)\s*/);
+                    if (letterMatch) {
+                        subtopicNumber = letterMatch[1];
+                    }
+                }
+                
+                const newTopic = {
+                    number: subtopicNumber || `${currentChapter.topics.length + 1}`,
+                    title: subtopicTitle,
+                    content: '',
+                    type: 'subtopic',
+                    mcq_count: mcqCount,
+                    done: false,
+                    mcqs: [],
+                    _qualityMetrics: null
+                };
+                
+                currentChapter.topics.push(newTopic);
+                currentTopic = newTopic;
+                log(`📊 Found subtopic (col1): "${subtopicTitle}" → ${mcqCount} MCQs`);
+                continue;
+            }
+            
+            // Otherwise, treat as content
+            if (col1.trim().length > 10) {
+                currentContent.push(col1.trim());
+            }
+        }
+    }
+    
+    // Save the last chapter
+    if (currentChapter) {
+        if (currentContent.length > 0 && currentChapter.topics.length > 0) {
+            const lastTopic = currentChapter.topics[currentChapter.topics.length - 1];
+            if (lastTopic && !lastTopic.content) {
+                lastTopic.content = currentContent.join(' ').slice(0, 4000);
+            }
+        }
+        if (currentChapter.topics && currentChapter.topics.length > 0) {
+            chapters.push(currentChapter);
         }
     }
     
@@ -974,7 +1130,7 @@ function parseCSVTopicsWithHierarchy(csvText) {
         if (ch.topics) {
             ch.topics.forEach(t => {
                 totalTopics++;
-                log(`📊 Topic: ${t.title} → ${t.mcq_count} MCQs`);
+                log(`📊 Topic: "${t.title}" → ${t.mcq_count} MCQs`);
             });
         }
     });
@@ -1267,7 +1423,6 @@ function renderTree() {
                     const statusIcon = isValid ? '✅' : (valResult ? '⚠️' : '');
                     const contentPreview = mainTopic.content ? mainTopic.content.slice(0, 60) + '...' : 'No content';
                     
-                    // Show quality metrics if available
                     let qualityBadge = '';
                     if (mainTopic._qualityMetrics) {
                         const qm = mainTopic._qualityMetrics;
@@ -2099,7 +2254,6 @@ async function generateTopicMCQs() {
         
         if (result.success && result.count > 0) {
             const mcqs = result.mcqs;
-            // Remove old MCQs for this topic from allMCQs
             allMCQs = allMCQs.filter(row => {
                 const topicName = row[0] || '';
                 return topicName !== topic.title;
@@ -2108,7 +2262,6 @@ async function generateTopicMCQs() {
             topic.done = true;
             mcqs.forEach(row => allMCQs.push(row));
             
-            // Store quality metrics
             const qualityAnalysis = analyzeMCQQuality(mcqs);
             topic._qualityMetrics = {
                 totalQuestions: qualityAnalysis.total,
@@ -2181,7 +2334,6 @@ async function generateTopicMCQsWithResult(chapterIdx, topicIdx, topicTitle, top
     log(`${isRetry ? '🔄 RETRY' : '📝'} Generating ${effectiveNumQuestions} MCQs for: ${topicTitle}`);
 
     try {
-// ===== ENHANCED PROMPT WITH APPLICATION/CONCEPTUAL/RECALL DISTRIBUTION =====
 const prompt = `Generate EXACTLY ${effectiveNumQuestions} multiple-choice questions. You MUST generate ${effectiveNumQuestions} questions - no more, no less.
 
 TOPIC: ${topicTitle}
@@ -2364,7 +2516,6 @@ IMPORTANT: Return EXACTLY ${effectiveNumQuestions} rows of data. Do not return m
 
         mcqs = validateAndFixMCQs(mcqs, topicTitle);
         
-        // ===== MONITOR AND LOG QUALITY =====
         if (mcqs && mcqs.length > 0) {
             const qualityAnalysis = analyzeMCQQuality(mcqs);
             log(`📊 Quality for "${topicTitle}":`);
@@ -2930,7 +3081,6 @@ Continue?`;
                     currentTopic.done = true;
                     result.mcqs.forEach(row => allMCQs.push(row));
                     
-                    // Store quality metrics
                     const qualityAnalysis = analyzeMCQQuality(result.mcqs);
                     currentTopic._qualityMetrics = {
                         totalQuestions: qualityAnalysis.total,
@@ -3174,7 +3324,6 @@ function generateQualityReport() {
     html += ` (Avg Score: ${Math.round(avgScore)}%)`;
     html += `</div>`;
     
-    // Add application rate stats
     let totalAppRate = 0;
     let topicsWithMetrics = 0;
     let topicsMeetingAppReq = 0;
@@ -3224,7 +3373,6 @@ function exportQualityReport() {
 
 // ============ UPDATED: DOWNLOAD CSV USING ORDERED MCQS ============
 function downloadBookCSV() {
-    // Get MCQs in topic order
     const mcqsInOrder = getMCQsInTopicOrder();
     
     if (mcqsInOrder.length === 0) {
@@ -3326,6 +3474,7 @@ function clearAll() {
 log('🚀 Book to MCQ Generator loaded - Enhanced Topic Extraction with MCQ Count from CSV');
 log('✨ CSV Column 3 = Number of MCQs to generate per topic');
 log('✨ Example: ,(a) Disillusionment and frustration,33 → generates 33 MCQs');
+log('✨ Example: ,(9.2.1) Basic concepts,23 → generates 23 MCQs (new format)');
 log('✨ Auto-validates topics after extraction with accurate scoring');
 log('✨ Automatic validation and fixing of mismatched correct answers!');
 log('✨ 50% application-based, 40% conceptual, 10% recall distribution');
