@@ -8396,596 +8396,696 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     let selectedDeployChapterId = null;
     let selectedDeployTopicId = null;
 
-    // ============ DEPLOY SELECTED BOOKS ============
-    async function deploySelectedBooks() {
-        const selected = getSelectedDeployBooks();
-        if (selected.length === 0) {
-            showToast('Please select at least one book to deploy', true);
-            return;
-        }
-        
-        const config = getGitHubConfig();
-        if (!config) return;
-        
-        // Show confirmation with file list
-        let confirmMsg = `📚 Deploy ${selected.length} book(s):\n\n`;
-        selected.forEach(b => {
-            confirmMsg += `  • ${b.title} → books/${b.slug}/index.html\n`;
-        });
-        confirmMsg += `\nThis will replace existing files on GitHub. Continue?`;
-        
-        if (!confirm(confirmMsg)) return;
-        
-        addDeployLog(`📚 Deploying ${selected.length} books...`, 'info');
-        updateDeployStatus('books', '⏳ Deploying...');
-        setDeployButtonState('books', true, '<i class="fas fa-spinner fa-spin"></i> Deploying...');
-        
-        let successCount = 0;
-        let failCount = 0;
-        
-        for (const book of selected) {
-            try {
-                const { data: bookData, error: bookError } = await _supabase
-                    .from('books')
-                    .select('*')
-                    .eq('id', parseInt(book.id))
-                    .single();
-                
-                if (bookError) throw bookError;
-                
-                const { data: chapters, error: chaptersError } = await _supabase
-                    .from('chapters')
-                    .select('*')
-                    .eq('book_id', parseInt(book.id))
-                    .order('chapter_number', { ascending: true });
-                
-                if (chaptersError) throw chaptersError;
-                
-                let topics = [];
-                if (chapters && chapters.length > 0) {
-                    const chapterIds = chapters.map(c => c.id);
-                    const { data: topicsData, error: topicsError } = await _supabase
-                        .from('subtopics')
-                        .select('*')
-                        .in('chapter_id', chapterIds);
-                    
-                    if (!topicsError) topics = topicsData || [];
-                }
-                
-                const allQuestions = await fetchQuestionsForBook(book.id);
-                
-                const chapterQCounts = {};
-                chapters.forEach(ch => {
-                    chapterQCounts[ch.id] = allQuestions.filter(q => q.chapter_id === ch.id).length;
-                });
-                
-                const stats = { easy: 0, medium: 0, hard: 0 };
-                allQuestions.forEach(q => {
-                    const diff = (q.difficulty || '').toLowerCase();
-                    if (diff === 'easy') stats.easy++;
-                    else if (diff === 'medium') stats.medium++;
-                    else if (diff === 'hard') stats.hard++;
-                });
-                
-                const content = generateBookIndexPage(bookData, chapters, topics, {}, allQuestions.length, chapterQCounts, stats);
-                
-                const files = [{ path: `books/${book.slug}/index.html`, content: content }];
-                const result = await commitToGitHub(files, config);
-                
-                if (result.success) {
-                    successCount++;
-                    addDeployLog(`✅ Deployed "${book.title}"`, 'success');
-                } else {
-                    failCount++;
-                    addDeployLog(`❌ Failed "${book.title}": ${result.message}`, 'error');
-                }
-            } catch (error) {
-                failCount++;
-                addDeployLog(`❌ Error deploying "${book.title}": ${error.message}`, 'error');
-            }
-        }
-        
-        const statusMsg = successCount > 0 ? `✅ ${successCount} books deployed` : '';
-        const failMsg = failCount > 0 ? `❌ ${failCount} failed` : '';
-        updateDeployStatus('books', [statusMsg, failMsg].filter(Boolean).join(' | '));
-        showToast(`${successCount} books deployed successfully! ${failCount > 0 ? failCount + ' failed' : ''}`);
-        setDeployButtonState('books', false, '<i class="fas fa-cloud-upload-alt"></i> Deploy Selected');
+// ============ DEPLOY SELECTED BOOKS (BATCHED) ============
+async function deploySelectedBooks() {
+    const selected = getSelectedDeployBooks();
+    if (selected.length === 0) {
+        showToast('Please select at least one book to deploy', true);
+        return;
     }
-
-    // ============ DEPLOY ALL BOOKS ============
-    async function deployAllBooks() {
-        const config = getGitHubConfig();
-        if (!config) return;
-        
-        const { data: allBooks, error } = await _supabase.from('books').select('id, title, slug').order('title');
-        if (error || !allBooks || allBooks.length === 0) {
-            showToast('No books found to deploy', true);
-            return;
-        }
-        
-        if (!confirm(`📚 Deploy ALL ${allBooks.length} books to GitHub?\n\nThis will deploy all book index pages. Continue?`)) return;
-        
-        addDeployLog(`📚 Deploying all ${allBooks.length} books...`, 'info');
-        updateDeployStatus('books', '⏳ Deploying all...');
-        setDeployButtonState('books', true, '<i class="fas fa-spinner fa-spin"></i> Deploying...');
-        
-        let successCount = 0;
-        let failCount = 0;
-        
-        for (const book of allBooks) {
-            try {
-                const { data: bookData, error: bookError } = await _supabase
-                    .from('books')
-                    .select('*')
-                    .eq('id', book.id)
-                    .single();
-                
-                if (bookError) throw bookError;
-                
-                const { data: chapters, error: chaptersError } = await _supabase
-                    .from('chapters')
-                    .select('*')
-                    .eq('book_id', book.id)
-                    .order('chapter_number', { ascending: true });
-                
-                if (chaptersError) throw chaptersError;
-                
-                let topics = [];
-                if (chapters && chapters.length > 0) {
-                    const chapterIds = chapters.map(c => c.id);
-                    const { data: topicsData, error: topicsError } = await _supabase
-                        .from('subtopics')
-                        .select('*')
-                        .in('chapter_id', chapterIds);
-                    
-                    if (!topicsError) topics = topicsData || [];
-                }
-                
-                const allQuestions = await fetchQuestionsForBook(book.id);
-                
-                const chapterQCounts = {};
-                chapters.forEach(ch => {
-                    chapterQCounts[ch.id] = allQuestions.filter(q => q.chapter_id === ch.id).length;
-                });
-                
-                const stats = { easy: 0, medium: 0, hard: 0 };
-                allQuestions.forEach(q => {
-                    const diff = (q.difficulty || '').toLowerCase();
-                    if (diff === 'easy') stats.easy++;
-                    else if (diff === 'medium') stats.medium++;
-                    else if (diff === 'hard') stats.hard++;
-                });
-                
-                const content = generateBookIndexPage(bookData, chapters, topics, {}, allQuestions.length, chapterQCounts, stats);
-                const files = [{ path: `books/${book.slug}/index.html`, content: content }];
-                const result = await commitToGitHub(files, config);
-                
-                if (result.success) {
-                    successCount++;
-                    addDeployLog(`✅ Deployed "${book.title}"`, 'success');
-                } else {
-                    failCount++;
-                    addDeployLog(`❌ Failed "${book.title}": ${result.message}`, 'error');
-                }
-            } catch (error) {
-                failCount++;
-                addDeployLog(`❌ Error deploying "${book.title}": ${error.message}`, 'error');
-            }
-        }
-        
-        const statusMsg = successCount > 0 ? `✅ ${successCount} books deployed` : '';
-        const failMsg = failCount > 0 ? `❌ ${failCount} failed` : '';
-        updateDeployStatus('books', [statusMsg, failMsg].filter(Boolean).join(' | '));
-        showToast(`${successCount} books deployed successfully! ${failCount > 0 ? failCount + ' failed' : ''}`);
-        setDeployButtonState('books', false, '<i class="fas fa-cloud-upload-alt"></i> Deploy Selected');
-    }
-
-    // ============ DEPLOY SELECTED CHAPTERS ============
-    async function deploySelectedChapters() {
-        const selected = getSelectedDeployChapters();
-        if (selected.length === 0) {
-            showToast('Please select at least one chapter to deploy', true);
-            return;
-        }
-        
-        const config = getGitHubConfig();
-        if (!config) return;
-        
-        const bookSelect = document.getElementById('deployChapterBookFilter');
-        const bookTitle = bookSelect.options[bookSelect.selectedIndex]?.text || 'Selected Book';
-        
-        let confirmMsg = `📖 Deploy ${selected.length} chapter(s) from "${bookTitle}":\n\n`;
-        selected.forEach(ch => {
-            confirmMsg += `  • ${ch.name} → books/${ch.bookSlug}/${ch.slug}.html\n`;
-        });
-        confirmMsg += `\nThis will replace existing files on GitHub. Continue?`;
-        
-        if (!confirm(confirmMsg)) return;
-        
-        addDeployLog(`📖 Deploying ${selected.length} chapters from "${bookTitle}"...`, 'info');
-        updateDeployStatus('chapters', '⏳ Deploying...');
-        setDeployButtonState('chapters', true, '<i class="fas fa-spinner fa-spin"></i> Deploying...');
-        
-        let successCount = 0;
-        let failCount = 0;
-        
-        for (const chapter of selected) {
-            try {
-                const { data: bookData, error: bookError } = await _supabase
-                    .from('books')
-                    .select('*')
-                    .eq('slug', chapter.bookSlug)
-                    .single();
-                
-                if (bookError) throw bookError;
-                
-                const { data: chapterData, error: chapterError } = await _supabase
-                    .from('chapters')
-                    .select('*')
-                    .eq('id', parseInt(chapter.id))
-                    .single();
-                
-                if (chapterError) throw chapterError;
-                
-                const { data: topics, error: topicsError } = await _supabase
+    
+    const config = getGitHubConfig();
+    if (!config) return;
+    
+    // Build confirmation message
+    let confirmMsg = `📚 Deploy ${selected.length} book(s):\n\n`;
+    selected.forEach(b => {
+        confirmMsg += `  • ${b.title} → books/${b.slug}/index.html\n`;
+    });
+    confirmMsg += `\nThis will create a single commit with all files. Continue?`;
+    
+    if (!confirm(confirmMsg)) return;
+    
+    addDeployLog(`📚 Preparing ${selected.length} books for batch deployment...`, 'info');
+    updateDeployStatus('books', '⏳ Preparing files...');
+    setDeployButtonState('books', true, '<i class="fas fa-spinner fa-spin"></i> Preparing...');
+    
+    const allFiles = [];
+    let preparedCount = 0;
+    let failCount = 0;
+    
+    for (const book of selected) {
+        try {
+            const { data: bookData, error: bookError } = await _supabase
+                .from('books')
+                .select('*')
+                .eq('id', parseInt(book.id))
+                .single();
+            
+            if (bookError) throw bookError;
+            
+            const { data: chapters, error: chaptersError } = await _supabase
+                .from('chapters')
+                .select('*')
+                .eq('book_id', parseInt(book.id))
+                .order('chapter_number', { ascending: true });
+            
+            if (chaptersError) throw chaptersError;
+            
+            let topics = [];
+            if (chapters && chapters.length > 0) {
+                const chapterIds = chapters.map(c => c.id);
+                const { data: topicsData, error: topicsError } = await _supabase
                     .from('subtopics')
                     .select('*')
-                    .eq('chapter_id', parseInt(chapter.id));
+                    .in('chapter_id', chapterIds);
                 
-                if (topicsError) throw topicsError;
-                
-                const chapterQuestions = await fetchQuestionsForChapter(chapter.id);
-                
-                const optionsMap = {};
-                chapterQuestions.forEach(q => {
-                    optionsMap[q.id] = q.options_array || ['', '', '', ''];
-                });
-                
-                const stats = { easy: 0, medium: 0, hard: 0 };
-                chapterQuestions.forEach(q => {
-                    const diff = (q.difficulty || '').toLowerCase();
-                    if (diff === 'easy') stats.easy++;
-                    else if (diff === 'medium') stats.medium++;
-                    else if (diff === 'hard') stats.hard++;
-                });
-                
-                const content = generateChapterPage(bookData, chapterData, topics || [], chapterQuestions, stats, optionsMap);
-                const files = [{ path: `books/${chapter.bookSlug}/${chapter.slug}.html`, content: content }];
-                const result = await commitToGitHub(files, config);
-                
-                if (result.success) {
-                    successCount++;
-                    addDeployLog(`✅ Deployed "${chapter.name}"`, 'success');
-                } else {
-                    failCount++;
-                    addDeployLog(`❌ Failed "${chapter.name}": ${result.message}`, 'error');
-                }
-            } catch (error) {
-                failCount++;
-                addDeployLog(`❌ Error deploying "${chapter.name}": ${error.message}`, 'error');
+                if (!topicsError) topics = topicsData || [];
             }
+            
+            const allQuestions = await fetchQuestionsForBook(book.id);
+            
+            const chapterQCounts = {};
+            chapters.forEach(ch => {
+                chapterQCounts[ch.id] = allQuestions.filter(q => q.chapter_id === ch.id).length;
+            });
+            
+            const stats = { easy: 0, medium: 0, hard: 0 };
+            allQuestions.forEach(q => {
+                const diff = (q.difficulty || '').toLowerCase();
+                if (diff === 'easy') stats.easy++;
+                else if (diff === 'medium') stats.medium++;
+                else if (diff === 'hard') stats.hard++;
+            });
+            
+            const content = generateBookIndexPage(bookData, chapters, topics, {}, allQuestions.length, chapterQCounts, stats);
+            allFiles.push({ 
+                path: `books/${book.slug}/index.html`, 
+                content: content 
+            });
+            preparedCount++;
+            addDeployLog(`📄 Prepared "${book.title}"`, 'info');
+            
+        } catch (error) {
+            failCount++;
+            addDeployLog(`❌ Error preparing "${book.title}": ${error.message}`, 'error');
         }
-        
-        const statusMsg = successCount > 0 ? `✅ ${successCount} chapters deployed` : '';
-        const failMsg = failCount > 0 ? `❌ ${failCount} failed` : '';
-        updateDeployStatus('chapters', [statusMsg, failMsg].filter(Boolean).join(' | '));
-        showToast(`${successCount} chapters deployed successfully! ${failCount > 0 ? failCount + ' failed' : ''}`);
-        setDeployButtonState('chapters', false, '<i class="fas fa-cloud-upload-alt"></i> Deploy Selected');
     }
+    
+    if (allFiles.length === 0) {
+        showToast('No files to deploy', true);
+        updateDeployStatus('books', '❌ Failed');
+        setDeployButtonState('books', false, '<i class="fas fa-cloud-upload-alt"></i> Deploy Selected');
+        return;
+    }
+    
+    // Batch commit all files
+    addDeployLog(`📦 Committing ${allFiles.length} files in one batch...`, 'info');
+    updateDeployStatus('books', '⏳ Committing...');
+    setDeployButtonState('books', true, '<i class="fas fa-spinner fa-spin"></i> Committing...');
+    
+    const result = await commitToGitHub(allFiles, config);
+    
+    if (result.success) {
+        addDeployLog(`✅ Successfully deployed ${result.fileCount} files (${preparedCount} books)`, 'success');
+        updateDeployStatus('books', `✅ ${preparedCount} books deployed`);
+        showToast(`✅ Deployed ${preparedCount} books (${result.fileCount} files)!`);
+    } else {
+        addDeployLog(`❌ Batch deployment failed: ${result.message}`, 'error');
+        updateDeployStatus('books', '❌ Failed');
+        showToast(`❌ Deployment failed: ${result.message}`, true);
+    }
+    
+    setDeployButtonState('books', false, '<i class="fas fa-cloud-upload-alt"></i> Deploy Selected');
+}
 
-    // ============ DEPLOY ALL CHAPTERS ============
-    async function deployAllChapters() {
-        const config = getGitHubConfig();
-        if (!config) return;
-        
-        const bookSelect = document.getElementById('deployChapterBookFilter');
-        const bookId = bookSelect.value;
-        const bookTitle = bookSelect.options[bookSelect.selectedIndex]?.text || 'Selected Book';
-        const bookSlug = bookSelect.options[bookSelect.selectedIndex]?.dataset?.slug || '';
-        
-        if (!bookId) {
-            showToast('Please select a book first', true);
-            return;
-        }
-        
-        const { data: allChapters, error } = await _supabase
-            .from('chapters')
-            .select('id, name, slug')
-            .eq('book_id', parseInt(bookId))
-            .order('chapter_number', { ascending: true });
-        
-        if (error || !allChapters || allChapters.length === 0) {
-            showToast('No chapters found for this book', true);
-            return;
-        }
-        
-        if (!confirm(`📖 Deploy ALL ${allChapters.length} chapters from "${bookTitle}"?\n\nThis will deploy all chapter pages. Continue?`)) return;
-        
-        addDeployLog(`📖 Deploying all ${allChapters.length} chapters from "${bookTitle}"...`, 'info');
-        updateDeployStatus('chapters', '⏳ Deploying all...');
-        setDeployButtonState('chapters', true, '<i class="fas fa-spinner fa-spin"></i> Deploying...');
-        
-        let successCount = 0;
-        let failCount = 0;
-        
-        for (const chapter of allChapters) {
-            try {
-                const { data: bookData, error: bookError } = await _supabase
-                    .from('books')
-                    .select('*')
-                    .eq('id', parseInt(bookId))
-                    .single();
-                
-                if (bookError) throw bookError;
-                
-                const { data: chapterData, error: chapterError } = await _supabase
-                    .from('chapters')
-                    .select('*')
-                    .eq('id', chapter.id)
-                    .single();
-                
-                if (chapterError) throw chapterError;
-                
-                const { data: topics, error: topicsError } = await _supabase
+// ============ DEPLOY ALL BOOKS (BATCHED) ============
+async function deployAllBooks() {
+    const config = getGitHubConfig();
+    if (!config) return;
+    
+    const { data: allBooks, error } = await _supabase.from('books').select('id, title, slug').order('title');
+    if (error || !allBooks || allBooks.length === 0) {
+        showToast('No books found to deploy', true);
+        return;
+    }
+    
+    if (!confirm(`📚 Deploy ALL ${allBooks.length} books?\n\nThis will create a single commit with all book index pages. Continue?`)) return;
+    
+    addDeployLog(`📚 Preparing all ${allBooks.length} books for batch deployment...`, 'info');
+    updateDeployStatus('books', '⏳ Preparing files...');
+    setDeployButtonState('books', true, '<i class="fas fa-spinner fa-spin"></i> Preparing...');
+    
+    const allFiles = [];
+    let preparedCount = 0;
+    let failCount = 0;
+    
+    for (const book of allBooks) {
+        try {
+            const { data: bookData, error: bookError } = await _supabase
+                .from('books')
+                .select('*')
+                .eq('id', book.id)
+                .single();
+            
+            if (bookError) throw bookError;
+            
+            const { data: chapters, error: chaptersError } = await _supabase
+                .from('chapters')
+                .select('*')
+                .eq('book_id', book.id)
+                .order('chapter_number', { ascending: true });
+            
+            if (chaptersError) throw chaptersError;
+            
+            let topics = [];
+            if (chapters && chapters.length > 0) {
+                const chapterIds = chapters.map(c => c.id);
+                const { data: topicsData, error: topicsError } = await _supabase
                     .from('subtopics')
                     .select('*')
-                    .eq('chapter_id', chapter.id);
+                    .in('chapter_id', chapterIds);
                 
-                if (topicsError) throw topicsError;
-                
-                const chapterQuestions = await fetchQuestionsForChapter(chapter.id);
-                
-                const optionsMap = {};
-                chapterQuestions.forEach(q => {
-                    optionsMap[q.id] = q.options_array || ['', '', '', ''];
-                });
-                
-                const stats = { easy: 0, medium: 0, hard: 0 };
-                chapterQuestions.forEach(q => {
-                    const diff = (q.difficulty || '').toLowerCase();
-                    if (diff === 'easy') stats.easy++;
-                    else if (diff === 'medium') stats.medium++;
-                    else if (diff === 'hard') stats.hard++;
-                });
-                
-                const content = generateChapterPage(bookData, chapterData, topics || [], chapterQuestions, stats, optionsMap);
-                const files = [{ path: `books/${bookSlug}/${chapter.slug}.html`, content: content }];
-                const result = await commitToGitHub(files, config);
-                
-                if (result.success) {
-                    successCount++;
-                    addDeployLog(`✅ Deployed "${chapter.name}"`, 'success');
-                } else {
-                    failCount++;
-                    addDeployLog(`❌ Failed "${chapter.name}": ${result.message}`, 'error');
-                }
-            } catch (error) {
-                failCount++;
-                addDeployLog(`❌ Error deploying "${chapter.name}": ${error.message}`, 'error');
+                if (!topicsError) topics = topicsData || [];
             }
+            
+            const allQuestions = await fetchQuestionsForBook(book.id);
+            
+            const chapterQCounts = {};
+            chapters.forEach(ch => {
+                chapterQCounts[ch.id] = allQuestions.filter(q => q.chapter_id === ch.id).length;
+            });
+            
+            const stats = { easy: 0, medium: 0, hard: 0 };
+            allQuestions.forEach(q => {
+                const diff = (q.difficulty || '').toLowerCase();
+                if (diff === 'easy') stats.easy++;
+                else if (diff === 'medium') stats.medium++;
+                else if (diff === 'hard') stats.hard++;
+            });
+            
+            const content = generateBookIndexPage(bookData, chapters, topics, {}, allQuestions.length, chapterQCounts, stats);
+            allFiles.push({ 
+                path: `books/${book.slug}/index.html`, 
+                content: content 
+            });
+            preparedCount++;
+            
+        } catch (error) {
+            failCount++;
+            addDeployLog(`❌ Error preparing "${book.title}": ${error.message}`, 'error');
         }
-        
-        const statusMsg = successCount > 0 ? `✅ ${successCount} chapters deployed` : '';
-        const failMsg = failCount > 0 ? `❌ ${failCount} failed` : '';
-        updateDeployStatus('chapters', [statusMsg, failMsg].filter(Boolean).join(' | '));
-        showToast(`${successCount} chapters deployed successfully! ${failCount > 0 ? failCount + ' failed' : ''}`);
-        setDeployButtonState('chapters', false, '<i class="fas fa-cloud-upload-alt"></i> Deploy Selected');
     }
+    
+    if (allFiles.length === 0) {
+        showToast('No files to deploy', true);
+        updateDeployStatus('books', '❌ Failed');
+        setDeployButtonState('books', false, '<i class="fas fa-cloud-upload-alt"></i> Deploy Selected');
+        return;
+    }
+    
+    addDeployLog(`📦 Committing ${allFiles.length} files in one batch...`, 'info');
+    updateDeployStatus('books', '⏳ Committing...');
+    setDeployButtonState('books', true, '<i class="fas fa-spinner fa-spin"></i> Committing...');
+    
+    const result = await commitToGitHub(allFiles, config);
+    
+    if (result.success) {
+        addDeployLog(`✅ Successfully deployed ${result.fileCount} files (${preparedCount} books)`, 'success');
+        updateDeployStatus('books', `✅ ${preparedCount} books deployed`);
+        showToast(`✅ Deployed ${preparedCount} books (${result.fileCount} files)!`);
+    } else {
+        addDeployLog(`❌ Batch deployment failed: ${result.message}`, 'error');
+        updateDeployStatus('books', '❌ Failed');
+        showToast(`❌ Deployment failed: ${result.message}`, true);
+    }
+    
+    setDeployButtonState('books', false, '<i class="fas fa-cloud-upload-alt"></i> Deploy Selected');
+}
+
+// ============ DEPLOY SELECTED CHAPTERS (BATCHED) ============
+async function deploySelectedChapters() {
+    const selected = getSelectedDeployChapters();
+    if (selected.length === 0) {
+        showToast('Please select at least one chapter to deploy', true);
+        return;
+    }
+    
+    const config = getGitHubConfig();
+    if (!config) return;
+    
+    const bookSelect = document.getElementById('deployChapterBookFilter');
+    const bookTitle = bookSelect.options[bookSelect.selectedIndex]?.text || 'Selected Book';
+    
+    let confirmMsg = `📖 Deploy ${selected.length} chapter(s) from "${bookTitle}":\n\n`;
+    selected.forEach(ch => {
+        confirmMsg += `  • ${ch.name} → books/${ch.bookSlug}/${ch.slug}.html\n`;
+    });
+    confirmMsg += `\nThis will create a single commit with all files. Continue?`;
+    
+    if (!confirm(confirmMsg)) return;
+    
+    addDeployLog(`📖 Preparing ${selected.length} chapters for batch deployment...`, 'info');
+    updateDeployStatus('chapters', '⏳ Preparing files...');
+    setDeployButtonState('chapters', true, '<i class="fas fa-spinner fa-spin"></i> Preparing...');
+    
+    const allFiles = [];
+    let preparedCount = 0;
+    let failCount = 0;
+    
+    for (const chapter of selected) {
+        try {
+            const { data: bookData, error: bookError } = await _supabase
+                .from('books')
+                .select('*')
+                .eq('slug', chapter.bookSlug)
+                .single();
+            
+            if (bookError) throw bookError;
+            
+            const { data: chapterData, error: chapterError } = await _supabase
+                .from('chapters')
+                .select('*')
+                .eq('id', parseInt(chapter.id))
+                .single();
+            
+            if (chapterError) throw chapterError;
+            
+            const { data: topics, error: topicsError } = await _supabase
+                .from('subtopics')
+                .select('*')
+                .eq('chapter_id', parseInt(chapter.id));
+            
+            if (topicsError) throw topicsError;
+            
+            const chapterQuestions = await fetchQuestionsForChapter(chapter.id);
+            
+            const optionsMap = {};
+            chapterQuestions.forEach(q => {
+                optionsMap[q.id] = q.options_array || ['', '', '', ''];
+            });
+            
+            const stats = { easy: 0, medium: 0, hard: 0 };
+            chapterQuestions.forEach(q => {
+                const diff = (q.difficulty || '').toLowerCase();
+                if (diff === 'easy') stats.easy++;
+                else if (diff === 'medium') stats.medium++;
+                else if (diff === 'hard') stats.hard++;
+            });
+            
+            const content = generateChapterPage(bookData, chapterData, topics || [], chapterQuestions, stats, optionsMap);
+            allFiles.push({ 
+                path: `books/${chapter.bookSlug}/${chapter.slug}.html`, 
+                content: content 
+            });
+            preparedCount++;
+            addDeployLog(`📄 Prepared "${chapter.name}"`, 'info');
+            
+        } catch (error) {
+            failCount++;
+            addDeployLog(`❌ Error preparing "${chapter.name}": ${error.message}`, 'error');
+        }
+    }
+    
+    if (allFiles.length === 0) {
+        showToast('No files to deploy', true);
+        updateDeployStatus('chapters', '❌ Failed');
+        setDeployButtonState('chapters', false, '<i class="fas fa-cloud-upload-alt"></i> Deploy Selected');
+        return;
+    }
+    
+    addDeployLog(`📦 Committing ${allFiles.length} files in one batch...`, 'info');
+    updateDeployStatus('chapters', '⏳ Committing...');
+    setDeployButtonState('chapters', true, '<i class="fas fa-spinner fa-spin"></i> Committing...');
+    
+    const result = await commitToGitHub(allFiles, config);
+    
+    if (result.success) {
+        addDeployLog(`✅ Successfully deployed ${result.fileCount} files (${preparedCount} chapters)`, 'success');
+        updateDeployStatus('chapters', `✅ ${preparedCount} chapters deployed`);
+        showToast(`✅ Deployed ${preparedCount} chapters (${result.fileCount} files)!`);
+    } else {
+        addDeployLog(`❌ Batch deployment failed: ${result.message}`, 'error');
+        updateDeployStatus('chapters', '❌ Failed');
+        showToast(`❌ Deployment failed: ${result.message}`, true);
+    }
+    
+    setDeployButtonState('chapters', false, '<i class="fas fa-cloud-upload-alt"></i> Deploy Selected');
+}
+
+// ============ DEPLOY ALL CHAPTERS (BATCHED) ============
+async function deployAllChapters() {
+    const config = getGitHubConfig();
+    if (!config) return;
+    
+    const bookSelect = document.getElementById('deployChapterBookFilter');
+    const bookId = bookSelect.value;
+    const bookTitle = bookSelect.options[bookSelect.selectedIndex]?.text || 'Selected Book';
+    const bookSlug = bookSelect.options[bookSelect.selectedIndex]?.dataset?.slug || '';
+    
+    if (!bookId) {
+        showToast('Please select a book first', true);
+        return;
+    }
+    
+    const { data: allChapters, error } = await _supabase
+        .from('chapters')
+        .select('id, name, slug')
+        .eq('book_id', parseInt(bookId))
+        .order('chapter_number', { ascending: true });
+    
+    if (error || !allChapters || allChapters.length === 0) {
+        showToast('No chapters found for this book', true);
+        return;
+    }
+    
+    if (!confirm(`📖 Deploy ALL ${allChapters.length} chapters from "${bookTitle}"?\n\nThis will create a single commit with all chapter pages. Continue?`)) return;
+    
+    addDeployLog(`📖 Preparing all ${allChapters.length} chapters from "${bookTitle}"...`, 'info');
+    updateDeployStatus('chapters', '⏳ Preparing files...');
+    setDeployButtonState('chapters', true, '<i class="fas fa-spinner fa-spin"></i> Preparing...');
+    
+    const allFiles = [];
+    let preparedCount = 0;
+    let failCount = 0;
+    
+    for (const chapter of allChapters) {
+        try {
+            const { data: bookData, error: bookError } = await _supabase
+                .from('books')
+                .select('*')
+                .eq('id', parseInt(bookId))
+                .single();
+            
+            if (bookError) throw bookError;
+            
+            const { data: chapterData, error: chapterError } = await _supabase
+                .from('chapters')
+                .select('*')
+                .eq('id', chapter.id)
+                .single();
+            
+            if (chapterError) throw chapterError;
+            
+            const { data: topics, error: topicsError } = await _supabase
+                .from('subtopics')
+                .select('*')
+                .eq('chapter_id', chapter.id);
+            
+            if (topicsError) throw topicsError;
+            
+            const chapterQuestions = await fetchQuestionsForChapter(chapter.id);
+            
+            const optionsMap = {};
+            chapterQuestions.forEach(q => {
+                optionsMap[q.id] = q.options_array || ['', '', '', ''];
+            });
+            
+            const stats = { easy: 0, medium: 0, hard: 0 };
+            chapterQuestions.forEach(q => {
+                const diff = (q.difficulty || '').toLowerCase();
+                if (diff === 'easy') stats.easy++;
+                else if (diff === 'medium') stats.medium++;
+                else if (diff === 'hard') stats.hard++;
+            });
+            
+            const content = generateChapterPage(bookData, chapterData, topics || [], chapterQuestions, stats, optionsMap);
+            allFiles.push({ 
+                path: `books/${bookSlug}/${chapter.slug}.html`, 
+                content: content 
+            });
+            preparedCount++;
+            
+        } catch (error) {
+            failCount++;
+            addDeployLog(`❌ Error preparing "${chapter.name}": ${error.message}`, 'error');
+        }
+    }
+    
+    if (allFiles.length === 0) {
+        showToast('No files to deploy', true);
+        updateDeployStatus('chapters', '❌ Failed');
+        setDeployButtonState('chapters', false, '<i class="fas fa-cloud-upload-alt"></i> Deploy Selected');
+        return;
+    }
+    
+    addDeployLog(`📦 Committing ${allFiles.length} files in one batch...`, 'info');
+    updateDeployStatus('chapters', '⏳ Committing...');
+    setDeployButtonState('chapters', true, '<i class="fas fa-spinner fa-spin"></i> Committing...');
+    
+    const result = await commitToGitHub(allFiles, config);
+    
+    if (result.success) {
+        addDeployLog(`✅ Successfully deployed ${result.fileCount} files (${preparedCount} chapters)`, 'success');
+        updateDeployStatus('chapters', `✅ ${preparedCount} chapters deployed`);
+        showToast(`✅ Deployed ${preparedCount} chapters (${result.fileCount} files)!`);
+    } else {
+        addDeployLog(`❌ Batch deployment failed: ${result.message}`, 'error');
+        updateDeployStatus('chapters', '❌ Failed');
+        showToast(`❌ Deployment failed: ${result.message}`, true);
+    }
+    
+    setDeployButtonState('chapters', false, '<i class="fas fa-cloud-upload-alt"></i> Deploy Selected');
+}
 
     // ============ DEPLOY SELECTED TOPICS ============
-    async function deploySelectedTopics() {
-        const selected = getSelectedDeployTopics();
-        if (selected.length === 0) {
-            showToast('Please select at least one topic to deploy', true);
-            return;
-        }
-        
-        const config = getGitHubConfig();
-        if (!config) return;
-        
-        const bookSelect = document.getElementById('deployTopicBookFilter');
-        const chapterSelect = document.getElementById('deployTopicChapterFilter');
-        const bookTitle = bookSelect.options[bookSelect.selectedIndex]?.text || 'Selected Book';
-        const chapterName = chapterSelect.options[chapterSelect.selectedIndex]?.text || 'Selected Chapter';
-        
-        let confirmMsg = `📝 Deploy ${selected.length} topic(s) from "${chapterName}" (${bookTitle}):\n\n`;
-        selected.forEach(t => {
-            confirmMsg += `  • ${t.name} → books/${t.bookSlug}/${t.chapterSlug}/topics/${t.slug}.html\n`;
-        });
-        confirmMsg += `\nThis will replace existing files on GitHub. Continue?`;
-        
-        if (!confirm(confirmMsg)) return;
-        
-        addDeployLog(`📝 Deploying ${selected.length} topics from "${chapterName}"...`, 'info');
-        updateDeployStatus('topics', '⏳ Deploying...');
-        setDeployButtonState('topics', true, '<i class="fas fa-spinner fa-spin"></i> Deploying...');
-        
-        let successCount = 0;
-        let failCount = 0;
-        
-        for (const topic of selected) {
-            try {
-                const { data: bookData, error: bookError } = await _supabase
-                    .from('books')
-                    .select('*')
-                    .eq('slug', topic.bookSlug)
-                    .single();
-                
-                if (bookError) throw bookError;
-                
-                const { data: chapterData, error: chapterError } = await _supabase
-                    .from('chapters')
-                    .select('*')
-                    .eq('slug', topic.chapterSlug)
-                    .eq('book_id', bookData.id)
-                    .single();
-                
-                if (chapterError) throw chapterError;
-                
-                const { data: topicData, error: topicError } = await _supabase
-                    .from('subtopics')
-                    .select('*')
-                    .eq('id', parseInt(topic.id))
-                    .single();
-                
-                if (topicError) throw topicError;
-                
-                const topicQuestions = await fetchQuestionsForTopic(topic.id);
-                
-                const { data: allTopics, error: allTopicsError } = await _supabase
-                    .from('subtopics')
-                    .select('*')
-                    .eq('chapter_id', chapterData.id);
-                
-                if (allTopicsError) throw allTopicsError;
-                
-                const optionsMap = {};
-                topicQuestions.forEach(q => {
-                    optionsMap[q.id] = q.options_array || ['', '', '', ''];
-                });
-                
-                const stats = { easy: 0, medium: 0, hard: 0 };
-                topicQuestions.forEach(q => {
-                    const diff = (q.difficulty || '').toLowerCase();
-                    if (diff === 'easy') stats.easy++;
-                    else if (diff === 'medium') stats.medium++;
-                    else if (diff === 'hard') stats.hard++;
-                });
-                
-                const content = generateTopicPage(bookData, chapterData, topicData, topicQuestions, stats, allTopics || [], optionsMap);
-                const files = [{ path: `books/${topic.bookSlug}/${topic.chapterSlug}/topics/${topic.slug}.html`, content: content }];
-                const result = await commitToGitHub(files, config);
-                
-                if (result.success) {
-                    successCount++;
-                    addDeployLog(`✅ Deployed "${topic.name}"`, 'success');
-                } else {
-                    failCount++;
-                    addDeployLog(`❌ Failed "${topic.name}": ${result.message}`, 'error');
-                }
-            } catch (error) {
-                failCount++;
-                addDeployLog(`❌ Error deploying "${topic.name}": ${error.message}`, 'error');
-            }
-        }
-        
-        const statusMsg = successCount > 0 ? `✅ ${successCount} topics deployed` : '';
-        const failMsg = failCount > 0 ? `❌ ${failCount} failed` : '';
-        updateDeployStatus('topics', [statusMsg, failMsg].filter(Boolean).join(' | '));
-        showToast(`${successCount} topics deployed successfully! ${failCount > 0 ? failCount + ' failed' : ''}`);
-        setDeployButtonState('topics', false, '<i class="fas fa-cloud-upload-alt"></i> Deploy Selected');
+// ============ DEPLOY SELECTED TOPICS (BATCHED) ============
+async function deploySelectedTopics() {
+    const selected = getSelectedDeployTopics();
+    if (selected.length === 0) {
+        showToast('Please select at least one topic to deploy', true);
+        return;
     }
+    
+    const config = getGitHubConfig();
+    if (!config) return;
+    
+    const bookSelect = document.getElementById('deployTopicBookFilter');
+    const chapterSelect = document.getElementById('deployTopicChapterFilter');
+    const bookTitle = bookSelect.options[bookSelect.selectedIndex]?.text || 'Selected Book';
+    const chapterName = chapterSelect.options[chapterSelect.selectedIndex]?.text || 'Selected Chapter';
+    
+    let confirmMsg = `📝 Deploy ${selected.length} topic(s) from "${chapterName}" (${bookTitle}):\n\n`;
+    selected.forEach(t => {
+        confirmMsg += `  • ${t.name} → books/${t.bookSlug}/${t.chapterSlug}/topics/${t.slug}.html\n`;
+    });
+    confirmMsg += `\nThis will create a single commit with all files. Continue?`;
+    
+    if (!confirm(confirmMsg)) return;
+    
+    addDeployLog(`📝 Preparing ${selected.length} topics for batch deployment...`, 'info');
+    updateDeployStatus('topics', '⏳ Preparing files...');
+    setDeployButtonState('topics', true, '<i class="fas fa-spinner fa-spin"></i> Preparing...');
+    
+    const allFiles = [];
+    let preparedCount = 0;
+    let failCount = 0;
+    
+    for (const topic of selected) {
+        try {
+            const { data: bookData, error: bookError } = await _supabase
+                .from('books')
+                .select('*')
+                .eq('slug', topic.bookSlug)
+                .single();
+            
+            if (bookError) throw bookError;
+            
+            const { data: chapterData, error: chapterError } = await _supabase
+                .from('chapters')
+                .select('*')
+                .eq('slug', topic.chapterSlug)
+                .eq('book_id', bookData.id)
+                .single();
+            
+            if (chapterError) throw chapterError;
+            
+            const { data: topicData, error: topicError } = await _supabase
+                .from('subtopics')
+                .select('*')
+                .eq('id', parseInt(topic.id))
+                .single();
+            
+            if (topicError) throw topicError;
+            
+            const topicQuestions = await fetchQuestionsForTopic(topic.id);
+            
+            const { data: allTopics, error: allTopicsError } = await _supabase
+                .from('subtopics')
+                .select('*')
+                .eq('chapter_id', chapterData.id);
+            
+            if (allTopicsError) throw allTopicsError;
+            
+            const optionsMap = {};
+            topicQuestions.forEach(q => {
+                optionsMap[q.id] = q.options_array || ['', '', '', ''];
+            });
+            
+            const stats = { easy: 0, medium: 0, hard: 0 };
+            topicQuestions.forEach(q => {
+                const diff = (q.difficulty || '').toLowerCase();
+                if (diff === 'easy') stats.easy++;
+                else if (diff === 'medium') stats.medium++;
+                else if (diff === 'hard') stats.hard++;
+            });
+            
+            const content = generateTopicPage(bookData, chapterData, topicData, topicQuestions, stats, allTopics || [], optionsMap);
+            allFiles.push({ 
+                path: `books/${topic.bookSlug}/${topic.chapterSlug}/topics/${topic.slug}.html`, 
+                content: content 
+            });
+            preparedCount++;
+            addDeployLog(`📄 Prepared "${topic.name}"`, 'info');
+            
+        } catch (error) {
+            failCount++;
+            addDeployLog(`❌ Error preparing "${topic.name}": ${error.message}`, 'error');
+        }
+    }
+    
+    if (allFiles.length === 0) {
+        showToast('No files to deploy', true);
+        updateDeployStatus('topics', '❌ Failed');
+        setDeployButtonState('topics', false, '<i class="fas fa-cloud-upload-alt"></i> Deploy Selected');
+        return;
+    }
+    
+    addDeployLog(`📦 Committing ${allFiles.length} files in one batch...`, 'info');
+    updateDeployStatus('topics', '⏳ Committing...');
+    setDeployButtonState('topics', true, '<i class="fas fa-spinner fa-spin"></i> Committing...');
+    
+    const result = await commitToGitHub(allFiles, config);
+    
+    if (result.success) {
+        addDeployLog(`✅ Successfully deployed ${result.fileCount} files (${preparedCount} topics)`, 'success');
+        updateDeployStatus('topics', `✅ ${preparedCount} topics deployed`);
+        showToast(`✅ Deployed ${preparedCount} topics (${result.fileCount} files)!`);
+    } else {
+        addDeployLog(`❌ Batch deployment failed: ${result.message}`, 'error');
+        updateDeployStatus('topics', '❌ Failed');
+        showToast(`❌ Deployment failed: ${result.message}`, true);
+    }
+    
+    setDeployButtonState('topics', false, '<i class="fas fa-cloud-upload-alt"></i> Deploy Selected');
+}
 
-    // ============ DEPLOY ALL TOPICS ============
-    async function deployAllTopics() {
-        const config = getGitHubConfig();
-        if (!config) return;
-        
-        const bookSelect = document.getElementById('deployTopicBookFilter');
-        const chapterSelect = document.getElementById('deployTopicChapterFilter');
-        const bookId = bookSelect.value;
-        const chapterId = chapterSelect.value;
-        const bookTitle = bookSelect.options[bookSelect.selectedIndex]?.text || 'Selected Book';
-        const chapterName = chapterSelect.options[chapterSelect.selectedIndex]?.text || 'Selected Chapter';
-        const bookSlug = bookSelect.options[bookSelect.selectedIndex]?.dataset?.slug || '';
-        const chapterSlug = chapterSelect.options[chapterSelect.selectedIndex]?.dataset?.slug || '';
-        
-        if (!bookId || !chapterId) {
-            showToast('Please select a book and chapter first', true);
-            return;
-        }
-        
-        const { data: allTopics, error } = await _supabase
-            .from('subtopics')
-            .select('id, name, slug')
-            .eq('chapter_id', parseInt(chapterId))
-            .order('name', { ascending: true });
-        
-        if (error || !allTopics || allTopics.length === 0) {
-            showToast('No topics found for this chapter', true);
-            return;
-        }
-        
-        if (!confirm(`📝 Deploy ALL ${allTopics.length} topics from "${chapterName}"?\n\nThis will deploy all topic pages. Continue?`)) return;
-        
-        addDeployLog(`📝 Deploying all ${allTopics.length} topics from "${chapterName}"...`, 'info');
-        updateDeployStatus('topics', '⏳ Deploying all...');
-        setDeployButtonState('topics', true, '<i class="fas fa-spinner fa-spin"></i> Deploying...');
-        
-        let successCount = 0;
-        let failCount = 0;
-        
-        for (const topic of allTopics) {
-            try {
-                const { data: bookData, error: bookError } = await _supabase
-                    .from('books')
-                    .select('*')
-                    .eq('id', parseInt(bookId))
-                    .single();
-                
-                if (bookError) throw bookError;
-                
-                const { data: chapterData, error: chapterError } = await _supabase
-                    .from('chapters')
-                    .select('*')
-                    .eq('id', parseInt(chapterId))
-                    .single();
-                
-                if (chapterError) throw chapterError;
-                
-                const { data: topicData, error: topicError } = await _supabase
-                    .from('subtopics')
-                    .select('*')
-                    .eq('id', topic.id)
-                    .single();
-                
-                if (topicError) throw topicError;
-                
-                const topicQuestions = await fetchQuestionsForTopic(topic.id);
-                
-                const { data: allTopicsInChapter, error: allTopicsError } = await _supabase
-                    .from('subtopics')
-                    .select('*')
-                    .eq('chapter_id', parseInt(chapterId));
-                
-                if (allTopicsError) throw allTopicsError;
-                
-                const optionsMap = {};
-                topicQuestions.forEach(q => {
-                    optionsMap[q.id] = q.options_array || ['', '', '', ''];
-                });
-                
-                const stats = { easy: 0, medium: 0, hard: 0 };
-                topicQuestions.forEach(q => {
-                    const diff = (q.difficulty || '').toLowerCase();
-                    if (diff === 'easy') stats.easy++;
-                    else if (diff === 'medium') stats.medium++;
-                    else if (diff === 'hard') stats.hard++;
-                });
-                
-                const content = generateTopicPage(bookData, chapterData, topicData, topicQuestions, stats, allTopicsInChapter || [], optionsMap);
-                const files = [{ path: `books/${bookSlug}/${chapterSlug}/topics/${topic.slug}.html`, content: content }];
-                const result = await commitToGitHub(files, config);
-                
-                if (result.success) {
-                    successCount++;
-                    addDeployLog(`✅ Deployed "${topic.name}"`, 'success');
-                } else {
-                    failCount++;
-                    addDeployLog(`❌ Failed "${topic.name}": ${result.message}`, 'error');
-                }
-            } catch (error) {
-                failCount++;
-                addDeployLog(`❌ Error deploying "${topic.name}": ${error.message}`, 'error');
-            }
-        }
-        
-        const statusMsg = successCount > 0 ? `✅ ${successCount} topics deployed` : '';
-        const failMsg = failCount > 0 ? `❌ ${failCount} failed` : '';
-        updateDeployStatus('topics', [statusMsg, failMsg].filter(Boolean).join(' | '));
-        showToast(`${successCount} topics deployed successfully! ${failCount > 0 ? failCount + ' failed' : ''}`);
-        setDeployButtonState('topics', false, '<i class="fas fa-cloud-upload-alt"></i> Deploy Selected');
+// ============ DEPLOY ALL TOPICS (BATCHED) ============
+async function deployAllTopics() {
+    const config = getGitHubConfig();
+    if (!config) return;
+    
+    const bookSelect = document.getElementById('deployTopicBookFilter');
+    const chapterSelect = document.getElementById('deployTopicChapterFilter');
+    const bookId = bookSelect.value;
+    const chapterId = chapterSelect.value;
+    const bookTitle = bookSelect.options[bookSelect.selectedIndex]?.text || 'Selected Book';
+    const chapterName = chapterSelect.options[chapterSelect.selectedIndex]?.text || 'Selected Chapter';
+    const bookSlug = bookSelect.options[bookSelect.selectedIndex]?.dataset?.slug || '';
+    const chapterSlug = chapterSelect.options[chapterSelect.selectedIndex]?.dataset?.slug || '';
+    
+    if (!bookId || !chapterId) {
+        showToast('Please select a book and chapter first', true);
+        return;
     }
+    
+    const { data: allTopics, error } = await _supabase
+        .from('subtopics')
+        .select('id, name, slug')
+        .eq('chapter_id', parseInt(chapterId))
+        .order('name', { ascending: true });
+    
+    if (error || !allTopics || allTopics.length === 0) {
+        showToast('No topics found for this chapter', true);
+        return;
+    }
+    
+    if (!confirm(`📝 Deploy ALL ${allTopics.length} topics from "${chapterName}"?\n\nThis will create a single commit with all topic pages. Continue?`)) return;
+    
+    addDeployLog(`📝 Preparing all ${allTopics.length} topics from "${chapterName}"...`, 'info');
+    updateDeployStatus('topics', '⏳ Preparing files...');
+    setDeployButtonState('topics', true, '<i class="fas fa-spinner fa-spin"></i> Preparing...');
+    
+    const allFiles = [];
+    let preparedCount = 0;
+    let failCount = 0;
+    
+    for (const topic of allTopics) {
+        try {
+            const { data: bookData, error: bookError } = await _supabase
+                .from('books')
+                .select('*')
+                .eq('id', parseInt(bookId))
+                .single();
+            
+            if (bookError) throw bookError;
+            
+            const { data: chapterData, error: chapterError } = await _supabase
+                .from('chapters')
+                .select('*')
+                .eq('id', parseInt(chapterId))
+                .single();
+            
+            if (chapterError) throw chapterError;
+            
+            const { data: topicData, error: topicError } = await _supabase
+                .from('subtopics')
+                .select('*')
+                .eq('id', topic.id)
+                .single();
+            
+            if (topicError) throw topicError;
+            
+            const topicQuestions = await fetchQuestionsForTopic(topic.id);
+            
+            const { data: allTopicsInChapter, error: allTopicsError } = await _supabase
+                .from('subtopics')
+                .select('*')
+                .eq('chapter_id', parseInt(chapterId));
+            
+            if (allTopicsError) throw allTopicsError;
+            
+            const optionsMap = {};
+            topicQuestions.forEach(q => {
+                optionsMap[q.id] = q.options_array || ['', '', '', ''];
+            });
+            
+            const stats = { easy: 0, medium: 0, hard: 0 };
+            topicQuestions.forEach(q => {
+                const diff = (q.difficulty || '').toLowerCase();
+                if (diff === 'easy') stats.easy++;
+                else if (diff === 'medium') stats.medium++;
+                else if (diff === 'hard') stats.hard++;
+            });
+            
+            const content = generateTopicPage(bookData, chapterData, topicData, topicQuestions, stats, allTopicsInChapter || [], optionsMap);
+            allFiles.push({ 
+                path: `books/${bookSlug}/${chapterSlug}/topics/${topic.slug}.html`, 
+                content: content 
+            });
+            preparedCount++;
+            
+        } catch (error) {
+            failCount++;
+            addDeployLog(`❌ Error preparing "${topic.name}": ${error.message}`, 'error');
+        }
+    }
+    
+    if (allFiles.length === 0) {
+        showToast('No files to deploy', true);
+        updateDeployStatus('topics', '❌ Failed');
+        setDeployButtonState('topics', false, '<i class="fas fa-cloud-upload-alt"></i> Deploy Selected');
+        return;
+    }
+    
+    addDeployLog(`📦 Committing ${allFiles.length} files in one batch...`, 'info');
+    updateDeployStatus('topics', '⏳ Committing...');
+    setDeployButtonState('topics', true, '<i class="fas fa-spinner fa-spin"></i> Committing...');
+    
+    const result = await commitToGitHub(allFiles, config);
+    
+    if (result.success) {
+        addDeployLog(`✅ Successfully deployed ${result.fileCount} files (${preparedCount} topics)`, 'success');
+        updateDeployStatus('topics', `✅ ${preparedCount} topics deployed`);
+        showToast(`✅ Deployed ${preparedCount} topics (${result.fileCount} files)!`);
+    } else {
+        addDeployLog(`❌ Batch deployment failed: ${result.message}`, 'error');
+        updateDeployStatus('topics', '❌ Failed');
+        showToast(`❌ Deployment failed: ${result.message}`, true);
+    }
+    
+    setDeployButtonState('topics', false, '<i class="fas fa-cloud-upload-alt"></i> Deploy Selected');
+}
 
     // ============ HELPER: Get GitHub config ============
     function getGitHubConfig() {
@@ -9239,63 +9339,56 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     }
 
     // ============ GITHUB API COMMIT FUNCTION (GLOBAL) ============
-    async function commitToGitHub(files, config) {
-        const [owner, repo] = config.repo.split('/');
-        if (!owner || !repo) {
-            return { success: false, message: 'Invalid repository format. Use "username/repo"' };
+async function commitToGitHub(files, config) {
+    const [owner, repo] = config.repo.split('/');
+    if (!owner || !repo) {
+        return { success: false, message: 'Invalid repository format. Use "username/repo"' };
+    }
+    
+    if (!files || files.length === 0) {
+        return { success: false, message: 'No files to commit' };
+    }
+    
+    try {
+        // Get the latest commit SHA
+        const refResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/ref/heads/${config.branch}`, {
+            headers: {
+                'Authorization': `token ${config.token}`,
+                'Accept': 'application/vnd.github.v3+json'
+            }
+        });
+        
+        if (!refResponse.ok) {
+            const errorData = await refResponse.json();
+            throw new Error(`Failed to get branch reference: ${errorData.message || refResponse.status}`);
         }
         
-        try {
-            // Get current commit SHA
-            const refResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/ref/heads/${config.branch}`, {
-                headers: {
-                    'Authorization': `token ${config.token}`,
-                    'Accept': 'application/vnd.github.v3+json'
-                }
-            });
+        const refData = await refResponse.json();
+        const baseSha = refData.object.sha;
+        
+        // Create blobs for each file
+        const blobs = [];
+        for (const file of files) {
+            const path = file.path;
+            const content = file.content;
             
-            if (!refResponse.ok) {
-                throw new Error(`Failed to get branch reference: ${refResponse.status}`);
+            // Convert to base64 properly
+            let base64Content;
+            try {
+                const encoder = new TextEncoder();
+                const data = encoder.encode(content);
+                const uint8Array = new Uint8Array(data);
+                let binary = '';
+                for (let i = 0; i < uint8Array.length; i++) {
+                    binary += String.fromCharCode(uint8Array[i]);
+                }
+                base64Content = btoa(binary);
+            } catch (e) {
+                // Fallback
+                base64Content = btoa(unescape(encodeURIComponent(content)));
             }
             
-            const refData = await refResponse.json();
-            const baseSha = refData.object.sha;
-            
-            // Create blobs for each file
-            const blobs = [];
-            for (const file of files) {
-                const path = file.path;
-                const content = file.content;
-                
-                const blobResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/blobs`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `token ${config.token}`,
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/vnd.github.v3+json'
-                    },
-                    body: JSON.stringify({
-                        content: btoa(unescape(encodeURIComponent(content))),
-                        encoding: 'base64'
-                    })
-                });
-                
-                if (!blobResponse.ok) {
-                    const errorData = await blobResponse.json();
-                    throw new Error(`Failed to create blob for ${path}: ${errorData.message || blobResponse.status}`);
-                }
-                
-                const blobData = await blobResponse.json();
-                blobs.push({
-                    path: path,
-                    sha: blobData.sha,
-                    mode: '100644',
-                    type: 'blob'
-                });
-            }
-            
-            // Create a new tree
-            const treeResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees`, {
+            const blobResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/blobs`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `token ${config.token}`,
@@ -9303,66 +9396,96 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
                     'Accept': 'application/vnd.github.v3+json'
                 },
                 body: JSON.stringify({
-                    base_tree: baseSha,
-                    tree: blobs
+                    content: base64Content,
+                    encoding: 'base64'
                 })
             });
             
-            if (!treeResponse.ok) {
-                const errorData = await treeResponse.json();
-                throw new Error(`Failed to create tree: ${errorData.message || treeResponse.status}`);
+            if (!blobResponse.ok) {
+                const errorData = await blobResponse.json();
+                throw new Error(`Failed to create blob for ${path}: ${errorData.message || blobResponse.status}`);
             }
             
-            const treeData = await treeResponse.json();
-            
-            // Create a commit
-            const commitResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/commits`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `token ${config.token}`,
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/vnd.github.v3+json'
-                },
-                body: JSON.stringify({
-                    message: `Auto-deploy: ${files.length} files (${new Date().toISOString()})`,
-                    tree: treeData.sha,
-                    parents: [baseSha]
-                })
+            const blobData = await blobResponse.json();
+            blobs.push({
+                path: path,
+                sha: blobData.sha,
+                mode: '100644',
+                type: 'blob'
             });
-            
-            if (!commitResponse.ok) {
-                const errorData = await commitResponse.json();
-                throw new Error(`Failed to create commit: ${errorData.message || commitResponse.status}`);
-            }
-            
-            const commitData = await commitResponse.json();
-            
-            // Update the branch reference
-            const updateResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/refs/heads/${config.branch}`, {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': `token ${config.token}`,
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/vnd.github.v3+json'
-                },
-                body: JSON.stringify({
-                    sha: commitData.sha,
-                    force: false
-                })
-            });
-            
-            if (!updateResponse.ok) {
-                const errorData = await updateResponse.json();
-                throw new Error(`Failed to update branch: ${errorData.message || updateResponse.status}`);
-            }
-            
-            return { success: true, commitSha: commitData.sha };
-            
-        } catch (error) {
-            return { success: false, message: error.message };
         }
+        
+        // Create a new tree
+        const treeResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `token ${config.token}`,
+                'Content-Type': 'application/json',
+                'Accept': 'application/vnd.github.v3+json'
+            },
+            body: JSON.stringify({
+                base_tree: baseSha,
+                tree: blobs
+            })
+        });
+        
+        if (!treeResponse.ok) {
+            const errorData = await treeResponse.json();
+            throw new Error(`Failed to create tree: ${errorData.message || treeResponse.status}`);
+        }
+        
+        const treeData = await treeResponse.json();
+        
+        // Create a commit
+        const commitResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/commits`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `token ${config.token}`,
+                'Content-Type': 'application/json',
+                'Accept': 'application/vnd.github.v3+json'
+            },
+            body: JSON.stringify({
+                message: `Auto-deploy: ${files.length} file(s) - ${new Date().toISOString()}`,
+                tree: treeData.sha,
+                parents: [baseSha]
+            })
+        });
+        
+        if (!commitResponse.ok) {
+            const errorData = await commitResponse.json();
+            throw new Error(`Failed to create commit: ${errorData.message || commitResponse.status}`);
+        }
+        
+        const commitData = await commitResponse.json();
+        
+        // Update the branch reference
+        const updateResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/refs/heads/${config.branch}`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `token ${config.token}`,
+                'Content-Type': 'application/json',
+                'Accept': 'application/vnd.github.v3+json'
+            },
+            body: JSON.stringify({
+                sha: commitData.sha,
+                force: false
+            })
+        });
+        
+        if (!updateResponse.ok) {
+            const errorData = await updateResponse.json();
+            if (updateResponse.status === 422 && errorData.message && errorData.message.includes('fast forward')) {
+                throw new Error('Update is not a fast forward. Please pull latest changes and try again.');
+            }
+            throw new Error(`Failed to update branch: ${errorData.message || updateResponse.status}`);
+        }
+        
+        return { success: true, commitSha: commitData.sha, fileCount: files.length };
+        
+    } catch (error) {
+        return { success: false, message: error.message };
     }
-
+}
     // ============ HELPER FUNCTIONS ============
     function addDeployLog(message, type = 'info') {
         const log = document.getElementById('deployLogContent');
@@ -9597,15 +9720,15 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
         document.getElementById('exportMessagesBtn').addEventListener('click', exportMessagesToCSV);
         document.getElementById('deleteAllMessagesBtn').addEventListener('click', deleteAllMessages);
         
-        // GitHub deploy buttons - UPDATED with multi-select
-        document.getElementById('deployBooksBtn').addEventListener('click', deploySelectedBooks);
-        document.getElementById('deployAllBooksBtn').addEventListener('click', deployAllBooks);
-        document.getElementById('deployChaptersBtn').addEventListener('click', deploySelectedChapters);
-        document.getElementById('deployAllChaptersBtn').addEventListener('click', deployAllChapters);
-        document.getElementById('deployTopicsBtn').addEventListener('click', deploySelectedTopics);
-        document.getElementById('deployAllTopicsBtn').addEventListener('click', deployAllTopics);
-        document.getElementById('deploySitemapBtn').addEventListener('click', () => deployToGitHub('sitemap'));
-        document.getElementById('deployAllBtn').addEventListener('click', () => deployToGitHub('all'));
+// GitHub deploy buttons - Updated with batch functions
+document.getElementById('deployBooksBtn').addEventListener('click', deploySelectedBooks);
+document.getElementById('deployAllBooksBtn').addEventListener('click', deployAllBooks);
+document.getElementById('deployChaptersBtn').addEventListener('click', deploySelectedChapters);
+document.getElementById('deployAllChaptersBtn').addEventListener('click', deployAllChapters);
+document.getElementById('deployTopicsBtn').addEventListener('click', deploySelectedTopics);
+document.getElementById('deployAllTopicsBtn').addEventListener('click', deployAllTopics);
+document.getElementById('deploySitemapBtn').addEventListener('click', deploySitemap);
+document.getElementById('deployAllBtn').addEventListener('click', deployAllPages);
 
         document.getElementById('clearDeployLog').addEventListener('click', function() {
             document.getElementById('deployLogContent').innerHTML = '';
