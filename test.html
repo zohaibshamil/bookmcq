@@ -5262,7 +5262,7 @@ async function generateSitemap() {
         
         if (chaptersError) throw chaptersError;
         
-        // ============ FIX: FETCH ALL TOPICS WITH PAGINATION ============
+        // Fetch all topics with pagination
         const allTopics = [];
         let page = 0;
         const pageSize = 1000;
@@ -5297,13 +5297,12 @@ async function generateSitemap() {
         }
         
         const topics = allTopics;
-        // ============ END FIX ============
         
         logContent.innerHTML += `<div>📚 Found ${books.length} books, ${chapters.length} chapters, ${topics.length} topics</div>`;
         statusEl.textContent = '📄 Generating sitemap URLs...';
         progressBar.style.width = '30%';
         
-        // Static pages
+        // Static pages (keep these first)
         const staticPages = [
             { url: '/', priority: '1.0', changefreq: 'daily' },
             { url: '/quiz', priority: '0.9', changefreq: 'weekly' },
@@ -5320,31 +5319,21 @@ async function generateSitemap() {
             { url: '/za', priority: '0.9', changefreq: 'weekly' }
         ];
         
-        // Build all URLs
-        const allUrls = [];
-        
-        // Add static pages
-        staticPages.forEach(page => {
-            allUrls.push({
-                loc: `https://www.bookmcq.com${page.url}`,
-                priority: page.priority,
-                changefreq: page.changefreq,
-                lastmod: new Date().toISOString().split('T')[0],
-                type: 'static'
-            });
-        });
+        // Build database URLs (without sorting yet)
+        const dbUrls = [];
         
         // Add books
         books.forEach(book => {
             const slug = book.slug || createSlug(book.title);
-            allUrls.push({
+            dbUrls.push({
                 loc: `https://www.bookmcq.com/books/${slug}/index.html`,
                 priority: '0.9',
                 changefreq: 'weekly',
                 lastmod: book.created_at ? new Date(book.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
                 type: 'book',
                 bookTitle: book.title,
-                bookSlug: slug
+                bookSlug: slug,
+                sortDate: book.created_at ? new Date(book.created_at).getTime() : 0
             });
         });
         
@@ -5353,7 +5342,7 @@ async function generateSitemap() {
             if (chapter.books && chapter.books.slug) {
                 const bookSlug = chapter.books.slug;
                 const chapterSlug = chapter.slug || createSlug(chapter.name);
-                allUrls.push({
+                dbUrls.push({
                     loc: `https://www.bookmcq.com/books/${bookSlug}/${chapterSlug}.html`,
                     priority: '0.8',
                     changefreq: 'weekly',
@@ -5361,7 +5350,9 @@ async function generateSitemap() {
                     type: 'chapter',
                     bookSlug: bookSlug,
                     chapterSlug: chapterSlug,
-                    chapterName: chapter.name
+                    chapterName: chapter.name,
+                    chapterNumber: chapter.chapter_number,
+                    sortDate: chapter.created_at ? new Date(chapter.created_at).getTime() : 0
                 });
             }
         });
@@ -5372,7 +5363,7 @@ async function generateSitemap() {
                 const bookSlug = topic.chapters.books.slug;
                 const chapterSlug = topic.chapters.slug || createSlug(topic.chapters.name);
                 const topicSlug = topic.slug || createSlug(topic.name);
-                allUrls.push({
+                dbUrls.push({
                     loc: `https://www.bookmcq.com/books/${bookSlug}/${chapterSlug}/topics/${topicSlug}.html`,
                     priority: '0.7',
                     changefreq: 'weekly',
@@ -5381,10 +5372,29 @@ async function generateSitemap() {
                     bookSlug: bookSlug,
                     chapterSlug: chapterSlug,
                     topicSlug: topicSlug,
-                    topicName: topic.name
+                    topicName: topic.name,
+                    sortDate: topic.created_at ? new Date(topic.created_at).getTime() : 0
                 });
             }
         });
+        
+        // Sort database URLs by sortDate (OLDEST FIRST - ascending)
+        dbUrls.sort((a, b) => a.sortDate - b.sortDate);
+        
+        // Remove the sortDate property before storing (not needed in final output)
+        dbUrls.forEach(url => delete url.sortDate);
+        
+        // Build static URLs
+        const staticUrls = staticPages.map(page => ({
+            loc: `https://www.bookmcq.com${page.url}`,
+            priority: page.priority,
+            changefreq: page.changefreq,
+            lastmod: new Date().toISOString().split('T')[0],
+            type: 'static'
+        }));
+        
+        // Combine: Static first, then sorted database URLs
+        const allUrls = [...staticUrls, ...dbUrls];
         
         // Store for preview
         window.sitemapUrls = allUrls;
@@ -5400,7 +5410,7 @@ async function generateSitemap() {
             renderBookUrlsPanel('all');
         }
         
-        // ========== SPLIT INTO CHUNKS (50 URLs per file) ==========
+        // Split into chunks (50 URLs per file)
         const CHUNK_SIZE = 50;
         const chunks = [];
         
@@ -5441,7 +5451,7 @@ async function generateSitemap() {
             });
         });
         
-        // ========== GENERATE SITEMAP INDEX ==========
+        // Generate sitemap index
         let indexXml = `<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 `;
@@ -5470,6 +5480,7 @@ async function generateSitemap() {
         countEl.textContent = `${allUrls.length} URLs in ${sitemapFiles.length} files`;
         logContent.innerHTML += `<div class="text-green-600">✅ Generated ${sitemapFiles.length} sitemap files with ${allUrls.length} total URLs</div>`;
         logContent.innerHTML += `<div>📊 ${staticPages.length} static, ${books.length} books, ${chapters.length} chapters, ${topics.length} topics</div>`;
+        logContent.innerHTML += `<div>🕐 Sorted by creation date (oldest first)</div>`;
         
         resultEl.classList.remove('hidden');
         downloadBtn.classList.remove('hidden');
@@ -5484,6 +5495,8 @@ async function generateSitemap() {
         logContent.innerHTML += `<div class="text-red-500">❌ Error: ${error.message}</div>`;
     }
 }
+
+    
 function downloadSitemap() {
     if (!window.sitemapData) {
         showToast('Please generate sitemap first', true);
