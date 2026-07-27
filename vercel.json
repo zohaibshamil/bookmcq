@@ -6,6 +6,22 @@
         {
           "key": "Strict-Transport-Security",
           "value": "max-age=31536000; includeSubDomains; preload"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
         }
       ]
     }
@@ -29,12 +45,49 @@
     { "source": "/ng", "destination": "/ng.html" },
     { "source": "/za", "destination": "/za.html" },
     { "source": "/sitemap.xml", "destination": "/sitemap.xml" },
-    { "source": "/sitemap-:number.xml", "destination": "/sitemap-:number.xml" }
+    { "source": "/sitemap-:number.xml", "destination": "/sitemap-:number.xml" },
+    
+    "================================================================",
+    "=============== FIXES FOR GOOGLE ISSUES ========================",
+    "================================================================",
+    
+    "--------- FIX 1: CANONICAL TAG ISSUE ---------",
+    "Serves ANY .html file (books, topics, chapters, etc.)",
+    "This makes canonical URLs accessible to Google",
+    { "source": "/:path*.html", "destination": "/:path*.html" },
+    
+    "--------- FIX 2: CLEAN URLS WITHOUT .html ---------",
+    "Serves HTML files even without .html extension",
+    "Example: /books/calculus → /books/calculus.html",
+    { "source": "/books/:path*", "destination": "/books/:path*.html" },
+    
+    "--------- FIX 3: CATCH-ALL FOR ANY PATH ---------",
+    "If someone visits a path that doesn't match above rules,",
+    "try to serve it as an HTML file",
+    { "source": "/:path*", "destination": "/:path*.html" }
   ],
   "redirects": [
-    { "source": "/home", "destination": "/", "permanent": true },
-    { "source": "/index", "destination": "/", "permanent": true },
-    { "source": "/index.html", "destination": "/", "permanent": true },
+    "================================================================",
+    "=============== FIX 4: REDIRECT ISSUES =========================",
+    "================================================================",
+    
+    "--------- FIX 4A: HTTP to HTTPS (www) ---------",
+    "Redirects HTTP://www.bookmcq.com to HTTPS://www.bookmcq.com",
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.bookmcq.com"
+        }
+      ],
+      "scheme": "http",
+      "destination": "https://www.bookmcq.com/$1",
+      "permanent": true
+    },
+    
+    "--------- FIX 4B: Non-www to www ---------",
+    "Redirects bookmcq.com to www.bookmcq.com (both HTTP and HTTPS)",
     {
       "source": "/(.*)",
       "has": [
@@ -44,6 +97,37 @@
         }
       ],
       "destination": "https://www.bookmcq.com/$1",
+      "permanent": true
+    },
+    
+    "--------- FIX 4C: HTTP Non-www to HTTPS www ---------",
+    "Safety net: Redirects HTTP://bookmcq.com to HTTPS://www.bookmcq.com",
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "bookmcq.com"
+        }
+      ],
+      "scheme": "http",
+      "destination": "https://www.bookmcq.com/$1",
+      "permanent": true
+    },
+    
+    "================================================================",
+    "=============== OTHER REDIRECTS ================================",
+    "================================================================",
+    
+    { "source": "/home", "destination": "/", "permanent": true },
+    { "source": "/index", "destination": "/", "permanent": true },
+    { "source": "/index.html", "destination": "/", "permanent": true },
+    
+    "--------- FIX 4D: TRAILING SLASH REDIRECTS ---------",
+    "Removes trailing slashes to avoid duplicate content",
+    {
+      "source": "/:path*/",
+      "destination": "/:path*",
       "permanent": true
     }
   ],
