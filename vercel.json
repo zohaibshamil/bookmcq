@@ -6,6 +6,22 @@
         {
           "key": "Strict-Transport-Security",
           "value": "max-age=31536000; includeSubDomains; preload"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
         }
       ]
     }
@@ -19,7 +35,7 @@
     { "source": "/admin", "destination": "/admin.html" },
     { "source": "/bulk-upload", "destination": "/bulk-upload.html" },
     { "source": "/mcq", "destination": "/mcq.html" },
-    { "source": "/mcq1", "destination": "/mcq1.html" },    
+    { "source": "/mcq1", "destination": "/mcq1.html" },
     { "source": "/us", "destination": "/us.html" },
     { "source": "/uk", "destination": "/uk.html" },
     { "source": "/in", "destination": "/in.html" },
@@ -29,12 +45,24 @@
     { "source": "/ng", "destination": "/ng.html" },
     { "source": "/za", "destination": "/za.html" },
     { "source": "/sitemap.xml", "destination": "/sitemap.xml" },
-    { "source": "/sitemap-:number.xml", "destination": "/sitemap-:number.xml" }
+    { "source": "/sitemap-:number.xml", "destination": "/sitemap-:number.xml" },
+    { "source": "/:path*.html", "destination": "/:path*.html" },
+    { "source": "/books/:path*", "destination": "/books/:path*.html" },
+    { "source": "/:path*", "destination": "/:path*.html" }
   ],
   "redirects": [
-    { "source": "/home", "destination": "/", "permanent": true },
-    { "source": "/index", "destination": "/", "permanent": true },
-    { "source": "/index.html", "destination": "/", "permanent": true },
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.bookmcq.com"
+        }
+      ],
+      "scheme": "http",
+      "destination": "https://www.bookmcq.com/$1",
+      "permanent": true
+    },
     {
       "source": "/(.*)",
       "has": [
@@ -44,6 +72,26 @@
         }
       ],
       "destination": "https://www.bookmcq.com/$1",
+      "permanent": true
+    },
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "bookmcq.com"
+        }
+      ],
+      "scheme": "http",
+      "destination": "https://www.bookmcq.com/$1",
+      "permanent": true
+    },
+    { "source": "/home", "destination": "/", "permanent": true },
+    { "source": "/index", "destination": "/", "permanent": true },
+    { "source": "/index.html", "destination": "/", "permanent": true },
+    {
+      "source": "/:path*/",
+      "destination": "/:path*",
       "permanent": true
     }
   ],
