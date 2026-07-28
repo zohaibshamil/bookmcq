@@ -199,12 +199,12 @@
                 <button class="btn-success btn-sm" onclick="uploadTopicCSV()">📥 Import Topics</button>
                 <button class="btn-warning btn-sm" onclick="clearCSVPreview()">🗑️ Clear</button>
             </div>
-            <div class="csv-format-hint">
-                📌 CSV Format: Column 1 = Topic, Column 2 = (optional), Column 3 = MCQ Count<br>
-                <code>,(a) Disillusionment and frustration,33</code> → Generates 33 MCQs<br>
-                <code>,(b) There was a wave of strikes in 1919 and 1920,18</code> → Generates 18 MCQs<br>
-                <code>,(9.2.1) Basic concepts,23</code> → Generates 23 MCQs (new format)
-            </div>
+<div class="csv-format-hint">
+    📌 CSV Format: Column 1 = Topic, Column 2 = (optional), Column 3 = MCQ Count<br>
+    <code>,1.1.2 Basic concepts,23</code> → Generates 23 MCQs<br>
+    <code>,a Disillusionment and frustration,33</code> → Generates 33 MCQs<br>
+    <code>,1.2.3 The spread of communism,18</code> → Generates 18 MCQs
+</div>
             <div class="csv-preview" id="csvPreview"></div>
         </div>
 
@@ -896,7 +896,6 @@ function parseCSVTopicsWithHierarchy(csvText) {
     let currentTopic = null;
     let currentContent = [];
     
-    // Helper function to parse a CSV line respecting quotes
     function parseCSVLine(line) {
         const fields = [];
         let current = '';
@@ -922,7 +921,6 @@ function parseCSVTopicsWithHierarchy(csvText) {
         return fields;
     }
     
-    // Helper to detect if a field looks like a chapter
     function isChapterField(field) {
         if (!field) return false;
         const trimmed = field.trim();
@@ -932,7 +930,6 @@ function parseCSVTopicsWithHierarchy(csvText) {
                /^\d+\.\s*[A-Z]/.test(trimmed);
     }
     
-    // Helper to extract a clean chapter title
     function extractChapterTitle(field) {
         if (!field) return 'Chapter';
         const trimmed = field.trim();
@@ -946,10 +943,10 @@ function parseCSVTopicsWithHierarchy(csvText) {
         return clean;
     }
     
-    // Helper to extract chapter number
     function extractChapterNumber(field) {
         if (!field) return '1';
         const trimmed = field.trim();
+        // UPDATED: Remove parentheses from number extraction
         const numberMatch = trimmed.match(/^(\d+\.\d+)/);
         if (numberMatch) return numberMatch[1];
         const chapterMatch = trimmed.match(/^Chapter\s+(\d+)/i);
@@ -957,21 +954,18 @@ function parseCSVTopicsWithHierarchy(csvText) {
         return String(chapters.length + 1);
     }
     
-    // Helper to detect if a field is a subtopic
     function isSubtopicField(field) {
         if (!field) return false;
         const trimmed = field.trim();
         return trimmed.length > 0 && !isChapterField(trimmed);
     }
     
-    // Helper to extract MCQ count
     function extractMCQCount(field) {
         if (!field) return 8;
         const num = parseInt(field.trim());
         return isNaN(num) ? 8 : (num > 0 ? num : 8);
     }
     
-    // Check for header row
     let startIdx = 0;
     if (lines.length > 0) {
         const firstLine = lines[0].trim();
@@ -982,7 +976,6 @@ function parseCSVTopicsWithHierarchy(csvText) {
         }
     }
     
-    // Process each line
     for (let i = startIdx; i < lines.length; i++) {
         const line = lines[i].trim();
         if (!line) continue;
@@ -997,7 +990,6 @@ function parseCSVTopicsWithHierarchy(csvText) {
         const col2 = fields[1] || '';
         const col3 = fields[2] || '';
         
-        // CASE 1: CHAPTER row (col1 has chapter format)
         if (isChapterField(col1)) {
             if (currentChapter && currentChapter.topics && currentChapter.topics.length > 0) {
                 if (currentContent.length > 0 && currentChapter.topics.length > 0) {
@@ -1021,7 +1013,6 @@ function parseCSVTopicsWithHierarchy(csvText) {
             continue;
         }
         
-        // CASE 2: SUBTOPIC row (col2 has content)
         if (isSubtopicField(col2) && currentChapter) {
             if (currentContent.length > 0 && currentChapter.topics.length > 0) {
                 const lastTopic = currentChapter.topics[currentChapter.topics.length - 1];
@@ -1035,11 +1026,12 @@ function parseCSVTopicsWithHierarchy(csvText) {
             const mcqCount = extractMCQCount(col3);
             
             let subtopicNumber = '';
-            const numberMatch = subtopicTitle.match(/^\(?([\d.]+)\)?\s*/);
+            // UPDATED: Remove parentheses requirement
+            const numberMatch = subtopicTitle.match(/^([\d.]+)\s*/);
             if (numberMatch) {
                 subtopicNumber = numberMatch[1];
             } else {
-                const letterMatch = subtopicTitle.match(/^\(([a-z])\)\s*/);
+                const letterMatch = subtopicTitle.match(/^([a-z])\s*/);
                 if (letterMatch) {
                     subtopicNumber = letterMatch[1];
                 }
@@ -1062,9 +1054,7 @@ function parseCSVTopicsWithHierarchy(csvText) {
             continue;
         }
         
-        // CASE 3: Content text for the current topic
         if (currentChapter && currentChapter.topics.length > 0 && col1.trim().length > 0) {
-            // Check if this is a standalone subtopic in col1
             if (!col2.trim() && isSubtopicField(col1) && !isChapterField(col1)) {
                 if (currentContent.length > 0 && currentChapter.topics.length > 0) {
                     const lastTopic = currentChapter.topics[currentChapter.topics.length - 1];
@@ -1078,11 +1068,12 @@ function parseCSVTopicsWithHierarchy(csvText) {
                 const mcqCount = extractMCQCount(fields[1] || '8');
                 
                 let subtopicNumber = '';
-                const numberMatch = subtopicTitle.match(/^\(?([\d.]+)\)?\s*/);
+                // UPDATED: Remove parentheses requirement
+                const numberMatch = subtopicTitle.match(/^([\d.]+)\s*/);
                 if (numberMatch) {
                     subtopicNumber = numberMatch[1];
                 } else {
-                    const letterMatch = subtopicTitle.match(/^\(([a-z])\)\s*/);
+                    const letterMatch = subtopicTitle.match(/^([a-z])\s*/);
                     if (letterMatch) {
                         subtopicNumber = letterMatch[1];
                     }
@@ -1105,14 +1096,12 @@ function parseCSVTopicsWithHierarchy(csvText) {
                 continue;
             }
             
-            // Otherwise, treat as content
             if (col1.trim().length > 10) {
                 currentContent.push(col1.trim());
             }
         }
     }
     
-    // Save the last chapter
     if (currentChapter) {
         if (currentContent.length > 0 && currentChapter.topics.length > 0) {
             const lastTopic = currentChapter.topics[currentChapter.topics.length - 1];
@@ -1608,61 +1597,71 @@ function extractChaptersAndTopics() {
                     continue;
                 }
                 
-                const subTopicMatch = line.match(/^\(([a-z])\)\s+(.+)/);
-                if (subTopicMatch && currentChapter && currentTopics.length > 0) {
-                    if (currentContent.length > 0) {
-                        const lastTopic = currentTopics[currentTopics.length - 1];
-                        if (lastTopic && !lastTopic.content) {
-                            lastTopic.content = currentContent.join(' ').slice(0, 4000);
-                        }
-                        currentContent = [];
-                    }
-                    
-                    const subTitle = subTopicMatch[2].trim();
-                    currentTopics.push({
-                        number: `(${subTopicMatch[1]})`,
-                        title: subTitle,
-                        content: '',
-                        type: 'subtopic',
-                        mcq_count: 8,
-                        done: false,
-                        mcqs: [],
-                        _qualityMetrics: null
-                    });
-                    currentSubTopic = subTitle;
-                    isInSubTopic = true;
-                    log(`📝 Found sub-topic: (${subTopicMatch[1]}) ${subTitle}`);
-                    continue;
-                }
-                
-                const numberedSubMatch = line.match(/^(\d+)\.\s+(.+)/);
-                if (numberedSubMatch && currentChapter && currentTopics.length > 0 && !line.match(/^\d+\.\d+/)) {
-                    if (currentContent.length > 0) {
-                        const lastTopic = currentTopics[currentTopics.length - 1];
-                        if (lastTopic && !lastTopic.content) {
-                            lastTopic.content = currentContent.join(' ').slice(0, 4000);
-                        }
-                        currentContent = [];
-                    }
-                    
-                    const subTitle = numberedSubMatch[2].trim();
-                    if (subTitle.length > 5) {
-                        currentTopics.push({
-                            number: `${numberedSubMatch[1]}`,
-                            title: subTitle,
-                            content: '',
-                            type: 'subtopic',
-                            mcq_count: 8,
-                            done: false,
-                            mcqs: [],
-                            _qualityMetrics: null
-                        });
-                        currentSubTopic = subTitle;
-                        isInSubTopic = true;
-                        log(`📝 Found numbered sub-topic: ${numberedSubMatch[1]}. ${subTitle}`);
-                    }
-                    continue;
-                }
+// In extractChaptersAndTopics function, replace the subtopic detection sections:
+
+// Replace this section:
+const subTopicMatch = line.match(/^\(([a-z])\)\s+(.+)/);
+if (subTopicMatch && currentChapter && currentTopics.length > 0) {
+    // ... existing code
+}
+
+// With this:
+const subTopicMatch = line.match(/^([a-z])\)\s+(.+)/);
+if (subTopicMatch && currentChapter && currentTopics.length > 0) {
+    if (currentContent.length > 0) {
+        const lastTopic = currentTopics[currentTopics.length - 1];
+        if (lastTopic && !lastTopic.content) {
+            lastTopic.content = currentContent.join(' ').slice(0, 4000);
+        }
+        currentContent = [];
+    }
+    
+    const subTitle = subTopicMatch[2].trim();
+    currentTopics.push({
+        number: `${subTopicMatch[1]})`,
+        title: subTitle,
+        content: '',
+        type: 'subtopic',
+        mcq_count: 8,
+        done: false,
+        mcqs: [],
+        _qualityMetrics: null
+    });
+    currentSubTopic = subTitle;
+    isInSubTopic = true;
+    log(`📝 Found sub-topic: (${subTopicMatch[1]}) ${subTitle}`);
+    continue;
+}
+
+// Update the numbered subtopic detection:
+const numberedSubMatch = line.match(/^([\d.]+)\s+(.+)/);
+if (numberedSubMatch && currentChapter && currentTopics.length > 0) {
+    if (currentContent.length > 0) {
+        const lastTopic = currentTopics[currentTopics.length - 1];
+        if (lastTopic && !lastTopic.content) {
+            lastTopic.content = currentContent.join(' ').slice(0, 4000);
+        }
+        currentContent = [];
+    }
+    
+    const subTitle = numberedSubMatch[2].trim();
+    if (subTitle.length > 5) {
+        currentTopics.push({
+            number: numberedSubMatch[1],
+            title: subTitle,
+            content: '',
+            type: 'subtopic',
+            mcq_count: 8,
+            done: false,
+            mcqs: [],
+            _qualityMetrics: null
+        });
+        currentSubTopic = subTitle;
+        isInSubTopic = true;
+        log(`📝 Found numbered sub-topic: ${numberedSubMatch[1]} ${subTitle}`);
+    }
+    continue;
+}
                 
                 if (currentChapter && currentTopics.length > 0) {
                     if (line.length > 10 && 
