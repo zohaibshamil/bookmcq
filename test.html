@@ -3843,29 +3843,60 @@ let seoDropdownInitialized = false;
         document.getElementById('editSubTopicModal').classList.remove('hidden');
     };
 
-    async function loadBookAndChapterForEditSubTopic(selectedChapterId = null) {
-        const { data: books } = await _supabase.from('books').select('id, title');
-        if (books) {
-            const bookSelect = document.getElementById('editSubTopicBookId');
-            bookSelect.innerHTML = '<option value="">Select Book</option>';
-            books.forEach(book => {
-                bookSelect.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
-            });
-        }
+async function loadBookAndChapterForEditSubTopic(selectedChapterId = null) {
+    // Step 1: Load books
+    const { data: books, error: booksError } = await _supabase.from('books').select('id, title');
+    if (booksError) {
+        console.error('Error loading books:', booksError);
+        return;
+    }
+    
+    if (books) {
+        const bookSelect = document.getElementById('editSubTopicBookId');
+        bookSelect.innerHTML = '<option value="">Select Book</option>';
+        books.forEach(book => {
+            bookSelect.innerHTML += `<option value="${book.id}">${escapeHtml(book.title)}</option>`;
+        });
+    }
+    
+    // Step 2: Find which book this chapter belongs to
+    let selectedBookId = null;
+    if (selectedChapterId) {
+        const { data: chapterData, error: chapterError } = await _supabase
+            .from('chapters')
+            .select('book_id')
+            .eq('id', selectedChapterId)
+            .single();
         
-        const bookId = document.getElementById('editSubTopicBookId')?.value;
-        if (bookId) {
-            const { data: chapters } = await _supabase.from('chapters').select('id, name, chapter_number').eq('book_id', parseInt(bookId)).order('chapter_number', { ascending: true });
-            const chapterSelect = document.getElementById('editSubTopicChapterId');
-            chapterSelect.innerHTML = '<option value="">Select Chapter</option>';
-            if (chapters) {
-                chapters.forEach(chapter => {
-                    const display = chapter.chapter_number ? `Ch ${chapter.chapter_number}: ${chapter.name}` : chapter.name;
-                    chapterSelect.innerHTML += `<option value="${chapter.id}" ${chapter.id == selectedChapterId ? 'selected' : ''}>${escapeHtml(display)}</option>`;
-                });
-            }
+        if (!chapterError && chapterData) {
+            selectedBookId = chapterData.book_id;
         }
     }
+    
+    // Step 3: Set the book dropdown
+    if (selectedBookId) {
+        document.getElementById('editSubTopicBookId').value = selectedBookId;
+    }
+    
+    // Step 4: Load chapters for the selected book
+    const bookId = document.getElementById('editSubTopicBookId').value;
+    if (bookId && bookId !== '') {
+        const { data: chapters, error: chaptersError } = await _supabase
+            .from('chapters')
+            .select('id, name, chapter_number')
+            .eq('book_id', parseInt(bookId))
+            .order('chapter_number', { ascending: true });
+        
+        if (!chaptersError && chapters) {
+            const chapterSelect = document.getElementById('editSubTopicChapterId');
+            chapterSelect.innerHTML = '<option value="">Select Chapter</option>';
+            chapters.forEach(chapter => {
+                const display = chapter.chapter_number ? `Ch ${chapter.chapter_number}: ${chapter.name}` : chapter.name;
+                chapterSelect.innerHTML += `<option value="${chapter.id}" ${chapter.id == selectedChapterId ? 'selected' : ''}>${escapeHtml(display)}</option>`;
+            });
+        }
+    }
+}
 
     async function updateSubTopic() {
         const id = document.getElementById('editSubTopicId').value;
@@ -9934,6 +9965,47 @@ document.getElementById('deployAllTopicsBtn').addEventListener('click', deployAl
 document.getElementById('deploySitemapBtn').addEventListener('click', deploySitemap);
 document.getElementById('deployAllBtn').addEventListener('click', deployAllPages);
 
+
+         // ===== NEW: Fix for Edit Topic Chapter Dropdown =====
+    document.getElementById('editSubTopicBookId').addEventListener('change', async function() {
+        const bookId = this.value;
+        const chapterSelect = document.getElementById('editSubTopicChapterId');
+        const selectedChapterId = document.getElementById('editSubTopicId').value;
+        
+        // Clear chapter dropdown
+        if (!bookId || bookId === '') {
+            chapterSelect.innerHTML = '<option value="">Select Book first</option>';
+            return;
+        }
+        
+        // Show loading
+        chapterSelect.innerHTML = '<option value="">Loading chapters...</option>';
+        
+        // Fetch chapters for this book
+        const { data, error } = await _supabase
+            .from('chapters')
+            .select('id, name, chapter_number')
+            .eq('book_id', parseInt(bookId))
+            .order('chapter_number', { ascending: true });
+        
+        if (error) {
+            chapterSelect.innerHTML = '<option value="">Error loading chapters</option>';
+            return;
+        }
+        
+        // Populate chapter dropdown
+        chapterSelect.innerHTML = '<option value="">Select Chapter</option>';
+        if (data && data.length > 0) {
+            data.forEach(chapter => {
+                const display = chapter.chapter_number ? `Ch ${chapter.chapter_number}: ${chapter.name}` : chapter.name;
+                chapterSelect.innerHTML += `<option value="${chapter.id}">${escapeHtml(display)}</option>`;
+            });
+        } else {
+            chapterSelect.innerHTML = '<option value="">No chapters found</option>';
+        }
+    });
+
+     
         document.getElementById('clearDeployLog').addEventListener('click', function() {
             document.getElementById('deployLogContent').innerHTML = '';
         });
