@@ -130,9 +130,13 @@
         .quality-report .warn { color: #e67e22; }
         .stats-bar { display: flex; gap: 20px; flex-wrap: wrap; padding: 10px 0; }
         .stats-bar .stat { background: #f0f4f8; padding: 4px 12px; border-radius: 12px; font-size: 13px; }
-        .mcq-count-badge { background: #8e44ad; color: white; padding: 1px 8px; border-radius: 10px; font-size: 10px; margin-left: 5px; }
-        .format-badge { background: #e67e22; color: white; padding: 1px 8px; border-radius: 10px; font-size: 9px; margin-left: 5px; }
-        .header-topic { color: #7f8c8d; font-style: italic; }
+        .quality-metrics-panel { background: #e8f8f5; padding: 15px; border-radius: 8px; border: 1px solid #a3e4d7; margin: 10px 0; display: none; }
+        .quality-metrics-panel.show { display: block; }
+        .metric-bar { height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden; margin: 3px 0; }
+        .metric-bar .metric-fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
+        .metric-fill.good { background: #27ae60; }
+        .metric-fill.warn { background: #f39c12; }
+        .metric-fill.bad { background: #e74c3c; }
     </style>
 </head>
 <body>
@@ -146,12 +150,16 @@
     <!-- ===== API KEY ===== -->
     <div class="api-section">
         <label>🔑 Cerebras API Key</label>
-        <input type="password" id="apiKey" placeholder="Enter your Cerebras API key..." value="csk-cfn6hw3v5rrnyxnejkv42rm3v943c343mm65mr82f4y3t926">
+        <input type="password" id="apiKey" placeholder="Enter your Cerebras API key..." value="csk-crty6yd2m9p9n2epch3t46j43v6x96v3p89kfrrd6kd26y54">
         <div style="margin-top:5px;font-size:12px;color:#888;">
             Free tier: 1M tokens/day
         </div>
     </div>
 
+    <div class="rate-limit-info" id="rateLimitInfo" style="display:none;background:#fff3cd;padding:10px;border-radius:5px;margin:10px 0;border:1px solid #ffc107;">
+        ⏳ Rate limit in effect. Waiting <span id="rateLimitWait">5</span> seconds...
+    </div>
+    
     <!-- ===== TABS ===== -->
     <div class="tab">
         <button class="tab-btn active" data-tab="input">📥 Input</button>
@@ -192,10 +200,10 @@
                 <button class="btn-warning btn-sm" onclick="clearCSVPreview()">🗑️ Clear</button>
             </div>
             <div class="csv-format-hint">
-                📌 CSV Format: Supports BOTH letter <code>(a)</code> AND numbered <code>1.1.1</code> formats automatically<br>
-                <strong>Headers</strong> (like <code>1.1 DATA COMMUNICATIONS,,</code>) are <strong>ignored</strong><br>
-                <strong>Topics</strong> start with comma: <code>,1.1.1 Components,13</code> or <code>,(a) Components,13</code><br>
-                <strong>3rd column</strong> = MCQ count for that specific topic
+                📌 CSV Format: Column 1 = Topic, Column 2 = (optional), Column 3 = MCQ Count<br>
+                <code>,(a) Disillusionment and frustration,33</code> → Generates 33 MCQs<br>
+                <code>,(b) There was a wave of strikes in 1919 and 1920,18</code> → Generates 18 MCQs<br>
+                <code>,(9.2.1) Basic concepts,23</code> → Generates 23 MCQs (new format)
             </div>
             <div class="csv-preview" id="csvPreview"></div>
         </div>
@@ -216,9 +224,7 @@
             <h3>⚙️ Settings</h3>
             <div class="settings-row">
                 <label>Default MCQs:</label>
-                <input type="number" id="questionsPerTopic" value="10" min="3" max="50" style="max-width:100px;">
-                <label>Min MCQs:</label>
-                <input type="number" id="minMCQs" value="3" min="1" max="10" style="max-width:80px;">
+                <input type="number" id="questionsPerTopic" value="10" min="5" max="30" style="max-width:100px;">
                 <label>Model:</label>
                 <select id="modelSelect" style="max-width:200px;">
                     <option value="llama3.1-8b">Llama 3.1 8B (Fast)</option>
@@ -226,7 +232,7 @@
                 </select>
             </div>
             <div class="checkbox-group">
-                <label><input type="checkbox" id="includeHOTS" checked> 90% HOTS Questions</label>
+                <label><input type="checkbox" id="includeHOTS" checked> Include HOTS</label>
                 <label><input type="checkbox" id="randomizeAnswers" checked> Randomize Answers</label>
                 <label><input type="checkbox" id="enableValidation" checked> Enable Topic Validation</label>
             </div>
@@ -307,7 +313,14 @@
             <div style="display:flex;gap:10px;flex-wrap:wrap;margin:10px 0;">
                 <button class="btn-primary btn-sm" onclick="generateQualityReport()">📊 Generate Report</button>
                 <button class="btn-warning btn-sm" onclick="exportQualityReport()">📤 Export Report</button>
+                <button class="btn-teal btn-sm" onclick="showQualityMetrics()">📈 Show Application Rate</button>
             </div>
+            
+            <div class="quality-metrics-panel" id="qualityMetricsPanel">
+                <h4>📊 MCQ Quality Metrics</h4>
+                <div id="qualityMetricsContent"></div>
+            </div>
+            
             <div id="qualityReportContent" class="quality-report">
                 <p style="color:#888;text-align:center;padding:20px;">Click "Generate Report" to analyze topic quality.</p>
             </div>
@@ -336,9 +349,13 @@
     </div>
 
     <div class="note note-success">
-        ✅ <strong>Enhanced Topic Extraction:</strong> Supports BOTH letter <code>(a)</code> and numbered <code>1.1.1</code> formats.<br>
-        📊 Each topic gets its own MCQ count from CSV's 3rd column.<br>
-        🧠 <strong>90% HOTS Questions</strong> (Logical, Analytical, Conceptual).
+        ✅ <strong>Enhanced Topic Extraction:</strong> Now extracts all topics including sub-topics like (a), (b), (c) with validation scores.
+        <br>✅ <strong>CSV MCQ Count:</strong> Column 3 in CSV specifies how many MCQs to generate per topic.
+        <br>✅ <strong>Application-Based Questions:</strong> 50% application/scenario-based, 40% conceptual, 10% recall.
+        <br>✅ <strong>Quality Monitoring:</strong> Automatically tracks and reports application question rates.
+        <br>✅ <strong>MCQ Ordering:</strong> MCQs are ordered by topic as they appear in the book structure, preserving subtopic names.
+        <br>✅ <strong>Flexible CSV Parsing:</strong> Supports both letter-based (a) and number-based (9.2.1) subtopics.
+        <br>✅ <strong>Topic Name Preservation:</strong> Original topic names like (9.1.1) and (a) are preserved in exports.
     </div>
 </div>
 
@@ -357,7 +374,7 @@ let topicValidationResults = {};
 let csvTopicData = [];
 let failedTopicsForRetry = [];
 let isBatchRunning = false;
-let topicFormat = 'mixed';
+let qualityMetrics = {};
 
 // ============ DOM REFS ============
 function getEl(id) { return document.getElementById(id); }
@@ -369,7 +386,6 @@ const textInput = getEl('textInput');
 const apiKey = getEl('apiKey');
 const modelSelect = getEl('modelSelect');
 const questionsPerTopic = getEl('questionsPerTopic');
-const minMCQs = getEl('minMCQs');
 const includeHOTS = getEl('includeHOTS');
 const randomizeAnswers = getEl('randomizeAnswers');
 const enableValidation = getEl('enableValidation');
@@ -409,6 +425,8 @@ const validationStatus = getEl('validationStatus');
 const confidenceFill = getEl('confidenceFill');
 const topicRegistryContent = getEl('topicRegistryContent');
 const qualityReportContent = getEl('qualityReportContent');
+const qualityMetricsPanel = getEl('qualityMetricsPanel');
+const qualityMetricsContent = getEl('qualityMetricsContent');
 
 // ============ LOGGING ============
 function log(msg) {
@@ -445,6 +463,281 @@ function showSuccess(msg) {
     log('SUCCESS: ' + msg);
 }
 
+// ============ FIXED: GET MCQS IN TOPIC ORDER - PRESERVES ORIGINAL TOPIC NAMES ============
+function getMCQsInTopicOrder() {
+    const orderedMCQs = [];
+    if (!bookStructure.chapters) return orderedMCQs;
+    
+    bookStructure.chapters.forEach(chapter => {
+        if (chapter.topics) {
+            chapter.topics.forEach(topic => {
+                if (topic.mcqs && topic.mcqs.length > 0) {
+                    // Preserve the original topic names from the MCQs
+                    // Do NOT overwrite with topic.title
+                    // Just pass through the MCQs as they are
+                    topic.mcqs.forEach(row => {
+                        // Only use topic.title as fallback if row[0] is empty
+                        if (!row[0] || row[0].trim() === '' || row[0] === 'General' || row[0] === 'Topic') {
+                            const newRow = [...row];
+                            newRow[0] = topic.title;
+                            orderedMCQs.push(newRow);
+                        } else {
+                            // Keep the original topic name from the MCQ
+                            orderedMCQs.push([...row]);
+                        }
+                    });
+                }
+            });
+        }
+    });
+    
+    return orderedMCQs;
+}
+
+// ============ DETECT APPLICATION/SCENARIO-BASED QUESTIONS ============
+function detectApplicationQuestion(questionText) {
+    if (!questionText) return false;
+    
+    const lowerQ = questionText.toLowerCase();
+    
+    const applicationPatterns = [
+        /if\s+\w+\s+(was|were|did|had|would|could|should)/i,
+        /given\s+(the|this|these|that)/i,
+        /based\s+on\s+(the|this|these|above)/i,
+        /according\s+to\s+(the|this|these|above)/i,
+        /using\s+(the|this|these|above)/i,
+        /scenario/i,
+        /case\s+study/i,
+        /situation/i,
+        /example/i,
+        /when\s+\w+\s+(is|are|was|were)/i,
+        /which\s+(approach|method|strategy|solution)/i,
+        /how\s+(would|should|could|does)/i,
+        /what\s+(would|should|could|might)/i,
+        /(assume|suppose)\s+(that|the|this)/i,
+        /apply/i,
+        /analyze/i,
+        /evaluate/i,
+        /calculate/i,
+        /determine/i,
+        /identify\s+the\s+(best|correct|most)/i,
+        /predict/i,
+        /interpret/i,
+        /compare/i,
+        /contrast/i,
+        /distinguish/i,
+        /differentiate/i,
+        /solve/i,
+        /demonstrate/i,
+        /illustrate/i,
+        /implement/i,
+        /design/i,
+        /propose/i,
+        /recommend/i,
+        /which\s+of\s+the\s+following\s+(best|most|would)/i,
+        /what\s+is\s+the\s+(best|most|likely|probable)/i,
+        /implication/i,
+        /consequence/i,
+        /outcome/i,
+        /effect/i,
+        /impact/i,
+        /relationship/i,
+        /connection/i,
+        /pattern/i,
+        /trend/i,
+        /inference/i,
+        /conclusion/i,
+        /significance/i,
+        /relevance/i,
+        /limitation/i,
+        /strength/i,
+        /weakness/i,
+        /advantage/i,
+        /disadvantage/i,
+        /benefit/i,
+        /drawback/i,
+        /challenge/i,
+        /opportunity/i,
+        /threat/i,
+        /factor/i,
+        /variable/i,
+        /principle/i,
+        /concept/i
+    ];
+    
+    const recallPatterns = [
+        /what\s+(is|are|was|were)\s+(the|a|an)/i,
+        /who\s+(is|are|was|were)/i,
+        /when\s+(did|was|were)/i,
+        /where\s+(is|are|was|were)/i,
+        /define/i,
+        /list/i,
+        /name/i,
+        /state/i,
+        /identify\s+(the|a|an)\s+(definition|term|concept)/i,
+        /which\s+(year|date|time)/i,
+        /how\s+many/i,
+        /how\s+much/i,
+        /fill\s+in/i,
+        /complete\s+the/i,
+        /recall/i,
+        /remember/i,
+        /memorize/i,
+        /definition/i,
+        /term/i,
+        /vocabulary/i,
+        /key\s+word/i,
+        /phrase/i,
+        /quote/i,
+        /author/i,
+        /founder/i,
+        /inventor/i,
+        /discoverer/i,
+        /creator/i,
+        /birth/i,
+        /death/i,
+        /date/i,
+        /year/i,
+        /century/i,
+        /decade/i,
+        /era/i,
+        /period/i
+    ];
+    
+    let appMatchCount = 0;
+    let recallMatchCount = 0;
+    
+    for (const pattern of applicationPatterns) {
+        if (pattern.test(lowerQ)) appMatchCount++;
+    }
+    
+    for (const pattern of recallPatterns) {
+        if (pattern.test(lowerQ)) recallMatchCount++;
+    }
+    
+    const isApplication = (appMatchCount > 0) && (appMatchCount > recallMatchCount);
+    const hasScenarioKeyword = /\b(scenario|case\s+study|situation|example|given|based\s+on|according\s+to)\b/i.test(lowerQ);
+    const startsWithApplication = /^(if|given|based|using|according|when|which\s+approach|how\s+would|what\s+would|assume|suppose|apply|analyze|evaluate|calculate|determine|predict|interpret|compare|contrast|distinguish|differentiate|solve|demonstrate|illustrate|implement|design|propose|recommend)/i.test(lowerQ);
+    
+    return isApplication || hasScenarioKeyword || startsWithApplication;
+}
+
+// ============ ANALYZE MCQ QUALITY ============
+function analyzeMCQQuality(mcqs) {
+    if (!mcqs || mcqs.length === 0) {
+        return { total: 0, application: 0, recall: 0, conceptual: 0, applicationRate: 0, details: [] };
+    }
+    
+    let applicationCount = 0;
+    let recallCount = 0;
+    let conceptualCount = 0;
+    const details = [];
+    
+    for (const row of mcqs) {
+        const questionText = row[1] || '';
+        const isApplication = detectApplicationQuestion(questionText);
+        const difficulty = row[7] || 'Medium';
+        const hasExplanation = row[8] && row[8].length > 30;
+        
+        const isConceptual = /why|how|explain|describe|what\s+(is|are)\s+the\s+(reason|cause|effect|impact|role|function)/i.test(questionText);
+        
+        if (isApplication) {
+            applicationCount++;
+        } else if (isConceptual) {
+            conceptualCount++;
+        } else {
+            recallCount++;
+        }
+        
+        details.push({
+            question: questionText.slice(0, 60) + '...',
+            isApplication: isApplication,
+            isConceptual: isConceptual,
+            difficulty: difficulty,
+            hasExplanation: hasExplanation
+        });
+    }
+    
+    const total = mcqs.length;
+    const applicationRate = total > 0 ? (applicationCount / total) * 100 : 0;
+    const conceptualRate = total > 0 ? (conceptualCount / total) * 100 : 0;
+    const recallRate = total > 0 ? (recallCount / total) * 100 : 0;
+    
+    return {
+        total,
+        application: applicationCount,
+        conceptual: conceptualCount,
+        recall: recallCount,
+        applicationRate: applicationRate,
+        conceptualRate: conceptualRate,
+        recallRate: recallRate,
+        meetsRequirement: applicationRate >= 45,
+        details
+    };
+}
+
+// ============ SHOW QUALITY METRICS ============
+function showQualityMetrics() {
+    if (!qualityMetricsPanel || !qualityMetricsContent) return;
+    
+    let totalTopics = 0;
+    let topicsMeetingRequirement = 0;
+    let totalApplicationRate = 0;
+    let metricsHtml = '';
+    
+    if (bookStructure.chapters) {
+        for (const chapter of bookStructure.chapters) {
+            if (chapter.topics) {
+                for (const topic of chapter.topics) {
+                    if (topic._qualityMetrics) {
+                        totalTopics++;
+                        const metrics = topic._qualityMetrics;
+                        if (metrics.meetsRequirement) topicsMeetingRequirement++;
+                        totalApplicationRate += metrics.applicationRate;
+                        
+                        const barClass = metrics.applicationRate >= 45 ? 'good' : (metrics.applicationRate >= 30 ? 'warn' : 'bad');
+                        
+                        metricsHtml += `
+                            <div style="padding:8px;border-bottom:1px solid #eee;font-size:13px;">
+                                <strong>${topic.title}</strong>
+                                <span style="float:right;">
+                                    ${metrics.applicationRate.toFixed(1)}% application-based
+                                    ${metrics.meetsRequirement ? '✅' : '⚠️'}
+                                </span>
+                                <div style="font-size:11px;color:#666;">
+                                    ${metrics.application}/${metrics.totalQuestions} application | ${metrics.conceptual} conceptual | ${metrics.recall} recall
+                                </div>
+                                <div class="metric-bar">
+                                    <div class="metric-fill ${barClass}" style="width:${metrics.applicationRate}%;"></div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+            }
+        }
+    }
+    
+    if (totalTopics > 0) {
+        const avgRate = totalApplicationRate / totalTopics;
+        qualityMetricsPanel.classList.add('show');
+        qualityMetricsContent.innerHTML = `
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:15px;">
+                <div><strong>Topics Analyzed:</strong> ${totalTopics}</div>
+                <div><strong>Meeting 45%+ Requirement:</strong> ${topicsMeetingRequirement}/${totalTopics}</div>
+                <div><strong>Avg Application Rate:</strong> ${avgRate.toFixed(1)}%</div>
+                <div><strong>Overall Status:</strong> ${avgRate >= 45 ? '✅ Good' : '⚠️ Needs Improvement'}</div>
+            </div>
+            <div style="max-height:300px;overflow-y:auto;border-top:1px solid #eee;">
+                ${metricsHtml}
+            </div>
+        `;
+    } else {
+        qualityMetricsPanel.classList.remove('show');
+        qualityMetricsContent.innerHTML = '<p style="color:#888;">No quality metrics available. Generate MCQs first.</p>';
+    }
+}
+
 // ============ TABS ============
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', function() {
@@ -454,12 +747,18 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         const tab = document.getElementById('tab-' + this.dataset.tab);
         if (tab) tab.classList.add('active');
         if (this.dataset.tab === 'preview') updatePreview();
-        if (this.dataset.tab === 'quality') generateQualityReport();
+        if (this.dataset.tab === 'quality') {
+            generateQualityReport();
+            showQualityMetrics();
+        }
     });
 });
 
+// ============ UPDATED: UPDATE PREVIEW USING ORDERED MCQS ============
 function updatePreview() {
-    if (allMCQs.length === 0) {
+    const mcqsInOrder = getMCQsInTopicOrder();
+    
+    if (mcqsInOrder.length === 0) {
         previewContent.innerHTML = '<p style="color:#888;text-align:center;padding:40px;">No MCQs.</p>';
         resultsPreview.classList.remove('show');
         return;
@@ -469,9 +768,9 @@ function updatePreview() {
     let html = `<table><thead><tr>`;
     for (let h of header) html += `<th>${h}</th>`;
     html += '</tr></thead><tbody>';
-    const maxShow = Math.min(20, allMCQs.length);
+    const maxShow = Math.min(20, mcqsInOrder.length);
     for (let i = 0; i < maxShow; i++) {
-        const row = allMCQs[i];
+        const row = mcqsInOrder[i];
         html += '<tr>';
         for (let j = 0; j < row.length; j++) {
             let cell = row[j] || '';
@@ -480,7 +779,7 @@ function updatePreview() {
         }
         html += '</tr>';
     }
-    if (allMCQs.length > 20) html += `<tr><td colspan="9" style="text-align:center;color:#888;">... and ${allMCQs.length - 20} more</td></tr>`;
+    if (mcqsInOrder.length > 20) html += `<tr><td colspan="9" style="text-align:center;color:#888;">... and ${mcqsInOrder.length - 20} more</td></tr>`;
     html += '</tbody></table>';
     resultsTable.innerHTML = html;
     previewContent.innerHTML = '';
@@ -568,16 +867,16 @@ function updateContentStatus() {
         content = textInput.value.trim();
     }
     if (contentLength) contentLength.textContent = content.length;
-    const total = countTopics();
+    const total = countTopics(bookStructure.chapters);
     if (topicCount) topicCount.textContent = total;
     return content;
 }
 
 // ============ COUNT FUNCTIONS ============
-function countTopics() {
+function countTopics(chapters) {
     let count = 0;
-    if (!bookStructure.chapters) return 0;
-    bookStructure.chapters.forEach(c => {
+    if (!chapters) return 0;
+    chapters.forEach(c => {
         if (c.topics) count += c.topics.length;
     });
     return count;
@@ -596,246 +895,243 @@ function countMCQs() {
     return count;
 }
 
-// ============ CSV PARSING FUNCTIONS ============
-function parseCSVLineAdvanced(line) {
-    const fields = [];
-    let current = '';
-    let inQuotes = false;
-    
-    for (let i = 0; i < line.length; i++) {
-        const char = line[i];
-        if (char === '"') {
-            if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
-                current += '"';
-                i++;
-            } else {
-                inQuotes = !inQuotes;
-            }
-        } else if (char === ',' && !inQuotes) {
-            fields.push(current.trim());
-            current = '';
-        } else {
-            current += char;
-        }
-    }
-    fields.push(current.trim());
-    return fields;
-}
-
-// ============ ENHANCED CSV PARSING WITH MIXED FORMAT SUPPORT ============
-function parseCSVTopicsMixedFormat(csvText) {
+// ============ ENHANCED CSV PARSING WITH GENERIC COLUMN DETECTION ============
+function parseCSVTopicsWithHierarchy(csvText) {
     const lines = csvText.split('\n').filter(l => l.trim().length > 0);
     if (lines.length === 0) return [];
     
-    const topics = [];
-    let topicIndex = 1;
+    const chapters = [];
+    let currentChapter = null;
+    let currentTopic = null;
+    let currentContent = [];
     
-    for (let i = 0; i < lines.length; i++) {
+    function parseCSVLine(line) {
+        const fields = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+                if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
+                    current += '"';
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (char === ',' && !inQuotes) {
+                fields.push(current.trim());
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        fields.push(current.trim());
+        return fields;
+    }
+    
+    function isChapterField(field) {
+        if (!field) return false;
+        const trimmed = field.trim();
+        return /^\d+\.\d+\s+/.test(trimmed) || 
+               /^Chapter\s+\d+/.test(trimmed) ||
+               /^[A-Z][A-Z\s\-–—']+$/.test(trimmed) ||
+               /^\d+\.\s*[A-Z]/.test(trimmed);
+    }
+    
+    function extractChapterTitle(field) {
+        if (!field) return 'Chapter';
+        const trimmed = field.trim();
+        const clean = trimmed.replace(/,\s*$/, '');
+        if (/^\d+\.\d+\s+/.test(clean) || /^Chapter\s+\d+/.test(clean)) {
+            return clean;
+        }
+        if (/^[A-Z][A-Z\s\-–—']+$/.test(clean)) {
+            return clean;
+        }
+        return clean;
+    }
+    
+    function extractChapterNumber(field) {
+        if (!field) return '1';
+        const trimmed = field.trim();
+        const numberMatch = trimmed.match(/^(\d+\.\d+)/);
+        if (numberMatch) return numberMatch[1];
+        const chapterMatch = trimmed.match(/^Chapter\s+(\d+)/i);
+        if (chapterMatch) return chapterMatch[1];
+        return String(chapters.length + 1);
+    }
+    
+    function isSubtopicField(field) {
+        if (!field) return false;
+        const trimmed = field.trim();
+        return trimmed.length > 0 && !isChapterField(trimmed);
+    }
+    
+    function extractMCQCount(field) {
+        if (!field) return 8;
+        const num = parseInt(field.trim());
+        return isNaN(num) ? 8 : (num > 0 ? num : 8);
+    }
+    
+    let startIdx = 0;
+    if (lines.length > 0) {
+        const firstLine = lines[0].trim();
+        const lowerFirst = firstLine.toLowerCase();
+        if (lowerFirst.includes('topic') || lowerFirst.includes('chapter') || lowerFirst.includes('subtopic')) {
+            startIdx = 1;
+            log('📊 Detected header row, skipping...');
+        }
+    }
+    
+    for (let i = startIdx; i < lines.length; i++) {
         const line = lines[i].trim();
         if (!line) continue;
         
-        // Split CSV
-        const fields = parseCSVLineAdvanced(line);
-        const cleanFields = fields.map(f => f.trim().replace(/^"|"$/g, ''));
+        const fields = parseCSVLine(line);
         
-        const firstField = cleanFields[0] || '';
-        
-        // Check if this is a header (starts with number like "1.1" and no leading comma, and not a subtopic)
-        const isHeader = !line.startsWith(',') && 
-                        firstField.length > 0 && 
-                        /^\d+\.\d+/.test(firstField) && 
-                        !firstField.match(/^\d+\.\d+\.\d+/) &&
-                        firstField.length < 50 &&
-                        !firstField.match(/\([a-z]\)/);
-        
-        if (isHeader) {
-            log(`📚 Ignoring header: ${firstField}`);
+        if (fields.length === 0 || (fields.length === 1 && fields[0] === '')) {
             continue;
         }
         
-        // Check if this is a topic (starts with comma OR is a numbered subtopic)
-        const isTopic = line.startsWith(',') || 
-                       (cleanFields.length >= 2 && /^\d+\.\d+\.\d+/.test(firstField)) ||
-                       (cleanFields.length >= 2 && /^\([a-z]\)/.test(firstField));
+        const col1 = fields[0] || '';
+        const col2 = fields[1] || '';
+        const col3 = fields[2] || '';
         
-        if (isTopic && cleanFields.length >= 2) {
-            let topicText = cleanFields[0] || '';
-            
-            // If first field is empty and line starts with comma, try to get from raw
-            if (!topicText && line.startsWith(',')) {
-                const rawParts = line.substring(1).split(',');
-                topicText = rawParts[0] || '';
+        if (isChapterField(col1)) {
+            if (currentChapter && currentChapter.topics && currentChapter.topics.length > 0) {
+                if (currentContent.length > 0 && currentChapter.topics.length > 0) {
+                    const lastTopic = currentChapter.topics[currentChapter.topics.length - 1];
+                    if (lastTopic && !lastTopic.content) {
+                        lastTopic.content = currentContent.join(' ').slice(0, 4000);
+                    }
+                    currentContent = [];
+                }
+                chapters.push(currentChapter);
             }
             
-            // If still empty, try the second field
-            if (!topicText && cleanFields.length > 1) {
-                topicText = cleanFields[1] || '';
+            currentChapter = {
+                number: extractChapterNumber(col1),
+                title: extractChapterTitle(col1),
+                topics: []
+            };
+            currentTopic = null;
+            currentContent = [];
+            log(`📚 Found chapter: ${currentChapter.number} ${currentChapter.title}`);
+            continue;
+        }
+        
+        if (isSubtopicField(col2) && currentChapter) {
+            if (currentContent.length > 0 && currentChapter.topics.length > 0) {
+                const lastTopic = currentChapter.topics[currentChapter.topics.length - 1];
+                if (lastTopic && !lastTopic.content) {
+                    lastTopic.content = currentContent.join(' ').slice(0, 4000);
+                }
+                currentContent = [];
             }
             
-            // Get MCQ count from 3rd column (index 2)
-            let mcqCount = parseInt(cleanFields[2]) || 0;
+            const subtopicTitle = col2.trim();
+            const mcqCount = extractMCQCount(col3);
             
-            if (topicText) {
-                topicText = topicText.trim();
-                
-                // Detect format
-                let format = 'unknown';
-                let topicNumber = '';
-                let topicTitle = '';
-                
-                // Check for letter format: (a), (b), (c)
-                const letterMatch = topicText.match(/^\(([a-z])\)\s+(.+)/);
+            let subtopicNumber = '';
+            const numberMatch = subtopicTitle.match(/^\(?([\d.]+)\)?\s*/);
+            if (numberMatch) {
+                subtopicNumber = numberMatch[1];
+            } else {
+                const letterMatch = subtopicTitle.match(/^\(([a-z])\)\s*/);
                 if (letterMatch) {
-                    format = 'letter';
-                    topicNumber = letterMatch[1];
-                    topicTitle = letterMatch[2].trim();
+                    subtopicNumber = letterMatch[1];
+                }
+            }
+            
+            const newTopic = {
+                number: subtopicNumber || `${currentChapter.topics.length + 1}`,
+                title: subtopicTitle,
+                content: '',
+                type: 'subtopic',
+                mcq_count: mcqCount,
+                done: false,
+                mcqs: [],
+                _qualityMetrics: null
+            };
+            
+            currentChapter.topics.push(newTopic);
+            currentTopic = newTopic;
+            log(`📊 Found subtopic: "${subtopicTitle}" → ${mcqCount} MCQs`);
+            continue;
+        }
+        
+        if (currentChapter && currentChapter.topics.length > 0 && col1.trim().length > 0) {
+            if (!col2.trim() && isSubtopicField(col1) && !isChapterField(col1)) {
+                if (currentContent.length > 0 && currentChapter.topics.length > 0) {
+                    const lastTopic = currentChapter.topics[currentChapter.topics.length - 1];
+                    if (lastTopic && !lastTopic.content) {
+                        lastTopic.content = currentContent.join(' ').slice(0, 4000);
+                    }
+                    currentContent = [];
                 }
                 
-                // Check for numbered format: 1.1.1, 1.2.1
-                if (format === 'unknown') {
-                    const numberedMatch = topicText.match(/^(\d+\.\d+\.\d+)\s+(.+)/);
-                    if (numberedMatch) {
-                        format = 'numbered';
-                        topicNumber = numberedMatch[1];
-                        topicTitle = numberedMatch[2].trim();
+                const subtopicTitle = col1.trim();
+                const mcqCount = extractMCQCount(fields[1] || '8');
+                
+                let subtopicNumber = '';
+                const numberMatch = subtopicTitle.match(/^\(?([\d.]+)\)?\s*/);
+                if (numberMatch) {
+                    subtopicNumber = numberMatch[1];
+                } else {
+                    const letterMatch = subtopicTitle.match(/^\(([a-z])\)\s*/);
+                    if (letterMatch) {
+                        subtopicNumber = letterMatch[1];
                     }
                 }
                 
-                // Check for simple numbered: 1.1 (but not headers)
-                if (format === 'unknown') {
-                    const simpleMatch = topicText.match(/^(\d+\.\d+)\s+(.+)/);
-                    if (simpleMatch) {
-                        format = 'numbered';
-                        topicNumber = simpleMatch[1];
-                        topicTitle = simpleMatch[2].trim();
-                    }
-                }
+                const newTopic = {
+                    number: subtopicNumber || `${currentChapter.topics.length + 1}`,
+                    title: subtopicTitle,
+                    content: '',
+                    type: 'subtopic',
+                    mcq_count: mcqCount,
+                    done: false,
+                    mcqs: [],
+                    _qualityMetrics: null
+                };
                 
-                // Fallback: use the whole text as title
-                if (format === 'unknown') {
-                    topicTitle = topicText;
-                    topicNumber = String(topicIndex);
-                }
-                
-                // Determine MCQ count
-                let finalMcqCount = mcqCount;
-                if (finalMcqCount <= 0) {
-                    finalMcqCount = parseInt(questionsPerTopic.value) || 10;
-                }
-                
-                const minCount = parseInt(minMCQs.value) || 3;
-                if (finalMcqCount < minCount) {
-                    finalMcqCount = minCount;
-                }
-                
-                // Check for duplicate
-                const isDuplicate = topics.some(t => 
-                    t.title.toLowerCase().trim() === topicTitle.toLowerCase().trim()
-                );
-                
-                if (!isDuplicate && topicTitle.length > 0) {
-                    topics.push({
-                        number: topicNumber,
-                        title: topicTitle,
-                        mcqCount: finalMcqCount,
-                        format: format,
-                        text: topicText,
-                        content: '',
-                        done: false,
-                        mcqs: []
-                    });
-                    
-                    log(`📝 Topic ${topicIndex}: "${topicTitle}" (${format}) → ${finalMcqCount} MCQs`);
-                    topicIndex++;
-                } else if (topicTitle.length > 0) {
-                    log(`⏭️ Skipping duplicate topic: "${topicTitle}"`);
-                }
+                currentChapter.topics.push(newTopic);
+                currentTopic = newTopic;
+                log(`📊 Found subtopic (col1): "${subtopicTitle}" → ${mcqCount} MCQs`);
+                continue;
+            }
+            
+            if (col1.trim().length > 10) {
+                currentContent.push(col1.trim());
             }
         }
     }
     
-    // If no topics found, try fallback
-    if (topics.length === 0) {
-        log('⚠️ No topics found with standard parsing. Trying fallback...');
-        return parseCSVFallback(csvText);
+    if (currentChapter) {
+        if (currentContent.length > 0 && currentChapter.topics.length > 0) {
+            const lastTopic = currentChapter.topics[currentChapter.topics.length - 1];
+            if (lastTopic && !lastTopic.content) {
+                lastTopic.content = currentContent.join(' ').slice(0, 4000);
+            }
+        }
+        if (currentChapter.topics && currentChapter.topics.length > 0) {
+            chapters.push(currentChapter);
+        }
     }
     
-    return topics;
-}
-
-// ============ FALLBACK CSV PARSING ============
-function parseCSVFallback(csvText) {
-    const lines = csvText.split('\n').filter(l => l.trim().length > 0);
-    const topics = [];
-    let topicIndex = 1;
-    
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
-        
-        const parts = line.split(',').map(p => p.trim().replace(/^"|"$/g, ''));
-        
-        let topicText = parts[0] || '';
-        let mcqCount = parseInt(parts[2]) || parseInt(parts[1]) || 0;
-        
-        if (!topicText && parts.length > 1) {
-            topicText = parts[1] || '';
-        }
-        
-        if (!topicText) continue;
-        
-        // Remove leading comma if present
-        if (topicText.startsWith(',')) {
-            topicText = topicText.substring(1);
-        }
-        
-        let number = String(topicIndex);
-        let title = topicText;
-        
-        const letterMatch = topicText.match(/\(([a-z])\)\s+(.+)/);
-        if (letterMatch) {
-            number = letterMatch[1];
-            title = letterMatch[2].trim();
-        }
-        
-        const numberedMatch = topicText.match(/(\d+\.\d+\.?\d*)\s+(.+)/);
-        if (numberedMatch) {
-            number = numberedMatch[1];
-            title = numberedMatch[2].trim();
-        }
-        
-        let finalMcqCount = mcqCount;
-        if (finalMcqCount <= 0) {
-            finalMcqCount = parseInt(questionsPerTopic.value) || 10;
-        }
-        
-        const minCount = parseInt(minMCQs.value) || 3;
-        if (finalMcqCount < minCount) {
-            finalMcqCount = minCount;
-        }
-        
-        const isDuplicate = topics.some(t => 
-            t.title.toLowerCase().trim() === title.toLowerCase().trim()
-        );
-        
-        if (!isDuplicate && title.length > 0) {
-            topics.push({
-                number: number,
-                title: title,
-                mcqCount: finalMcqCount,
-                format: 'detected',
-                text: topicText,
-                content: '',
-                done: false,
-                mcqs: []
+    let totalTopics = 0;
+    chapters.forEach(ch => {
+        if (ch.topics) {
+            ch.topics.forEach(t => {
+                totalTopics++;
+                log(`📊 Topic: "${t.title}" → ${t.mcq_count} MCQs`);
             });
-            
-            log(`📝 Fallback topic ${topicIndex}: "${title}" → ${finalMcqCount} MCQs`);
-            topicIndex++;
         }
-    }
+    });
+    log(`📊 Total: ${chapters.length} chapters, ${totalTopics} topics with MCQ counts`);
     
-    return topics;
+    return chapters;
 }
 
 // ============ CSV UPLOAD HANDLING ============
@@ -846,49 +1142,55 @@ if (csvInput) {
         const reader = new FileReader();
         reader.onload = function(event) {
             const text = event.target.result;
-            csvTopicData = parseCSVTopicsMixedFormat(text);
-            showCSVPreviewMixedFormat(csvTopicData);
-            log(`CSV loaded: ${csvTopicData.length} topics found`);
+            csvTopicData = parseCSVTopicsWithHierarchy(text);
+            showCSVPreviewWithHierarchy(csvTopicData);
+            log(`CSV loaded: ${csvTopicData.length} chapters with ${countCSVTopics(csvTopicData)} topics`);
         };
         reader.readAsText(file);
     });
 }
 
-function showCSVPreviewMixedFormat(topics) {
+function countCSVTopics(chapters) {
+    let count = 0;
+    chapters.forEach(c => {
+        if (c.topics) count += c.topics.length;
+    });
+    return count;
+}
+
+function showCSVPreviewWithHierarchy(chapters) {
     if (!csvPreview) return;
-    if (topics.length === 0) {
+    if (chapters.length === 0) {
         csvPreview.classList.remove('show');
         return;
     }
     csvPreview.classList.add('show');
-    let html = `<strong>📊 ${topics.length} topics found:</strong><br>`;
+    let html = `<strong>📊 ${chapters.length} chapters with ${countCSVTopics(chapters)} topics found:</strong><br>`;
     
-    const maxShow = Math.min(topics.length, 20);
-    for (let i = 0; i < maxShow; i++) {
-        const topic = topics[i];
-        const formatIcon = topic.format === 'letter' ? '🔤' : topic.format === 'numbered' ? '🔢' : '📝';
-        html += `<div style="padding:2px 0;font-size:12px;border-bottom:1px solid #f0f0f0;">
-            ${formatIcon} <strong>${topic.number}</strong> ${topic.title} 
-            <span class="mcq-count-badge">${topic.mcqCount} MCQs</span>
-            <span class="format-badge">${topic.format}</span>
-        </div>`;
+    for (let ci = 0; ci < Math.min(chapters.length, 5); ci++) {
+        const chapter = chapters[ci];
+        html += `<div style="padding:4px 0;border-bottom:1px solid #e0e0e0;font-weight:bold;color:#1a73e8;">📚 ${chapter.number}. ${chapter.title}</div>`;
+        
+        if (chapter.topics && chapter.topics.length > 0) {
+            const maxShow = Math.min(chapter.topics.length, 8);
+            for (let ti = 0; ti < maxShow; ti++) {
+                const topic = chapter.topics[ti];
+                const typeLabel = topic.type === 'subtopic' ? ' [sub]' : '';
+                const mcqLabel = topic.mcq_count ? ` → ${topic.mcq_count} MCQs` : '';
+                html += `<div style="padding-left:20px;font-size:12px;color:#555;">  • (${topic.number}) ${topic.title}${typeLabel}${mcqLabel}</div>`;
+            }
+            if (chapter.topics.length > 8) {
+                html += `<div style="padding-left:20px;font-size:11px;color:#888;">  ... and ${chapter.topics.length - 8} more topics</div>`;
+            }
+        }
     }
-    if (topics.length > 20) {
-        html += `<div style="color:#888;margin-top:5px;">... and ${topics.length - 20} more topics</div>`;
+    if (chapters.length > 5) {
+        html += `<div style="color:#888;margin-top:5px;">... and ${chapters.length - 5} more chapters</div>`;
     }
     csvPreview.innerHTML = html;
 }
 
-function clearCSVPreview() {
-    csvTopicData = [];
-    if (csvPreview) {
-        csvPreview.classList.remove('show');
-        csvPreview.innerHTML = '';
-    }
-    if (csvInput) csvInput.value = '';
-}
-
-// ============ UPLOAD TOPIC CSV AND MATCH TO PDF CONTENT ============
+// ============ UPDATED: UPLOAD TOPIC CSV AND MATCH TO PDF CONTENT ============
 function uploadTopicCSV() {
     if (csvTopicData.length === 0) {
         showError('No CSV data loaded. Please select a CSV file first.');
@@ -911,94 +1213,126 @@ function uploadTopicCSV() {
         bookStructure = { chapters: [] };
     }
     
-    let chapter = bookStructure.chapters.find(c => c.number === '1');
-    if (!chapter) {
-        chapter = {
-            number: '1',
-            title: 'Topics',
-            topics: []
-        };
-        bookStructure.chapters.push(chapter);
-    }
-    
     let totalTopicsAdded = 0;
-    const contentLower = content.toLowerCase();
+    const textLower = content.toLowerCase();
     
-    // Sort topics by position in content
-    const topicsWithPosition = csvTopicData.map(topic => {
-        let pos = contentLower.indexOf(topic.title.toLowerCase());
-        if (pos === -1) {
-            pos = contentLower.indexOf(topic.number.toLowerCase());
-        }
-        return { ...topic, position: pos };
-    });
-    
-    topicsWithPosition.sort((a, b) => {
-        if (a.position === -1) return 1;
-        if (b.position === -1) return -1;
-        return a.position - b.position;
-    });
-    
-    for (let i = 0; i < topicsWithPosition.length; i++) {
-        const csvTopic = topicsWithPosition[i];
+    for (let ci = 0; ci < csvTopicData.length; ci++) {
+        const csvChapter = csvTopicData[ci];
         
-        const isDuplicate = chapter.topics.some(t => 
-            t.title.toLowerCase().trim() === csvTopic.title.toLowerCase().trim()
+        let existingChapter = bookStructure.chapters.find(c => 
+            c.number === csvChapter.number
         );
         
-        if (isDuplicate) {
-            log(`⏭️ Skipping duplicate topic: ${csvTopic.title}`);
-            continue;
+        if (!existingChapter) {
+            existingChapter = {
+                number: csvChapter.number || `${bookStructure.chapters.length + 1}`,
+                title: csvChapter.title || `Chapter ${bookStructure.chapters.length + 1}`,
+                topics: []
+            };
+            bookStructure.chapters.push(existingChapter);
         }
         
-        let topicContent = '';
-        let startPos = csvTopic.position;
+        let chapterStart = content.toLowerCase().indexOf(csvChapter.number.toLowerCase());
+        let chapterEnd = content.length;
         
-        if (startPos === -1) {
-            topicContent = content.slice(0, 1500);
-            log(`⚠️ Topic "${csvTopic.title}" not found in content, using fallback`);
-        } else {
-            let endPos = content.length;
-            for (let j = i + 1; j < topicsWithPosition.length; j++) {
-                const nextPos = topicsWithPosition[j].position;
-                if (nextPos > startPos && nextPos < endPos) {
-                    endPos = nextPos;
-                    break;
+        for (let j = ci + 1; j < csvTopicData.length; j++) {
+            const nextChapter = csvTopicData[j];
+            const nextPos = content.toLowerCase().indexOf(nextChapter.number.toLowerCase());
+            if (nextPos > chapterStart && nextPos < chapterEnd) {
+                chapterEnd = nextPos;
+                break;
+            }
+        }
+        
+        const chapterContent = content.substring(chapterStart, chapterEnd);
+        
+        if (csvChapter.topics && csvChapter.topics.length > 0) {
+            for (let ti = 0; ti < csvChapter.topics.length; ti++) {
+                const csvTopic = csvChapter.topics[ti];
+                
+                const isDuplicate = existingChapter.topics.some(t => 
+                    t.title.toLowerCase().trim() === csvTopic.title.toLowerCase().trim()
+                );
+                
+                if (isDuplicate) {
+                    log(`⏭️ Skipping duplicate topic: ${csvTopic.title}`);
+                    continue;
                 }
-            }
-            
-            topicContent = content.substring(startPos, endPos).trim();
-            topicContent = topicContent.replace(/\s+/g, ' ');
-            
-            if (topicContent.length > 4000) {
-                topicContent = topicContent.slice(0, 4000);
+                
+                const isSubTopic = csvTopic.type === 'subtopic';
+                
+                let topicContent = '';
+                const topicTitleLower = csvTopic.title.toLowerCase().trim();
+                const topicNumber = csvTopic.number;
+                
+                let searchPattern = '';
+                if (isSubTopic) {
+                    searchPattern = `(${topicNumber}) ${csvTopic.title}`.toLowerCase();
+                } else {
+                    searchPattern = csvTopic.title.toLowerCase();
+                }
+                
+                let topicStart = chapterContent.toLowerCase().indexOf(searchPattern);
+                if (topicStart === -1) {
+                    const simplePattern = csvTopic.title.toLowerCase();
+                    topicStart = chapterContent.toLowerCase().indexOf(simplePattern);
+                }
+                
+                if (topicStart !== -1) {
+                    let topicEnd = chapterContent.length;
+                    
+                    for (let k = ti + 1; k < csvChapter.topics.length; k++) {
+                        const nextTopic = csvChapter.topics[k];
+                        let nextPattern = '';
+                        if (nextTopic.type === 'subtopic') {
+                            nextPattern = `(${nextTopic.number}) ${nextTopic.title}`.toLowerCase();
+                        } else {
+                            nextPattern = nextTopic.title.toLowerCase();
+                        }
+                        const nextPos = chapterContent.toLowerCase().indexOf(nextPattern, topicStart + 10);
+                        if (nextPos > topicStart && nextPos < topicEnd) {
+                            topicEnd = nextPos;
+                            break;
+                        }
+                    }
+                    
+                    if (ci < csvTopicData.length - 1) {
+                        const nextChapterNum = csvTopicData[ci + 1].number;
+                        const nextChapterPos = chapterContent.toLowerCase().indexOf(nextChapterNum.toLowerCase(), topicStart + 10);
+                        if (nextChapterPos > topicStart && nextChapterPos < topicEnd) {
+                            topicEnd = nextChapterPos;
+                        }
+                    }
+                    
+                    topicContent = chapterContent.substring(topicStart, topicEnd).trim();
+                    if (topicContent.length > 4000) {
+                        topicContent = topicContent.slice(0, 4000);
+                    }
+                } else {
+                    topicContent = chapterContent.slice(0, 2000);
+                }
+                
+                if (!topicContent || topicContent.length < 50) {
+                    topicContent = chapterContent.slice(0, 1500);
+                }
+                
+                let topicToAdd = {
+                    number: csvTopic.number || `${existingChapter.topics.length + 1}`,
+                    title: csvTopic.title,
+                    content: topicContent,
+                    type: isSubTopic ? 'subtopic' : 'main',
+                    mcq_count: csvTopic.mcq_count || 8,
+                    done: false,
+                    mcqs: [],
+                    _qualityMetrics: null
+                };
+                
+                existingChapter.topics.push(topicToAdd);
+                totalTopicsAdded++;
+                
+                log(`✅ Added topic: ${csvTopic.title} with ${topicContent.length} chars of content, ${csvTopic.mcq_count || 8} MCQs requested`);
             }
         }
-        
-        if (topicContent.length < 100 && csvTopic.position !== -1) {
-            const start = Math.max(0, csvTopic.position - 200);
-            const end = Math.min(content.length, csvTopic.position + 800);
-            topicContent = content.substring(start, end).trim();
-            if (topicContent.length > 4000) {
-                topicContent = topicContent.slice(0, 4000);
-            }
-            log(`📝 Extended content for "${csvTopic.title}": ${topicContent.length} chars`);
-        }
-        
-        let topicToAdd = {
-            number: csvTopic.number,
-            title: csvTopic.title,
-            content: topicContent,
-            format: csvTopic.format,
-            mcqCount: csvTopic.mcqCount,
-            done: false,
-            mcqs: []
-        };
-        
-        chapter.topics.push(topicToAdd);
-        totalTopicsAdded++;
-        
-        log(`✅ Added topic: "${csvTopic.title}" (${csvTopic.format}) → ${csvTopic.mcqCount} MCQs, ${topicContent.length} chars content`);
     }
     
     renderTree();
@@ -1009,25 +1343,35 @@ function uploadTopicCSV() {
     validateAllTopics();
     
     if (statsBox) statsBox.classList.add('show');
-    const total = countTopics();
+    const total = countTopics(bookStructure.chapters);
     if (statsContent) {
         statsContent.innerHTML = `
-            <strong>✅ ${totalTopicsAdded} Topics Imported!</strong><br>
-            📚 Total Topics: ${total}<br>
+            <strong>✅ ${totalTopicsAdded} Topics Imported and Matched to PDF!</strong><br>
+            📚 Chapters: ${bookStructure.chapters.length}<br>
+            📊 Total Topics: ${total}<br>
             📄 Content: ${extractedText.length} chars<br>
-            📊 Format: Mixed (letter + numbered)
+            📝 Each topic has its own MCQ count from CSV column 3
         `;
     }
     
-    showSuccess(`Imported ${totalTopicsAdded} topics with content from PDF!`);
-    log(`CSV import: ${totalTopicsAdded} topics added`);
+    showSuccess(`Imported ${totalTopicsAdded} topics with individual MCQ counts from CSV!`);
+    log(`CSV import: ${totalTopicsAdded} topics added with individual MCQ counts`);
     
     csvTopicData = [];
     if (csvPreview) csvPreview.classList.remove('show');
     if (csvInput) csvInput.value = '';
 }
 
-// ============ RENDER TREE WITH MCQ COUNTS ============
+function clearCSVPreview() {
+    csvTopicData = [];
+    if (csvPreview) {
+        csvPreview.classList.remove('show');
+        csvPreview.innerHTML = '';
+    }
+    if (csvInput) csvInput.value = '';
+}
+
+// ============ ENHANCED RENDER TREE WITH SUB-TOPIC GROUPING ============
 function renderTree() {
     if (!treeContainer) return;
     if (!bookStructure.chapters || bookStructure.chapters.length === 0) {
@@ -1041,27 +1385,92 @@ function renderTree() {
         if (!chapter.topics || chapter.topics.length === 0) {
             html += `<div class="tree-item topic" style="padding-left:25px;color:#888;">No topics</div>`;
         } else {
+            const groupedTopics = [];
+            let currentMain = null;
+            
             for (let ti = 0; ti < chapter.topics.length; ti++) {
                 const topic = chapter.topics[ti];
-                const isDone = topic.done && topic.mcqs && topic.mcqs.length > 0;
-                const mcqCount = topic.mcqs ? topic.mcqs.length : 0;
-                const requestedCount = topic.mcqCount || 0;
-                const valKey = `${ci}|${ti}`;
-                const valResult = topicValidationResults[valKey];
-                const isValid = valResult ? valResult.valid : false;
-                const score = valResult ? valResult.score : 0;
-                const statusIcon = isValid ? '✅' : (valResult ? '⚠️' : '');
-                const formatIcon = topic.format === 'letter' ? '🔤' : topic.format === 'numbered' ? '🔢' : '📝';
-                const contentPreview = topic.content ? topic.content.slice(0, 50) + '...' : 'No content';
+                const isSubTopic = topic.type === 'subtopic';
                 
-                html += `<div class="tree-item topic" data-chapter="${ci}" data-topic="${ti}" onclick="selectTopic(${ci}, ${ti})" style="cursor:pointer;padding-left:25px;">
-                    <strong>${topic.number} ${topic.title}</strong>
-                    <span class="format-badge">${topic.format || 'mixed'}</span>
-                    <span class="mcq-count-badge">${mcqCount}/${requestedCount} MCQs</span>
-                    ${isDone ? '✅' : '⏳'}
-                    ${statusIcon} ${score}%
-                    <div style="font-size:10px;color:#888;padding-left:10px;">${contentPreview}</div>
-                </div>`;
+                if (!isSubTopic) {
+                    currentMain = topic;
+                    groupedTopics.push({ main: topic, subtopics: [] });
+                } else if (currentMain) {
+                    groupedTopics[groupedTopics.length - 1].subtopics.push(topic);
+                } else {
+                    groupedTopics.push({ main: null, subtopics: [topic] });
+                }
+            }
+            
+            let topicIndex = 0;
+            for (let gi = 0; gi < groupedTopics.length; gi++) {
+                const group = groupedTopics[gi];
+                
+                if (group.main) {
+                    const mainTopic = group.main;
+                    const isDone = mainTopic.done && mainTopic.mcqs && mainTopic.mcqs.length > 0;
+                    const mcqCount = mainTopic.mcqs ? mainTopic.mcqs.length : 0;
+                    const requestedMcqs = mainTopic.mcq_count || 8;
+                    const valKey = `${ci}|${topicIndex}`;
+                    const valResult = topicValidationResults[valKey];
+                    const isValid = valResult ? valResult.valid : false;
+                    const score = valResult ? valResult.score : 0;
+                    const statusIcon = isValid ? '✅' : (valResult ? '⚠️' : '');
+                    const contentPreview = mainTopic.content ? mainTopic.content.slice(0, 60) + '...' : 'No content';
+                    
+                    let qualityBadge = '';
+                    if (mainTopic._qualityMetrics) {
+                        const qm = mainTopic._qualityMetrics;
+                        qualityBadge = ` | 📊 ${qm.applicationRate.toFixed(0)}% app`;
+                    }
+                    
+                    html += `<div class="tree-item topic" data-chapter="${ci}" data-topic="${topicIndex}" onclick="selectTopic(${ci}, ${topicIndex})" style="cursor:pointer;padding-left:25px;">
+                        <strong>${mainTopic.number} ${mainTopic.title}</strong>
+                        <span class="badge-topic">${mcqCount}/${requestedMcqs} MCQs ${isDone ? '✅' : ''} ${statusIcon} ${score}%${qualityBadge}</span>
+                        <div style="font-size:10px;color:#888;padding-left:10px;">${contentPreview}</div>
+                    </div>`;
+                    topicIndex++;
+                    
+                    for (let sti = 0; sti < group.subtopics.length; sti++) {
+                        const subTopic = group.subtopics[sti];
+                        const subIsDone = subTopic.done && subTopic.mcqs && subTopic.mcqs.length > 0;
+                        const subMcqCount = subTopic.mcqs ? subTopic.mcqs.length : 0;
+                        const subRequestedMcqs = subTopic.mcq_count || 8;
+                        const subValKey = `${ci}|${topicIndex}`;
+                        const subValResult = topicValidationResults[subValKey];
+                        const subIsValid = subValResult ? subValResult.valid : false;
+                        const subScore = subValResult ? subValResult.score : 0;
+                        const subStatusIcon = subIsValid ? '✅' : (subValResult ? '⚠️' : '');
+                        const subContentPreview = subTopic.content ? subTopic.content.slice(0, 50) + '...' : '📌 See parent topic content';
+                        
+                        html += `<div class="tree-item subtopic" data-chapter="${ci}" data-topic="${topicIndex}" onclick="selectTopic(${ci}, ${topicIndex})" style="cursor:pointer;padding-left:45px;font-size:12px;color:#555;">
+                            • (${subTopic.number}) ${subTopic.title}
+                            <span class="subtopic-badge">sub</span>
+                            <span class="badge-topic">${subMcqCount}/${subRequestedMcqs} MCQs ${subIsDone ? '✅' : ''} ${subStatusIcon} ${subScore}%</span>
+                            <div style="font-size:9px;color:#aaa;padding-left:10px;">${subContentPreview}</div>
+                        </div>`;
+                        topicIndex++;
+                    }
+                } else {
+                    for (let sti = 0; sti < group.subtopics.length; sti++) {
+                        const subTopic = group.subtopics[sti];
+                        const subIsDone = subTopic.done && subTopic.mcqs && subTopic.mcqs.length > 0;
+                        const subMcqCount = subTopic.mcqs ? subTopic.mcqs.length : 0;
+                        const subRequestedMcqs = subTopic.mcq_count || 8;
+                        const subValKey = `${ci}|${topicIndex}`;
+                        const subValResult = topicValidationResults[subValKey];
+                        const subIsValid = subValResult ? subValResult.valid : false;
+                        const subScore = subValResult ? subValResult.score : 0;
+                        const subStatusIcon = subIsValid ? '✅' : (subValResult ? '⚠️' : '');
+                        
+                        html += `<div class="tree-item subtopic" data-chapter="${ci}" data-topic="${topicIndex}" onclick="selectTopic(${ci}, ${topicIndex})" style="cursor:pointer;padding-left:45px;font-size:12px;color:#555;">
+                            • (${subTopic.number}) ${subTopic.title}
+                            <span class="subtopic-badge">sub</span>
+                            <span class="badge-topic">${subMcqCount}/${subRequestedMcqs} MCQs ${subIsDone ? '✅' : ''} ${subStatusIcon} ${subScore}%</span>
+                        </div>`;
+                        topicIndex++;
+                    }
+                }
             }
         }
         html += '</div>';
@@ -1070,7 +1479,7 @@ function renderTree() {
     treeContainer.innerHTML = html;
 }
 
-// ============ EXTRACT CHAPTERS AND TOPICS (Fallback) ============
+// ============ EXTRACT CHAPTERS AND TOPICS ============
 function extractChaptersAndTopics() {
     let text = extractedText;
     if (!text || text.length < 100) {
@@ -1088,103 +1497,254 @@ function extractChaptersAndTopics() {
 
     setTimeout(() => {
         try {
-            const topics = [];
-            const contentLower = text.toLowerCase();
+            const lines = text.split('\n').filter(l => l.trim().length > 0);
             
-            // Look for numbered topics
-            const numberedRegex = /(\d+\.\d+\.?\d*)\s+([A-Z][A-Za-z\s\-–—']+)/g;
-            let match;
+            const chapters = [];
+            let currentChapter = null;
+            let currentTopics = [];
+            let currentContent = [];
+            let currentSubTopic = null;
+            let isInSubTopic = false;
+            let currentMainTopic = null;
             
-            while ((match = numberedRegex.exec(text)) !== null) {
-                const number = match[1];
-                const title = match[2].trim();
-                const pos = match.index;
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
                 
-                if (!title.match(/^[A-Z]{5,}/) && title.length > 3 && !title.match(/^CHAPTER/i)) {
-                    topics.push({
-                        number: number,
-                        title: title,
-                        mcqCount: parseInt(questionsPerTopic.value) || 10,
-                        format: 'numbered',
-                        text: `${number} ${title}`,
+                const chapterMatch = line.match(/^(\d+\.\d+)\s+([A-Z][A-Z\s\-–—']+)/);
+                if (chapterMatch) {
+                    if (currentChapter && currentTopics.length > 0) {
+                        if (currentContent.length > 0) {
+                            const lastTopic = currentTopics[currentTopics.length - 1];
+                            if (lastTopic && !lastTopic.content) {
+                                lastTopic.content = currentContent.join(' ').slice(0, 4000);
+                            }
+                            currentContent = [];
+                        }
+                        chapters.push({
+                            number: currentChapter.number,
+                            title: currentChapter.title,
+                            topics: currentTopics
+                        });
+                    }
+                    
+                    currentChapter = {
+                        number: chapterMatch[1],
+                        title: chapterMatch[2].trim(),
+                        topics: []
+                    };
+                    currentTopics = [];
+                    currentContent = [];
+                    currentMainTopic = chapterMatch[2].trim();
+                    currentSubTopic = null;
+                    isInSubTopic = false;
+                    log(`📚 Found chapter: ${chapterMatch[1]} ${chapterMatch[2].trim()}`);
+                    continue;
+                }
+                
+                const mainTopicMatch = line.match(/^(\d+\.\d+)\s+([A-Z][A-Z\s\-–—']+)/);
+                if (mainTopicMatch && currentChapter) {
+                    if (currentContent.length > 0 && currentTopics.length > 0) {
+                        const lastTopic = currentTopics[currentTopics.length - 1];
+                        if (lastTopic && !lastTopic.content) {
+                            lastTopic.content = currentContent.join(' ').slice(0, 4000);
+                        }
+                        currentContent = [];
+                    }
+                    
+                    const topicTitle = mainTopicMatch[2].trim();
+                    currentTopics.push({
+                        number: mainTopicMatch[1],
+                        title: topicTitle,
                         content: '',
+                        type: 'main',
+                        mcq_count: 8,
                         done: false,
-                        mcqs: []
+                        mcqs: [],
+                        _qualityMetrics: null
+                    });
+                    currentMainTopic = topicTitle;
+                    currentSubTopic = null;
+                    isInSubTopic = false;
+                    log(`📝 Found main topic: ${mainTopicMatch[1]} ${topicTitle}`);
+                    continue;
+                }
+                
+                const sectionMatch = line.match(/^([A-Z][A-Z\s\-–—']+)$/);
+                if (sectionMatch && currentChapter) {
+                    const sectionTitle = sectionMatch[1].trim();
+                    if (sectionTitle !== currentChapter.title && 
+                        sectionTitle.length > 5 && 
+                        !sectionTitle.match(/^\d+\.\d+/) &&
+                        !sectionTitle.match(/^[A-Z][a-z]/)) {
+                        
+                        if (currentContent.length > 0 && currentTopics.length > 0) {
+                            const lastTopic = currentTopics[currentTopics.length - 1];
+                            if (lastTopic && !lastTopic.content) {
+                                lastTopic.content = currentContent.join(' ').slice(0, 4000);
+                            }
+                            currentContent = [];
+                        }
+                        
+                        currentTopics.push({
+                            number: `${currentTopics.length + 1}`,
+                            title: sectionTitle,
+                            content: '',
+                            type: 'section',
+                            mcq_count: 8,
+                            done: false,
+                            mcqs: [],
+                            _qualityMetrics: null
+                        });
+                        currentSubTopic = null;
+                        isInSubTopic = false;
+                        log(`📝 Found section: ${sectionTitle}`);
+                    }
+                    continue;
+                }
+                
+                const subTopicMatch = line.match(/^\(([a-z])\)\s+(.+)/);
+                if (subTopicMatch && currentChapter && currentTopics.length > 0) {
+                    if (currentContent.length > 0) {
+                        const lastTopic = currentTopics[currentTopics.length - 1];
+                        if (lastTopic && !lastTopic.content) {
+                            lastTopic.content = currentContent.join(' ').slice(0, 4000);
+                        }
+                        currentContent = [];
+                    }
+                    
+                    const subTitle = subTopicMatch[2].trim();
+                    currentTopics.push({
+                        number: `(${subTopicMatch[1]})`,
+                        title: subTitle,
+                        content: '',
+                        type: 'subtopic',
+                        mcq_count: 8,
+                        done: false,
+                        mcqs: [],
+                        _qualityMetrics: null
+                    });
+                    currentSubTopic = subTitle;
+                    isInSubTopic = true;
+                    log(`📝 Found sub-topic: (${subTopicMatch[1]}) ${subTitle}`);
+                    continue;
+                }
+                
+                const numberedSubMatch = line.match(/^(\d+)\.\s+(.+)/);
+                if (numberedSubMatch && currentChapter && currentTopics.length > 0 && !line.match(/^\d+\.\d+/)) {
+                    if (currentContent.length > 0) {
+                        const lastTopic = currentTopics[currentTopics.length - 1];
+                        if (lastTopic && !lastTopic.content) {
+                            lastTopic.content = currentContent.join(' ').slice(0, 4000);
+                        }
+                        currentContent = [];
+                    }
+                    
+                    const subTitle = numberedSubMatch[2].trim();
+                    if (subTitle.length > 5) {
+                        currentTopics.push({
+                            number: `${numberedSubMatch[1]}`,
+                            title: subTitle,
+                            content: '',
+                            type: 'subtopic',
+                            mcq_count: 8,
+                            done: false,
+                            mcqs: [],
+                            _qualityMetrics: null
+                        });
+                        currentSubTopic = subTitle;
+                        isInSubTopic = true;
+                        log(`📝 Found numbered sub-topic: ${numberedSubMatch[1]}. ${subTitle}`);
+                    }
+                    continue;
+                }
+                
+                if (currentChapter && currentTopics.length > 0) {
+                    if (line.length > 10 && 
+                        !line.match(/^(\d+\.\d+)\s+[A-Z]/) && 
+                        !line.match(/^\([a-z]\)\s+/) &&
+                        !line.match(/^[A-Z][A-Z\s\-–—']+$/) &&
+                        !line.match(/^\d+\.\s+[A-Z]/)) {
+                        currentContent.push(line);
+                    }
+                }
+            }
+            
+            if (currentChapter) {
+                if (currentContent.length > 0 && currentTopics.length > 0) {
+                    const lastTopic = currentTopics[currentTopics.length - 1];
+                    if (lastTopic && !lastTopic.content) {
+                        lastTopic.content = currentContent.join(' ').slice(0, 4000);
+                    }
+                }
+                if (currentTopics.length > 0) {
+                    chapters.push({
+                        number: currentChapter.number,
+                        title: currentChapter.title,
+                        topics: currentTopics
                     });
                 }
             }
             
-            // Look for letter topics
-            const letterRegex = /\(([a-z])\)\s+([A-Z][A-Za-z\s\-–—']+)/g;
-            while ((match = letterRegex.exec(text)) !== null) {
-                const number = match[1];
-                const title = match[2].trim();
+            if (chapters.length === 0 || chapters.every(c => c.topics.length === 0)) {
+                log('No chapters/topics found with pattern matching, creating fallback...');
                 
-                topics.push({
-                    number: number,
-                    title: title,
-                    mcqCount: parseInt(questionsPerTopic.value) || 10,
-                    format: 'letter',
-                    text: `(${number}) ${title}`,
-                    content: '',
-                    done: false,
-                    mcqs: []
-                });
-            }
-            
-            if (topics.length === 0) {
-                topics.push({
-                    number: '1',
-                    title: 'Content',
-                    mcqCount: parseInt(questionsPerTopic.value) || 10,
-                    format: 'mixed',
-                    text: 'Content',
-                    content: text.slice(0, 4000),
-                    done: false,
-                    mcqs: []
-                });
-                log('📝 Created fallback topic from text');
-            }
-            
-            for (let i = 0; i < topics.length; i++) {
-                const topic = topics[i];
-                let startPos = contentLower.indexOf(topic.title.toLowerCase());
-                if (startPos === -1) {
-                    startPos = contentLower.indexOf(topic.number.toLowerCase());
+                const sectionRegex = /(\d+\.\d+)\s+([A-Z][A-Z\s\-–—']+)/g;
+                const sections = [];
+                let match;
+                
+                while ((match = sectionRegex.exec(text)) !== null) {
+                    sections.push({
+                        number: match[1],
+                        title: match[2].trim(),
+                        startIndex: match.index
+                    });
                 }
                 
-                if (startPos !== -1) {
-                    let endPos = text.length;
-                    for (let j = i + 1; j < topics.length; j++) {
-                        const nextPos = contentLower.indexOf(topics[j].title.toLowerCase());
-                        if (nextPos > startPos && nextPos < endPos) {
-                            endPos = nextPos;
-                            break;
-                        }
+                if (sections.length > 0) {
+                    const fallbackTopics = [];
+                    for (let i = 0; i < sections.length; i++) {
+                        const start = sections[i].startIndex;
+                        const end = i < sections.length - 1 ? sections[i + 1].startIndex : text.length;
+                        const content = text.substring(start, end).slice(0, 4000);
+                        fallbackTopics.push({
+                            number: sections[i].number,
+                            title: sections[i].title,
+                            content: content,
+                            type: 'main',
+                            mcq_count: 8,
+                            done: false,
+                            mcqs: [],
+                            _qualityMetrics: null
+                        });
                     }
-                    topic.content = text.substring(startPos, endPos).trim().slice(0, 4000);
+                    chapters.push({
+                        number: '8',
+                        title: 'Chapter 8: The spread of communism outside Europe',
+                        topics: fallbackTopics
+                    });
                 } else {
-                    const chunkSize = Math.floor(text.length / topics.length);
-                    topic.content = text.slice(i * chunkSize, (i + 1) * chunkSize).trim().slice(0, 4000);
+                    chapters.push({
+                        number: '1',
+                        title: 'Main Content',
+                        topics: [{
+                            number: '1.1',
+                            title: 'Content',
+                            content: text.slice(0, 4000),
+                            type: 'main',
+                            mcq_count: 8,
+                            done: false,
+                            mcqs: [],
+                            _qualityMetrics: null
+                        }]
+                    });
                 }
-                
-                if (topic.content.length < 50) {
-                    topic.content = text.slice(0, 1500);
-                }
-                
-                log(`📝 Topic "${topic.title}" → ${topic.content.length} chars content`);
             }
-            
-            bookStructure = {
-                chapters: [{
-                    number: '1',
-                    title: 'Extracted Topics',
-                    topics: topics
-                }]
-            };
+
+            bookStructure = { chapters: chapters };
 
             if (progressFill) { progressFill.style.width = '100%'; progressFill.textContent = '100%'; }
-            if (statusText) statusText.textContent = `✅ Extracted ${topics.length} topics!`;
+            if (statusText) statusText.textContent = `✅ Extracted ${chapters.length} chapters, ${countTopics(chapters)} topics!`;
 
             renderTree();
             updateTopicSelect();
@@ -1196,7 +1756,8 @@ function extractChaptersAndTopics() {
             if (statsContent) {
                 statsContent.innerHTML = `
                     <strong>✅ Extraction Complete</strong><br>
-                    📝 Topics: ${topics.length}<br>
+                    📚 Chapters: ${chapters.length}<br>
+                    📝 Topics: ${countTopics(chapters)}<br>
                     📄 Text: ${text.length} chars
                 `;
             }
@@ -1208,7 +1769,7 @@ function extractChaptersAndTopics() {
             document.querySelector('[data-tab="topics"]').classList.add('active');
             document.getElementById('tab-topics').classList.add('active');
 
-            if (topics.length > 0) {
+            if (chapters.length > 0 && chapters[0].topics.length > 0) {
                 setTimeout(() => {
                     if (topicSelect) {
                         topicSelect.value = '0|0';
@@ -1217,7 +1778,7 @@ function extractChaptersAndTopics() {
                 }, 300);
             }
 
-            showSuccess(`Extracted ${topics.length} topics!`);
+            showSuccess(`Extracted ${countTopics(chapters)} topics!`);
             setTimeout(() => { if (progress) progress.classList.remove('show'); }, 1500);
 
         } catch (err) {
@@ -1243,8 +1804,6 @@ function updateTopicRegistry() {
                     normalized: key,
                     content: topic.content || '',
                     mcqCount: topic.mcqs ? topic.mcqs.length : 0,
-                    requestedCount: topic.mcqCount || 0,
-                    format: topic.format || 'mixed',
                     chapters: []
                 };
             }
@@ -1267,14 +1826,13 @@ function renderTopicRegistry() {
     let html = '';
     keys.forEach(key => {
         const t = topicRegistry[key];
-        const status = t.mcqCount >= t.requestedCount ? '✅' : '⏳';
-        const formatIcon = t.format === 'letter' ? '🔤' : t.format === 'numbered' ? '🔢' : '📝';
-        html += `<span class="topic-chip">${formatIcon} ${status} ${t.title} (${t.mcqCount}/${t.requestedCount} MCQs)</span>`;
+        const status = t.mcqCount > 0 ? '✅' : '⏳';
+        html += `<span class="topic-chip">${status} ${t.title} (${t.mcqCount} MCQs)</span>`;
     });
     topicRegistryContent.innerHTML = html;
 }
 
-// ============ TOPIC VALIDATION ============
+// ============ ACCURATE TOPIC VALIDATION ============
 function validateTopicContent(topic) {
     const result = {
         valid: true,
@@ -1298,10 +1856,10 @@ function validateTopicContent(topic) {
         return result;
     }
     
-    if (topic.content.length < 50) {
+    if (topic.content.length < 100) {
         result.valid = false;
-        result.issues.push(`Content is too short (${topic.content.length} chars, need 50+)`);
-        result.score = Math.min(50, Math.round((topic.content.length / 50) * 50));
+        result.issues.push(`Content is too short (${topic.content.length} chars, need 100+)`);
+        result.score = Math.min(50, Math.round((topic.content.length / 100) * 50));
     } else {
         result.score = 60;
     }
@@ -1331,16 +1889,57 @@ function validateTopicContent(topic) {
         result.score += 10;
         result.warnings.push('Limited keyword overlap between title and content');
     } else {
-        result.warnings.push('Topic keywords not strongly found in content');
+        if (topic.type === 'subtopic') {
+            result.warnings.push('Sub-topic content may be in parent topic');
+        } else {
+            result.warnings.push('Topic keywords not strongly found in content');
+        }
+    }
+    
+    const questionPatterns = ['is', 'are', 'was', 'were', 'can', 'will', 'may', 'should', 'would', 'could', 'does', 'do', 'has', 'have', 'been'];
+    let patternCount = 0;
+    questionPatterns.forEach(pattern => {
+        if (contentLower.includes(' ' + pattern + ' ')) patternCount++;
+    });
+    if (patternCount > 2) {
+        result.score += 10;
+    } else {
+        result.warnings.push('Limited question-worthy content patterns');
+    }
+    
+    const sentences = topic.content.split(/[.!?]+/).filter(s => s.trim().length > 20);
+    if (sentences.length > 3) {
+        result.score += 10;
+    } else {
+        result.warnings.push('Few complete sentences found');
     }
     
     if (topic.mcqs && topic.mcqs.length > 0) {
-        result.score += 20;
+        result.score += 10;
+        const onTopicCount = topic.mcqs.filter(row => {
+            const questionText = row[1] || '';
+            const topicWords = topic.title.toLowerCase().replace(/[\(\)]/g, '').split(/\s+/);
+            let qMatch = 0;
+            topicWords.forEach(word => {
+                if (word.length > 3 && questionText.toLowerCase().includes(word)) qMatch++;
+            });
+            return qMatch > 0;
+        }).length;
+        if (onTopicCount > 0 && topic.mcqs.length > 0) {
+            const ratio = onTopicCount / topic.mcqs.length;
+            if (ratio < 0.3) {
+                result.warnings.push(`Only ${Math.round(ratio * 100)}% of MCQs contain topic keywords`);
+            }
+        }
+    }
+    
+    if (topic.type === 'subtopic') {
+        result.valid = topic.content.length >= 50 && result.score >= 40;
+    } else {
+        result.valid = result.score >= 60 && topic.content.length >= 100;
     }
     
     result.score = Math.min(100, result.score);
-    result.valid = result.score >= 50;
-    
     return result;
 }
 
@@ -1363,6 +1962,13 @@ function validateAllTopics() {
             topicValidationResults[`${ci}|${ti}`] = result;
             if (result.valid) validCount++;
             totalScore += result.score;
+            
+            if (result.issues.length > 0) {
+                log(`⚠️ Topic "${topic.title}" issues: ${result.issues.join(', ')}`);
+            }
+            if (result.warnings.length > 0) {
+                log(`⚠️ Topic "${topic.title}" warnings: ${result.warnings.join(', ')}`);
+            }
         });
     });
     
@@ -1380,7 +1986,22 @@ function validateAllTopics() {
     }
     
     updateTopicRegistry();
-    updateStats();
+    
+    if (statsBox) statsBox.classList.add('show');
+    if (statsContent) {
+        const avgScore = totalTopics > 0 ? Math.round(totalScore / totalTopics) : 0;
+        statsContent.innerHTML = `
+            <strong>✅ Validation Complete</strong><br>
+            📊 Topics: ${totalTopics}<br>
+            ✅ Valid: ${validCount}<br>
+            ❌ Invalid: ${totalTopics - validCount}<br>
+            📈 Avg Score: ${avgScore}%<br>
+            📈 Confidence: ${totalTopics > 0 ? Math.round((validCount/totalTopics)*100) : 0}%
+        `;
+    }
+    
+    showSuccess(`Validation complete: ${validCount}/${totalTopics} topics valid (Avg Score: ${totalTopics > 0 ? Math.round(totalScore/totalTopics) : 0}%)`);
+    log(`✅ Validation complete: ${validCount}/${totalTopics} topics valid`);
 }
 
 // ============ SELECT TOPIC ============
@@ -1408,18 +2029,24 @@ function selectTopic(chapterIdx, topicIdx) {
         const valResult = topicValidationResults[valKey];
         const isValid = valResult ? valResult.valid : false;
         const score = valResult ? valResult.score : 0;
-        const statusText2 = isValid ? `✅ Valid (${score}%)` : (valResult ? `⚠️ Issues (${score}%)` : '⏳ Not validated');
+        const statusText = isValid ? `✅ Valid (${score}%)` : (valResult ? `⚠️ Issues (${score}%)` : '⏳ Not validated');
         const contentLen = topic.content ? topic.content.length : 0;
-        const requested = topic.mcqCount || 0;
-        const generated = topic.mcqs ? topic.mcqs.length : 0;
-        const formatIcon = topic.format === 'letter' ? '🔤' : topic.format === 'numbered' ? '🔢' : '📝';
+        const typeLabel = topic.type || 'main';
+        const requestedMcqs = topic.mcq_count || 8;
+        
+        let qualityText = '';
+        if (topic._qualityMetrics) {
+            const qm = topic._qualityMetrics;
+            qualityText = ` | 📊 ${qm.applicationRate.toFixed(0)}% app-based (${qm.application}/${qm.totalQuestions})`;
+        }
+        
         selectedTopicInfo.innerHTML = `
-            <strong>Selected:</strong> ${topic.number} ${topic.title} 
-            <span class="format-badge">${topic.format || 'mixed'}</span>
-            <span style="margin-left:15px;">📝 ${generated}/${requested} MCQs</span>
+            <strong>Selected:</strong> ${chapter.number}.${topic.number} ${topic.title} <span class="subtopic-badge">${typeLabel}</span>
+            <span style="margin-left:15px;">📝 ${topic.mcqs ? topic.mcqs.length : 0}/${requestedMcqs} MCQs</span>
             <span style="margin-left:15px;">${topic.done ? '✅ Done' : '⏳ Pending'}</span>
-            <span style="margin-left:15px;">${statusText2}</span>
+            <span style="margin-left:15px;">${statusText}</span>
             <span style="margin-left:15px;">📄 ${contentLen} chars</span>
+            ${qualityText}
         `;
     }
 
@@ -1448,17 +2075,22 @@ function updateTopicSelect() {
         if (!chapter.topics) return;
         chapter.topics.forEach((topic, ti) => {
             const isDone = topic.done && topic.mcqs && topic.mcqs.length > 0;
-            const generated = topic.mcqs ? topic.mcqs.length : 0;
-            const requested = topic.mcqCount || 0;
+            const requestedMcqs = topic.mcq_count || 8;
+            const currentMcqs = topic.mcqs ? topic.mcqs.length : 0;
             const valKey = `${ci}|${ti}`;
             const valResult = topicValidationResults[valKey];
             const isValid = valResult ? valResult.valid : false;
             const score = valResult ? valResult.score : 0;
             const statusIcon = isValid ? '✅' : (valResult ? '⚠️' : '');
-            const formatIcon = topic.format === 'letter' ? '🔤' : topic.format === 'numbered' ? '🔢' : '📝';
             const opt = document.createElement('option');
             opt.value = `${ci}|${ti}`;
-            opt.textContent = `${formatIcon} ${topic.number} ${topic.title} (${generated}/${requested} MCQs) ${isDone ? '✅' : ''} ${statusIcon} ${score}%`;
+            const typeLabel = topic.type === 'subtopic' ? ' [sub]' : '';
+            let qualityLabel = '';
+            if (topic._qualityMetrics) {
+                const qm = topic._qualityMetrics;
+                qualityLabel = ` 📊${qm.applicationRate.toFixed(0)}%`;
+            }
+            opt.textContent = `${chapter.number}.${topic.number} ${topic.title}${typeLabel} ${currentMcqs}/${requestedMcqs} ${isDone ? '✅' : ''} ${statusIcon} ${score}%${qualityLabel}`;
             topicSelect.appendChild(opt);
         });
     });
@@ -1467,25 +2099,17 @@ function updateTopicSelect() {
 // ============ UPDATE STATS ============
 function updateStats() {
     if (!bookStats) return;
-    const totalTopics = countTopics();
+    const totalTopics = countTopics(bookStructure.chapters);
     const doneTopics = bookStructure.chapters.reduce((acc, c) => {
         if (!c.topics) return acc;
         return acc + c.topics.filter(t => t.done && t.mcqs && t.mcqs.length > 0).length;
     }, 0);
     const totalMCQs = countMCQs();
-    
-    let totalRequested = 0;
-    bookStructure.chapters.forEach(c => {
-        if (!c.topics) return;
-        c.topics.forEach(t => {
-            totalRequested += t.mcqCount || 0;
-        });
-    });
-    
     bookStats.innerHTML = `
+        <span class="stat">📚 Chapters: <strong>${bookStructure.chapters ? bookStructure.chapters.length : 0}</strong></span>
         <span class="stat">📝 Topics: <strong>${totalTopics}</strong></span>
         <span class="stat">✅ Done: <strong>${doneTopics}/${totalTopics}</strong></span>
-        <span class="stat">📊 MCQs: <strong>${totalMCQs}/${totalRequested}</strong></span>
+        <span class="stat">📊 Total MCQs: <strong>${totalMCQs}</strong></span>
     `;
     if (downloadBookBtn) downloadBookBtn.disabled = (totalMCQs === 0);
     updateTopicRegistry();
@@ -1511,34 +2135,59 @@ function addManualTopic() {
 
     extractedText = content;
 
+    const normalizedTitle = title.toLowerCase().trim();
+    let isDuplicate = false;
+    if (bookStructure.chapters) {
+        bookStructure.chapters.forEach(chapter => {
+            if (chapter.topics) {
+                chapter.topics.forEach(t => {
+                    if (t.title.toLowerCase().trim() === normalizedTitle) {
+                        isDuplicate = true;
+                    }
+                });
+            }
+        });
+    }
+    if (isDuplicate) {
+        showError(`Topic "${title}" already exists!`);
+        return;
+    }
+
     if (!bookStructure.chapters || bookStructure.chapters.length === 0) {
         bookStructure = {
             chapters: [{
                 number: '1',
                 title: 'Manual Content',
-                topics: []
+                topics: [{
+                    number: '1.1',
+                    title: title,
+                    content: content.slice(0, 4000),
+                    type: 'main',
+                    mcq_count: 8,
+                    done: false,
+                    mcqs: [],
+                    _qualityMetrics: null
+                }]
             }]
         };
+    } else {
+        let chapter = bookStructure.chapters[0];
+        if (!chapter) {
+            chapter = { number: '1', title: 'Manual Content', topics: [] };
+            bookStructure.chapters.push(chapter);
+        }
+        const nextNum = chapter.topics.length + 1;
+        chapter.topics.push({
+            number: `1.${nextNum}`,
+            title: title,
+            content: content.slice(0, 4000),
+            type: 'main',
+            mcq_count: 8,
+            done: false,
+            mcqs: [],
+            _qualityMetrics: null
+        });
     }
-    
-    let chapter = bookStructure.chapters[0];
-    if (!chapter) {
-        chapter = { number: '1', title: 'Manual Content', topics: [] };
-        bookStructure.chapters.push(chapter);
-    }
-    
-    const nextNum = chapter.topics.length + 1;
-    const mcqCount = parseInt(questionsPerTopic.value) || 10;
-    
-    chapter.topics.push({
-        number: `${nextNum}`,
-        title: title,
-        content: content.slice(0, 4000),
-        mcqCount: mcqCount,
-        format: 'manual',
-        done: false,
-        mcqs: []
-    });
 
     renderTree();
     updateTopicSelect();
@@ -1547,7 +2196,7 @@ function addManualTopic() {
     updateTopicRegistry();
     validateAllTopics();
 
-    showSuccess(`Topic "${title}" added with ${mcqCount} MCQs!`);
+    showSuccess(`Topic "${title}" added!`);
     if (manualTopicTitle) manualTopicTitle.value = '';
 }
 
@@ -1581,11 +2230,11 @@ async function generateTopicMCQs() {
         return;
     }
 
-    const numQuestions = topic.mcqCount || parseInt(questionsPerTopic.value) || 10;
+    const numQuestions = questionsPerTopic ? parseInt(questionsPerTopic.value) || 10 : 10;
     const model = modelSelect ? modelSelect.value : 'llama3.1-8b';
     const hots = includeHOTS ? includeHOTS.checked : true;
 
-    log(`Generating ${numQuestions} MCQs for: ${topic.title}`);
+    log(`Generating MCQs for: ${topic.title}`);
 
     if (progress) progress.classList.add('show');
     if (progressFill) { progressFill.style.width = '0%'; progressFill.textContent = '0%'; }
@@ -1608,8 +2257,20 @@ async function generateTopicMCQs() {
             topic.done = true;
             mcqs.forEach(row => allMCQs.push(row));
             
+            const qualityAnalysis = analyzeMCQQuality(mcqs);
+            topic._qualityMetrics = {
+                totalQuestions: qualityAnalysis.total,
+                application: qualityAnalysis.application,
+                conceptual: qualityAnalysis.conceptual,
+                recall: qualityAnalysis.recall,
+                applicationRate: qualityAnalysis.applicationRate,
+                conceptualRate: qualityAnalysis.conceptualRate,
+                recallRate: qualityAnalysis.recallRate,
+                meetsRequirement: qualityAnalysis.meetsRequirement
+            };
+            
             if (progressFill) { progressFill.style.width = '100%'; progressFill.textContent = '100%'; }
-            if (statusText) statusText.textContent = `✅ Generated ${mcqs.length} MCQs!`;
+            if (statusText) statusText.textContent = `✅ Generated ${mcqs.length} MCQs (${qualityAnalysis.applicationRate.toFixed(0)}% application-based)!`;
             
             renderTree();
             updateTopicSelect();
@@ -1618,14 +2279,16 @@ async function generateTopicMCQs() {
             validateAllTopics();
             
             if (selectedTopicInfo) {
+                const requestedMcqs = topic.mcq_count || 8;
                 selectedTopicInfo.innerHTML = `
-                    <strong>✅ Done!</strong> ${topic.number} ${topic.title}
-                    <span style="margin-left:15px;">📝 ${mcqs.length}/${topic.mcqCount || numQuestions} MCQs</span>
+                    <strong>✅ Done!</strong> ${chapter.number}.${topic.number} ${topic.title}
+                    <span style="margin-left:15px;">📝 ${mcqs.length}/${requestedMcqs} MCQs</span>
+                    <span style="margin-left:15px;">📊 ${qualityAnalysis.applicationRate.toFixed(0)}% app-based</span>
                 `;
             }
             
             if (downloadBookBtn) downloadBookBtn.disabled = false;
-            showSuccess(`Generated ${mcqs.length} MCQs!`);
+            showSuccess(`Generated ${mcqs.length} MCQs (${qualityAnalysis.applicationRate.toFixed(0)}% application-based)!`);
             
         } else {
             throw new Error(result.error || 'Generation failed');
@@ -1642,71 +2305,154 @@ async function generateTopicMCQs() {
     if (generateTopicBtn) generateTopicBtn.disabled = false;
 }
 
-// ============ GENERATE TOPIC MCQs WITH RESULT ============
+// ============ UPDATED: GENERATE TOPIC MCQS WITH RESULT (Enhanced Prompt) ============
 async function generateTopicMCQsWithResult(chapterIdx, topicIdx, topicTitle, topicContent, numQuestions, model, hots, isRetry = false) {
     const key = apiKey ? apiKey.value.trim() : '';
     if (!key) {
-        return { success: false, mcqs: [], count: 0, error: 'No API key' };
+        return { success: false, mcqs: [], count: 0, error: 'No API key provided' };
+    }
+
+    if (!key.startsWith('csk-') && !key.startsWith('sk-')) {
+        return { success: false, mcqs: [], count: 0, error: 'Invalid API key format. Cerebras keys start with "csk-" or "sk-"' };
     }
 
     if (!topicContent || topicContent.length < 50) {
-        return { success: false, mcqs: [], count: 0, error: 'Content too short' };
+        return { success: false, mcqs: [], count: 0, error: 'Content too short (minimum 50 characters)' };
     }
 
-    log(`${isRetry ? '🔄 RETRY' : '📝'} Generating ${numQuestions} MCQs for: ${topicTitle}`);
+    let actualTopic = null;
+    if (bookStructure.chapters && bookStructure.chapters[chapterIdx]) {
+        actualTopic = bookStructure.chapters[chapterIdx].topics[topicIdx];
+    }
+    const effectiveNumQuestions = (actualTopic && actualTopic.mcq_count) ? actualTopic.mcq_count : numQuestions;
+    
+    log(`${isRetry ? '🔄 RETRY' : '📝'} Generating ${effectiveNumQuestions} MCQs for: ${topicTitle}`);
 
     try {
-        const hotsInstruction = hots ? `IMPORTANT: 90% of questions MUST be Higher-Order Thinking Skills (HOTS). This means:
-- 30% Logical Reasoning questions (cause-effect, inference, deduction)
-- 30% Analytical questions (compare-contrast, evaluate, differentiate)  
-- 30% Conceptual questions (apply principles, explain relationships, synthesize)
-- Only 10% may be factual recall or definition-based questions.` : '';
-
-        const prompt = `Generate EXACTLY ${numQuestions} multiple-choice questions. You MUST generate ${numQuestions} questions - no more, no less.
+const prompt = `Generate EXACTLY ${effectiveNumQuestions} multiple-choice questions. You MUST generate ${effectiveNumQuestions} questions - no more, no less.
 
 TOPIC: ${topicTitle}
 CONTENT:
 ${topicContent.slice(0, 3000)}
 
-${hotsInstruction}
+CRITICAL REQUIREMENTS:
 
-REQUIREMENTS:
-1. 4 options per question (A, B, C, D)
-2. Difficulty distribution: 30% Easy, 45% Medium, 25% Hard
-3. Random correct answers (no patterns)
-4. Each explanation: 40-80 words, explaining why the answer is correct
-5. Use \\( ... \\) for all mathematical expressions and equations.
+1. **ABSOLUTELY DO NOT refer to a "passage", "text", "reading", or "article" in the questions.**
+   - ❌ BAD: "According to the passage, what is X?"
+   - ❌ BAD: "How does the passage illustrate Y?"
+   - ❌ BAD: "Based on the passage, which of the following is true?"
+   - ❌ BAD: "The passage states that..."
+   - ✅ GOOD: "What is the main reason for X?" (direct conceptual question)
+   - ✅ GOOD: "Which factor contributed to Y?" (direct question)
+   - ✅ GOOD: "What was the significance of Z?" (direct question)
+   - ✅ GOOD: "How did W lead to V?" (direct question)
 
-OUTPUT CSV FORMAT (EXACTLY ${numQuestions} rows):
+2. **Frame questions as general knowledge/conceptual questions** based on the content, not as reading comprehension questions about a passage.
+
+3. **50% of questions MUST be APPLICATION/ANALYSIS/SCENARIO-BASED.**
+   - Give real-world situations where the student must USE the information to solve a problem.
+   - Ask "What if..." or "Which of the following scenarios..." questions.
+   - Example: "If Country A did X instead of Y, which outcome would most likely occur?"
+   - Example: "A student is asked to solve Z. Which approach correctly applies the concept?"
+   - Example: "Given the following data, which conclusion is most valid?"
+
+4. **40% of questions MUST be CONCEPTUAL UNDERSTANDING** (not just facts).
+   - Ask "Why did X happen?" or "What was the main cause of Y?"
+   - Ask "How does concept A relate to concept B?"
+   - Example: "What was the main reason for X?"
+   - Example: "How did Y contribute to Z?"
+
+5. **Only 10% of questions may be simple recall** (dates, names, definitions).
+
+6. **EACH question must have a 60-100 word explanation** that:
+   - Explains WHY the correct answer is right
+   - Explains WHY the wrong answers are wrong
+   - Connects the answer back to the real-world scenario
+   - Uses plain English that a student can understand
+   - **DO NOT mention "passage" or "text" in the explanation**
+
+7. **Difficulty distribution:** 20% Easy, 50% Medium, 30% Hard
+
+8. 4 options per question (A, B, C, D) with random correct answers (no AAA, BBB patterns).
+
+9. Use \\( ... \\) for all mathematical expressions and equations.
+
+OUTPUT CSV FORMAT (EXACTLY ${effectiveNumQuestions} rows):
 topic,question_text,option_a,option_b,option_c,option_d,correct_answer,difficulty,explanation
 
-IMPORTANT: Return EXACTLY ${numQuestions} rows of data. Do not return more or less than ${numQuestions} questions. Return ONLY CSV data, no other text.`;
-
+IMPORTANT: Return EXACTLY ${effectiveNumQuestions} rows of data. Do not return more or less than ${effectiveNumQuestions} questions. Return ONLY CSV data, no other text.`;
         log(`${isRetry ? '🔄 RETRY' : '📤'} Sending request for: ${topicTitle}`);
 
-        const response = await fetch('https://api.cerebras.ai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Authorization': 'Bearer ' + key,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                model: model,
-                messages: [
-                    { role: 'system', content: 'Return ONLY CSV data. Generate 90% Higher-Order Thinking Skills questions. Use \\( ... \\) for all mathematical expressions and equations.' },
-                    { role: 'user', content: prompt }
-                ],
-                temperature: 0.7,
-                max_tokens: 8000
-            })
-        });
+        const response = await throttledRequest(async () => {
+            return await fetch('https://api.cerebras.ai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + key,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: model,
+                    messages: [
+                        { role: 'system', content: 'Return ONLY CSV data. Each question must be on a separate line with fields separated by commas. Use \\( ... \\) for all mathematical expressions and equations. 50% application-based, 40% conceptual, 10% recall.' },
+                        { role: 'user', content: prompt }
+                    ],
+                    temperature: 0.7,
+                    max_tokens: 8000
+                })
+            });
+        }, isRetry ? 5000 : 3000);
 
         const rawText = await response.text();
         log(`${isRetry ? '🔄 RETRY' : '📥'} Response for "${topicTitle}": ${rawText.length} chars, status ${response.status}`);
 
         if (!response.ok) {
+            let errorMessage = `API error (${response.status})`;
+            
+            try {
+                const errorData = JSON.parse(rawText);
+                if (errorData.error) {
+                    errorMessage = errorData.error.message || errorMessage;
+                }
+            } catch (e) {
+                if (rawText.includes('rate limit')) {
+                    errorMessage = 'Rate limit exceeded. Please wait a few seconds and try again.';
+                }
+            }
+            
+            if (response.status === 429) {
+                const waitTime = isRetry ? 8000 : 5000;
+                log(`⏳ Rate limited. Waiting ${waitTime/1000}s before retry...`);
+                
+                const rateLimitInfo = document.getElementById('rateLimitInfo');
+                const rateLimitWait = document.getElementById('rateLimitWait');
+                if (rateLimitInfo) {
+                    rateLimitInfo.style.display = 'block';
+                    if (rateLimitWait) {
+                        rateLimitWait.textContent = Math.ceil(waitTime / 1000);
+                    }
+                    setTimeout(() => {
+                        rateLimitInfo.style.display = 'none';
+                    }, waitTime + 2000);
+                }
+                
+                if (!isRetry) {
+                    await sleep(waitTime);
+                    return await generateTopicMCQsWithResult(
+                        chapterIdx, topicIdx, topicTitle, topicContent, 
+                        numQuestions, model, hots, true
+                    );
+                } else {
+                    return { 
+                        success: false, 
+                        mcqs: [], 
+                        count: 0, 
+                        error: 'Rate limit exceeded. Please wait 60 seconds before generating more MCQs.' 
+                    };
+                }
+            }
+            
             log(`Error: ${rawText.slice(0, 300)}`);
-            return { success: false, mcqs: [], count: 0, error: `API error (${response.status})` };
+            return { success: false, mcqs: [], count: 0, error: errorMessage };
         }
 
         let data;
@@ -1738,11 +2484,10 @@ IMPORTANT: Return EXACTLY ${numQuestions} rows of data. Do not return more or le
             return { success: false, mcqs: [], count: 0, error: 'API returned empty or invalid response' };
         }
 
-        log(`${isRetry ? '🔄 RETRY' : '📊'} Parsing results for: ${topicTitle}`);
         let mcqs = parseCSVResponseImproved(content, topicTitle);
-        log(`Parsed ${mcqs.length} MCQs (requested: ${numQuestions})`);
+        log(`Parsed ${mcqs.length} MCQs (requested: ${effectiveNumQuestions})`);
 
-        if (mcqs.length < numQuestions * 0.7 && mcqs.length > 0) {
+        if (mcqs.length < effectiveNumQuestions * 0.7 && mcqs.length > 0) {
             log(`Only got ${mcqs.length} MCQs, trying lenient parsing...`);
             mcqs = parseLenientCSV(content, topicTitle);
             log(`Lenient parsing gave ${mcqs.length} MCQs`);
@@ -1759,12 +2504,27 @@ IMPORTANT: Return EXACTLY ${numQuestions} rows of data. Do not return more or le
             }
         }
 
-        if (mcqs.length > numQuestions) {
-            log(`Got ${mcqs.length} MCQs, trimming to ${numQuestions}`);
-            mcqs = mcqs.slice(0, numQuestions);
+        if (mcqs.length > effectiveNumQuestions) {
+            log(`Got ${mcqs.length} MCQs, trimming to ${effectiveNumQuestions}`);
+            mcqs = mcqs.slice(0, effectiveNumQuestions);
         }
 
         mcqs = validateAndFixMCQs(mcqs, topicTitle);
+        
+        if (mcqs && mcqs.length > 0) {
+            const qualityAnalysis = analyzeMCQQuality(mcqs);
+            log(`📊 Quality for "${topicTitle}":`);
+            log(`   - Application-based: ${qualityAnalysis.application}/${qualityAnalysis.total} (${qualityAnalysis.applicationRate.toFixed(1)}%)`);
+            log(`   - Conceptual: ${qualityAnalysis.conceptual}/${qualityAnalysis.total} (${qualityAnalysis.conceptualRate.toFixed(1)}%)`);
+            log(`   - Recall: ${qualityAnalysis.recall}/${qualityAnalysis.total} (${qualityAnalysis.recallRate.toFixed(1)}%)`);
+            log(`   - Target: 50% application, 40% conceptual, 10% recall`);
+            
+            if (!qualityAnalysis.meetsRequirement) {
+                log(`⚠️ "${topicTitle}" has only ${qualityAnalysis.applicationRate.toFixed(1)}% application-based questions (need 50%)`);
+            } else {
+                log(`✅ "${topicTitle}" meets application requirement`);
+            }
+        }
 
         return { success: true, mcqs: mcqs, count: mcqs.length, error: null };
 
@@ -1978,6 +2738,31 @@ function parseCSVResponseImproved(text, defaultTopic) {
     return result;
 }
 
+function parseCSVLineAdvanced(line) {
+    const fields = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+            if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
+                current += '"';
+                i++;
+            } else {
+                inQuotes = !inQuotes;
+            }
+        } else if (char === ',' && !inQuotes) {
+            fields.push(current.trim());
+            current = '';
+        } else {
+            current += char;
+        }
+    }
+    fields.push(current.trim());
+    return fields;
+}
+
 function parseLenientCSV(text, defaultTopic) {
     const result = [];
     let cleanText = text.replace(/```csv\s*/gi, '').replace(/```\s*/g, '').trim();
@@ -2185,22 +2970,39 @@ async function generateAllMCQs() {
         return;
     }
     
+    const globalNumQuestions = questionsPerTopic ? parseInt(questionsPerTopic.value) || 10 : 10;
+    
+    validateAllTopics();
+    
     const topicsToGenerate = allTopics.filter(item => {
-        const requested = item.topic.mcqCount || parseInt(questionsPerTopic.value) || 10;
-        const generated = item.topic.mcqs ? item.topic.mcqs.length : 0;
-        const hasEnoughMCQs = generated >= requested;
+        const requestedMcqs = item.topic.mcq_count || globalNumQuestions;
+        const threshold = Math.max(3, Math.floor(requestedMcqs * 0.8));
+        const hasEnoughMCQs = item.topic.mcqs && item.topic.mcqs.length >= threshold;
         const hasContent = item.topic.content && item.topic.content.length >= 50;
         const valKey = `${item.chapterIdx}|${item.topicIdx}`;
         const valResult = topicValidationResults[valKey];
-        const isValid = valResult ? valResult.valid : false;
+        const minScore = (item.topic.type === 'subtopic') ? 40 : 60;
+        const isValid = valResult ? (valResult.valid || valResult.score >= minScore) : false;
         return !hasEnoughMCQs && hasContent && isValid;
     });
     
+    const invalidTopics = allTopics.filter(item => {
+        const valKey = `${item.chapterIdx}|${item.topicIdx}`;
+        const valResult = topicValidationResults[valKey];
+        return valResult && !valResult.valid && valResult.score < 40;
+    });
+    
+    if (invalidTopics.length > 0) {
+        log(`⚠️ ${invalidTopics.length} topics are invalid and will be skipped`);
+        showError(`${invalidTopics.length} topics have validation issues. Fix them first.`);
+        return;
+    }
+    
     if (topicsToGenerate.length === 0) {
         const allDone = allTopics.every(item => {
-            const requested = item.topic.mcqCount || parseInt(questionsPerTopic.value) || 10;
-            const generated = item.topic.mcqs ? item.topic.mcqs.length : 0;
-            return generated >= requested;
+            const requestedMcqs = item.topic.mcq_count || globalNumQuestions;
+            const threshold = Math.max(3, Math.floor(requestedMcqs * 0.8));
+            return item.topic.mcqs && item.topic.mcqs.length >= threshold;
         });
         if (allDone) {
             showSuccess('All topics already have enough MCQs generated!');
@@ -2210,9 +3012,12 @@ async function generateAllMCQs() {
         return;
     }
     
+    const totalRequested = topicsToGenerate.reduce((sum, item) => {
+        return sum + (item.topic.mcq_count || globalNumQuestions);
+    }, 0);
+    
     const confirmMsg = `This will generate MCQs for ${topicsToGenerate.length} topics sequentially with 10-second pauses between each.
-
-Total estimated time: ~${Math.ceil(topicsToGenerate.length * 15 / 60)} minutes.
+Total MCQs to generate: ${totalRequested}
 
 Continue?`;
     if (!confirm(confirmMsg)) {
@@ -2241,9 +3046,11 @@ Continue?`;
             const currentTopic = item.topic;
             const chapterIdx = item.chapterIdx;
             const topicIdx = item.topicIdx;
+            const requestedMcqs = currentTopic.mcq_count || globalNumQuestions;
+            const threshold = Math.max(3, Math.floor(requestedMcqs * 0.8));
             
             const progressPct = Math.round((i / topicsToGenerate.length) * 100);
-            batchStatus.textContent = `🧠 Generating MCQs for: ${currentTopic.title} (${i+1}/${topicsToGenerate.length})`;
+            batchStatus.textContent = `🧠 Generating ${requestedMcqs} MCQs for: ${currentTopic.title} (${i+1}/${topicsToGenerate.length})`;
             batchDetail.textContent = `${completed} / ${topicsToGenerate.length} topics completed (${failed} failed)`;
             batchFill.style.width = progressPct + '%';
             batchFill.textContent = progressPct + '%';
@@ -2253,17 +3060,14 @@ Continue?`;
                 selectTopic(chapterIdx, topicIdx);
             }
             
-            const numQuestions = currentTopic.mcqCount || parseInt(questionsPerTopic.value) || 10;
-            
             const result = await generateTopicMCQsWithResult(
                 chapterIdx, topicIdx, currentTopic.title, currentTopic.content,
-                numQuestions, model, hots, false
+                globalNumQuestions, model, hots, false
             );
             
             if (result.success && result.count > 0) {
                 const mcqCount = result.count;
-                const requested = currentTopic.mcqCount || parseInt(questionsPerTopic.value) || 10;
-                if (mcqCount >= Math.min(requested, Math.max(3, Math.floor(requested * 0.7)))) {
+                if (mcqCount >= threshold) {
                     allMCQs = allMCQs.filter(row => {
                         const topicName = row[0] || '';
                         return topicName !== currentTopic.title;
@@ -2271,8 +3075,21 @@ Continue?`;
                     currentTopic.mcqs = result.mcqs;
                     currentTopic.done = true;
                     result.mcqs.forEach(row => allMCQs.push(row));
+                    
+                    const qualityAnalysis = analyzeMCQQuality(result.mcqs);
+                    currentTopic._qualityMetrics = {
+                        totalQuestions: qualityAnalysis.total,
+                        application: qualityAnalysis.application,
+                        conceptual: qualityAnalysis.conceptual,
+                        recall: qualityAnalysis.recall,
+                        applicationRate: qualityAnalysis.applicationRate,
+                        conceptualRate: qualityAnalysis.conceptualRate,
+                        recallRate: qualityAnalysis.recallRate,
+                        meetsRequirement: qualityAnalysis.meetsRequirement
+                    };
+                    
                     completed++;
-                    log(`✅ Topic "${currentTopic.title}" generated ${mcqCount} MCQs`);
+                    log(`✅ Topic "${currentTopic.title}" generated ${mcqCount} MCQs (${qualityAnalysis.applicationRate.toFixed(0)}% app-based)`);
                 } else {
                     failed++;
                     currentTopic.done = false;
@@ -2281,9 +3098,9 @@ Continue?`;
                         topicIdx: topicIdx,
                         topic: currentTopic,
                         retryCount: 0,
-                        reason: `Generated ${mcqCount} MCQs (need ${Math.min(requested, Math.max(3, Math.floor(requested * 0.7)))})`
+                        reason: `Generated ${mcqCount} MCQs (need ${threshold})`
                     });
-                    log(`⚠️ Topic "${currentTopic.title}" generated only ${mcqCount} MCQs`);
+                    log(`⚠️ Topic "${currentTopic.title}" generated only ${mcqCount} MCQs (need ${threshold})`);
                 }
             } else {
                 failed++;
@@ -2301,6 +3118,7 @@ Continue?`;
             updateStats();
             renderTree();
             validateAllTopics();
+            showQualityMetrics();
             
             if (i < topicsToGenerate.length - 1) {
                 batchStatus.textContent = `⏳ Waiting 10 seconds before next topic... (${i+1}/${topicsToGenerate.length} done)`;
@@ -2325,9 +3143,24 @@ Continue?`;
             await sleep(2000);
             await retryFailedTopics(failedTopics);
             
+            const stillFailed = failedTopics.filter(item => {
+                const topic = item.topic;
+                const requestedMcqs = topic.mcq_count || globalNumQuestions;
+                const threshold = Math.max(3, Math.floor(requestedMcqs * 0.8));
+                const mcqCount = topic.mcqs ? topic.mcqs.length : 0;
+                return mcqCount < threshold;
+            });
+            
+            if (stillFailed.length === 0) {
+                showSuccess(`✅ All ${failedTopics.length} topics recovered during retry!`);
+            } else {
+                showSuccess(`✅ ${completed + failedTopics.length - stillFailed.length} topics done, ${stillFailed.length} topics still need manual retry.`);
+            }
+            
             updateStats();
             renderTree();
             validateAllTopics();
+            showQualityMetrics();
         } else {
             showSuccess(`✅ All ${completed} topics processed successfully!`);
         }
@@ -2358,6 +3191,7 @@ async function retryFailedTopics(failedTopics) {
     
     let retriedCount = 0;
     let successCount = 0;
+    const globalNumQuestions = questionsPerTopic ? parseInt(questionsPerTopic.value) || 10 : 10;
     const model = modelSelect ? modelSelect.value : 'llama3.1-8b';
     const hots = includeHOTS ? includeHOTS.checked : true;
     
@@ -2367,6 +3201,8 @@ async function retryFailedTopics(failedTopics) {
         const chapterIdx = item.chapterIdx;
         const topicIdx = item.topicIdx;
         const retryCount = item.retryCount || 0;
+        const requestedMcqs = topic.mcq_count || globalNumQuestions;
+        const threshold = Math.max(3, Math.floor(requestedMcqs * 0.8));
         
         if (retryCount >= 2) {
             log(`⏭️ Skipping "${topic.title}" - already retried ${retryCount} times`);
@@ -2389,19 +3225,16 @@ async function retryFailedTopics(failedTopics) {
         topic.mcqs = [];
         topic.done = false;
         
-        const numQuestions = topic.mcqCount || parseInt(questionsPerTopic.value) || 10;
-        
         const result = await generateTopicMCQsWithResult(
             chapterIdx, topicIdx, topic.title, topic.content, 
-            numQuestions, model, hots, true
+            globalNumQuestions, model, hots, true
         );
         
         retriedCount++;
         
         if (result.success && result.count > 0) {
             const mcqCount = result.count;
-            const requested = topic.mcqCount || parseInt(questionsPerTopic.value) || 10;
-            if (mcqCount >= Math.min(requested, Math.max(3, Math.floor(requested * 0.7)))) {
+            if (mcqCount >= threshold) {
                 allMCQs = allMCQs.filter(row => {
                     const topicName = row[0] || '';
                     return topicName !== topic.title;
@@ -2409,11 +3242,24 @@ async function retryFailedTopics(failedTopics) {
                 topic.mcqs = result.mcqs;
                 topic.done = true;
                 result.mcqs.forEach(row => allMCQs.push(row));
+                
+                const qualityAnalysis = analyzeMCQQuality(result.mcqs);
+                topic._qualityMetrics = {
+                    totalQuestions: qualityAnalysis.total,
+                    application: qualityAnalysis.application,
+                    conceptual: qualityAnalysis.conceptual,
+                    recall: qualityAnalysis.recall,
+                    applicationRate: qualityAnalysis.applicationRate,
+                    conceptualRate: qualityAnalysis.conceptualRate,
+                    recallRate: qualityAnalysis.recallRate,
+                    meetsRequirement: qualityAnalysis.meetsRequirement
+                };
+                
                 successCount++;
-                log(`✅ RETRY SUCCESS: "${topic.title}" generated ${mcqCount} MCQs`);
+                log(`✅ RETRY SUCCESS: "${topic.title}" generated ${mcqCount} MCQs (${qualityAnalysis.applicationRate.toFixed(0)}% app-based)`);
                 showSuccess(`✅ Retry success: "${topic.title}" → ${mcqCount} MCQs`);
             } else {
-                log(`⚠️ RETRY PARTIAL: "${topic.title}" generated ${mcqCount} MCQs (need ${Math.min(requested, Math.max(3, Math.floor(requested * 0.7)))})`);
+                log(`⚠️ RETRY PARTIAL: "${topic.title}" generated ${mcqCount} MCQs (need ${threshold})`);
                 item.retryCount = retryCount + 1;
             }
         } else {
@@ -2424,6 +3270,7 @@ async function retryFailedTopics(failedTopics) {
         updateStats();
         renderTree();
         validateAllTopics();
+        showQualityMetrics();
         
         if (i < failedTopics.length - 1) {
             retryStatus.textContent = `⏳ Waiting before next retry... (${i+1}/${failedTopics.length} done)`;
@@ -2444,7 +3291,7 @@ async function retryFailedTopics(failedTopics) {
 function generateQualityReport() {
     if (!qualityReportContent) return;
     
-    const totalTopics = countTopics();
+    const totalTopics = countTopics(bookStructure.chapters);
     if (totalTopics === 0) {
         qualityReportContent.innerHTML = '<p style="color:#888;">No topics to analyze.</p>';
         return;
@@ -2458,20 +3305,11 @@ function generateQualityReport() {
         return acc + c.topics.filter(t => t.done && t.mcqs && t.mcqs.length > 0).length;
     }, 0);
     
-    let totalRequested = 0;
-    bookStructure.chapters.forEach(c => {
-        if (!c.topics) return;
-        c.topics.forEach(t => {
-            totalRequested += t.mcqCount || 0;
-        });
-    });
-    
     html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;">`;
     html += `<div><strong>Total Topics:</strong> ${totalTopics}</div>`;
     html += `<div><strong>Done Topics:</strong> ${doneTopics} (${Math.round(doneTopics/totalTopics*100)}%)</div>`;
     html += `<div><strong>Total MCQs:</strong> ${totalMCQs}</div>`;
-    html += `<div><strong>Requested MCQs:</strong> ${totalRequested}</div>`;
-    html += `<div><strong>Completion:</strong> ${totalRequested > 0 ? Math.round(totalMCQs/totalRequested*100) : 0}%</div>`;
+    html += `<div><strong>Avg MCQs/Topic:</strong> ${totalTopics > 0 ? Math.round(totalMCQs/totalTopics) : 0}</div>`;
     html += `</div>`;
     
     const validTopics = Object.values(topicValidationResults).filter(r => r && r.valid).length;
@@ -2480,6 +3318,34 @@ function generateQualityReport() {
     html += `<strong>Validation:</strong> <span class="${validTopics === totalTopics ? 'good' : 'warn'}">${validTopics}/${totalTopics} valid</span>`;
     html += ` (Avg Score: ${Math.round(avgScore)}%)`;
     html += `</div>`;
+    
+    let totalAppRate = 0;
+    let topicsWithMetrics = 0;
+    let topicsMeetingAppReq = 0;
+    
+    if (bookStructure.chapters) {
+        for (const chapter of bookStructure.chapters) {
+            if (chapter.topics) {
+                for (const topic of chapter.topics) {
+                    if (topic._qualityMetrics) {
+                        topicsWithMetrics++;
+                        totalAppRate += topic._qualityMetrics.applicationRate;
+                        if (topic._qualityMetrics.meetsRequirement) topicsMeetingAppReq++;
+                    }
+                }
+            }
+        }
+    }
+    
+    if (topicsWithMetrics > 0) {
+        const avgAppRate = totalAppRate / topicsWithMetrics;
+        html += `<div style="margin:10px 0;border-top:1px solid #eee;padding-top:10px;">`;
+        html += `<strong>📊 Application Rate Metrics:</strong><br>`;
+        html += `<span>Topics with metrics: ${topicsWithMetrics}</span><br>`;
+        html += `<span>Avg Application Rate: ${avgAppRate.toFixed(1)}%</span><br>`;
+        html += `<span>Meeting 50%+ requirement: ${topicsMeetingAppReq}/${topicsWithMetrics} (${Math.round(topicsMeetingAppReq/topicsWithMetrics*100)}%)</span>`;
+        html += `</div>`;
+    }
     
     qualityReportContent.innerHTML = html;
 }
@@ -2500,16 +3366,18 @@ function exportQualityReport() {
     showSuccess('Report exported!');
 }
 
-// ============ DOWNLOAD CSV ============
+// ============ UPDATED: DOWNLOAD CSV USING ORDERED MCQS ============
 function downloadBookCSV() {
-    if (allMCQs.length === 0) {
+    const mcqsInOrder = getMCQsInTopicOrder();
+    
+    if (mcqsInOrder.length === 0) {
         showError('No MCQs to download.');
         return;
     }
 
     const header = ['topic', 'question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'difficulty', 'explanation'];
     const rows = [header];
-    rows.push(...allMCQs);
+    rows.push(...mcqsInOrder);
 
     let csvContent = rows.map(row => {
         return row.map(cell => {
@@ -2533,6 +3401,31 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// ============ REQUEST THROTTLING ============
+let lastRequestTime = 0;
+
+async function throttledRequest(fn, delay = 3000) {
+    const now = Date.now();
+    const timeSince = now - lastRequestTime;
+    if (timeSince < delay) {
+        const waitTime = delay - timeSince;
+        const rateLimitInfo = document.getElementById('rateLimitInfo');
+        const rateLimitWait = document.getElementById('rateLimitWait');
+        if (rateLimitInfo) {
+            rateLimitInfo.style.display = 'block';
+            if (rateLimitWait) {
+                rateLimitWait.textContent = Math.ceil(waitTime / 1000);
+            }
+            setTimeout(() => {
+                rateLimitInfo.style.display = 'none';
+            }, waitTime + 2000);
+        }
+        await sleep(waitTime);
+    }
+    lastRequestTime = Date.now();
+    return await fn();
+}
+
 // ============ CLEAR ALL ============
 function clearAll() {
     if (!confirm('Clear all data?')) return;
@@ -2541,6 +3434,7 @@ function clearAll() {
     extractedText = '';
     topicRegistry = {};
     topicValidationResults = {};
+    qualityMetrics = {};
     if (textInput) textInput.value = '';
     if (resultsPreview) resultsPreview.classList.remove('show');
     if (statsBox) statsBox.classList.remove('show');
@@ -2557,6 +3451,8 @@ function clearAll() {
     if (validationStatus) validationStatus.textContent = 'Not validated';
     if (confidenceFill) confidenceFill.style.width = '0%';
     if (qualityReportContent) qualityReportContent.innerHTML = '<p style="color:#888;text-align:center;padding:20px;">Click "Generate Report" to analyze topic quality.</p>';
+    if (qualityMetricsPanel) qualityMetricsPanel.classList.remove('show');
+    if (qualityMetricsContent) qualityMetricsContent.innerHTML = '';
     previewContent.innerHTML = '<p style="color:#888;text-align:center;padding:40px;">No MCQs.</p>';
     updateContentStatus();
     if (batchProgress) batchProgress.classList.remove('show');
@@ -2570,16 +3466,18 @@ function clearAll() {
 }
 
 // ============ INIT ============
-log('🚀 Book to MCQ Generator loaded - Enhanced Mixed Format Support');
-log('✨ Supports BOTH letter (a)(b)(c) AND numbered 1.1.1 formats');
-log('📊 Each topic gets its own MCQ count from CSV 3rd column');
-log('🧠 90% HOTS Questions (Logical, Analytical, Conceptual)');
-log('📝 Headers like "1.1 DATA COMMUNICATIONS" are ignored');
+log('🚀 Book to MCQ Generator loaded - Enhanced Topic Extraction with MCQ Count from CSV');
+log('✨ CSV Column 3 = Number of MCQs to generate per topic');
+log('✨ Example: ,(a) Disillusionment and frustration,33 → generates 33 MCQs');
+log('✨ Example: ,(9.2.1) Basic concepts,23 → generates 23 MCQs (new format)');
+log('✨ Auto-validates topics after extraction with accurate scoring');
+log('✨ Automatic validation and fixing of mismatched correct answers!');
+log('✨ 50% application-based, 40% conceptual, 10% recall distribution');
+log('✨ Quality monitoring tracks application rate per topic');
+log('✨ MCQs are now ordered by topic as they appear in the book structure');
+log('✨ Topic names are PRESERVED - subtopic names like (9.1.1) and (a) are kept!');
 updateContentStatus();
 updateTopicRegistry();
-
-console.log('✅ Enhanced MCQ Generator loaded!');
-console.log('📊 Features: Mixed format support, per-topic MCQ counts, 90% HOTS questions');
 </script>
 </body>
 </html>
