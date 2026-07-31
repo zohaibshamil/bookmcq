@@ -1137,6 +1137,8 @@ function uploadTopicCSV() {
     let totalTopicsAdded = 0;
     const contentLower = content.toLowerCase();
     
+    // ===== FIX: Preserve CSV order while still matching content =====
+    // Step 1: Find position of each topic in content (if it exists)
     const topicsWithPosition = csvTopicData.map(topic => {
         let pos = contentLower.indexOf(topic.title.toLowerCase());
         if (pos === -1) {
@@ -1145,34 +1147,26 @@ function uploadTopicCSV() {
         return { ...topic, position: pos };
     });
     
-    topicsWithPosition.sort((a, b) => {
+    // Step 2: Sort by position to determine content boundaries, but keep track of original CSV order
+    const sortedByPosition = [...topicsWithPosition].sort((a, b) => {
         if (a.position === -1) return 1;
         if (b.position === -1) return -1;
         return a.position - b.position;
     });
     
-    for (let i = 0; i < topicsWithPosition.length; i++) {
-        const csvTopic = topicsWithPosition[i];
-        
-        const isDuplicate = chapter.topics.some(t => 
-            t.title.toLowerCase().trim() === csvTopic.title.toLowerCase().trim()
-        );
-        
-        if (isDuplicate) {
-            log(`⏭️ Skipping duplicate topic: ${csvTopic.title}`);
-            continue;
-        }
-        
+    // Step 3: Extract content for each topic based on position (using sorted order)
+    const topicsWithContent = sortedByPosition.map((topic, idx, arr) => {
         let topicContent = '';
-        let startPos = csvTopic.position;
+        const startPos = topic.position;
         
         if (startPos === -1) {
             topicContent = content.slice(0, 1500);
-            log(`⚠️ Topic "${csvTopic.title}" not found in content, using fallback`);
+            log(`⚠️ Topic "${topic.title}" not found in content, using fallback`);
         } else {
             let endPos = content.length;
-            for (let j = i + 1; j < topicsWithPosition.length; j++) {
-                const nextPos = topicsWithPosition[j].position;
+            // Find next topic in sorted order for boundary
+            for (let j = idx + 1; j < arr.length; j++) {
+                const nextPos = arr[j].position;
                 if (nextPos > startPos && nextPos < endPos) {
                     endPos = nextPos;
                     break;
@@ -1187,20 +1181,52 @@ function uploadTopicCSV() {
             }
         }
         
-        if (topicContent.length < 100 && csvTopic.position !== -1) {
-            const start = Math.max(0, csvTopic.position - 200);
-            const end = Math.min(content.length, csvTopic.position + 800);
+        if (topicContent.length < 100 && topic.position !== -1) {
+            const start = Math.max(0, topic.position - 200);
+            const end = Math.min(content.length, topic.position + 800);
             topicContent = content.substring(start, end).trim();
             if (topicContent.length > 4000) {
                 topicContent = topicContent.slice(0, 4000);
             }
-            log(`📝 Extended content for "${csvTopic.title}": ${topicContent.length} chars`);
+            log(`📝 Extended content for "${topic.title}": ${topicContent.length} chars`);
+        }
+        
+        return { ...topic, content: topicContent };
+    });
+    
+    // Step 4: Reorder back to CSV order (preserve original order)
+    // Create a map for quick lookup by title
+    const contentMap = {};
+    topicsWithContent.forEach(t => {
+        contentMap[t.title.toLowerCase().trim()] = t.content;
+    });
+    
+    // Step 5: Process topics in CSV order
+    const csvOrderTopics = csvTopicData.map(csvTopic => {
+        const contentForTopic = contentMap[csvTopic.title.toLowerCase().trim()] || content.slice(0, 1500);
+        return {
+            ...csvTopic,
+            content: contentForTopic
+        };
+    });
+    
+    // Step 6: Add topics in CSV order to bookStructure
+    for (let i = 0; i < csvOrderTopics.length; i++) {
+        const csvTopic = csvOrderTopics[i];
+        
+        const isDuplicate = chapter.topics.some(t => 
+            t.title.toLowerCase().trim() === csvTopic.title.toLowerCase().trim()
+        );
+        
+        if (isDuplicate) {
+            log(`⏭️ Skipping duplicate topic: ${csvTopic.title}`);
+            continue;
         }
         
         let topicToAdd = {
             number: csvTopic.number,
             title: csvTopic.title,
-            content: topicContent,
+            content: csvTopic.content,
             format: csvTopic.format,
             mcqCount: csvTopic.mcqCount,
             done: false,
@@ -1210,7 +1236,7 @@ function uploadTopicCSV() {
         chapter.topics.push(topicToAdd);
         totalTopicsAdded++;
         
-        log(`✅ Added topic: "${csvTopic.title}" (${csvTopic.format}) → ${csvTopic.mcqCount} MCQs, ${topicContent.length} chars content`);
+        log(`✅ Added topic: "${csvTopic.title}" (${csvTopic.format}) → ${csvTopic.mcqCount} MCQs, ${csvTopic.content.length} chars content`);
     }
     
     // Rebuild the topic index map after adding topics
@@ -1231,12 +1257,13 @@ function uploadTopicCSV() {
             📚 Total Topics: ${total}<br>
             📄 Content: ${extractedText.length} chars<br>
             📊 Format: Mixed (letter + numbered)<br>
-            🔢 Index Registry: ${topicIndexMap.topics.length} entries
+            🔢 Index Registry: ${topicIndexMap.topics.length} entries<br>
+            📌 CSV Order Preserved!
         `;
     }
     
-    showSuccess(`Imported ${totalTopicsAdded} topics with content from PDF!`);
-    log(`CSV import: ${totalTopicsAdded} topics added to index registry`);
+    showSuccess(`Imported ${totalTopicsAdded} topics with content from PDF in CSV order!`);
+    log(`CSV import: ${totalTopicsAdded} topics added to index registry in CSV order`);
     
     csvTopicData = [];
     if (csvPreview) csvPreview.classList.remove('show');
@@ -3072,6 +3099,7 @@ log('📝 Headers like "1.1 DATA COMMUNICATIONS" are ignored');
 log('🔢 Topic Index Registry: Each topic has a permanent array index');
 log('🟡 Empty slots can be retried using the "Retry Empty" button');
 log('📥 CSV Export: Topics exported in index order with proper comma escaping');
+log('📌 CSV ORDER PRESERVED: Topics are added in the exact order from CSV');
 updateContentStatus();
 updateTopicRegistry();
 rebuildTopicIndexMap();
@@ -3080,6 +3108,7 @@ console.log('✅ Enhanced MCQ Generator loaded!');
 console.log('📊 Features: Mixed format support, per-topic MCQ counts, 90% HOTS questions');
 console.log('🔢 Topic Index Registry: Empty slots can be retried individually');
 console.log('📥 CSV Export: Index order preserved + proper comma escaping');
+console.log('📌 CSV ORDER PRESERVED: Topics added in exact CSV order');
 </script>
 </body>
 </html>
