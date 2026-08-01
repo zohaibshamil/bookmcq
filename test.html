@@ -7953,6 +7953,7 @@ function getGTMBodyCode() {
 }
 
 // ✅ UPDATED: generateTopicPage with full SEO fixes
+// ✅ FINAL UPDATED: generateTopicPage with Explanations and full SEO fixes
 function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficultyStats, allBookTopics, optionsMap) {
     var bookSlug = book.slug || createSlug(book.title);
     var bookTitle = escapeHtml(book.title);
@@ -7968,24 +7969,23 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     var hardCount = topicDifficultyStats?.hard || 0;
     
     // --- SEO FIX #1: Add a "What is..." definition at the top ---
-// --- UNIVERSAL DYNAMIC DEFINITION (COPY AND PASTE THIS) ---
-// --- SIMPLE, UNIVERSAL DEFINITION (COPY AND PASTE THIS) ---
-var definitionHtml = '';
-if (topicName) {
-    definitionHtml = `
-        <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">What is ${topicName}?</h2>
-        <p style="font-size: 15px; line-height: 1.6; color: #334155; margin-bottom: 16px;">
-            <strong>${topicName}</strong> is a core concept that forms the foundation of this subject area. 
-            Understanding this topic is essential for mastering the principles, applications, and 
-            key terminology required for academic and practical success.
-        </p>
-        <p style="font-size: 14px; color: #475569; margin-bottom: 12px;">
-            Test your knowledge of ${topicName} with the carefully crafted MCQs below, categorized by easy, medium, and hard difficulty levels.
-        </p>
-        <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
-    `;
-}
-    // --- SEO FIX #2: Build ALL questions into the HTML (no hiding) ---
+    var definitionHtml = '';
+    if (topicName) {
+        definitionHtml = `
+            <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">What is ${topicName}?</h2>
+            <p style="font-size: 15px; line-height: 1.6; color: #334155; margin-bottom: 16px;">
+                <strong>${topicName}</strong> is a core concept that forms the foundation of this subject area. 
+                Understanding this topic is essential for mastering the principles, applications, and 
+                key terminology required for academic and practical success.
+            </p>
+            <p style="font-size: 14px; color: #475569; margin-bottom: 12px;">
+                Test your knowledge of ${topicName} with the carefully crafted MCQs below, categorized by easy, medium, and hard difficulty levels.
+            </p>
+            <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
+        `;
+    }
+
+    // --- SEO FIX #2: Build ALL questions AND explanations into the HTML ---
     var fullMcqsHtml = '';
     if (topicQuestions.length > 0) {
         fullMcqsHtml = '<div style="margin:16px 0; background:#f8fafc; padding:16px; border-radius:12px;">';
@@ -8002,7 +8002,10 @@ if (topicName) {
             var opt2 = escapeHtmlPreserveMath(opts[2] || '');
             var opt3 = escapeHtmlPreserveMath(opts[3] || '');
             
-            fullMcqsHtml += '<div style="background:white; padding:14px; border-radius:8px; margin-bottom:12px; border:1px solid #e5e7eb;">';
+            // ✅ NEW: Safely render the explanation text with MathJax support
+            var explanationText = q.explanation ? escapeHtmlPreserveMath(q.explanation) : 'No explanation provided.';
+            
+            fullMcqsHtml += '<div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;">';
             fullMcqsHtml += '<p class="math" style="font-weight:600; margin:0 0 8px 0;">Q' + (idx + 1) + '. ' + questionText + '</p>';
             fullMcqsHtml += '<div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;">';
             fullMcqsHtml += '<div>🔹 A. ' + opt0 + '</div>';
@@ -8011,13 +8014,22 @@ if (topicName) {
             fullMcqsHtml += '<div>🔹 D. ' + opt3 + '</div>';
             fullMcqsHtml += '</div>';
             fullMcqsHtml += '<p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: ' + (q.difficulty || 'Medium') + (q.correct_answer !== undefined ? ' | ✅ Correct: ' + optionLabels[correctIndex] : '') + '</p>';
+            
+            // ✅ NEW: Show Explanation
+            if (q.explanation) {
+                fullMcqsHtml += `
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">${explanationText}</p>
+                    </div>
+                `;
+            }
+            
             fullMcqsHtml += '</div>';
         });
         
         fullMcqsHtml += '</div>';
     }
-    
-    // Remove the old sample questions block, we are using fullMcqsHtml instead now
     
     // --- SEO FIX #3: Better related topics with MCQs text ---
     var relatedTopicsHtml = '';
@@ -8053,8 +8065,8 @@ if (topicName) {
         }
     }
     
-    // --- SEO FIX #4: Update the Title Tag to include specific terms ---
-var seoTitle = topicName + ' MCQs - ' + bookTitle + ' | BookMCQ';
+    // --- SEO FIX #4: Clean Title Tag ---
+    var seoTitle = topicName + ' MCQs - ' + bookTitle + ' | BookMCQ';
     
     var schemaData = {
         '@context': 'https://schema.org',
@@ -8075,7 +8087,7 @@ var seoTitle = topicName + ' MCQs - ' + bookTitle + ' | BookMCQ';
     '    <meta charset="UTF-8">\n' +
     '    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">\n' +
     getGTMHeadCode() + '\n' +
-    '    <title>' + seoTitle + '</title>\n' + // UPDATED TITLE HERE
+    '    <title>' + seoTitle + '</title>\n' +
     '    <meta name="description" content="' + metaDescription + '">\n' +
     '    <meta name="keywords" content="' + topicName + ' MCQs, ' + bookTitle + ' ' + topicName + ' questions, ' + topicName + ' practice, ' + bookTitle + ' topics, ' + topicName + ' easy medium hard">\n' +
     '    <meta name="robots" content="index, follow">\n' +
@@ -8264,11 +8276,9 @@ var seoTitle = topicName + ' MCQs - ' + bookTitle + ' | BookMCQ';
     '        <a href="/books/' + bookSlug + '/' + chapterSlug + '.html" class="back-link">← Back to ' + chapterDisplay + chapterName + '</a>\n' +
     '        <h1>📝 ' + topicName + '</h1>\n' +
     '        <p class="topic-info">📖 From <strong>' + bookTitle + '</strong> • ' + chapterDisplay + chapterName + ' • ' + totalQs + ' questions available</p>\n' +
-    // Add the new definition HTML here:
     definitionHtml +
     '        <p style="font-size:13px; color:#64748b; margin-top:4px;">🔄 Last updated: ' + lastUpdated + '</p>\n' +
     difficultyHtml +
-    // Add the full MCQs HTML here instead of sample:
     fullMcqsHtml +
     relatedTopicsHtml +
     '        <div style="text-align: center; margin-top: 20px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">\n' +
