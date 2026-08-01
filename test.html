@@ -7968,22 +7968,28 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     var hardCount = topicDifficultyStats?.hard || 0;
     
     // --- SEO FIX #1: Add a "What is..." definition at the top ---
-    var definitionHtml = '';
-    if (topicName) {
-        definitionHtml = `
-            <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">What is ${topicName}?</h2>
-            <p style="font-size: 15px; line-height: 1.6; color: #334155; margin-bottom: 16px;">
-                <strong>${topicName}</strong> is a fundamental concept in Operating System studies. 
-                It refers to the conditions and methods used to identify, analyze, and resolve deadlocks in computer systems. 
-                Key concepts include the four necessary conditions for deadlock: Mutual Exclusion, Hold and Wait, No Preemption, and Circular Wait.
-            </p>
-            <p style="font-size: 14px; color: #475569; margin-bottom: 12px;">
-                Test your knowledge of ${topicName} with the carefully crafted MCQs below, categorized by easy, medium, and hard difficulty levels.
-            </p>
-            <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
-        `;
-    }
+var definitionHtml = '';
+if (topicName) {
+    // Generate a context-appropriate sentence based on the topic name and book title
+    var genericFields = "key concepts, principles, and terminology";
+    var specificFields = "underlying architecture, system calls, and core functionalities";
+    
+    // Tailor the text slightly based on the book title, if available
+    var contextText = bookTitle ? `within the context of ${bookTitle}` : "in modern computing systems";
 
+    definitionHtml = `
+        <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">What is ${topicName}?</h2>
+        <p style="font-size: 15px; line-height: 1.6; color: #334155; margin-bottom: 16px;">
+            <strong>${topicName}</strong> is a fundamental area of study ${contextText}. 
+            It encompasses the ${genericFields} related to how computer systems are organized, managed, and utilized for efficient processing. 
+            Understanding ${topicName} is essential for mastering the ${specificFields} of an Operating System.
+        </p>
+        <p style="font-size: 14px; color: #475569; margin-bottom: 12px;">
+            Test your knowledge of ${topicName} with the carefully crafted MCQs below, categorized by easy, medium, and hard difficulty levels.
+        </p>
+        <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
+    `;
+}
     // --- SEO FIX #2: Build ALL questions into the HTML (no hiding) ---
     var fullMcqsHtml = '';
     if (topicQuestions.length > 0) {
