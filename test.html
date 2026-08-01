@@ -8081,7 +8081,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     
     var metaDescription = 'Practice ' + topicName + ' from ' + bookTitle + ' - ' + chapterDisplay + chapterName + '. ' + totalQs + ' MCQs with ' + easyCount + ' easy, ' + mediumCount + ' medium, and ' + hardCount + ' hard questions. Perfect for exam preparation.';
     
-    return '<!DOCTYPE html>\n' +
+    var finalHtml = '<!DOCTYPE html>\n' +
     '<html lang="en">\n' +
     '<head>\n' +
     '    <meta charset="UTF-8">\n' +
@@ -8098,7 +8098,31 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     '    <meta name="theme-color" content="#7c3aed">\n' +
     '    <script type="application/ld+json">\n' + JSON.stringify(schemaData) + '\n' +
     '    <\/script>\n' +
+    // ==================== INSERT PROTECTION SCRIPT HERE ====================
+    '    <script>\n' +
+    '        // 1. Disable Right-Click Context Menu\n' +
+    '        document.addEventListener(\'contextmenu\', function(e) { e.preventDefault(); return false; });\n' +
+    '        \n' +
+    '        // 2. Disable F12, Ctrl+U, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C\n' +
+    '        document.addEventListener(\'keydown\', function(e) {\n' +
+    '            if (e.key === \'F12\') { e.preventDefault(); return false; }\n' +
+    '            if (e.ctrlKey && e.key === \'u\') { e.preventDefault(); return false; }\n' +
+    '            if (e.ctrlKey && e.shiftKey && (e.key === \'I\' || e.key === \'i\')) { e.preventDefault(); return false; }\n' +
+    '            if (e.ctrlKey && e.shiftKey && (e.key === \'J\' || e.key === \'j\')) { e.preventDefault(); return false; }\n' +
+    '            if (e.ctrlKey && e.shiftKey && (e.key === \'C\' || e.key === \'c\')) { e.preventDefault(); return false; }\n' +
+    '        });\n' +
+    '        \n' +
+    '        // 3. Disable Print Screen (basic prevention)\n' +
+    '        document.addEventListener(\'keyup\', function(e) {\n' +
+    '            if (e.key === \'PrintScreen\') { e.preventDefault(); return false; }\n' +
+    '        });\n' +
+    '        \n' +
+    '        // 4. Disable text selection (extra layer)\n' +
+    '        document.addEventListener(\'selectstart\', function(e) { e.preventDefault(); });\n' +
+    '    <\/script>\n' +
+    // =======================================================================
     '    <script src="https://cdn.tailwindcss.com"><\/script>\n' +
+    // ... (the rest of your existing code) ...
     '    <script>\n' +
     '        window.MathJax = {\n' +
     '            tex: {\n' +
