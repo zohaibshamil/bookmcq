@@ -7953,7 +7953,7 @@ function getGTMBodyCode() {
 }
 
 // ✅ UPDATED: generateTopicPage with full SEO fixes
-// ✅ FINAL UPDATED: generateTopicPage with Explanations and full SEO fixes
+// ✅ FINAL CORRECTED: generateTopicPage with Explanations
 function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficultyStats, allBookTopics, optionsMap) {
     var bookSlug = book.slug || createSlug(book.title);
     var bookTitle = escapeHtml(book.title);
@@ -7968,7 +7968,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     var mediumCount = topicDifficultyStats?.medium || 0;
     var hardCount = topicDifficultyStats?.hard || 0;
     
-    // --- SEO FIX #1: Add a "What is..." definition at the top ---
+    // --- SEO FIX #1: Universal "What is..." definition ---
     var definitionHtml = '';
     if (topicName) {
         definitionHtml = `
@@ -7985,7 +7985,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
         `;
     }
 
-    // --- SEO FIX #2: Build ALL questions AND explanations into the HTML ---
+    // --- SEO FIX #2: Build ALL questions AND explanations ---
     var fullMcqsHtml = '';
     if (topicQuestions.length > 0) {
         fullMcqsHtml = '<div style="margin:16px 0; background:#f8fafc; padding:16px; border-radius:12px;">';
@@ -8002,8 +8002,8 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
             var opt2 = escapeHtmlPreserveMath(opts[2] || '');
             var opt3 = escapeHtmlPreserveMath(opts[3] || '');
             
-            // ✅ NEW: Safely render the explanation text with MathJax support
-            var explanationText = q.explanation ? escapeHtmlPreserveMath(q.explanation) : 'No explanation provided.';
+            // Safely render the explanation text with MathJax support
+            var explanationText = q.explanation ? escapeHtmlPreserveMath(q.explanation) : null;
             
             fullMcqsHtml += '<div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;">';
             fullMcqsHtml += '<p class="math" style="font-weight:600; margin:0 0 8px 0;">Q' + (idx + 1) + '. ' + questionText + '</p>';
@@ -8015,8 +8015,8 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
             fullMcqsHtml += '</div>';
             fullMcqsHtml += '<p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: ' + (q.difficulty || 'Medium') + (q.correct_answer !== undefined ? ' | ✅ Correct: ' + optionLabels[correctIndex] : '') + '</p>';
             
-            // ✅ NEW: Show Explanation
-            if (q.explanation) {
+            // ✅ SHOW EXPLANATION BLOCK
+            if (explanationText) {
                 fullMcqsHtml += `
                     <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
                         <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
@@ -8031,7 +8031,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
         fullMcqsHtml += '</div>';
     }
     
-    // --- SEO FIX #3: Better related topics with MCQs text ---
+    // --- SEO FIX #3: Better related topics ---
     var relatedTopicsHtml = '';
     if (allBookTopics && allBookTopics.length > 1) {
         var otherTopics = allBookTopics.filter(function(t) { return t.id !== topic.id; }).slice(0, 5);
