@@ -6987,7 +6987,7 @@ async function fetchQuestionsForBook(bookId) {
         
         const { data, error } = await _supabase
             .from('questions')
-            .select('id, chapter_id, topic_id, difficulty, question_text, created_at, correct_answer, options (option_text, option_index)')
+.select('id, chapter_id, topic_id, difficulty, question_text, created_at, correct_answer, explanation, options (option_text, option_index)')
             .in('chapter_id', chapterIds)
             .order('id', { ascending: true })
             .range(from, to);
@@ -7055,7 +7055,7 @@ async function fetchQuestionsForChapter(chapterId) {
         
         const { data, error } = await _supabase
             .from('questions')
-            .select('id, chapter_id, topic_id, difficulty, question_text, created_at, correct_answer, options (option_text, option_index)')
+.select('id, chapter_id, topic_id, difficulty, question_text, created_at, correct_answer, explanation, options (option_text, option_index)')
             .eq('chapter_id', parseInt(chapterId))
             .order('id', { ascending: true })
             .range(from, to);
@@ -7123,7 +7123,7 @@ async function fetchQuestionsForTopic(topicId) {
         
         const { data, error } = await _supabase
             .from('questions')
-            .select('id, chapter_id, topic_id, difficulty, question_text, created_at, correct_answer, options (option_text, option_index)')
+.select('id, chapter_id, topic_id, difficulty, question_text, created_at, correct_answer, explanation, options (option_text, option_index)')
             .eq('topic_id', parseInt(topicId))
             .order('id', { ascending: true })
             .range(from, to);
@@ -7952,7 +7952,8 @@ function getGTMBodyCode() {
     '<!-- End Google Tag Manager (noscript) -->';
 }
 
-// ✅ NOW the generateTopicPage function (using escapeHtmlPreserveMath defined above)
+// ✅ UPDATED: generateTopicPage with full SEO fixes
+// ✅ FINAL CORRECTED: generateTopicPage with Explanations
 function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficultyStats, allBookTopics, optionsMap) {
     var bookSlug = book.slug || createSlug(book.title);
     var bookTitle = escapeHtml(book.title);
@@ -7967,65 +7968,80 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     var mediumCount = topicDifficultyStats?.medium || 0;
     var hardCount = topicDifficultyStats?.hard || 0;
     
-    var sampleMcqsHtml = '';
+    // --- SEO FIX #1: Universal "What is..." definition ---
+    var definitionHtml = '';
+    if (topicName) {
+        definitionHtml = `
+            <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">What is ${topicName}?</h2>
+            <p style="font-size: 15px; line-height: 1.6; color: #334155; margin-bottom: 16px;">
+                <strong>${topicName}</strong> is a core concept that forms the foundation of this subject area. 
+                Understanding this topic is essential for mastering the principles, applications, and 
+                key terminology required for academic and practical success.
+            </p>
+            <p style="font-size: 14px; color: #475569; margin-bottom: 12px;">
+                Test your knowledge of ${topicName} with the carefully crafted MCQs below, categorized by easy, medium, and hard difficulty levels.
+            </p>
+            <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
+        `;
+    }
+
+    // --- SEO FIX #2: Build ALL questions AND explanations ---
+    var fullMcqsHtml = '';
     if (topicQuestions.length > 0) {
-        var sampleQuestions = [];
-        var easyQs = topicQuestions.filter(function(q) { return q.difficulty === 'easy' || q.difficulty === 'Easy'; });
-        var mediumQs = topicQuestions.filter(function(q) { return q.difficulty === 'medium' || q.difficulty === 'Medium'; });
-        var hardQs = topicQuestions.filter(function(q) { return q.difficulty === 'hard' || q.difficulty === 'Hard'; });
+        fullMcqsHtml = '<div style="margin:16px 0; background:#f8fafc; padding:16px; border-radius:12px;">';
+        fullMcqsHtml += `<h3 style="font-size:18px; color:#1e293b; margin-bottom:12px;">📝 All ${topicName} MCQs</h3>`;
         
-        if (easyQs.length > 0) sampleQuestions.push(easyQs[0]);
-        if (mediumQs.length > 0) sampleQuestions.push(mediumQs[0]);
-        if (hardQs.length > 0) sampleQuestions.push(hardQs[0]);
-        
-        if (sampleQuestions.length < 3) {
-            var remaining = topicQuestions.filter(function(q) { return sampleQuestions.indexOf(q) === -1; });
-            for (var i = 0; i < Math.min(3 - sampleQuestions.length, remaining.length); i++) {
-                sampleQuestions.push(remaining[i]);
+        topicQuestions.forEach(function(q, idx) {
+            var opts = optionsMap[q.id] || ['', '', '', ''];
+            var correctIndex = q.correct_answer !== undefined ? q.correct_answer : 0;
+            var optionLabels = ['A', 'B', 'C', 'D'];
+            
+            var questionText = escapeHtmlPreserveMath(q.question_text);
+            var opt0 = escapeHtmlPreserveMath(opts[0] || '');
+            var opt1 = escapeHtmlPreserveMath(opts[1] || '');
+            var opt2 = escapeHtmlPreserveMath(opts[2] || '');
+            var opt3 = escapeHtmlPreserveMath(opts[3] || '');
+            
+            // Safely render the explanation text with MathJax support
+            var explanationText = q.explanation ? escapeHtmlPreserveMath(q.explanation) : null;
+            
+            fullMcqsHtml += '<div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;">';
+            fullMcqsHtml += '<p class="math" style="font-weight:600; margin:0 0 8px 0;">Q' + (idx + 1) + '. ' + questionText + '</p>';
+            fullMcqsHtml += '<div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;">';
+            fullMcqsHtml += '<div>🔹 A. ' + opt0 + '</div>';
+            fullMcqsHtml += '<div>🔹 B. ' + opt1 + '</div>';
+            fullMcqsHtml += '<div>🔹 C. ' + opt2 + '</div>';
+            fullMcqsHtml += '<div>🔹 D. ' + opt3 + '</div>';
+            fullMcqsHtml += '</div>';
+            fullMcqsHtml += '<p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: ' + (q.difficulty || 'Medium') + (q.correct_answer !== undefined ? ' | ✅ Correct: ' + optionLabels[correctIndex] : '') + '</p>';
+            
+            // ✅ SHOW EXPLANATION BLOCK
+            if (explanationText) {
+                fullMcqsHtml += `
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">${explanationText}</p>
+                    </div>
+                `;
             }
-        }
+            
+            fullMcqsHtml += '</div>';
+        });
         
-        if (sampleQuestions.length > 0) {
-            sampleMcqsHtml = '<div style="margin:16px 0; background:#f8fafc; padding:16px; border-radius:12px;">';
-            sampleMcqsHtml += '<h3 style="font-size:16px; color:#1e293b; margin-bottom:12px;">📝 Sample Questions</h3>';
-            sampleQuestions.forEach(function(q, idx) {
-                var opts = optionsMap[q.id] || ['', '', '', ''];
-                var correctIndex = q.correct_answer !== undefined ? q.correct_answer : 0;
-                var optionLabels = ['A', 'B', 'C', 'D'];
-                
-                // ✅ FIXED: Use escapeHtmlPreserveMath (now defined at top)
-                var questionText = escapeHtmlPreserveMath(q.question_text);
-                var opt0 = escapeHtmlPreserveMath(opts[0] || '');
-                var opt1 = escapeHtmlPreserveMath(opts[1] || '');
-                var opt2 = escapeHtmlPreserveMath(opts[2] || '');
-                var opt3 = escapeHtmlPreserveMath(opts[3] || '');
-                
-                sampleMcqsHtml += '<div style="background:white; padding:12px; border-radius:8px; margin-bottom:10px; border:1px solid #e5e7eb;">';
-                sampleMcqsHtml += '<p class="math" style="font-weight:600; margin:0 0 8px 0;">Q' + (idx + 1) + '. ' + questionText + '</p>';
-                sampleMcqsHtml += '<div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:13px; color:#64748b;">';
-                sampleMcqsHtml += '<div>🔹 A. ' + opt0 + '</div>';
-                sampleMcqsHtml += '<div>🔹 B. ' + opt1 + '</div>';
-                sampleMcqsHtml += '<div>🔹 C. ' + opt2 + '</div>';
-                sampleMcqsHtml += '<div>🔹 D. ' + opt3 + '</div>';
-                sampleMcqsHtml += '</div>';
-                sampleMcqsHtml += '<p style="font-size:12px; color:#8b5cf6; margin-top:6px;">💡 Difficulty: ' + (q.difficulty || 'Medium') + (q.correct_answer !== undefined ? ' | ✅ Correct: ' + optionLabels[correctIndex] : '') + '</p>';
-                sampleMcqsHtml += '</div>';
-            });
-            sampleMcqsHtml += '<p style="font-size:13px; color:#64748b; margin-top:8px;">⬆️ View all questions in the quiz below</p>';
-            sampleMcqsHtml += '</div>';
-        }
+        fullMcqsHtml += '</div>';
     }
     
+    // --- SEO FIX #3: Better related topics ---
     var relatedTopicsHtml = '';
     if (allBookTopics && allBookTopics.length > 1) {
         var otherTopics = allBookTopics.filter(function(t) { return t.id !== topic.id; }).slice(0, 5);
         if (otherTopics.length > 0) {
             relatedTopicsHtml = '<div style="margin:16px 0;">';
-            relatedTopicsHtml += '<h3 style="font-size:16px; color:#1e293b;">🔗 Related Topics</h3><div style="display:flex; flex-wrap:wrap; gap:8px;">';
+            relatedTopicsHtml += '<h3 style="font-size:16px; color:#1e293b;">🔗 Related Topics (MCQs)</h3><div style="display:flex; flex-wrap:wrap; gap:8px;">';
             otherTopics.forEach(function(t) {
                 var tSlug = t.slug || createSlug(t.name);
                 var tName = escapeHtml(t.name);
-                relatedTopicsHtml += '<a href="/books/' + bookSlug + '/' + chapterSlug + '/topics/' + tSlug + '.html" style="background:#f3f4f6; padding:6px 14px; border-radius:20px; font-size:13px; color:#1e293b; text-decoration:none; border:1px solid #e5e7eb;">📝 ' + tName + '</a>';
+                relatedTopicsHtml += '<a href="/books/' + bookSlug + '/' + chapterSlug + '/topics/' + tSlug + '.html" style="background:#f3f4f6; padding:6px 14px; border-radius:20px; font-size:13px; color:#1e293b; text-decoration:none; border:1px solid #e5e7eb; hover:background:#e0e7ff;">📝 ' + tName + ' MCQs</a>';
             });
             relatedTopicsHtml += '</div></div>';
         }
@@ -8049,6 +8065,9 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
         }
     }
     
+    // --- SEO FIX #4: Clean Title Tag ---
+    var seoTitle = topicName + ' MCQs - ' + bookTitle + ' | BookMCQ';
+    
     var schemaData = {
         '@context': 'https://schema.org',
         '@type': 'CollectionPage',
@@ -8062,13 +8081,14 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     
     var metaDescription = 'Practice ' + topicName + ' from ' + bookTitle + ' - ' + chapterDisplay + chapterName + '. ' + totalQs + ' MCQs with ' + easyCount + ' easy, ' + mediumCount + ' medium, and ' + hardCount + ' hard questions. Perfect for exam preparation.';
     
-    return '<!DOCTYPE html>\n' +
+    // --- Build the complete HTML string with protection ---
+    var finalHtml = '<!DOCTYPE html>\n' +
     '<html lang="en">\n' +
     '<head>\n' +
     '    <meta charset="UTF-8">\n' +
     '    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">\n' +
     getGTMHeadCode() + '\n' +
-    '    <title>' + topicName + ' - ' + bookTitle + ' MCQs with Difficulty Levels | BookMCQ</title>\n' +
+    '    <title>' + seoTitle + '</title>\n' +
     '    <meta name="description" content="' + metaDescription + '">\n' +
     '    <meta name="keywords" content="' + topicName + ' MCQs, ' + bookTitle + ' ' + topicName + ' questions, ' + topicName + ' practice, ' + bookTitle + ' topics, ' + topicName + ' easy medium hard">\n' +
     '    <meta name="robots" content="index, follow">\n' +
@@ -8079,6 +8099,29 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     '    <meta name="theme-color" content="#7c3aed">\n' +
     '    <script type="application/ld+json">\n' + JSON.stringify(schemaData) + '\n' +
     '    <\/script>\n' +
+    // ==================== INSERT PROTECTION SCRIPT HERE ====================
+    '    <script>\n' +
+    '        // 1. Disable Right-Click Context Menu\n' +
+    '        document.addEventListener(\'contextmenu\', function(e) { e.preventDefault(); return false; });\n' +
+    '        \n' +
+    '        // 2. Disable F12, Ctrl+U, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C\n' +
+    '        document.addEventListener(\'keydown\', function(e) {\n' +
+    '            if (e.key === \'F12\') { e.preventDefault(); return false; }\n' +
+    '            if (e.ctrlKey && e.key === \'u\') { e.preventDefault(); return false; }\n' +
+    '            if (e.ctrlKey && e.shiftKey && (e.key === \'I\' || e.key === \'i\')) { e.preventDefault(); return false; }\n' +
+    '            if (e.ctrlKey && e.shiftKey && (e.key === \'J\' || e.key === \'j\')) { e.preventDefault(); return false; }\n' +
+    '            if (e.ctrlKey && e.shiftKey && (e.key === \'C\' || e.key === \'c\')) { e.preventDefault(); return false; }\n' +
+    '        });\n' +
+    '        \n' +
+    '        // 3. Disable Print Screen (basic prevention)\n' +
+    '        document.addEventListener(\'keyup\', function(e) {\n' +
+    '            if (e.key === \'PrintScreen\') { e.preventDefault(); return false; }\n' +
+    '        });\n' +
+    '        \n' +
+    '        // 4. Disable text selection (extra layer)\n' +
+    '        document.addEventListener(\'selectstart\', function(e) { e.preventDefault(); });\n' +
+    '    <\/script>\n' +
+    // =======================================================================
     '    <script src="https://cdn.tailwindcss.com"><\/script>\n' +
     '    <script>\n' +
     '        window.MathJax = {\n' +
@@ -8257,10 +8300,10 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     '        <a href="/books/' + bookSlug + '/' + chapterSlug + '.html" class="back-link">← Back to ' + chapterDisplay + chapterName + '</a>\n' +
     '        <h1>📝 ' + topicName + '</h1>\n' +
     '        <p class="topic-info">📖 From <strong>' + bookTitle + '</strong> • ' + chapterDisplay + chapterName + ' • ' + totalQs + ' questions available</p>\n' +
-    '        <p>Practice MCQs for <strong>' + topicName + '</strong>. Test your knowledge with carefully crafted questions across easy, medium, and hard difficulty levels.</p>\n' +
+    definitionHtml +
     '        <p style="font-size:13px; color:#64748b; margin-top:4px;">🔄 Last updated: ' + lastUpdated + '</p>\n' +
     difficultyHtml +
-    sampleMcqsHtml +
+    fullMcqsHtml +
     relatedTopicsHtml +
     '        <div style="text-align: center; margin-top: 20px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">\n' +
     '            <a href="/quiz" class="btn-primary">🚀 Start Quiz</a>\n' +
@@ -8270,6 +8313,9 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     '</div>\n' +
     '</body>\n' +
     '</html>';
+
+    // ✅ Return the final built string, NOT undefined!
+    return finalHtml;
 }
     function toggleSeoDropdown(bookSlug) {
         const menu = document.getElementById(`seoDropdown_${bookSlug}`);
