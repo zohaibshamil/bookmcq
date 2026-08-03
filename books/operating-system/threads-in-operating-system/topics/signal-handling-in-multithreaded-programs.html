@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-PT363CT7');</script>
+<!-- End Google Tag Manager -->
+    <title>Signal handling in multithreaded programs MCQs - Operating System | BookMCQ</title>
+    <meta name="description" content="Practice Signal handling in multithreaded programs from Operating System - 4. Threads in Operating System. 41 MCQs with 11 easy, 20 medium, and 10 hard questions. Perfect for exam preparation.">
+    <meta name="keywords" content="Signal handling in multithreaded programs MCQs, Operating System Signal handling in multithreaded programs questions, Signal handling in multithreaded programs practice, Operating System topics, Signal handling in multithreaded programs easy medium hard">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://www.bookmcq.com/books/operating-system/threads-in-operating-system/topics/signal-handling-in-multithreaded-programs.html">
+    <meta property="og:title" content="Signal handling in multithreaded programs - Operating System MCQs | BookMCQ">
+    <meta property="og:description" content="Practice Signal handling in multithreaded programs from Operating System. 41 questions with difficulty breakdown: Easy 11, Medium 20, Hard 10.">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#7c3aed">
+    <script type="application/ld+json">
+{"@context":"https://schema.org","@type":"CollectionPage","name":"Signal handling in multithreaded programs - Operating System","description":"Practice Signal handling in multithreaded programs from Operating System - 4. Threads in Operating System. 41 MCQs with 11 easy, 20 medium, and 10 hard questions.","url":"https://www.bookmcq.com/books/operating-system/threads-in-operating-system/topics/signal-handling-in-multithreaded-programs.html","isPartOf":{"@type":"Book","name":"Operating System"},"about":{"@type":"Thing","name":"Signal handling in multithreaded programs"},"dateModified":"2026-07-08"}
+    </script>
+    <script>
+        // 1. Disable Right-Click Context Menu
+        document.addEventListener('contextmenu', function(e) { e.preventDefault(); return false; });
+        
+        // 2. Disable F12, Ctrl+U, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F12') { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.key === 'u') { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i')) { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.key === 'j')) { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.shiftKey && (e.key === 'C' || e.key === 'c')) { e.preventDefault(); return false; }
+        });
+        
+        // 3. Disable Print Screen (basic prevention)
+        document.addEventListener('keyup', function(e) {
+            if (e.key === 'PrintScreen') { e.preventDefault(); return false; }
+        });
+        
+        // 4. Disable text selection (extra layer)
+        document.addEventListener('selectstart', function(e) { e.preventDefault(); });
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [
+                    ['$', '$'],
+                    ['\\(', '\\)']
+                ],
+                displayMath: [
+                    ['$$', '$$'],
+                    ['\\[', '\\]']
+                ],
+                processEscapes: true,
+                processEnvironments: true
+            },
+            svg: {
+                fontCache: 'global'
+            },
+            options: {
+                skipHtmlTypes: 'script',
+                ignoreHtmlClass: 'no-mathjax',
+                processHtmlClass: 'math'
+            }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async></script>
+    <script>
+        // Helper function to safely escape HTML while preserving LaTeX delimiters
+        function escapeHtmlPreserveMath(text) {
+            if (!text) return '';
+            var escaped = text.replace(/&/g, '&amp;')
+                              .replace(/</g, '&lt;')
+                              .replace(/>/g, '&gt;')
+                              .replace(/"/g, '&quot;')
+                              .replace(/'/g, '&#039;');
+            return escaped;
+        }
+
+        async function renderMathInElement(element) {
+            if (window.MathJax && element) {
+                try {
+                    await MathJax.typesetPromise([element]);
+                } catch(e) {
+                    console.log('MathJax error:', e);
+                }
+            }
+        }
+
+        async function renderAllMath() {
+            if (window.MathJax) {
+                try {
+                    await MathJax.typesetPromise();
+                } catch(e) {
+                    console.log('MathJax error:', e);
+                }
+            }
+        }
+
+        function processMathContent(text) {
+            if (!text) return '';
+            return text;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            renderAllMath();
+        });
+
+        if (window.MathJax) {
+            MathJax.typesetPromise = MathJax.typesetPromise || function() { return Promise.resolve(); };
+        }
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            padding: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .btn-primary {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 14px 32px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 10px;
+            transition: 0.2s;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary {
+            display: inline-block;
+            background: #f3f4f6;
+            color: #1e293b;
+            padding: 10px 24px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 500;
+            margin-top: 10px;
+            transition: 0.2s;
+            border: 1px solid #e5e7eb;
+        }
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 15px;
+            color: #7c3aed;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .topic-info {
+            font-size: 14px;
+            color: #64748b;
+            margin: 8px 0;
+        }
+        .breadcrumb {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-bottom: 12px;
+        }
+        .breadcrumb a {
+            color: #7c3aed;
+            text-decoration: none;
+        }
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+        .math-rendered {
+            display: inline;
+            line-height: 1.6;
+        }
+        .math-rendered mjx-container {
+            display: inline-block;
+            margin: 0 2px;
+        }
+        .question-text {
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+        .option-text {
+            display: inline;
+        }
+        .explanation-text {
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PT363CT7"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+<div class="container">
+    <div class="card">
+        <div class="breadcrumb">
+            <a href="/">🏠 Home</a> &gt; <a href="/books/operating-system/">Operating System</a> &gt; <a href="/books/operating-system/threads-in-operating-system.html">4. Threads in Operating System</a> &gt; Signal handling in multithreaded programs
+        </div>
+        <a href="/books/operating-system/threads-in-operating-system.html" class="back-link">← Back to 4. Threads in Operating System</a>
+        <h1>📝 Signal handling in multithreaded programs</h1>
+        <p class="topic-info">📖 From <strong>Operating System</strong> • 4. Threads in Operating System • 41 questions available</p>
+
+            <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">What is Signal handling in multithreaded programs?</h2>
+            <p style="font-size: 15px; line-height: 1.6; color: #334155; margin-bottom: 16px;">
+                <strong>Signal handling in multithreaded programs</strong> is a core concept that forms the foundation of this subject area. 
+                Understanding this topic is essential for mastering the principles, applications, and 
+                key terminology required for academic and practical success.
+            </p>
+            <p style="font-size: 14px; color: #475569; margin-bottom: 12px;">
+                Test your knowledge of Signal handling in multithreaded programs with the carefully crafted MCQs below, categorized by easy, medium, and hard difficulty levels.
+            </p>
+            <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
+                <p style="font-size:13px; color:#64748b; margin-top:4px;">🔄 Last updated: 2026-07-08</p>
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:16px 0;"><div style="background:#dcfce7; padding:12px; border-radius:10px; text-align:center; border:1px solid #86efac;"><div style="font-size:24px; font-weight:700; color:#166534;">11</div><div style="font-size:12px; color:#64748b;">Easy Questions</div></div><div style="background:#fef9c3; padding:12px; border-radius:10px; text-align:center; border:1px solid #fde047;"><div style="font-size:24px; font-weight:700; color:#854d0e;">20</div><div style="font-size:12px; color:#64748b;">Medium Questions</div></div><div style="background:#fee2e2; padding:12px; border-radius:10px; text-align:center; border:1px solid #fca5a5;"><div style="font-size:24px; font-weight:700; color:#991b1b;">10</div><div style="font-size:12px; color:#64748b;">Hard Questions</div></div></div><div style="margin:16px 0; background:#f8fafc; padding:16px; border-radius:12px;"><h3 style="font-size:18px; color:#1e293b; margin-bottom:12px;">📝 All Signal handling in multithreaded programs MCQs</h3><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q1. What is a signal in UNIX systems?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. A method to create new processes</div><div>🔹 B. A notification mechanism for events</div><div>🔹 C. A synchronization primitive</div><div>🔹 D. A memory allocation technique</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">A signal is a notification mechanism used in UNIX systems to inform a process that a particular event has occurred. Signals provide a way for the kernel or other processes to communicate events and interrupt the normal execution flow of a process.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q2. What are the three stages of signal handling?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Creation, execution, and termination</div><div>🔹 B. Generation, delivery, and handling</div><div>🔹 C. Initiation, processing, and completion</div><div>🔹 D. Detection, response, and cleanup</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Signal handling follows a consistent pattern: generation by an event occurrence, delivery to a process, and handling once delivered. This three-stage process applies to all signals regardless of whether they are synchronous or asynchronous.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q3. What type of signal is generated by division by zero?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Asynchronous signal</div><div>🔹 B. Synchronous signal</div><div>🔹 C. Timer signal</div><div>🔹 D. External signal</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Division by zero generates a synchronous signal because it&#039;s caused by the executing program&#039;s operation. Synchronous signals are generated by the running program itself and are delivered to the same process that performed the operation causing the signal.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q4. What type of signal is generated by a timer expiring?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Synchronous signal</div><div>🔹 B. Internal signal</div><div>🔹 C. Asynchronous signal</div><div>🔹 D. Program-specific signal</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: C</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">A timer expiring generates an asynchronous signal because it is caused by an event external to the running process. Asynchronous signals originate from outside the process and are typically sent to another process rather than generated by the process itself.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q5. What is the default signal handler?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. A handler created by the programmer</div><div>🔹 B. A handler provided by the kernel</div><div>🔹 C. A handler that ignores all signals</div><div>🔹 D. A handler that terminates the program</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The default signal handler is provided by the kernel and runs when handling a signal. Every signal has a default handler defined by the operating system, which can be overridden by a user-defined signal handler if the programmer chooses to customize signal handling behavior.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q6. How can a programmer override the default signal handler?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. By modifying the kernel</div><div>🔹 B. By defining a user-defined signal handler</div><div>🔹 C. By disabling the signal</div><div>🔹 D. By using the kill() function</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">A programmer can override the default signal handler by creating a user-defined signal handler. This custom handler is called to handle the signal instead of the kernel&#039;s default handler, allowing the program to respond to signals in a specific way.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q7. What action is typically taken for a window size change signal?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. The signal is ignored</div><div>🔹 B. The program terminates</div><div>🔹 C. The system crashes</div><div>🔹 D. The process is restarted</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Some signals, such as window size change notifications, are simply ignored. Signals can be handled in various ways depending on the signal type and the program&#039;s requirements. Not all signals require immediate action or termination of the program.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q8. Why is signal delivery more complicated in multithreaded programs?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Signals cannot be used in multithreaded programs</div><div>🔹 B. There are multiple threads to receive the signal</div><div>🔹 C. The kernel cannot generate signals for threads</div><div>🔹 D. Threads cannot handle signals</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Signal delivery is more complicated in multithreaded programs because a process may have several threads, and the system must decide which thread should receive the signal. In single-threaded programs, signals are always delivered to the single process, but multithreaded environments offer multiple delivery options.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q9. What is the behavior of synchronous signals in multithreaded programs?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. They are delivered to all threads</div><div>🔹 B. They are ignored by all threads</div><div>🔹 C. They are delivered to the thread causing the signal</div><div>🔹 D. They are delivered to the main thread</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: C</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Synchronous signals need to be delivered to the thread causing the signal, not to other threads. Since the signal is generated by a specific thread&#039;s operation, delivering it to that thread ensures appropriate handling of the exceptional condition at its source.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q10. What is the behavior of asynchronous signals that terminate a process (e.g., Ctrl+C)?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. They are delivered to the main thread only</div><div>🔹 B. They are sent to all threads</div><div>🔹 C. They are ignored in multithreaded programs</div><div>🔹 D. They are delivered to the first available thread</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Asynchronous signals that terminate a process, such as Ctrl+C, should be sent to all threads. This ensures the entire process terminates properly, as terminating only one thread while others continue executing could lead to inconsistent program state and resource leaks.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q11. What does the kill() function do in UNIX?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Terminates a process immediately</div><div>🔹 B. Delivers a signal to a specified process</div><div>🔹 C. Creates a new process</div><div>🔹 D. Kills all threads in a process</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The kill() function in UNIX delivers a signal to a specified process. It takes a process ID (pid) and signal number as parameters, allowing one process to send signals to another process. The name is somewhat misleading as it can be used to send any signal, not just termination signals.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q12. What is the purpose of the pthread_kill() function?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. To terminate a thread</div><div>🔹 B. To deliver a signal to a specified thread</div><div>🔹 C. To create a new thread</div><div>🔹 D. To kill the entire process</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The pthread_kill() function delivers a signal to a specified thread. This POSIX Pthreads function takes a thread ID (tid) and signal number as parameters, providing a way to send signals directly to individual threads within a multithreaded process.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q13. How does Windows emulate UNIX signals?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Through process creation</div><div>🔹 B. Using thread synchronization</div><div>🔹 C. Using asynchronous procedure calls (APCs)</div><div>🔹 D. Through message passing</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: C</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Windows emulates UNIX signals using asynchronous procedure calls (APCs). The APC facility allows a user thread to specify a function to be called when the thread receives notification of a particular event, which serves as an equivalent to asynchronous signals in UNIX.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q14. What determines which threads receive an asynchronous signal in some UNIX versions?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Thread priority</div><div>🔹 B. Thread creation time</div><div>🔹 C. Which threads are blocking the signal</div><div>🔹 D. Process ID</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: C</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">In some UNIX multithreaded versions, asynchronous signals may be delivered only to threads that are not blocking the signal. A thread can specify which signals it will accept and which it will block, and the signal is typically delivered only to the first thread found that is not blocking it.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q15. What happens when a signal needs to be handled only once in a multithreaded environment?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. It is delivered to all threads</div><div>🔹 B. It is delivered to the first thread not blocking it</div><div>🔹 C. It is ignored</div><div>🔹 D. It is queued for later delivery</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">When a signal needs to be handled only once, it is typically delivered only to the first thread found that is not blocking the signal. This prevents duplicate handling of the same signal event while ensuring that at least one thread in the process receives and processes the signal.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q16. Why is the Windows APC facility more straightforward than UNIX signal handling for multithreaded programs?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. APCs are delivered to a particular thread rather than a process</div><div>🔹 B. APCs are always synchronous</div><div>🔹 C. APCs are faster than signals</div><div>🔹 D. APCs can handle more events</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The Windows APC facility is more straightforward than UNIX signal handling because APCs are delivered to a particular thread rather than a process. This eliminates the complex decision-making process required in UNIX to determine which thread should receive a signal when multiple threads exist.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q17. What is the correct order of signal handling stages?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Delivery, generation, handling</div><div>🔹 B. Generation, delivery, handling</div><div>🔹 C. Handling, generation, delivery</div><div>🔹 D. Generation, handling, delivery</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The correct order is generation (signal is created by event occurrence), delivery (signal is sent to a process), and handling (signal is processed). This sequence applies to all signals in UNIX systems, whether synchronous or asynchronous in nature.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q18. Which of the following is an example of an asynchronous signal?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Illegal memory access</div><div>🔹 B. Division by zero</div><div>🔹 C. Ctrl+C keystroke</div><div>🔹 D. Null pointer dereference</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: C</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Ctrl+C keystroke is an example of an asynchronous signal because it is generated by an event external to the running process. Illegal memory access, division by zero, and null pointer dereference are all examples of synchronous signals generated by the process itself.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q19. Which of the following is NOT a valid option for signal delivery in multithreaded programs?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Deliver to the thread to which the signal applies</div><div>🔹 B. Deliver to every thread in the process</div><div>🔹 C. Deliver to a randomly selected thread</div><div>🔹 D. Assign a specific thread to receive all signals</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: C</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Delivering to a randomly selected thread is not a valid option. The valid options include delivering to the applying thread, delivering to every thread, delivering to certain threads, or assigning a specific thread to receive all signals. The method depends on the signal type.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q20. What is the role of a user-defined signal handler?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. To provide default handling</div><div>🔹 B. To override the kernel&#039;s default handling</div><div>🔹 C. To generate new signals</div><div>🔹 D. To block all signals</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">A user-defined signal handler overrides the kernel&#039;s default handling for a specific signal. By defining custom handlers, programmers can implement specific actions in response to signals, such as cleaning up resources, logging information, or gracefully recovering from exceptional conditions.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q21. What action is typically taken for illegal memory access signals?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. The signal is ignored</div><div>🔹 B. The program is terminated</div><div>🔹 C. The memory is reallocated</div><div>🔹 D. A warning is printed</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Illegal memory access signals typically result in program termination. This is handled either by the default kernel handler or by a user-defined handler. Termination prevents the program from continuing execution in an invalid state that could cause further errors or security vulnerabilities.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q22. What is the relationship between signals and processes in single-threaded programs?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Signals are delivered to specific threads</div><div>🔹 B. Signals are always delivered to the process</div><div>🔹 C. Signals are never delivered</div><div>🔹 D. Signals are delivered to the kernel</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">In single-threaded programs, signals are always delivered to the process. Since the process has only one thread, signal delivery is straightforward and unambiguous. The signal is received by the single thread, and the appropriate handler is invoked.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q23. What is the significance of the pthread_kill() function in multithreaded programming?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. It allows thread-specific signal handling</div><div>🔹 B. It terminates all threads in a process</div><div>🔹 C. It creates a new thread</div><div>🔹 D. It blocks signals for all threads</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The pthread_kill() function is significant because it allows thread-specific signal handling by enabling delivery of signals to individual threads. This gives programmers fine-grained control over which threads receive which signals in multithreaded applications.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q24. How does a thread specify which signals it will accept?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. By using the kill() function</div><div>🔹 B. By specifying signal acceptance rules in UNIX versions</div><div>🔹 C. By calling pthread_create()</div><div>🔹 D. By using the signal() function</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: D</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">A thread specifies which signals it will accept and which it will block through signal mask manipulation. This is typically done using functions like pthread_sigmask(), allowing each thread to control its signal reception behavior independently.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q25. What is the primary difference between synchronous and asynchronous signals?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Synchronous signals are faster</div><div>🔹 B. Synchronous signals are generated by the process itself</div><div>🔹 C. Asynchronous signals terminate the process</div><div>🔹 D. Synchronous signals are always ignored</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The primary difference is that synchronous signals are generated by the process itself (e.g., division by zero), while asynchronous signals are generated by external events (e.g., Ctrl+C). This affects where the signal originates and how it should be delivered in multithreaded programs.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q26. What is the function of the kill() system call?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. To deliver a signal to a process</div><div>🔹 B. To end a process immediately</div><div>🔹 C. To create a new process</div><div>🔹 D. To send a message to a thread</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The kill() system call delivers a signal to a specified process. Despite its name, it is not limited to terminating processes but can be used to send any signal to any process for which the caller has appropriate permissions.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q27. In the context of signal handling, what does the term &#039;asynchronous&#039; refer to?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. The signal is generated by the program itself</div><div>🔹 B. The signal originates from an event external to the process</div><div>🔹 C. The signal is handled after the program completes</div><div>🔹 D. The signal is processed in parallel</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">&#039;Asynchronous&#039; refers to signals that originate from events external to the running process. These signals can occur at any time and are not synchronized with the program&#039;s execution, requiring special handling to ensure proper delivery and processing.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q28. What is the main advantage of using APCs in Windows for signal emulation?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. APCs are faster than UNIX signals</div><div>🔹 B. APCs avoid the complexity of delivering signals to processes</div><div>🔹 C. APCs can handle more signal types</div><div>🔹 D. APCs provide automatic signal handling</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The main advantage of using APCs for signal emulation in Windows is that they avoid the complexity of delivering signals to processes in multithreaded environments. Since APCs are delivered to specific threads rather than processes, the ambiguity of signal delivery is resolved.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q29. What happens if a user-defined signal handler is not provided for a signal?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. The signal is ignored</div><div>🔹 B. The default signal handler is used</div><div>🔹 C. The process terminates immediately</div><div>🔹 D. An error is generated</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">If a user-defined signal handler is not provided, the default signal handler is used. The kernel provides default handlers for all signals, ensuring that every signal can be handled even if the program doesn&#039;t define custom handling. The default behavior varies depending on the signal type.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q30. Which of the following signals is typically generated synchronously?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Ctrl+C keystroke</div><div>🔹 B. Timer expiration</div><div>🔹 C. Window resize</div><div>🔹 D. Null pointer dereference</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: D</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Null pointer dereference is typically generated synchronously because it&#039;s caused by the program&#039;s own operation. Synchronous signals are generated when a program performs an invalid operation, and they are delivered to the thread that performed the operation causing the signal.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q31. In multithreaded programs, how are synchronous signals delivered?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. To the thread causing the signal</div><div>🔹 B. To all threads</div><div>🔹 C. To the main thread</div><div>🔹 D. To the first available thread</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Synchronous signals are delivered to the thread causing the signal. Since the signal is generated by a specific thread&#039;s operation, delivering it to that thread ensures the handler can access the appropriate context and state information to handle the exceptional condition.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q32. What is the purpose of a thread specifying which signals it blocks?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. To improve performance</div><div>🔹 B. To control signal delivery</div><div>🔹 C. To terminate threads</div><div>🔹 D. To create new signals</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">A thread specifies which signals it blocks to control signal delivery. By blocking certain signals, a thread indicates it should not receive those signals, allowing other threads in the process to handle them instead. This provides a mechanism for managing signal reception in multithreaded programs.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q33. Why does a signal need to be handled after delivery?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. To prevent signal generation</div><div>🔹 B. To complete the signal lifecycle</div><div>🔹 C. To ensure the event is processed</div><div>🔹 D. To create new signals</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: C</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">A signal needs to be handled after delivery to ensure the event that caused the signal is properly processed. The handling stage completes the signal lifecycle, allowing the program to respond to the event appropriately, whether by ignoring it, terminating, or taking custom action.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q34. What is the primary challenge with asynchronous signals in multithreaded programs?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Determining which thread should receive the signal</div><div>🔹 B. Generating the signal</div><div>🔹 C. Handling the signal quickly</div><div>🔹 D. Blocking the signal</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The primary challenge with asynchronous signals is determining which thread should receive the signal. Unlike synchronous signals that are clearly associated with the causing thread, asynchronous signals lack such association, requiring explicit policies to decide delivery in multithreaded environments.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q35. What distinguishes Windows APCs from UNIX signals?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. APCs are delivered to threads, signals to processes</div><div>🔹 B. APCs are synchronous, signals are asynchronous</div><div>🔹 C. APCs cannot handle events</div><div>🔹 D. APCs are slower than signals</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Windows APCs are delivered to specific threads rather than processes, unlike UNIX signals which are delivered to processes. This distinction makes APCs more straightforward in multithreaded environments because there is no ambiguity about which thread should receive the notification.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q36. What happens to asynchronous signals when a thread blocks them?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. They are delivered to other non-blocking threads</div><div>🔹 B. They are ignored completely</div><div>🔹 C. They are queued until the thread unblocks</div><div>🔹 D. They cause the process to terminate</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">When a thread blocks an asynchronous signal, the signal may be delivered to other threads in the process that are not blocking it. Since signals need to be handled only once, they are typically delivered to the first thread found that is not blocking the signal.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q37. Which component provides default signal handlers in UNIX systems?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. The application program</div><div>🔹 B. The kernel</div><div>🔹 C. The hardware</div><div>🔹 D. The compiler</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The kernel provides default signal handlers for every signal. These default handlers ensure that signals are handled even when the application program does not define custom handlers. The default behavior is appropriate for most signals in typical program execution.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q38. What is the role of signal masks in multithreaded signal handling?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. To identify signal types</div><div>🔹 B. To control signal acceptance per thread</div><div>🔹 C. To specify handler functions</div><div>🔹 D. To terminate signal delivery</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Signal masks in multithreaded environments control signal acceptance on a per-thread basis. Each thread can maintain its own signal mask indicating which signals are blocked, allowing fine-grained control over signal delivery in multithreaded programs.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q39. How does the complexity of signal delivery differ between single-threaded and multithreaded programs?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Both have the same complexity</div><div>🔹 B. Multithreaded programs have more complexity</div><div>🔹 C. Single-threaded programs have more complexity</div><div>🔹 D. Complexity depends on signal type</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Multithreaded programs have more signal delivery complexity because signals could potentially be delivered to any of the multiple threads. Single-threaded programs are simpler because the single process receives all signals, making the delivery target unambiguous.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q40. What does the kill() function require as parameters?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Process ID and thread ID</div><div>🔹 B. Process ID and signal number</div><div>🔹 C. Thread ID and signal number</div><div>🔹 D. Signal number and handler function</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The kill() function requires a process ID (pid) and a signal number (signal) as parameters. The process ID identifies which process should receive the signal, and the signal number identifies which signal to deliver to that process.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q41. What is the equivalent of asynchronous signals in Windows?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Synchronous procedure calls</div><div>🔹 B. Asynchronous procedure calls</div><div>🔹 C. Event handlers</div><div>🔹 D. Thread notifications</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Asynchronous procedure calls (APCs) are the equivalent of asynchronous signals in Windows. The APC facility allows a user thread to specify a function that should be called when the thread receives notification of a particular event, which closely matches the functionality of asynchronous signals in UNIX.</p>
+                    </div>
+                </div></div><div style="margin:16px 0;"><h3 style="font-size:16px; color:#1e293b;">🔗 Related Topics (MCQs)</h3><div style="display:flex; flex-wrap:wrap; gap:8px;"><a href="/books/operating-system/threads-in-operating-system/topics/threads-in-operating-system-overview.html" style="background:#f3f4f6; padding:6px 14px; border-radius:20px; font-size:13px; color:#1e293b; text-decoration:none; border:1px solid #e5e7eb; hover:background:#e0e7ff;">📝 Threads in operating system overview MCQs</a><a href="/books/operating-system/threads-in-operating-system/topics/why-threads-are-used-in-operating-system.html" style="background:#f3f4f6; padding:6px 14px; border-radius:20px; font-size:13px; color:#1e293b; text-decoration:none; border:1px solid #e5e7eb; hover:background:#e0e7ff;">📝 Why threads are used in operating system MCQs</a><a href="/books/operating-system/threads-in-operating-system/topics/benefits-of-multithreading-in-operating-system.html" style="background:#f3f4f6; padding:6px 14px; border-radius:20px; font-size:13px; color:#1e293b; text-decoration:none; border:1px solid #e5e7eb; hover:background:#e0e7ff;">📝 Benefits of multithreading in operating system MCQs</a><a href="/books/operating-system/threads-in-operating-system/topics/multicore-programming-in-operating-system.html" style="background:#f3f4f6; padding:6px 14px; border-radius:20px; font-size:13px; color:#1e293b; text-decoration:none; border:1px solid #e5e7eb; hover:background:#e0e7ff;">📝 Multicore programming in operating system MCQs</a><a href="/books/operating-system/threads-in-operating-system/topics/multicore-programming-challenges-and-issues.html" style="background:#f3f4f6; padding:6px 14px; border-radius:20px; font-size:13px; color:#1e293b; text-decoration:none; border:1px solid #e5e7eb; hover:background:#e0e7ff;">📝 Multicore programming challenges and issues MCQs</a></div></div>        <div style="text-align: center; margin-top: 20px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+            <a href="/quiz" class="btn-primary">🚀 Start Quiz</a>
+            <a href="/practice" class="btn-secondary">📝 Practice Mode</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>
