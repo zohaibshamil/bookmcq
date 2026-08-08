@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-PT363CT7');</script>
+<!-- End Google Tag Manager -->
+    <title>Mutex Locks in Process Synchronization MCQs - Operating System | BookMCQ</title>
+    <meta name="description" content="Practice Mutex Locks in Process Synchronization from Operating System - 5. Process Synchronization. 49 MCQs with 27 easy, 14 medium, and 8 hard questions. Perfect for exam preparation.">
+    <meta name="keywords" content="Mutex Locks in Process Synchronization MCQs, Operating System Mutex Locks in Process Synchronization questions, Mutex Locks in Process Synchronization practice, Operating System topics, Mutex Locks in Process Synchronization easy medium hard">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://www.bookmcq.com/books/operating-system/process-synchronization/topics/mutex-locks-in-process-synchronization.html">
+    <meta property="og:title" content="Mutex Locks in Process Synchronization - Operating System MCQs | BookMCQ">
+    <meta property="og:description" content="Practice Mutex Locks in Process Synchronization from Operating System. 49 questions with difficulty breakdown: Easy 27, Medium 14, Hard 8.">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#7c3aed">
+    <script type="application/ld+json">
+{"@context":"https://schema.org","@type":"CollectionPage","name":"Mutex Locks in Process Synchronization - Operating System","description":"Practice Mutex Locks in Process Synchronization from Operating System - 5. Process Synchronization. 49 MCQs with 27 easy, 14 medium, and 8 hard questions.","url":"https://www.bookmcq.com/books/operating-system/process-synchronization/topics/mutex-locks-in-process-synchronization.html","isPartOf":{"@type":"Book","name":"Operating System"},"about":{"@type":"Thing","name":"Mutex Locks in Process Synchronization"},"dateModified":"2026-07-09"}
+    </script>
+    <script>
+        // 1. Disable Right-Click Context Menu
+        document.addEventListener('contextmenu', function(e) { e.preventDefault(); return false; });
+        
+        // 2. Disable F12, Ctrl+U, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F12') { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.key === 'u') { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i')) { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.key === 'j')) { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.shiftKey && (e.key === 'C' || e.key === 'c')) { e.preventDefault(); return false; }
+        });
+        
+        // 3. Disable Print Screen (basic prevention)
+        document.addEventListener('keyup', function(e) {
+            if (e.key === 'PrintScreen') { e.preventDefault(); return false; }
+        });
+        
+        // 4. Disable text selection (extra layer)
+        document.addEventListener('selectstart', function(e) { e.preventDefault(); });
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [
+                    ['$', '$'],
+                    ['\\(', '\\)']
+                ],
+                displayMath: [
+                    ['$$', '$$'],
+                    ['\\[', '\\]']
+                ],
+                processEscapes: true,
+                processEnvironments: true
+            },
+            svg: {
+                fontCache: 'global'
+            },
+            options: {
+                skipHtmlTypes: 'script',
+                ignoreHtmlClass: 'no-mathjax',
+                processHtmlClass: 'math'
+            }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async></script>
+    <script>
+        // Helper function to safely escape HTML while preserving LaTeX delimiters
+        function escapeHtmlPreserveMath(text) {
+            if (!text) return '';
+            var escaped = text.replace(/&/g, '&amp;')
+                              .replace(/</g, '&lt;')
+                              .replace(/>/g, '&gt;')
+                              .replace(/"/g, '&quot;')
+                              .replace(/'/g, '&#039;');
+            return escaped;
+        }
+
+        async function renderMathInElement(element) {
+            if (window.MathJax && element) {
+                try {
+                    await MathJax.typesetPromise([element]);
+                } catch(e) {
+                    console.log('MathJax error:', e);
+                }
+            }
+        }
+
+        async function renderAllMath() {
+            if (window.MathJax) {
+                try {
+                    await MathJax.typesetPromise();
+                } catch(e) {
+                    console.log('MathJax error:', e);
+                }
+            }
+        }
+
+        function processMathContent(text) {
+            if (!text) return '';
+            return text;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            renderAllMath();
+        });
+
+        if (window.MathJax) {
+            MathJax.typesetPromise = MathJax.typesetPromise || function() { return Promise.resolve(); };
+        }
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            padding: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .btn-primary {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 14px 32px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 10px;
+            transition: 0.2s;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary {
+            display: inline-block;
+            background: #f3f4f6;
+            color: #1e293b;
+            padding: 10px 24px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 500;
+            margin-top: 10px;
+            transition: 0.2s;
+            border: 1px solid #e5e7eb;
+        }
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 15px;
+            color: #7c3aed;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .topic-info {
+            font-size: 14px;
+            color: #64748b;
+            margin: 8px 0;
+        }
+        .breadcrumb {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-bottom: 12px;
+        }
+        .breadcrumb a {
+            color: #7c3aed;
+            text-decoration: none;
+        }
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+        .math-rendered {
+            display: inline;
+            line-height: 1.6;
+        }
+        .math-rendered mjx-container {
+            display: inline-block;
+            margin: 0 2px;
+        }
+        .question-text {
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+        .option-text {
+            display: inline;
+        }
+        .explanation-text {
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PT363CT7"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+<div class="container">
+    <div class="card">
+        <div class="breadcrumb">
+            <a href="/">🏠 Home</a> &gt; <a href="/books/operating-system/">Operating System</a> &gt; <a href="/books/operating-system/process-synchronization.html">5. Process Synchronization</a> &gt; Mutex Locks in Process Synchronization
+        </div>
+        <a href="/books/operating-system/process-synchronization.html" class="back-link">← Back to 5. Process Synchronization</a>
+        <h1>📝 Mutex Locks in Process Synchronization</h1>
+        <p class="topic-info">📖 From <strong>Operating System</strong> • 5. Process Synchronization • 49 questions available</p>
+
+            <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">What is Mutex Locks in Process Synchronization?</h2>
+            <p style="font-size: 15px; line-height: 1.6; color: #334155; margin-bottom: 16px;">
+                <strong>Mutex Locks in Process Synchronization</strong> is a core concept that forms the foundation of this subject area. 
+                Understanding this topic is essential for mastering the principles, applications, and 
+                key terminology required for academic and practical success.
+            </p>
+            <p style="font-size: 14px; color: #475569; margin-bottom: 12px;">
+                Test your knowledge of Mutex Locks in Process Synchronization with the carefully crafted MCQs below, categorized by easy, medium, and hard difficulty levels.
+            </p>
+            <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
+                <p style="font-size:13px; color:#64748b; margin-top:4px;">🔄 Last updated: 2026-07-09</p>
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:16px 0;"><div style="background:#dcfce7; padding:12px; border-radius:10px; text-align:center; border:1px solid #86efac;"><div style="font-size:24px; font-weight:700; color:#166534;">27</div><div style="font-size:12px; color:#64748b;">Easy Questions</div></div><div style="background:#fef9c3; padding:12px; border-radius:10px; text-align:center; border:1px solid #fde047;"><div style="font-size:24px; font-weight:700; color:#854d0e;">14</div><div style="font-size:12px; color:#64748b;">Medium Questions</div></div><div style="background:#fee2e2; padding:12px; border-radius:10px; text-align:center; border:1px solid #fca5a5;"><div style="font-size:24px; font-weight:700; color:#991b1b;">8</div><div style="font-size:12px; color:#64748b;">Hard Questions</div></div></div><div style="margin:16px 0; background:#f8fafc; padding:16px; border-radius:12px;"><h3 style="font-size:18px; color:#1e293b; margin-bottom:12px;">📝 All Mutex Locks in Process Synchronization MCQs</h3><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q1. What is a mutex lock primarily designed to protect against?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Deadlocks.</div><div>🔹 B. Race conditions.</div><div>🔹 C. Starvation.</div><div>🔹 D. Priority inversion.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">A mutex lock is specifically designed to protect critical regions and prevent race conditions. It ensures mutual exclusion by allowing only one process at a time to execute its critical section, thereby preventing data corruption caused by concurrent accesses.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q2. What does the term &#039;mutex&#039; stand for?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Mutual Exclusion.</div><div>🔹 B. Multiple Execution.</div><div>🔹 C. Memory Unit Extension.</div><div>🔹 D. Management of Threads.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">&#039;Mutex&#039; is a contraction of &#039;mutual exclusion&#039;. The primary purpose of a mutex lock is to enforce mutual exclusion, ensuring that only one process or thread can enter a critical section at a time.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q3. Which of the following best describes a mutex lock?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. A hardware device that prevents interrupts.</div><div>🔹 B. A software tool that protects critical regions.</div><div>🔹 C. A scheduling algorithm for process management.</div><div>🔹 D. A memory management technique.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">A mutex lock is a software tool provided by the operating system to solve the critical-section problem. It simplifies synchronization for application programmers by providing `acquire()` and `release()` functions to protect shared resources.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q4. What action does a process perform before entering a critical section when using a mutex lock?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. It releases the mutex lock.</div><div>🔹 B. It acquires the mutex lock.</div><div>🔹 C. It creates a new mutex lock.</div><div>🔹 D. It ignores the mutex lock.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">A process must acquire the mutex lock before entering its critical section. This ensures that only one process holds the lock and can execute in the critical section at any given time, enforcing mutual exclusion.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q5. What action does a process perform after exiting a critical section when using a mutex lock?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. It acquires the mutex lock.</div><div>🔹 B. It releases the mutex lock.</div><div>🔹 C. It deletes the mutex lock.</div><div>🔹 D. It ignores the mutex lock.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">A process releases the mutex lock when it exits the critical section. This makes the lock available to other waiting processes, allowing them to enter their critical sections and ensuring progress.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q6. What is the purpose of the `available` variable in a mutex lock?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. To store the ID of the process holding the lock.</div><div>🔹 B. To indicate whether the lock is available for acquisition.</div><div>🔹 C. To count the number of processes waiting for the lock.</div><div>🔹 D. To track the time since the lock was acquired.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The `available` variable is a boolean flag. If `true`, the lock is available and a process can acquire it. If `false`, the lock is held by another process, and any process attempting to acquire it will be blocked, typically in a busy-waiting loop.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q7. What happens when a process calls `acquire()` on a mutex lock that is already held by another process?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. The process acquires the lock immediately.</div><div>🔹 B. The process is blocked until the lock is released.</div><div>🔹 C. The process is terminated.</div><div>🔹 D. The lock is automatically released.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">If the lock is unavailable, the calling process is blocked. It cannot proceed until the lock becomes available (i.e., the holding process executes `release()`). This enforces mutual exclusion by preventing multiple processes from entering the critical section simultaneously.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q8. What is the primary disadvantage of the mutex lock implementation using busy waiting?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. It requires complex hardware support.</div><div>🔹 B. It wastes CPU cycles while waiting.</div><div>🔹 C. It cannot be used in multiprocessor systems.</div><div>🔹 D. It does not guarantee mutual exclusion.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The main disadvantage is busy waiting, also known as spinning. A process waiting for a lock continuously consumes CPU cycles in a loop, which is inefficient and wastes resources that could be used by other processes.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q9. A mutex lock that uses busy waiting is also known as what?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. A semaphore.</div><div>🔹 B. A spinlock.</div><div>🔹 C. A condition variable.</div><div>🔹 D. A monitor.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">A mutex lock implemented with busy waiting is called a spinlock. The term &#039;spin&#039; describes the process continuously checking the lock&#039;s availability in a loop, consuming CPU cycles while waiting.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q10. Why is a spinlock considered inefficient in a single-CPU multiprogramming system?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Because it causes too many context switches.</div><div>🔹 B. Because it wastes CPU cycles while spinning, preventing other processes from using the CPU.</div><div>🔹 C. Because it requires multiple CPUs to work.</div><div>🔹 D. Because it cannot be implemented in software.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">In a single-CPU system with multiple processes, a process spinning on a lock consumes the CPU&#039;s full attention. This prevents other ready processes from running, leading to inefficient CPU utilization and potentially delaying other tasks.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q11. What is the advantage of a spinlock over other blocking synchronization mechanisms?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. It is easier to implement.</div><div>🔹 B. It avoids the overhead of a context switch.</div><div>🔹 C. It consumes less CPU time.</div><div>🔹 D. It works better in single-processor systems.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The key advantage is avoiding context-switch overhead. When a process is blocked on a lock in a traditional mutex, it must be context-switched out, which can be costly. A spinlock keeps the process running on the CPU, which is beneficial if the wait is expected to be very short.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q12. In which environment are spinlocks often employed and why?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. In single-processor systems, because they are simple.</div><div>🔹 B. In multiprocessor systems, because one thread can spin on one CPU while another executes its critical section on another.</div><div>🔹 C. In real-time systems, because they provide predictable timing.</div><div>🔹 D. In embedded systems, because they require less memory.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Spinlocks are most effective on multiprocessor systems. When one thread is spinning on a lock on one CPU, another thread can be executing its critical section on a different CPU. The spin is typically short, as the lock should be released quickly, minimizing wasted CPU cycles.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q13. How does a process release a mutex lock?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. By calling the `release()` function.</div><div>🔹 B. By calling the `acquire()` function.</div><div>🔹 C. By setting the `available` variable to `false`.</div><div>🔹 D. By terminating the process.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The `release()` function is used to release a mutex lock. It typically sets the `available` variable to `true`, indicating that the lock is now free and can be acquired by other processes.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q14. What condition must calls to `acquire()` and `release()` satisfy?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. They must be executed in user mode.</div><div>🔹 B. They must be performed atomically.</div><div>🔹 C. They must be called by the same process.</div><div>🔹 D. They must be executed in pairs.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The `acquire()` and `release()` operations must be atomic. This ensures that the lock&#039;s state is updated consistently, preventing race conditions where two processes might simultaneously see the lock as available. Atomicity is typically achieved using hardware instructions like `test and set()`.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q15. What is the general structure of a process using a mutex lock?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. acquire lock; critical section; release lock; remainder section.</div><div>🔹 B. release lock; critical section; acquire lock; remainder section.</div><div>🔹 C. critical section; acquire lock; release lock; remainder section.</div><div>🔹 D. acquire lock; remainder section; release lock; critical section.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The correct structure is: acquire the lock, execute the critical section, release the lock, then execute the remainder section. This ensures the critical section is protected by the lock while other non-critical code can execute freely.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q16. How does a mutex lock prevent race conditions?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. By allowing only one process to execute its critical section at a time.</div><div>🔹 B. By preventing processes from accessing memory.</div><div>🔹 C. By scheduling processes in a specific order.</div><div>🔹 D. By using a timer to limit execution time.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">A mutex lock enforces mutual exclusion, which is the primary method of preventing race conditions. By ensuring that only one process can be in its critical section at a time, it prevents the interleaving of operations on shared data that causes data corruption.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q17. What is the role of operating-system designers regarding mutex locks?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. They design hardware to support mutex locks.</div><div>🔹 B. They build software tools like mutex locks to solve the critical-section problem for programmers.</div><div>🔹 C. They define the scheduling algorithm for mutex locks.</div><div>🔹 D. They write applications that use mutex locks.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Operating-system designers build software tools, including mutex locks, to simplify synchronization. These tools abstract away the complexities of hardware-level synchronization, making it easier for application programmers to protect critical sections.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q18. What happens to a process that calls `acquire()` on an available mutex lock?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. The process is blocked.</div><div>🔹 B. The process acquires the lock and continues execution.</div><div>🔹 C. The process is terminated.</div><div>🔹 D. The lock is released.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">If the lock is available, the `acquire()` call succeeds. The process acquires the lock (marking it as unavailable) and then continues to execute its critical section. This is the normal, non-blocking case.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q19. What is the primary purpose of the `acquire()` function in a mutex lock?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. To release the lock for other processes.</div><div>🔹 B. To create a new mutex lock.</div><div>🔹 C. To wait until the lock is available and then acquire it.</div><div>🔹 D. To test if the lock is available.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: C</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The `acquire()` function is responsible for waiting until the lock is available and then atomically acquiring it. This may involve busy-waiting (in a spinlock) or blocking the process until the lock is released by another process.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q20. Which of the following is a true statement about the `available` variable in a mutex lock?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. It is only used in single-processor systems.</div><div>🔹 B. It is a counter that tracks the number of waiting processes.</div><div>🔹 C. It indicates whether the lock is currently held by a process.</div><div>🔹 D. It is used to store the process ID.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: C</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The `available` variable is a boolean flag indicating the lock&#039;s state. If `available` is `true`, the lock is free and can be acquired. If `false`, the lock is held by a process and is unavailable for others.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q21. What is the main reason mutex locks are preferred over hardware solutions for application programmers?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. They are faster than hardware solutions.</div><div>🔹 B. They are simpler and more accessible to use.</div><div>🔹 C. They work on all hardware platforms.</div><div>🔹 D. They do not require atomic operations.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Hardware solutions like `test and set()` are complicated and machine-specific, making them inaccessible to most application programmers. Mutex locks provide a higher-level, simpler abstraction that is easier to understand and use correctly.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q22. What is the consequence of a process failing to release a mutex lock after its critical section?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Other processes will acquire the lock immediately.</div><div>🔹 B. Other processes will be blocked indefinitely, potentially causing a deadlock-like situation.</div><div>🔹 C. The lock will be automatically released.</div><div>🔹 D. The system will crash.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">If a process never releases a mutex lock, other processes waiting to acquire it will be blocked forever. This is a serious programming error that can halt progress in the system. It highlights the importance of ensuring `release()` is always called after the critical section.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q23. Which function is used to make a mutex lock available to other processes?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. `acquire()`.</div><div>🔹 B. `release()`.</div><div>🔹 C. `lock()`.</div><div>🔹 D. `unlock()`.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The `release()` function is used to make the mutex lock available again. It typically sets the `available` variable to `true`, signaling to waiting processes that they can now attempt to acquire the lock.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q24. How can mutex locks be implemented to ensure atomicity of `acquire()` and `release()`?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Using purely software algorithms like Peterson&#039;s solution.</div><div>🔹 B. Using hardware mechanisms like `test and set()` or `compare and swap()`.</div><div>🔹 C. Using compiler optimizations.</div><div>🔹 D. Using system calls that cannot be interrupted.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Mutex locks are typically implemented using hardware atomic instructions such as `test and set()` or `compare and swap()`. These instructions ensure the lock acquisition and release operations are performed without interruption, preventing race conditions on the lock itself.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q25. What is the relationship between a mutex lock and a critical section?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. A mutex lock is used to protect a critical section.</div><div>🔹 B. A critical section is used to implement a mutex lock.</div><div>🔹 C. They are unrelated concepts.</div><div>🔹 D. A mutex lock is a type of critical section.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">A mutex lock is a synchronization tool used to protect a critical section. The lock is acquired before entering the critical section and released after exiting, ensuring mutual exclusion.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q26. In the context of mutex locks, what does &#039;busy waiting&#039; mean?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. A process waits for the lock by sleeping.</div><div>🔹 B. A process waits for the lock by continuously checking its status in a loop.</div><div>🔹 C. A process waits for the lock by yielding the CPU.</div><div>🔹 D. A process waits for the lock by performing other useful work.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Busy waiting, also known as spinning, is when a process repeatedly checks the lock&#039;s condition in a tight loop without releasing the CPU. This contrasts with blocking, where a process is put to sleep and awoken when the lock is free.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q27. Why might a spinlock be preferred in a multiprocessor system?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Because it is simpler to implement on multiple CPUs.</div><div>🔹 B. Because the waiting process can run on one CPU while the lock-holder runs on another, potentially reducing latency.</div><div>🔹 C. Because it is guaranteed to be fair.</div><div>🔹 D. Because it prevents deadlocks.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">In a multiprocessor system, a spinlock allows a process to wait on one CPU while the process holding the lock executes on another. If the critical section is short, the waiting process will not have to wait long, and the overhead of a context switch is avoided.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q28. What is a key requirement for the `acquire()` and `release()` operations of a mutex lock?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. They must be implemented in the same function.</div><div>🔹 B. They must be called in pairs.</div><div>🔹 C. They must be executed in kernel mode.</div><div>🔹 D. They must be executed on the same CPU.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">While not a strict requirement enforced by the lock itself, `acquire()` and `release()` must be called in pairs for the lock to function correctly. Acquiring a lock and failing to release it will cause a deadlock. The code must ensure every `acquire()` is matched with a `release()`.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q29. How does a mutex lock help application programmers?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. By providing a simple interface to solve the critical-section problem.</div><div>🔹 B. By automatically managing all shared resources.</div><div>🔹 C. By eliminating the need for any synchronization.</div><div>🔹 D. By preventing context switches.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Mutex locks provide a high-level abstraction that makes it easy for programmers to protect critical sections. They can simply call `acquire()` and `release()` around a critical section without needing to deal with the complexities of hardware-level synchronization.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q30. Which of the following is NOT a characteristic of a spinlock?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. It uses busy waiting.</div><div>🔹 B. It avoids context-switch overhead.</div><div>🔹 C. It is efficient for short critical sections.</div><div>🔹 D. It blocks the process and puts it to sleep.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: D</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">A spinlock is characterized by busy waiting; it does not block the process or put it to sleep. Instead, it keeps the process running and checking the lock condition. Blocking and sleeping are characteristics of other synchronization mechanisms.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q31. What problem can arise from using a mutex lock in a single-processor environment?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. The lock cannot be implemented on a single processor.</div><div>🔹 B. A process holding the lock may be preempted, causing other processes to wait longer.</div><div>🔹 C. The lock is not needed on a single processor.</div><div>🔹 D. The lock will always cause a deadlock.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">In a single-processor system, a process holding a lock can be preempted by the scheduler. If this happens, other processes waiting for the lock may have to wait a long time, as the holding process may not be scheduled again for a while. This can lead to inefficiency, especially if the critical section is long.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q32. What is the primary function of the `release()` operation?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. To set the `available` variable to `false`.</div><div>🔹 B. To set the `available` variable to `true`.</div><div>🔹 C. To acquire the lock for the current process.</div><div>🔹 D. To block the current process.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The `release()` operation&#039;s primary function is to set the `available` variable to `true`, indicating the lock is free. This allows another process to successfully call `acquire()` and enter its critical section.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q33. What is the primary benefit of using mutex locks over disabling interrupts for synchronization?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Mutex locks are faster.</div><div>🔹 B. Mutex locks work in multiprocessor environments.</div><div>🔹 C. Mutex locks do not require any hardware support.</div><div>🔹 D. Mutex locks are less prone to errors.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Disabling interrupts is only feasible in single-processor systems. Mutex locks, particularly spinlocks implemented with atomic instructions, provide a scalable and efficient synchronization mechanism that works effectively in multiprocessor environments.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q34. What is the significance of the `while (!available)` loop in the `acquire()` function?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. It indicates that the lock is available.</div><div>🔹 B. It implements the busy-waiting mechanism.</div><div>🔹 C. It releases the lock.</div><div>🔹 D. It initializes the lock.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The `while (!available)` loop is the busy-waiting mechanism. If the lock is unavailable (available is false), the process will continuously execute this loop until the lock becomes available, consuming CPU cycles in the process.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q35. How does a context switch relate to the efficiency of a spinlock?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Spinlocks require a context switch when the lock is acquired.</div><div>🔹 B. Spinlocks avoid context switches while waiting for the lock.</div><div>🔹 C. Spinlocks always cause multiple context switches.</div><div>🔹 D. Context switches have no effect on spinlocks.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Spinlocks avoid context switches when a process is waiting for a lock. A process spins, retaining the CPU, rather than being context-switched out. This can be advantageous if the wait is short, as context switches are relatively expensive operations.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q36. What is the relationship between spinlocks and multiprocessor architectures?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Spinlocks are only useful in single-processor architectures.</div><div>🔹 B. Spinlocks are most effective in multiprocessor architectures.</div><div>🔹 C. Spinlocks are not supported on multiprocessor architectures.</div><div>🔹 D. Spinlocks work equally well in both.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Spinlocks are most effective in multiprocessor architectures because a process can spin on one processor while another process holds the lock on a different processor. This allows for parallelism and can reduce latency compared to blocking and context-switching.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q37. What is the main takeaway regarding the use of spinlocks?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. They should always be used.</div><div>🔹 B. They should never be used.</div><div>🔹 C. They are useful when locks are held for short durations, especially on multiprocessor systems.</div><div>🔹 D. They are primarily a historical artifact with no modern use.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: C</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The key takeaway is that spinlocks are a tool for specific situations. They are efficient when the lock is held for a short time, as the cost of spinning is less than the cost of a context switch. They are particularly useful on multiprocessor systems where one thread can spin on one CPU while another executes on another.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q38. Where is the mutex lock concept commonly found?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Only in theoretical discussions.</div><div>🔹 B. In Pthreads and various operating systems.</div><div>🔹 C. Only in hardware implementations.</div><div>🔹 D. Only in embedded systems.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Mutex locks are a fundamental synchronization primitive and are supported in many practical systems. They are a key part of the Pthreads API and are widely used in operating systems like Windows, Linux, and macOS for thread synchronization.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q39. What does the `acquire()` function typically do when the lock is available?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. It waits indefinitely.</div><div>🔹 B. It sets `available` to `false` and returns, allowing the process to proceed.</div><div>🔹 C. It sets `available` to `true` and returns.</div><div>🔹 D. It returns an error.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">When the lock is available (`available` is `true`), the `acquire()` function sets `available` to `false` to mark the lock as held and returns. This allows the calling process to proceed into its critical section, knowing it holds the lock exclusively.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q40. What is a critical region in the context of mutex locks?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Any section of code that executes very quickly.</div><div>🔹 B. A section of code that is protected by a mutex lock.</div><div>🔹 C. The section of code where the mutex lock is initialized.</div><div>🔹 D. The section of code that is executed in user mode.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">A critical region, or critical section, is the segment of code where a process accesses shared resources. In the context of mutex locks, it is the code that is protected by the lock, ensuring mutual exclusion.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q41. Why is the `acquire()` function&#039;s code that checks the `available` variable and sets it to `false` required to be atomic?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. To prevent compiler optimizations.</div><div>🔹 B. To ensure that two processes do not both see the lock as available.</div><div>🔹 C. To make the lock faster.</div><div>🔹 D. To allow the lock to be used in user mode.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Atomicity is crucial to prevent a race condition on the lock itself. If the check and set were not atomic, two processes could both read `available` as `true` and then both set it to `false`, believing they had acquired the lock. This would violate mutual exclusion.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q42. What does the term &#039;spinlock&#039; imply about the behavior of a waiting process?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. The process spins in a loop until it can acquire the lock.</div><div>🔹 B. The process spins in a loop until it is preempted.</div><div>🔹 C. The process spins in a loop to perform useful work.</div><div>🔹 D. The process spins in a loop and then sleeps.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">A &#039;spinlock&#039; gets its name because a process waiting for the lock &#039;spins&#039; or loops continuously, checking the lock&#039;s status. It does not sleep or yield the CPU; it simply iterates until the lock becomes available.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q43. What is the effect of a process executing `release()` on the `available` variable?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. The `available` variable is set to `false`.</div><div>🔹 B. The `available` variable is set to `true`.</div><div>🔹 C. The `available` variable is incremented.</div><div>🔹 D. The `available` variable is decremented.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The `release()` function sets the `available` variable to `true`. This action signals that the lock is now free, allowing other processes waiting in `acquire()` to successfully obtain the lock and enter their critical sections.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q44. In which of the following scenarios would a spinlock be most appropriate?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. A critical section that takes several seconds to execute.</div><div>🔹 B. A critical section that takes only a few microseconds to execute.</div><div>🔹 C. A critical section that is rarely accessed.</div><div>🔹 D. A critical section that is accessed by many processes concurrently.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Spinlocks are most appropriate for short critical sections. If the critical section is short, the spinning process will not have to wait long, and the cost of spinning is lower than the cost of a context switch. For long critical sections, other blocking mechanisms are more efficient.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q45. How do mutex locks relate to the concept of locking?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Mutex locks are a type of lock used for mutual exclusion.</div><div>🔹 B. Mutex locks are unrelated to locking.</div><div>🔹 C. Mutex locks are used to unlock critical sections.</div><div>🔹 D. Mutex locks are used to prevent any process from accessing shared data.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Mutex locks are a fundamental type of lock used in operating systems. They are specifically designed for mutual exclusion, ensuring that only one thread or process can hold the lock and enter a protected critical section at a time.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q46. What distinguishes mutex locks from hardware-based synchronization solutions?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Mutex locks are faster.</div><div>🔹 B. Mutex locks are software tools built on top of hardware primitives for easier use.</div><div>🔹 C. Hardware solutions are always more reliable.</div><div>🔹 D. There is no difference.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Hardware solutions like `test and set()` provide the low-level atomic primitives. Mutex locks build upon these primitives to provide a higher-level, more user-friendly interface for synchronization. They abstract away the complexity of the hardware.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q47. What is the result of a process holding a lock for a very long time while using a spinlock?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. It is efficient and reduces overhead.</div><div>🔹 B. It causes other processes to spin for a long time, wasting CPU cycles.</div><div>🔹 C. It prevents deadlocks.</div><div>🔹 D. It automatically releases the lock after a timeout.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Holding a spinlock for a long time is inefficient. While the lock holder executes its critical section, other processes waiting for the lock are spinning, consuming CPU cycles unnecessarily. This is why spinlocks are recommended only for short critical sections.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q48. Which function is responsible for acquiring a mutex lock?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. `acquire()`.</div><div>🔹 B. `release()`.</div><div>🔹 C. `wait()`.</div><div>🔹 D. `signal()`.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The `acquire()` function is specifically designed for acquiring a mutex lock. It ensures that the calling process either gains the lock immediately (if available) or waits (via busy-waiting or blocking) until the lock becomes available.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q49. What is the general name for the problem that mutex locks solve?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. The CPU scheduling problem.</div><div>🔹 B. The critical-section problem.</div><div>🔹 C. The memory allocation problem.</div><div>🔹 D. The file system problem.</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Mutex locks are a solution to the critical-section problem. They provide a simple and effective way to enforce mutual exclusion, ensuring that processes can safely access shared resources without interfering with each other.</p>
+                    </div>
+                </div></div><div style="margin:16px 0;"><h3 style="font-size:16px; color:#1e293b;">🔗 Related Topics (MCQs)</h3><div style="display:flex; flex-wrap:wrap; gap:8px;"><a href="/books/operating-system/process-synchronization/topics/implementing-a-monitor-using-semaphores-in-process-synchronization.html" style="background:#f3f4f6; padding:6px 14px; border-radius:20px; font-size:13px; color:#1e293b; text-decoration:none; border:1px solid #e5e7eb; hover:background:#e0e7ff;">📝 Implementing a Monitor Using Semaphores  in Process synchronization MCQs</a><a href="/books/operating-system/process-synchronization/topics/resuming-processes-within-a-monitor-in-process-synchronization.html" style="background:#f3f4f6; padding:6px 14px; border-radius:20px; font-size:13px; color:#1e293b; text-decoration:none; border:1px solid #e5e7eb; hover:background:#e0e7ff;">📝 Resuming Processes within a Monitor in Process synchronization MCQs</a><a href="/books/operating-system/process-synchronization/topics/process-synchronization-in-operating-system.html" style="background:#f3f4f6; padding:6px 14px; border-radius:20px; font-size:13px; color:#1e293b; text-decoration:none; border:1px solid #e5e7eb; hover:background:#e0e7ff;">📝 Process Synchronization in operating system MCQs</a><a href="/books/operating-system/process-synchronization/topics/synchronization-hardware-in-operating-system.html" style="background:#f3f4f6; padding:6px 14px; border-radius:20px; font-size:13px; color:#1e293b; text-decoration:none; border:1px solid #e5e7eb; hover:background:#e0e7ff;">📝 Synchronization hardware in operating system MCQs</a><a href="/books/operating-system/process-synchronization/topics/semaphore-implementation-in-process-synchronization.html" style="background:#f3f4f6; padding:6px 14px; border-radius:20px; font-size:13px; color:#1e293b; text-decoration:none; border:1px solid #e5e7eb; hover:background:#e0e7ff;">📝 Semaphore Implementation in Process Synchronization MCQs</a></div></div>        <div style="text-align: center; margin-top: 20px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+            <a href="/quiz" class="btn-primary">🚀 Start Quiz</a>
+            <a href="/practice" class="btn-secondary">📝 Practice Mode</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

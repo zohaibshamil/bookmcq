@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-PT363CT7');</script>
+<!-- End Google Tag Manager -->
+    <title>Dining Philosophers Solution Using Monitors  in Process synchronization MCQs - Operating System | BookMCQ</title>
+    <meta name="description" content="Practice Dining Philosophers Solution Using Monitors  in Process synchronization from Operating System - 5. Process Synchronization. 57 MCQs with 5 easy, 15 medium, and 37 hard questions. Perfect for exam preparation.">
+    <meta name="keywords" content="Dining Philosophers Solution Using Monitors  in Process synchronization MCQs, Operating System Dining Philosophers Solution Using Monitors  in Process synchronization questions, Dining Philosophers Solution Using Monitors  in Process synchronization practice, Operating System topics, Dining Philosophers Solution Using Monitors  in Process synchronization easy medium hard">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://www.bookmcq.com/books/operating-system/process-synchronization/topics/dining-philosophers-solution-using-monitors-in-process-synchronization.html">
+    <meta property="og:title" content="Dining Philosophers Solution Using Monitors  in Process synchronization - Operating System MCQs | BookMCQ">
+    <meta property="og:description" content="Practice Dining Philosophers Solution Using Monitors  in Process synchronization from Operating System. 57 questions with difficulty breakdown: Easy 5, Medium 15, Hard 37.">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#7c3aed">
+    <script type="application/ld+json">
+{"@context":"https://schema.org","@type":"CollectionPage","name":"Dining Philosophers Solution Using Monitors  in Process synchronization - Operating System","description":"Practice Dining Philosophers Solution Using Monitors  in Process synchronization from Operating System - 5. Process Synchronization. 57 MCQs with 5 easy, 15 medium, and 37 hard questions.","url":"https://www.bookmcq.com/books/operating-system/process-synchronization/topics/dining-philosophers-solution-using-monitors-in-process-synchronization.html","isPartOf":{"@type":"Book","name":"Operating System"},"about":{"@type":"Thing","name":"Dining Philosophers Solution Using Monitors  in Process synchronization"},"dateModified":"2026-07-09"}
+    </script>
+    <script>
+        // 1. Disable Right-Click Context Menu
+        document.addEventListener('contextmenu', function(e) { e.preventDefault(); return false; });
+        
+        // 2. Disable F12, Ctrl+U, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F12') { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.key === 'u') { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i')) { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.key === 'j')) { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.shiftKey && (e.key === 'C' || e.key === 'c')) { e.preventDefault(); return false; }
+        });
+        
+        // 3. Disable Print Screen (basic prevention)
+        document.addEventListener('keyup', function(e) {
+            if (e.key === 'PrintScreen') { e.preventDefault(); return false; }
+        });
+        
+        // 4. Disable text selection (extra layer)
+        document.addEventListener('selectstart', function(e) { e.preventDefault(); });
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [
+                    ['$', '$'],
+                    ['\\(', '\\)']
+                ],
+                displayMath: [
+                    ['$$', '$$'],
+                    ['\\[', '\\]']
+                ],
+                processEscapes: true,
+                processEnvironments: true
+            },
+            svg: {
+                fontCache: 'global'
+            },
+            options: {
+                skipHtmlTypes: 'script',
+                ignoreHtmlClass: 'no-mathjax',
+                processHtmlClass: 'math'
+            }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async></script>
+    <script>
+        // Helper function to safely escape HTML while preserving LaTeX delimiters
+        function escapeHtmlPreserveMath(text) {
+            if (!text) return '';
+            var escaped = text.replace(/&/g, '&amp;')
+                              .replace(/</g, '&lt;')
+                              .replace(/>/g, '&gt;')
+                              .replace(/"/g, '&quot;')
+                              .replace(/'/g, '&#039;');
+            return escaped;
+        }
+
+        async function renderMathInElement(element) {
+            if (window.MathJax && element) {
+                try {
+                    await MathJax.typesetPromise([element]);
+                } catch(e) {
+                    console.log('MathJax error:', e);
+                }
+            }
+        }
+
+        async function renderAllMath() {
+            if (window.MathJax) {
+                try {
+                    await MathJax.typesetPromise();
+                } catch(e) {
+                    console.log('MathJax error:', e);
+                }
+            }
+        }
+
+        function processMathContent(text) {
+            if (!text) return '';
+            return text;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            renderAllMath();
+        });
+
+        if (window.MathJax) {
+            MathJax.typesetPromise = MathJax.typesetPromise || function() { return Promise.resolve(); };
+        }
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            padding: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .btn-primary {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 14px 32px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 10px;
+            transition: 0.2s;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary {
+            display: inline-block;
+            background: #f3f4f6;
+            color: #1e293b;
+            padding: 10px 24px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 500;
+            margin-top: 10px;
+            transition: 0.2s;
+            border: 1px solid #e5e7eb;
+        }
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 15px;
+            color: #7c3aed;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .topic-info {
+            font-size: 14px;
+            color: #64748b;
+            margin: 8px 0;
+        }
+        .breadcrumb {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-bottom: 12px;
+        }
+        .breadcrumb a {
+            color: #7c3aed;
+            text-decoration: none;
+        }
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+        .math-rendered {
+            display: inline;
+            line-height: 1.6;
+        }
+        .math-rendered mjx-container {
+            display: inline-block;
+            margin: 0 2px;
+        }
+        .question-text {
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+        .option-text {
+            display: inline;
+        }
+        .explanation-text {
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PT363CT7"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+<div class="container">
+    <div class="card">
+        <div class="breadcrumb">
+            <a href="/">🏠 Home</a> &gt; <a href="/books/operating-system/">Operating System</a> &gt; <a href="/books/operating-system/process-synchronization.html">5. Process Synchronization</a> &gt; Dining Philosophers Solution Using Monitors  in Process synchronization
+        </div>
+        <a href="/books/operating-system/process-synchronization.html" class="back-link">← Back to 5. Process Synchronization</a>
+        <h1>📝 Dining Philosophers Solution Using Monitors  in Process synchronization</h1>
+        <p class="topic-info">📖 From <strong>Operating System</strong> • 5. Process Synchronization • 57 questions available</p>
+
+            <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">What is Dining Philosophers Solution Using Monitors  in Process synchronization?</h2>
+            <p style="font-size: 15px; line-height: 1.6; color: #334155; margin-bottom: 16px;">
+                <strong>Dining Philosophers Solution Using Monitors  in Process synchronization</strong> is a core concept that forms the foundation of this subject area. 
+                Understanding this topic is essential for mastering the principles, applications, and 
+                key terminology required for academic and practical success.
+            </p>
+            <p style="font-size: 14px; color: #475569; margin-bottom: 12px;">
+                Test your knowledge of Dining Philosophers Solution Using Monitors  in Process synchronization with the carefully crafted MCQs below, categorized by easy, medium, and hard difficulty levels.
+            </p>
+            <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
+                <p style="font-size:13px; color:#64748b; margin-top:4px;">🔄 Last updated: 2026-07-09</p>
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:16px 0;"><div style="background:#dcfce7; padding:12px; border-radius:10px; text-align:center; border:1px solid #86efac;"><div style="font-size:24px; font-weight:700; color:#166534;">5</div><div style="font-size:12px; color:#64748b;">Easy Questions</div></div><div style="background:#fef9c3; padding:12px; border-radius:10px; text-align:center; border:1px solid #fde047;"><div style="font-size:24px; font-weight:700; color:#854d0e;">15</div><div style="font-size:12px; color:#64748b;">Medium Questions</div></div><div style="background:#fee2e2; padding:12px; border-radius:10px; text-align:center; border:1px solid #fca5a5;"><div style="font-size:24px; font-weight:700; color:#991b1b;">37</div><div style="font-size:12px; color:#64748b;">Hard Questions</div></div></div><div style="margin:16px 0; background:#f8fafc; padding:16px; border-radius:12px;"><h3 style="font-size:18px; color:#1e293b; margin-bottom:12px;">📝 All Dining Philosophers Solution Using Monitors  in Process synchronization MCQs</h3><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q1. What is the primary objective of the monitor solution to the dining-philosophers problem?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. To allow philosophers to eat simultaneously</div><div>🔹 B. To provide a deadlock-free solution</div><div>🔹 C. To increase the number of philosophers</div><div>🔹 D. To eliminate all chopsticks</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The monitor solution is specifically designed to provide a deadlock-free solution to the dining-philosophers problem. While the semaphore solution could lead to deadlock, the monitor-based approach uses condition variables and state checking to prevent deadlock from occurring.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q2. What restriction does the monitor solution impose on philosophers picking up chopsticks?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. A philosopher may pick up only one chopstick</div><div>🔹 B. A philosopher may pick up chopsticks only if both are available</div><div>🔹 C. A philosopher may pick up any chopstick at any time</div><div>🔹 D. A philosopher must wait for all others to finish</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The monitor solution imposes the restriction that a philosopher may pick up her chopsticks only if both of them are available. This prevents the partial allocation scenario that leads to deadlock in the semaphore solution, where philosophers hold one chopstick while waiting for another.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q3. How many states are defined for a philosopher in the monitor solution?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. 2</div><div>🔹 B. 3</div><div>🔹 C. 4</div><div>🔹 D. 5</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The monitor solution defines three states for a philosopher: THINKING, HUNGRY, and EATING. These states represent the different phases a philosopher goes through: thinking (not hungry), hungry (wanting to eat), and eating (currently consuming food).</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q4. What is the purpose of the `state` array in the monitor solution?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. To store philosopher names</div><div>🔹 B. To keep track of each philosopher&#039;s state (THINKING, HUNGRY, EATING)</div><div>🔹 C. To store chopstick availability</div><div>🔹 D. To track eating time</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The `state` array keeps track of each philosopher&#039;s current state. Each philosopher can be in one of three states: THINKING, HUNGRY, or EATING. This state information is crucial for determining when a philosopher is allowed to pick up chopsticks and start eating.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q5. What data type is used for the `state` array in the monitor solution?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. int</div><div>🔹 B. boolean</div><div>🔹 C. enum</div><div>🔹 D. string</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: C</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The `state` array uses an enum data type with three possible values: THINKING, HUNGRY, and EATING. This enum type clearly represents the distinct states a philosopher can be in, making the code more readable and type-safe.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q6. What allows a philosopher to delay herself when hungry but unable to obtain chopsticks?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. A semaphore</div><div>🔹 B. A mutex</div><div>🔹 C. A condition variable</div><div>🔹 D. A timer</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: C</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">A condition variable (`self[5]`) allows a philosopher to delay herself when hungry but unable to obtain the chopsticks she needs. The philosopher executes `self[i].wait()` to suspend herself until the condition variable is signaled by a neighbor who has finished eating.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q7. What is the name of the monitor that controls the distribution of chopsticks?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. DiningMonitor</div><div>🔹 B. PhilosopherMonitor</div><div>🔹 C. DiningPhilosophers</div><div>🔹 D. ChopstickMonitor</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: C</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The monitor that controls the distribution of chopsticks is named `DiningPhilosophers`. This monitor encapsulates all the synchronization logic, including the state array, condition variables, and the functions `pickup()`, `putdown()`, and `test()`.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q8. Which operation must a philosopher invoke before starting to eat?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. putdown()</div><div>🔹 B. pickup()</div><div>🔹 C. test()</div><div>🔹 D. wait()</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">A philosopher must invoke the `pickup()` operation before starting to eat. This operation sets the philosopher&#039;s state to HUNGRY, calls `test()` to check if both chopsticks are available, and suspends the philosopher if the necessary chopsticks are not available.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q9. Which operation must a philosopher invoke after finishing eating?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. pickup()</div><div>🔹 B. putdown()</div><div>🔹 C. test()</div><div>🔹 D. signal()</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">A philosopher must invoke the `putdown()` operation after finishing eating. This operation sets the philosopher&#039;s state back to THINKING and calls `test()` on both neighbors to check if they can now start eating, potentially waking them up.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q10. What is the sequence of monitor operations for philosopher i to eat?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. putdown(i); eat; pickup(i)</div><div>🔹 B. pickup(i); eat; putdown(i)</div><div>🔹 C. test(i); eat; test(i)</div><div>🔹 D. wait(i); eat; signal(i)</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The correct sequence is `pickup(i)` to acquire chopsticks, then eat, and finally `putdown(i)` to release chopsticks. This sequence ensures that the philosopher properly synchronizes with the monitor before and after eating, maintaining the deadlock-free property.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q11. In the `test()` function, what condition must be true for philosopher i to be allowed to eat?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Only left neighbor is not eating</div><div>🔹 B. Only right neighbor is not eating</div><div>🔹 C. Both neighbors are not eating and philosopher i is HUNGRY</div><div>🔹 D. Philosopher i is THINKING</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: C</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Philosopher i can set `state[i] = EATING` only if both neighbors are not eating and philosopher i is HUNGRY. The condition checks `(state[(i+4)%5] != EATING)` and `(state[(i+1)%5] != EATING)` and `(state[i] == HUNGRY)`.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q12. What happens in the `pickup()` function if `test(i)` does not result in `state[i]` becoming EATING?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. The philosopher continues to eat</div><div>🔹 B. The philosopher executes `self[i].wait()`</div><div>🔹 C. The philosopher returns to THINKING</div><div>🔹 D. The philosopher exits the monitor</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">If `test(i)` does not result in `state[i]` becoming EATING, the philosopher executes `self[i].wait()`. This suspends the philosopher until a neighbor finishes eating and signals the condition variable, allowing the philosopher to retry and potentially acquire the chopsticks.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q13. After a philosopher finishes eating and executes `putdown()`, which neighbors are tested?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Only the left neighbor</div><div>🔹 B. Only the right neighbor</div><div>🔹 C. Both the left and right neighbors</div><div>🔹 D. No neighbors are tested</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: C</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">After a philosopher finishes eating and executes `putdown()`, both the left and right neighbors are tested. The function calls `test((i+4)%5)` for the left neighbor and `test((i+1)%5)` for the right neighbor to see if they can now start eating.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q14. How many condition variables are declared in the monitor solution?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. 1</div><div>🔹 B. 2</div><div>🔹 C. 5</div><div>🔹 D. 10</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: C</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The monitor solution declares 5 condition variables using `condition self[5]`. This allows each philosopher to have their own condition variable, so they can be individually suspended and woken up when their specific condition changes.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q15. What is the purpose of the `test()` function in the monitor solution?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. To test if a philosopher is thinking</div><div>🔹 B. To test if a philosopher can start eating and signal if possible</div><div>🔹 C. To test if chopsticks are available</div><div>🔹 D. To test if a philosopher has finished eating</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The `test()` function checks if a philosopher can start eating. It verifies that the philosopher is HUNGRY and neither neighbor is EATING. If both conditions are met, it sets the state to EATING and signals the philosopher&#039;s condition variable to wake them up.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q16. What is the initial state of all philosophers in the monitor solution?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. EATING</div><div>🔹 B. HUNGRY</div><div>🔹 C. THINKING</div><div>🔹 D. WAITING</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: C</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The initialization code sets all philosophers to the THINKING state. This represents the initial condition where no philosopher is hungry or eating, and all are in a neutral state before any synchronization operations occur.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q17. What is the correct expression for the left neighbor of philosopher i in the 5-philosopher problem?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. (i-1) % 5</div><div>🔹 B. (i+4) % 5</div><div>🔹 C. (i+5) % 5</div><div>🔹 D. (i-4) % 5</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The left neighbor of philosopher i is calculated as `(i+4) % 5`. Since modulo arithmetic is used, this effectively gives `(i-1) % 5` but handles the wrap-around correctly. For philosopher 0, the left neighbor is 4, and for philosopher 4, the left neighbor is 3.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q18. What is the correct expression for the right neighbor of philosopher i in the 5-philosopher problem?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. (i+1) % 5</div><div>🔹 B. (i-1) % 5</div><div>🔹 C. (i+4) % 5</div><div>🔹 D. (i+5) % 5</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The right neighbor of philosopher i is calculated as `(i+1) % 5`. This ensures that philosopher 4&#039;s right neighbor is philosopher 0, properly modeling the circular table arrangement. The modulo operation handles the wrap-around correctly.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q19. What does the monitor solution guarantee regarding two neighbors eating simultaneously?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. It allows two neighbors to eat together</div><div>🔹 B. It ensures no two neighbors are eating simultaneously</div><div>🔹 C. It has no effect on neighbor eating</div><div>🔹 D. It depends on the philosopher</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The monitor solution ensures that no two neighbors are eating simultaneously. This is guaranteed by the `test()` function, which only allows a philosopher to eat if both neighbors are not eating. This prevents conflicts over shared chopsticks.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q20. Even though the monitor solution is deadlock-free, what other problem may still occur?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Starvation</div><div>🔹 B. Race condition</div><div>🔹 C. Data corruption</div><div>🔹 D. Memory leak</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Even though the monitor solution is deadlock-free, it is still possible for a philosopher to starve to death. Starvation can occur if a philosopher is repeatedly prevented from eating due to the scheduling of other philosophers, even though no deadlock exists.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q21. In the `putdown()` function, what is the first operation performed?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. test((i+4)%5)</div><div>🔹 B. test((i+1)%5)</div><div>🔹 C. state[i] = THINKING</div><div>🔹 D. state[i] = HUNGRY</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: C</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The first operation in `putdown()` is setting `state[i] = THINKING`. This indicates that the philosopher has finished eating and is no longer hungry. After this, the function tests both neighbors to see if they can now start eating.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q22. In the `test()` function, what happens when a philosopher is allowed to eat?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. state[i] = HUNGRY</div><div>🔹 B. state[i] = THINKING</div><div>🔹 C. state[i] = EATING</div><div>🔹 D. state[i] = WAITING</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: C</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">When a philosopher is allowed to eat, the `test()` function sets `state[i] = EATING` and then executes `self[i].signal()`. This signals the philosopher&#039;s condition variable, waking them up from any previous `wait()` call so they can proceed to eat.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q23. What is the purpose of the `self[i].signal()` call in the `test()` function?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. To suspend the philosopher</div><div>🔹 B. To wake up a waiting philosopher</div><div>🔹 C. To check the philosopher&#039;s state</div><div>🔹 D. To set the philosopher to THINKING</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The `self[i].signal()` call in `test()` is used to wake up a waiting philosopher. When a philosopher was previously suspended because they couldn&#039;t get chopsticks, this signal wakes them up after the conditions become favorable (neighbors are done eating and both chopsticks are available).</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q24. In the `pickup()` function, after calling `test(i)`, why is there a check `if (state[i] != EATING)`?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. To verify the philosopher is thinking</div><div>🔹 B. To check if the philosopher needs to wait</div><div>🔹 C. To verify the philosopher has eaten</div><div>🔹 D. To check if the philosopher is hungry</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">After calling `test(i)`, the `if (state[i] != EATING)` check determines if the philosopher needs to wait. If `test(i)` was successful and the philosopher can eat, `state[i]` would be EATING. If not, the philosopher must execute `self[i].wait()` to be suspended.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q25. What happens when a philosopher executes `self[i].wait()` in the `pickup()` function?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. The philosopher continues eating</div><div>🔹 B. The philosopher is suspended until signaled</div><div>🔹 C. The philosopher exits the monitor</div><div>🔹 D. The philosopher returns to THINKING</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">When a philosopher executes `self[i].wait()`, the philosopher is suspended. The process will remain blocked until another philosopher (a neighbor) finishes eating and calls `test(i)` on this philosopher, which then executes `self[i].signal()` to wake them up.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q26. In the `putdown()` function, why are both neighbors tested?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. To ensure they are thinking</div><div>🔹 B. To allow neighbors to potentially start eating</div><div>🔹 C. To check if they are hungry</div><div>🔹 D. To signal all philosophers</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Both neighbors are tested in `putdown()` because when a philosopher finishes eating, they release their chopsticks. This may allow either or both neighbors to now start eating. By testing both neighbors, the monitor ensures that any neighbor that is hungry and can now get both chopsticks is woken up.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q27. What is the role of the `initialization code()` in the monitor?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. To set all philosophers to EATING</div><div>🔹 B. To set all philosophers to HUNGRY</div><div>🔹 C. To set all philosophers to THINKING</div><div>🔹 D. To initialize the condition variables</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: C</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The initialization code sets all philosophers to the THINKING state using a loop that iterates from 0 to 4 and assigns `state[i] = THINKING`. This establishes the initial condition where no philosopher is hungry or eating, and all are ready to start the thinking-eating cycle.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q28. What is a potential issue with the monitor solution despite being deadlock-free?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. It may cause data corruption</div><div>🔹 B. It may allow two neighbors to eat simultaneously</div><div>🔹 C. It may cause starvation</div><div>🔹 D. It may cause race conditions</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: C</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The monitor solution is deadlock-free but may still cause starvation. A philosopher could starve if they are repeatedly prevented from eating by their neighbors, even though no deadlock occurs. This is a liveness issue that remains to be addressed.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q29. How does the monitor solution prevent deadlock that occurs in the semaphore solution?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. By using more semaphores</div><div>🔹 B. By allowing philosophers to pick up both chopsticks atomically</div><div>🔹 C. By letting philosophers pick up any chopstick</div><div>🔹 D. By using a timer</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The monitor solution prevents deadlock by enforcing that a philosopher may pick up chopsticks only if both are available. This is checked atomically in the `test()` function. If both chopsticks are not available, the philosopher waits on a condition variable, preventing the partial allocation (holding one chopstick while waiting for another) that leads to deadlock.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q30. Why is the condition variable `self[i]` specific to each philosopher?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. To simplify the code</div><div>🔹 B. To allow individual philosophers to be suspended and woken up independently</div><div>🔹 C. To reduce memory usage</div><div>🔹 D. To make the monitor faster</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Each philosopher has their own condition variable (`self[i]`) so they can be individually suspended and woken up. This is important because a philosopher should only be woken up when their specific condition (both neighbors not eating) becomes true, not when some other philosopher&#039;s condition changes.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q31. What is the state of a philosopher immediately after they call `pickup()` but before `test(i)` is executed?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. THINKING</div><div>🔹 B. HUNGRY</div><div>🔹 C. EATING</div><div>🔹 D. WAITING</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Immediately after calling `pickup()`, the philosopher&#039;s state is set to HUNGRY (`state[i] = HUNGRY`). This indicates that the philosopher wants to eat and is ready to try to acquire chopsticks. The actual transition to EATING happens in `test()` if the conditions are met.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q32. What is the state of a philosopher immediately after `test(i)` succeeds?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. THINKING</div><div>🔹 B. HUNGRY</div><div>🔹 C. EATING</div><div>🔹 D. WAITING</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: C</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">When `test(i)` succeeds, the philosopher&#039;s state is set to EATING (`state[i] = EATING`). This indicates that the philosopher has successfully acquired both chopsticks and can now proceed to eat. The `signal()` on the condition variable wakes the philosopher up from any previous wait.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q33. How many elements does the `state` array contain?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. 2</div><div>🔹 B. 3</div><div>🔹 C. 4</div><div>🔹 D. 5</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: D</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The `state` array contains 5 elements, one for each philosopher. Each element stores the current state (THINKING, HUNGRY, or EATING) of that philosopher. The array is indexed from 0 to 4, representing the five philosophers seated around the table.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q34. In the `test()` function, why is it necessary to check `state[i] == HUNGRY`?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. To ensure the philosopher is thinking</div><div>🔹 B. To ensure the philosopher wants to eat</div><div>🔹 C. To ensure the philosopher is eating</div><div>🔹 D. To ensure the philosopher is finished</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The `state[i] == HUNGRY` check ensures that the philosopher actually wants to eat. If a philosopher is not hungry (i.e., is THINKING), there is no need to try to give them chopsticks. This check prevents unnecessary signals to philosophers who are not interested in eating.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q35. What happens in the `putdown()` function if `test((i+4)%5)` succeeds?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. The left neighbor starts eating</div><div>🔹 B. The left neighbor is signaled</div><div>🔹 C. The left neighbor&#039;s state becomes THINKING</div><div>🔹 D. The left neighbor is blocked</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">If `test((i+4)%5)` succeeds, it means the left neighbor is hungry and both its neighbors are not eating. The `test()` function will set the neighbor&#039;s state to EATING and execute `self[left_neighbor].signal()`, waking up the left neighbor so they can start eating.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q36. What is the significance of using modulo arithmetic in the neighbor calculations?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. It simplifies the code</div><div>🔹 B. It handles the circular arrangement of philosophers</div><div>🔹 C. It makes the code faster</div><div>🔹 D. It reduces memory usage</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Modulo arithmetic is used to handle the circular arrangement of philosophers. The expressions `(i+4)%5` and `(i+1)%5` correctly identify the left and right neighbors even when wrapping around the end of the array, ensuring that philosopher 0&#039;s left neighbor is philosopher 4 and philosopher 4&#039;s right neighbor is philosopher 0.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q37. Which of the following is true about the `pickup()` function?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. It always allows the philosopher to eat immediately</div><div>🔹 B. It may suspend the philosopher</div><div>🔹 C. It never suspends the philosopher</div><div>🔹 D. It only works for even-numbered philosophers</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The `pickup()` function may suspend the philosopher if the necessary chopsticks are not available. After setting the state to HUNGRY and calling `test(i)`, if the state is still not EATING, the philosopher executes `self[i].wait()` and is suspended until a neighbor signals them.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q38. What is the relationship between the `test()` function and the `signal()` operation?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. `test()` never calls `signal()`</div><div>🔹 B. `test()` always calls `signal()`</div><div>🔹 C. `test()` calls `signal()` only when a philosopher can eat</div><div>🔹 D. `test()` calls `signal()` only when a philosopher is thinking</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: C</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The `test()` function calls `self[i].signal()` only when a philosopher can eat (i.e., when the conditions for eating are met). This signal wakes up the philosopher if they were previously suspended in `pickup()`, allowing them to proceed to eat.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q39. Why is the monitor solution considered deadlock-free?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Because it uses semaphores</div><div>🔹 B. Because it prevents circular wait by only allowing both chopsticks to be picked up atomically</div><div>🔹 C. Because it uses a timer</div><div>🔹 D. Because it limits the number of philosophers</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The monitor solution is deadlock-free because it prevents the circular wait condition. By only allowing a philosopher to pick up both chopsticks atomically (checked in `test()`), it avoids the scenario where each philosopher holds one chopstick and waits for another. This breaks the circular dependency that causes deadlock.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q40. What happens to a philosopher&#039;s state when they are suspended in `pickup()`?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. It remains HUNGRY</div><div>🔹 B. It changes to THINKING</div><div>🔹 C. It changes to EATING</div><div>🔹 D. It changes to WAITING</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">When a philosopher is suspended in `pickup()`, their state remains HUNGRY. They are hungry and waiting for chopsticks to become available. The state does not change to THINKING because they still want to eat, and it doesn&#039;t change to EATING because they haven&#039;t acquired the chopsticks yet.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q41. What is the size of the `self` condition variable array?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. 2</div><div>🔹 B. 3</div><div>🔹 C. 4</div><div>🔹 D. 5</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: D</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The `self` condition variable array has 5 elements, one for each philosopher. This allows each philosopher to have their own condition variable for synchronization. The array is indexed from 0 to 4, corresponding to the five philosophers.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q42. What is the purpose of the `pickup()` operation in the monitor solution?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. To put down chopsticks</div><div>🔹 B. To test if a philosopher can eat</div><div>🔹 C. To allow a philosopher to acquire chopsticks and eat</div><div>🔹 D. To set a philosopher to THINKING</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: C</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The `pickup()` operation allows a philosopher to acquire chopsticks and eat. It sets the philosopher&#039;s state to HUNGRY, tests if they can eat, and if not, suspends the philosopher. When the philosopher is woken up and the state is EATING, they can proceed to eat.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q43. What is the purpose of the `putdown()` operation in the monitor solution?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. To allow a philosopher to acquire chopsticks</div><div>🔹 B. To test if a philosopher can eat</div><div>🔹 C. To release chopsticks after eating and test neighbors</div><div>🔹 D. To set a philosopher to HUNGRY</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: C</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The `putdown()` operation releases chopsticks after a philosopher has finished eating. It sets the philosopher&#039;s state to THINKING and tests both neighbors to see if they can now start eating. This allows other philosophers to acquire the released chopsticks.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q44. What would happen if the `test()` function didn&#039;t check both neighbors?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. The solution would still be deadlock-free</div><div>🔹 B. Starvation would be prevented</div><div>🔹 C. Two neighbors could eat simultaneously</div><div>🔹 D. The code would run faster</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: C</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">If the `test()` function didn&#039;t check both neighbors, two neighbors could eat simultaneously. This would violate the fundamental constraint of the dining-philosophers problem, as two neighbors would be using the same chopstick at the same time, leading to conflicts and potential data corruption.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q45. What is the effect of `self[i].signal()` in the `test()` function if philosopher i is not waiting?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. It blocks the signaler</div><div>🔹 B. It has no effect</div><div>🔹 C. It causes a deadlock</div><div>🔹 D. It signals the next philosopher</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">If philosopher i is not waiting on `self[i]`, the `self[i].signal()` operation has no effect. This is consistent with the behavior of condition variables in monitors, where signaling a condition with no waiting processes does nothing. The signal is only meaningful if there is a process waiting to be woken up.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q46. How does the monitor solution handle the case where a philosopher&#039;s neighbors are both eating?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. The philosopher can still eat</div><div>🔹 B. The philosopher is suspended until a neighbor finishes</div><div>🔹 C. The philosopher skips their turn</div><div>🔹 D. The philosopher changes to THINKING</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">If both neighbors are eating, the philosopher is suspended in `pickup()` until at least one neighbor finishes eating. When a neighbor finishes and executes `putdown()`, they will call `test()` on this philosopher, which may allow them to eat if the conditions become favorable.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q47. What is the key difference between the semaphore solution and the monitor solution to the dining-philosophers problem?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. The semaphore solution is deadlock-free, the monitor is not</div><div>🔹 B. The monitor solution is deadlock-free, the semaphore is not</div><div>🔹 C. Both are deadlock-free</div><div>🔹 D. Neither is deadlock-free</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The key difference is that the monitor solution is deadlock-free while the semaphore solution can lead to deadlock. The semaphore solution can deadlock when all philosophers grab their left chopstick simultaneously, while the monitor solution prevents this by only allowing both chopsticks to be picked up atomically after checking conditions.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q48. What does the `test()` function do when it is called on a neighbor after a philosopher finishes eating?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Nothing</div><div>🔹 B. It may allow the neighbor to eat</div><div>🔹 C. It forces the neighbor to wait</div><div>🔹 D. It changes the neighbor to THINKING</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">When `test()` is called on a neighbor after a philosopher finishes eating, it may allow the neighbor to eat. The function checks if the neighbor is HUNGRY and if both of the neighbor&#039;s neighbors are not eating. If these conditions are met, the neighbor is allowed to eat and is signaled.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q49. What is the state of philosopher 2&#039;s left neighbor in the 5-philosopher problem?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Philosopher 1</div><div>🔹 B. Philosopher 3</div><div>🔹 C. Philosopher 0</div><div>🔹 D. Philosopher 4</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Using the formula `(i+4)%5`, philosopher 2&#039;s left neighbor is `(2+4)%5 = 6%5 = 1`. So philosopher 1 is the left neighbor of philosopher 2. This correctly models the circular table where philosopher 2&#039;s left neighbor is philosopher 1.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q50. What is the state of philosopher 4&#039;s right neighbor in the 5-philosopher problem?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Philosopher 3</div><div>🔹 B. Philosopher 0</div><div>🔹 C. Philosopher 2</div><div>🔹 D. Philosopher 1</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Using the formula `(i+1)%5`, philosopher 4&#039;s right neighbor is `(4+1)%5 = 5%5 = 0`. So philosopher 0 is the right neighbor of philosopher 4. This correctly models the circular table where philosopher 4&#039;s right neighbor is philosopher 0.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q51. What is the name of the variable that allows a philosopher to delay themselves in the monitor solution?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. self[i]</div><div>🔹 B. wait[i]</div><div>🔹 C. signal[i]</div><div>🔹 D. delay[i]</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The variable that allows a philosopher to delay themselves is `self[i]`, which is a condition variable array. Each philosopher has their own condition variable (`self[0]` through `self[4]`) that they can wait on when they are hungry but unable to obtain chopsticks.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q52. What would be the consequence if the `test()` function did not set `state[i] = EATING`?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. The philosopher would never eat</div><div>🔹 B. The philosopher would eat anyway</div><div>🔹 C. The philosopher would starve</div><div>🔹 D. The code would still work</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">If `test()` did not set `state[i] = EATING`, the philosopher would never eat. The `state[i]` must be set to EATING to indicate that the philosopher has acquired both chopsticks and can proceed to eat. Without this state change, the philosopher would remain HUNGRY and continue waiting indefinitely.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q53. Why is the `test()` function called twice in the `putdown()` function?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. To test the philosopher themselves</div><div>🔹 B. To test both neighbors</div><div>🔹 C. To test all philosophers</div><div>🔹 D. To test the condition twice</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The `test()` function is called twice in `putdown()` to test both neighbors of the philosopher who just finished eating. Since the philosopher releases two chopsticks (one for each neighbor), both neighbors might now be able to eat. Testing both ensures that any hungry neighbor with both neighbors not eating can proceed.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q54. What is the relationship between the `pickup()` and `putdown()` operations?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. They are identical</div><div>🔹 B. They are complementary operations</div><div>🔹 C. They are unrelated</div><div>🔹 D. One calls the other</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">`pickup()` and `putdown()` are complementary operations. `pickup()` is called before eating to acquire chopsticks, while `putdown()` is called after eating to release chopsticks. They work together to manage the philosopher&#039;s state and chopstick access, ensuring proper synchronization.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q55. What would happen if a philosopher did not call `putdown()` after eating?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Other philosophers could not eat</div><div>🔹 B. Starvation would occur</div><div>🔹 C. A deadlock would occur</div><div>🔹 D. The system would crash</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">If a philosopher did not call `putdown()` after eating, other philosophers could not eat because the chopsticks would never be released. The philosopher would remain in the EATING state, and neighbors waiting for chopsticks would never be signaled. This would effectively block the entire system.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q56. What is the maximum number of philosophers that can be in the EATING state in this monitor solution?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. 1</div><div>🔹 B. 2</div><div>🔹 C. 3</div><div>🔹 D. 4</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The maximum number of philosophers that can be in the EATING state is 2. This occurs when philosophers are not adjacent to each other (e.g., philosophers 0 and 2, or philosophers 1 and 3). The solution ensures no two neighbors are eating simultaneously, but non-adjacent philosophers can eat at the same time.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q57. What is the primary benefit of using a monitor over semaphores for this solution?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. The code runs faster</div><div>🔹 B. The monitor provides a more structured and safer approach to synchronization</div><div>🔹 C. The monitor uses less memory</div><div>🔹 D. The monitor is simpler to implement</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The primary benefit is that the monitor provides a more structured and safer approach to synchronization. The monitor encapsulates the shared data and operations, making it harder to introduce errors like incorrect ordering of wait/signal operations. The implicit mutual exclusion and condition variables make the solution more robust.</p>
+                    </div>
+                </div></div><div style="margin:16px 0;"><h3 style="font-size:16px; color:#1e293b;">🔗 Related Topics (MCQs)</h3><div style="display:flex; flex-wrap:wrap; gap:8px;"><a href="/books/operating-system/process-synchronization/topics/implementing-a-monitor-using-semaphores-in-process-synchronization.html" style="background:#f3f4f6; padding:6px 14px; border-radius:20px; font-size:13px; color:#1e293b; text-decoration:none; border:1px solid #e5e7eb; hover:background:#e0e7ff;">📝 Implementing a Monitor Using Semaphores  in Process synchronization MCQs</a><a href="/books/operating-system/process-synchronization/topics/resuming-processes-within-a-monitor-in-process-synchronization.html" style="background:#f3f4f6; padding:6px 14px; border-radius:20px; font-size:13px; color:#1e293b; text-decoration:none; border:1px solid #e5e7eb; hover:background:#e0e7ff;">📝 Resuming Processes within a Monitor in Process synchronization MCQs</a><a href="/books/operating-system/process-synchronization/topics/process-synchronization-in-operating-system.html" style="background:#f3f4f6; padding:6px 14px; border-radius:20px; font-size:13px; color:#1e293b; text-decoration:none; border:1px solid #e5e7eb; hover:background:#e0e7ff;">📝 Process Synchronization in operating system MCQs</a><a href="/books/operating-system/process-synchronization/topics/synchronization-hardware-in-operating-system.html" style="background:#f3f4f6; padding:6px 14px; border-radius:20px; font-size:13px; color:#1e293b; text-decoration:none; border:1px solid #e5e7eb; hover:background:#e0e7ff;">📝 Synchronization hardware in operating system MCQs</a><a href="/books/operating-system/process-synchronization/topics/mutex-locks-in-process-synchronization.html" style="background:#f3f4f6; padding:6px 14px; border-radius:20px; font-size:13px; color:#1e293b; text-decoration:none; border:1px solid #e5e7eb; hover:background:#e0e7ff;">📝 Mutex Locks in Process Synchronization MCQs</a></div></div>        <div style="text-align: center; margin-top: 20px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+            <a href="/quiz" class="btn-primary">🚀 Start Quiz</a>
+            <a href="/practice" class="btn-secondary">📝 Practice Mode</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

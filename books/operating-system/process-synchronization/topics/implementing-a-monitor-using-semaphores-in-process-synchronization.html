@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-PT363CT7');</script>
+<!-- End Google Tag Manager -->
+    <title>Implementing a Monitor Using Semaphores  in Process synchronization MCQs - Operating System | BookMCQ</title>
+    <meta name="description" content="Practice Implementing a Monitor Using Semaphores  in Process synchronization from Operating System - 5. Process Synchronization. 47 MCQs with 12 easy, 26 medium, and 9 hard questions. Perfect for exam preparation.">
+    <meta name="keywords" content="Implementing a Monitor Using Semaphores  in Process synchronization MCQs, Operating System Implementing a Monitor Using Semaphores  in Process synchronization questions, Implementing a Monitor Using Semaphores  in Process synchronization practice, Operating System topics, Implementing a Monitor Using Semaphores  in Process synchronization easy medium hard">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://www.bookmcq.com/books/operating-system/process-synchronization/topics/implementing-a-monitor-using-semaphores-in-process-synchronization.html">
+    <meta property="og:title" content="Implementing a Monitor Using Semaphores  in Process synchronization - Operating System MCQs | BookMCQ">
+    <meta property="og:description" content="Practice Implementing a Monitor Using Semaphores  in Process synchronization from Operating System. 47 questions with difficulty breakdown: Easy 12, Medium 26, Hard 9.">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#7c3aed">
+    <script type="application/ld+json">
+{"@context":"https://schema.org","@type":"CollectionPage","name":"Implementing a Monitor Using Semaphores  in Process synchronization - Operating System","description":"Practice Implementing a Monitor Using Semaphores  in Process synchronization from Operating System - 5. Process Synchronization. 47 MCQs with 12 easy, 26 medium, and 9 hard questions.","url":"https://www.bookmcq.com/books/operating-system/process-synchronization/topics/implementing-a-monitor-using-semaphores-in-process-synchronization.html","isPartOf":{"@type":"Book","name":"Operating System"},"about":{"@type":"Thing","name":"Implementing a Monitor Using Semaphores  in Process synchronization"},"dateModified":"2026-07-09"}
+    </script>
+    <script>
+        // 1. Disable Right-Click Context Menu
+        document.addEventListener('contextmenu', function(e) { e.preventDefault(); return false; });
+        
+        // 2. Disable F12, Ctrl+U, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F12') { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.key === 'u') { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i')) { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.key === 'j')) { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.shiftKey && (e.key === 'C' || e.key === 'c')) { e.preventDefault(); return false; }
+        });
+        
+        // 3. Disable Print Screen (basic prevention)
+        document.addEventListener('keyup', function(e) {
+            if (e.key === 'PrintScreen') { e.preventDefault(); return false; }
+        });
+        
+        // 4. Disable text selection (extra layer)
+        document.addEventListener('selectstart', function(e) { e.preventDefault(); });
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [
+                    ['$', '$'],
+                    ['\\(', '\\)']
+                ],
+                displayMath: [
+                    ['$$', '$$'],
+                    ['\\[', '\\]']
+                ],
+                processEscapes: true,
+                processEnvironments: true
+            },
+            svg: {
+                fontCache: 'global'
+            },
+            options: {
+                skipHtmlTypes: 'script',
+                ignoreHtmlClass: 'no-mathjax',
+                processHtmlClass: 'math'
+            }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async></script>
+    <script>
+        // Helper function to safely escape HTML while preserving LaTeX delimiters
+        function escapeHtmlPreserveMath(text) {
+            if (!text) return '';
+            var escaped = text.replace(/&/g, '&amp;')
+                              .replace(/</g, '&lt;')
+                              .replace(/>/g, '&gt;')
+                              .replace(/"/g, '&quot;')
+                              .replace(/'/g, '&#039;');
+            return escaped;
+        }
+
+        async function renderMathInElement(element) {
+            if (window.MathJax && element) {
+                try {
+                    await MathJax.typesetPromise([element]);
+                } catch(e) {
+                    console.log('MathJax error:', e);
+                }
+            }
+        }
+
+        async function renderAllMath() {
+            if (window.MathJax) {
+                try {
+                    await MathJax.typesetPromise();
+                } catch(e) {
+                    console.log('MathJax error:', e);
+                }
+            }
+        }
+
+        function processMathContent(text) {
+            if (!text) return '';
+            return text;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            renderAllMath();
+        });
+
+        if (window.MathJax) {
+            MathJax.typesetPromise = MathJax.typesetPromise || function() { return Promise.resolve(); };
+        }
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            padding: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .btn-primary {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 14px 32px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 10px;
+            transition: 0.2s;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary {
+            display: inline-block;
+            background: #f3f4f6;
+            color: #1e293b;
+            padding: 10px 24px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 500;
+            margin-top: 10px;
+            transition: 0.2s;
+            border: 1px solid #e5e7eb;
+        }
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 15px;
+            color: #7c3aed;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .topic-info {
+            font-size: 14px;
+            color: #64748b;
+            margin: 8px 0;
+        }
+        .breadcrumb {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-bottom: 12px;
+        }
+        .breadcrumb a {
+            color: #7c3aed;
+            text-decoration: none;
+        }
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+        .math-rendered {
+            display: inline;
+            line-height: 1.6;
+        }
+        .math-rendered mjx-container {
+            display: inline-block;
+            margin: 0 2px;
+        }
+        .question-text {
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+        .option-text {
+            display: inline;
+        }
+        .explanation-text {
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PT363CT7"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+<div class="container">
+    <div class="card">
+        <div class="breadcrumb">
+            <a href="/">🏠 Home</a> &gt; <a href="/books/operating-system/">Operating System</a> &gt; <a href="/books/operating-system/process-synchronization.html">5. Process Synchronization</a> &gt; Implementing a Monitor Using Semaphores  in Process synchronization
+        </div>
+        <a href="/books/operating-system/process-synchronization.html" class="back-link">← Back to 5. Process Synchronization</a>
+        <h1>📝 Implementing a Monitor Using Semaphores  in Process synchronization</h1>
+        <p class="topic-info">📖 From <strong>Operating System</strong> • 5. Process Synchronization • 47 questions available</p>
+
+            <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">What is Implementing a Monitor Using Semaphores  in Process synchronization?</h2>
+            <p style="font-size: 15px; line-height: 1.6; color: #334155; margin-bottom: 16px;">
+                <strong>Implementing a Monitor Using Semaphores  in Process synchronization</strong> is a core concept that forms the foundation of this subject area. 
+                Understanding this topic is essential for mastering the principles, applications, and 
+                key terminology required for academic and practical success.
+            </p>
+            <p style="font-size: 14px; color: #475569; margin-bottom: 12px;">
+                Test your knowledge of Implementing a Monitor Using Semaphores  in Process synchronization with the carefully crafted MCQs below, categorized by easy, medium, and hard difficulty levels.
+            </p>
+            <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
+                <p style="font-size:13px; color:#64748b; margin-top:4px;">🔄 Last updated: 2026-07-09</p>
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:16px 0;"><div style="background:#dcfce7; padding:12px; border-radius:10px; text-align:center; border:1px solid #86efac;"><div style="font-size:24px; font-weight:700; color:#166534;">12</div><div style="font-size:12px; color:#64748b;">Easy Questions</div></div><div style="background:#fef9c3; padding:12px; border-radius:10px; text-align:center; border:1px solid #fde047;"><div style="font-size:24px; font-weight:700; color:#854d0e;">26</div><div style="font-size:12px; color:#64748b;">Medium Questions</div></div><div style="background:#fee2e2; padding:12px; border-radius:10px; text-align:center; border:1px solid #fca5a5;"><div style="font-size:24px; font-weight:700; color:#991b1b;">9</div><div style="font-size:12px; color:#64748b;">Hard Questions</div></div></div><div style="margin:16px 0; background:#f8fafc; padding:16px; border-radius:12px;"><h3 style="font-size:18px; color:#1e293b; margin-bottom:12px;">📝 All Implementing a Monitor Using Semaphores  in Process synchronization MCQs</h3><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q1. What is the initial value of the mutex semaphore used in implementing a monitor?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. 0</div><div>🔹 B. 1</div><div>🔹 C. -1</div><div>🔹 D. Uninitialized</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The mutex semaphore is initialized to 1 to allow the first process to enter the monitor. A binary semaphore with value 1 ensures mutual exclusion, as only one process can decrement it to 0 and enter, while others must wait.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q2. Which operation must a process execute before entering the monitor in the semaphore-based implementation?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. signal(mutex)</div><div>🔹 B. wait(mutex)</div><div>🔹 C. signal(next)</div><div>🔹 D. wait(next)</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">A process must execute wait(mutex) before entering the monitor. This decrements the mutex semaphore from 1 to 0, blocking other processes from entering and ensuring mutual exclusion within the monitor.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q3. What is the purpose of the next semaphore in the monitor implementation using semaphores?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. To ensure mutual exclusion</div><div>🔹 B. To suspend signaling processes</div><div>🔹 C. To count waiting processes</div><div>🔹 D. To initialize condition variables</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The next semaphore is introduced so that signaling processes can suspend themselves. When a process signals a condition, it must wait until the resumed process either leaves or waits, and next provides this suspension mechanism.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q4. What is the initial value of the next semaphore in the monitor implementation?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. 0</div><div>🔹 B. 1</div><div>🔹 C. -1</div><div>🔹 D. Uninitialized</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The next semaphore is initialized to 0, as no process is initially suspended on it. It only becomes relevant when signaling processes need to suspend themselves while waiting for resumed processes to finish.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q5. What does the integer variable next_count track in the monitor implementation?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Number of processes in the monitor</div><div>🔹 B. Number of processes suspended on next</div><div>🔹 C. Number of condition variables</div><div>🔹 D. Number of semaphores used</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The next_count variable counts the number of processes that are suspended on the next semaphore. This allows the implementation to determine whether a signaling process must wake up a waiting process or simply release the mutex.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q6. What is the initial value of x_count for a condition variable x?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. 0</div><div>🔹 B. 1</div><div>🔹 C. -1</div><div>🔹 D. Undefined</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The x_count variable is initialized to 0 for each condition variable, indicating that no processes are initially waiting on that condition. It tracks the number of processes suspended on the condition&#039;s semaphore x_sem.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q7. What is the initial value of x_sem for a condition variable x?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. 0</div><div>🔹 B. 1</div><div>🔹 C. -1</div><div>🔹 D. Uninitialized</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The x_sem semaphore is initialized to 0 for each condition variable, as no processes are initially waiting. When a process executes x.wait(), it will wait on this semaphore, which starts at 0, causing the process to block immediately.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q8. What operation is executed when a process leaves the monitor and no processes are waiting on next?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. signal(next)</div><div>🔹 B. wait(next)</div><div>🔹 C. signal(mutex)</div><div>🔹 D. wait(mutex)</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: C</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">When a process leaves the monitor and there are no processes waiting on next (next_count = 0), it executes signal(mutex). This releases the mutex semaphore, allowing another process to enter the monitor.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q9. In the x.wait() implementation, what happens after incrementing x_count?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. The process waits on x_sem immediately</div><div>🔹 B. The process checks if next_count &gt; 0</div><div>🔹 C. The process signals mutex and waits</div><div>🔹 D. The process decrements x_count</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">After incrementing x_count, the process checks if next_count &gt; 0. If processes are waiting on next, it signals next; otherwise, it signals mutex. This ensures that a waiting process either wakes up a suspended signaling process or releases the monitor lock.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q10. In the x.signal() implementation, what does the process do after executing signal(x_sem)?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. It continues execution immediately</div><div>🔹 B. It executes wait(next) to suspend itself</div><div>🔹 C. It exits the monitor</div><div>🔹 D. It signals mutex</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">After executing signal(x_sem) to wake a waiting process, the signaling process executes wait(next) to suspend itself. This follows the monitor semantics where the signaling process must wait until the resumed process either leaves or waits, and next provides this suspension mechanism.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q11. When a process executes x.wait(), what condition determines whether it signals next or mutex?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. x_count &gt; 0</div><div>🔹 B. next_count &gt; 0</div><div>🔹 C. x_sem &gt; 0</div><div>🔹 D. mutex &gt; 0</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The process checks if next_count &gt; 0 to determine whether to signal next or mutex. If processes are suspended on next, signaling next wakes the most recent signaling process; otherwise, signaling mutex releases the monitor lock to a new process.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q12. What is the sequence of operations in the x.signal() implementation?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Check x_count, signal x_sem, wait next</div><div>🔹 B. Check x_count, wait next, signal x_sem</div><div>🔹 C. Signal x_sem, check x_count, wait next</div><div>🔹 D. Wait next, check x_count, signal x_sem</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The x.signal() implementation first checks if x_count &gt; 0, then increments next_count, executes signal(x_sem) to wake a waiting process, executes wait(next) to suspend itself, and finally decrements next_count upon resumption. This sequence ensures proper signaling semantics.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q13. What happens to next_count when a signaling process executes wait(next) in x.signal()?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. It is incremented before wait(next)</div><div>🔹 B. It is decremented before wait(next)</div><div>🔹 C. It remains unchanged</div><div>🔹 D. It is set to 0</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">next_count is incremented before executing wait(next) to track that a process is now suspended on the next semaphore. When the signaling process resumes after wait(next), next_count is decremented to reflect that it is no longer suspended.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q14. What happens when a process executes x.wait() and next_count &gt; 0?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. It signals next and then waits on x_sem</div><div>🔹 B. It signals mutex and then waits on x_sem</div><div>🔹 C. It waits on x_sem immediately</div><div>🔹 D. It signals x_sem</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">When x.wait() executes and next_count &gt; 0, the process signals next (waking a suspended signaling process) and then waits on x_sem. This maintains the invariant that a waiting process must release the monitor appropriately before blocking.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q15. What happens when a process executes x.wait() and next_count == 0?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. It signals mutex and then waits on x_sem</div><div>🔹 B. It signals next and then waits on x_sem</div><div>🔹 C. It waits on x_sem immediately</div><div>🔹 D. It signals x_sem</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">When x.wait() executes and next_count == 0, the process signals mutex to release the monitor lock and then waits on x_sem. This allows another process to enter the monitor while the current process waits for the condition to become true.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q16. What is the final operation executed in x.wait() implementation after the process resumes from x_sem?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. x_count++</div><div>🔹 B. x_count--</div><div>🔹 C. next_count++</div><div>🔹 D. next_count--</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">After the process resumes from waiting on x_sem, the final operation is x_count--, decrementing the count of processes waiting on the condition. This updates the condition variable&#039;s count to accurately reflect the number of processes still waiting.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q17. Which monitor semantics are supported by the semaphore-based implementation described?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Only Hoare semantics</div><div>🔹 B. Only Brinch-Hansen semantics</div><div>🔹 C. Both Hoare and Brinch-Hansen semantics</div><div>🔹 D. Neither Hoare nor Brinch-Hansen semantics</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: C</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The semaphore-based implementation described is applicable to both Hoare and Brinch-Hansen monitor definitions. The signaling mechanisms using next and x_sem support the different semantics where signaling processes either immediately continue or wait for the resumed process.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q18. In the external function replacement pattern, what is the correct sequence of operations?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. body, wait(mutex), conditional signal</div><div>🔹 B. wait(mutex), body, conditional signal</div><div>🔹 C. conditional signal, wait(mutex), body</div><div>🔹 D. body, conditional signal, wait(mutex)</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The external function F is replaced by wait(mutex) first to enter the monitor, then the body of the function executes, and finally a conditional signal is executed to either wake a waiting process (if next_count &gt; 0) or release the mutex.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q19. What is the purpose of the conditional signal at the end of an external function in the monitor implementation?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. To always signal mutex</div><div>🔹 B. To signal next if processes are waiting, else signal mutex</div><div>🔹 C. To always signal next</div><div>🔹 D. To signal x_sem</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The conditional signal checks if next_count &gt; 0; if true, it signals next to wake a suspended signaling process; if false, it signals mutex to release the monitor lock. This ensures proper process handoff and maintains mutual exclusion.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q20. A process executes x.signal() when x_count = 0. What is the outcome?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. The signaling process waits on next</div><div>🔹 B. The signaling process continues execution</div><div>🔹 C. The signaling process waits on x_sem</div><div>🔹 D. The signaling process exits the monitor</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">When x.signal() executes and x_count = 0, no process is waiting on the condition. The signaling process simply continues execution without performing any signal operation, as there is no waiting process to wake up. The condition variable&#039;s semaphore remains unchanged.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q21. A process executes x.wait() when next_count = 3. How many processes are suspended on next?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. 0</div><div>🔹 B. 1</div><div>🔹 C. 2</div><div>🔹 D. 3</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: D</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">When next_count = 3, exactly three processes are suspended on the next semaphore. In x.wait(), when next_count &gt; 0, the process signals next to wake one of these suspended processes before waiting on x_sem itself.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q22. What is the role of the mutex semaphore in the monitor implementation?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. To manage condition variables</div><div>🔹 B. To ensure mutual exclusion</div><div>🔹 C. To count waiting processes</div><div>🔹 D. To suspend signaling processes</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The mutex semaphore ensures mutual exclusion by allowing only one process to enter the monitor at a time. It is a binary semaphore initialized to 1, and processes must execute wait(mutex) before entering and signal(mutex) after leaving.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q23. In the x.signal() implementation, what is the value of next_count after completing the operation?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Incremented by 1</div><div>🔹 B. Decremented by 1</div><div>🔹 C. Unchanged</div><div>🔹 D. Set to 0</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: C</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Assuming x_count &gt; 0, next_count is incremented before wait(next) and decremented after wait(next) completes. Therefore, the net change in next_count is zero, meaning next_count is unchanged after the complete x.signal() operation.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q24. A process enters a monitor and executes x.wait(). If next_count = 0, which semaphore operations occur and in what order?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. signal(mutex), wait(x_sem)</div><div>🔹 B. wait(x_sem), signal(mutex)</div><div>🔹 C. signal(next), wait(x_sem)</div><div>🔹 D. wait(x_sem), signal(next)</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">When next_count = 0, the process executes signal(mutex) to release the monitor lock, then executes wait(x_sem) to block on the condition. This order is critical: releasing mutex first ensures other processes can enter the monitor while the current process waits for the condition.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q25. A process executes x.signal() when x_count &gt; 0. Which semaphores are used in sequence?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. x_sem then next</div><div>🔹 B. next then x_sem</div><div>🔹 C. mutex then x_sem</div><div>🔹 D. x_sem then mutex</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The x.signal() operation uses signal(x_sem) to wake a waiting process, followed by wait(next) to suspend the signaling process. This sequence implements the monitor semantics where the signaling process must wait for the resumed process to finish or wait on another condition.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q26. What is the significance of the next semaphore in implementing condition variables?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. It allows signaling processes to suspend themselves</div><div>🔹 B. It provides mutual exclusion for condition variables</div><div>🔹 C. It counts processes waiting on conditions</div><div>🔹 D. It initializes condition variables</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The next semaphore enables signaling processes to suspend themselves after waking a waiting process. This implements the monitor semantics where only one process (either the signaling or the resumed process) executes at a time, preventing race conditions between signaling and waiting processes.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q27. A process completes the body of an external function with next_count = 2. Which signal operation is executed?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. signal(mutex)</div><div>🔹 B. signal(next)</div><div>🔹 C. signal(x_sem)</div><div>🔹 D. signal(mutex) and signal(next)</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Since next_count = 2 indicates that two processes are waiting on next, the conditional signal executes signal(next) to wake one of these processes. The signaling process suspends itself (if in a signal operation) or exits while the woken process continues execution.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q28. What distinguishes Hoare monitor semantics from Brinch-Hansen semantics in the semaphore implementation?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. The number of semaphores used</div><div>🔹 B. The behavior of signaling processes</div><div>🔹 C. The initialization values</div><div>🔹 D. The condition variable implementation</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">Hoare semantics typically require the signaling process to suspend and the signaled process to run immediately, while Brinch-Hansen semantics allow the signaling process to continue. The semaphore implementation with next supports both by providing flexible signaling mechanisms.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q29. When is the generality of the semaphore-based monitor implementation considered unnecessary?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. When there are many condition variables</div><div>🔹 B. When only one process uses the monitor</div><div>🔹 C. When efficiency is not a concern</div><div>🔹 D. When implementing simple monitors</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: D</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The generality of the semaphore-based implementation is unnecessary in some cases where simpler monitors are sufficient. In these cases, a significant improvement in efficiency is possible by removing unnecessary semaphore operations and reducing context switching overhead.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q30. What is the total number of processes that can be inside a monitor simultaneously in this implementation?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Unlimited</div><div>🔹 B. Exactly one</div><div>🔹 C. Two</div><div>🔹 D. Depends on x_count</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The mutex semaphore ensures mutual exclusion, allowing at most one process to be inside the monitor at any time. This is a fundamental property of monitors, preventing race conditions and ensuring consistent data access.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q31. A process in the monitor executes x.signal() and then immediately waits on next. What happens to the process that was waiting on x_sem?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. It continues execution in the monitor</div><div>🔹 B. It waits on next</div><div>🔹 C. It exits the monitor</div><div>🔹 D. It waits on mutex</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">When x.signal() executes, it wakes a process waiting on x_sem. After signaling, the signaling process suspends itself on next. The resumed process (the one that was waiting on x_sem) continues execution inside the monitor, while the signaling process waits until it can resume.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q32. If no processes are waiting on a condition and x.signal() is called, what is the value of x_count after the operation?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Incremented by 1</div><div>🔹 B. Decremented by 1</div><div>🔹 C. Unchanged</div><div>🔹 D. Set to 0</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: C</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">When x.signal() is called and x_count = 0 (no processes waiting), the condition is not executed as it fails the x_count &gt; 0 check. Therefore, x_count remains unchanged at 0, and no semaphore operations are performed.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q33. What is the relationship between x_count and x_sem in the condition variable implementation?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. x_count counts processes waiting on x_sem</div><div>🔹 B. x_sem counts processes waiting on x_count</div><div>🔹 C. They are independent variables</div><div>🔹 D. x_count controls x_sem initialization</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">x_count is an integer variable that counts the number of processes waiting on condition x, while x_sem is the semaphore these processes block on. They work together: x_count tracks how many processes are suspended on x_sem, and x_sem is the actual synchronization primitive used for blocking.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q34. A process executing x.wait() has x_count = 2 and next_count = 0. After completing the operation, what are the new values?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. x_count = 3, next_count = 1</div><div>🔹 B. x_count = 3, next_count = 0</div><div>🔹 C. x_count = 2, next_count = 1</div><div>🔹 D. x_count = 2, next_count = 0</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">In x.wait(), x_count is incremented from 2 to 3. Since next_count = 0, the process signals mutex and blocks on x_sem. When it resumes, x_count is decremented. During the wait, x_count = 3 and next_count remains 0, but after completion (if it were to complete), x_count would be back to 2.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q35. Which statement accurately describes the efficiency improvement mentioned in the implementation?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Removing x_count variable</div><div>🔹 B. Eliminating unnecessary generality</div><div>🔹 C. Using fewer semaphores</div><div>🔹 D. Optimizing mutex operations</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The implementation notes that in some cases, the generality of the implementation is unnecessary, and a significant improvement in efficiency is possible. This refers to simplifying the monitor implementation when the full signaling semantics are not required.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q36. In the semaphore-based monitor implementation, what prevents a process from re-entering the monitor after it has been signaled?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. The mutex semaphore</div><div>🔹 B. The next semaphore</div><div>🔹 C. The x_sem semaphore</div><div>🔹 D. The x_count variable</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The mutex semaphore prevents re-entry by ensuring that only one process can hold the monitor lock at a time. Even after a process is signaled, it must compete for the mutex semaphore to re-enter the monitor, following the mutual exclusion principle.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q37. What happens to a signaling process when it executes wait(next) in x.signal() and next_count becomes 0?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. It continues execution</div><div>🔹 B. It blocks indefinitely</div><div>🔹 C. It exits the monitor</div><div>🔹 D. It retries x.signal()</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">When a signaling process executes wait(next), it blocks on the next semaphore. It will resume when another process executes signal(next). When next_count reaches 0, all processes suspended on next have been woken. The signaling process continues execution in the monitor when it is eventually signaled.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q38. Which of the following correctly describes the purpose of the x.wait() operation?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. To signal a condition and wait</div><div>🔹 B. To suspend a process until the condition becomes true</div><div>🔹 C. To increment the condition counter</div><div>🔹 D. To release the monitor lock</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The x.wait() operation suspends the calling process until the condition x becomes true. It releases the monitor lock (either by signaling mutex or next) so other processes can enter and potentially change the condition, then blocks on x_sem until signaled.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q39. What happens if a process calls x.wait() when x_count &gt; 0?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. It immediately returns</div><div>🔹 B. It waits on x_sem</div><div>🔹 C. It increments x_count further</div><div>🔹 D. It signals mutex and waits</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: C</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">When a process calls x.wait(), it always increments x_count regardless of the current value. If other processes are already waiting (x_count &gt; 0), the new process increments the count and joins the waiting queue on x_sem, following the monitor semantics for condition variables.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q40. What is the purpose of the next_count variable in the x.signal() implementation?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. To count processes waiting on x_sem</div><div>🔹 B. To track signaling processes suspended on next</div><div>🔹 C. To initialize the condition variable</div><div>🔹 D. To increment the mutex semaphore</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">In x.signal(), next_count is incremented before the signaling process suspends itself on next. This tracks that the signaling process is now waiting on the next semaphore, allowing the implementation to properly manage which process runs next in the monitor.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q41. A process executes x.signal() with x_count = 1. What is the value of next_count after the operation completes?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. Incremented by 1</div><div>🔹 B. Decremented by 1</div><div>🔹 C. Unchanged</div><div>🔹 D. Depends on other processes</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: hard | ✅ Correct: C</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The x.signal() operation increments next_count before wait(next) and decrements it after wait(next) returns, resulting in no net change to next_count. Therefore, next_count remains at its original value after the complete operation, ensuring proper count tracking.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q42. What is the role of the x_sem semaphore in the condition variable implementation?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. To provide mutual exclusion</div><div>🔹 B. To block processes waiting on the condition</div><div>🔹 C. To count processes in the monitor</div><div>🔹 D. To wake signaling processes</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The x_sem semaphore blocks processes that execute x.wait(). Each condition variable has its own semaphore, allowing multiple processes to wait on different conditions independently. When x.signal() is executed, it wakes one process waiting on x_sem.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q43. What is the purpose of the x_count variable in the x.wait() implementation?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. To determine if signaling is needed</div><div>🔹 B. To track waiting processes</div><div>🔹 C. To initialize the semaphore</div><div>🔹 D. To count monitor entries</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">x_count tracks the number of processes waiting on condition variable x. In x.wait(), it increments to indicate a new process is waiting; in x.signal(), it&#039;s checked to determine if any process needs to be woken; and after wait completes, it decrements to update the count.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q44. Consider a monitor with next_count = 0. A process enters, executes x.wait(), and then waits on x_sem. What semaphore operations did it execute?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. signal(mutex), wait(x_sem)</div><div>🔹 B. wait(mutex), signal(x_sem)</div><div>🔹 C. signal(next), wait(x_sem)</div><div>🔹 D. wait(next), signal(mutex)</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">With next_count = 0, the process in x.wait() executes signal(mutex) to release the monitor lock, then wait(x_sem) to block on the condition. This allows other processes to enter the monitor while this process waits for the condition to become true.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q45. What happens when a process attempts to enter the monitor while mutex = 0?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. It enters immediately</div><div>🔹 B. It blocks on mutex</div><div>🔹 C. It blocks on next</div><div>🔹 D. It executes x.wait()</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: easy | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">When mutex = 0, a process attempting to enter the monitor via wait(mutex) will block until the mutex semaphore becomes 1 again. This enforces mutual exclusion, ensuring only one process executes inside the monitor at a time.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q46. What is the correct way to implement the x.signal() operation according to the described semaphore-based monitor?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. if (x_count &gt; 0) { next_count++; signal(x_sem); wait(next); next_count--; }</div><div>🔹 B. if (x_count &gt; 0) { signal(x_sem); wait(next); next_count++; }</div><div>🔹 C. if (x_count &gt; 0) { next_count++; wait(next); signal(x_sem); }</div><div>🔹 D. if (x_count &gt; 0) { signal(x_sem); next_count++; wait(next); }</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: A</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">The correct x.signal() implementation is: if (x_count &gt; 0) { next_count++; signal(x_sem); wait(next); next_count--; }. This sequence increments next_count, signals the waiting process on x_sem, suspends the signaling process on next, and then decrements next_count upon resumption.</p>
+                    </div>
+                </div><div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;"><p class="math" style="font-weight:600; margin:0 0 8px 0;">Q47. In the external function replacement, what is the sequence when a process leaves the monitor?</p><div class="math" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:14px; color:#334155;"><div>🔹 A. if (next_count &gt; 0) signal(mutex) else signal(next)</div><div>🔹 B. if (next_count &gt; 0) signal(next) else signal(mutex)</div><div>🔹 C. signal(next); signal(mutex)</div><div>🔹 D. signal(mutex); signal(next)</div></div><p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: medium | ✅ Correct: B</p>
+                    <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <p style="font-size: 13px; font-weight: 600; color: #1e40af; margin: 0 0 4px 0;">📖 Explanation:</p>
+                        <p class="math" style="font-size: 13px; color: #1e293b; margin: 0; line-height: 1.5;">When leaving the monitor, the process executes: if (next_count &gt; 0) signal(next); else signal(mutex). This wakes a suspended signaling process if any exist; otherwise, it releases the monitor lock to allow new processes to enter.</p>
+                    </div>
+                </div></div><div style="margin:16px 0;"><h3 style="font-size:16px; color:#1e293b;">🔗 Related Topics (MCQs)</h3><div style="display:flex; flex-wrap:wrap; gap:8px;"><a href="/books/operating-system/process-synchronization/topics/resuming-processes-within-a-monitor-in-process-synchronization.html" style="background:#f3f4f6; padding:6px 14px; border-radius:20px; font-size:13px; color:#1e293b; text-decoration:none; border:1px solid #e5e7eb; hover:background:#e0e7ff;">📝 Resuming Processes within a Monitor in Process synchronization MCQs</a><a href="/books/operating-system/process-synchronization/topics/process-synchronization-in-operating-system.html" style="background:#f3f4f6; padding:6px 14px; border-radius:20px; font-size:13px; color:#1e293b; text-decoration:none; border:1px solid #e5e7eb; hover:background:#e0e7ff;">📝 Process Synchronization in operating system MCQs</a><a href="/books/operating-system/process-synchronization/topics/synchronization-hardware-in-operating-system.html" style="background:#f3f4f6; padding:6px 14px; border-radius:20px; font-size:13px; color:#1e293b; text-decoration:none; border:1px solid #e5e7eb; hover:background:#e0e7ff;">📝 Synchronization hardware in operating system MCQs</a><a href="/books/operating-system/process-synchronization/topics/mutex-locks-in-process-synchronization.html" style="background:#f3f4f6; padding:6px 14px; border-radius:20px; font-size:13px; color:#1e293b; text-decoration:none; border:1px solid #e5e7eb; hover:background:#e0e7ff;">📝 Mutex Locks in Process Synchronization MCQs</a><a href="/books/operating-system/process-synchronization/topics/semaphore-implementation-in-process-synchronization.html" style="background:#f3f4f6; padding:6px 14px; border-radius:20px; font-size:13px; color:#1e293b; text-decoration:none; border:1px solid #e5e7eb; hover:background:#e0e7ff;">📝 Semaphore Implementation in Process Synchronization MCQs</a></div></div>        <div style="text-align: center; margin-top: 20px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+            <a href="/quiz" class="btn-primary">🚀 Start Quiz</a>
+            <a href="/practice" class="btn-secondary">📝 Practice Mode</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>
