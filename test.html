@@ -1229,17 +1229,18 @@
                 </div>
                 
                 <button id="showAddBookBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg mb-4">+ Add Book</button>
-                <div id="addBookForm" class="hidden bg-gray-50 p-4 rounded-lg mb-4">
-                    <select id="bookCategory" class="w-full p-2 border rounded mb-2">
-                        <option value="">Select Category</option>
-                    </select>
-                    <input type="text" id="bookTitle" placeholder="Book Title" class="w-full p-2 border rounded mb-2">
-                    <input type="text" id="bookAuthor" placeholder="Author" class="w-full p-2 border rounded mb-2">
-                    <div class="flex gap-2">
-                        <button id="saveBookBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
-                        <button id="cancelBookBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
-                    </div>
-                </div>
+<div id="addBookForm" class="hidden bg-gray-50 p-4 rounded-lg mb-4">
+    <select id="bookCategory" class="w-full p-2 border rounded mb-2">
+        <option value="">Select Category</option>
+    </select>
+    <input type="text" id="bookTitle" placeholder="Book Title" class="w-full p-2 border rounded mb-2">
+    <input type="text" id="bookAuthor" placeholder="Author" class="w-full p-2 border rounded mb-2">
+    <textarea id="bookDefinition" rows="4" placeholder="Book Definition / Description (optional)" class="w-full p-2 border rounded mb-2"></textarea>
+    <div class="flex gap-2">
+        <button id="saveBookBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
+        <button id="cancelBookBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
+    </div>
+</div>
                 <div id="booksList"><div class="skeleton h-12 w-full mb-2"></div><div class="skeleton h-12 w-full mb-2"></div><div class="skeleton h-12 w-full"></div></div>
             </div>
 
@@ -1253,13 +1254,14 @@
                     </select>
                 </div>
                 <button id="showAddChapterBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg mb-4">+ Add Chapter</button>
-                <div id="addChapterForm" class="hidden bg-gray-50 p-4 rounded-lg mb-4">
-                    <select id="chapterBookId" class="w-full p-2 border rounded mb-2"></select>
-                    <input type="text" id="chapterName" placeholder="Chapter Name" class="w-full p-2 border rounded mb-2">
-                    <input type="number" id="chapterNumber" placeholder="Chapter Number (1, 2, 3...)" class="w-full p-2 border rounded mb-2">
-                    <button id="saveChapterBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
-                    <button id="cancelChapterBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
-                </div>
+<div id="addChapterForm" class="hidden bg-gray-50 p-4 rounded-lg mb-4">
+    <select id="chapterBookId" class="w-full p-2 border rounded mb-2"></select>
+    <input type="text" id="chapterName" placeholder="Chapter Name" class="w-full p-2 border rounded mb-2">
+    <input type="number" id="chapterNumber" placeholder="Chapter Number (1, 2, 3...)" class="w-full p-2 border rounded mb-2">
+    <textarea id="chapterDefinition" rows="4" placeholder="Chapter Definition / Description (optional)" class="w-full p-2 border rounded mb-2"></textarea>
+    <button id="saveChapterBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
+    <button id="cancelChapterBtn" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</button>
+</div>
                 <div id="chaptersList"><p class="text-gray-500">Select a book to view chapters</p></div>
             </div>
 
@@ -2146,7 +2148,8 @@
             <option value="">Select Category</option>
         </select>
         <input type="text" id="editBookTitle" placeholder="Book Title" class="w-full p-2 border rounded mb-2">
-        <input type="text" id="editBookAuthor" placeholder="Author" class="w-full p-2 border rounded mb-4">
+        <input type="text" id="editBookAuthor" placeholder="Author" class="w-full p-2 border rounded mb-2">
+        <textarea id="editBookDefinition" rows="4" placeholder="Book Definition / Description (optional)" class="w-full p-2 border rounded mb-4"></textarea>
         <div class="flex gap-2">
             <button id="updateBookBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Update</button>
             <button id="closeBookModal" class="bg-gray-400 text-white px-4 py-2 rounded">Cancel</button>
@@ -2162,14 +2165,14 @@
             <option value="">Select Book</option>
         </select>
         <input type="text" id="editChapterName" placeholder="Chapter Name" class="w-full p-2 border rounded mb-2">
-        <input type="number" id="editChapterNumber" placeholder="Chapter Number" class="w-full p-2 border rounded mb-4">
+        <input type="number" id="editChapterNumber" placeholder="Chapter Number" class="w-full p-2 border rounded mb-2">
+        <textarea id="editChapterDefinition" rows="4" placeholder="Chapter Definition / Description (optional)" class="w-full p-2 border rounded mb-4"></textarea>
         <div class="flex gap-2">
             <button id="updateChapterBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Update</button>
             <button id="closeChapterModal" class="bg-gray-400 text-white px-4 py-2 rounded">Cancel</button>
         </div>
     </div>
 </div>
-
 <div id="editSubTopicModal" class="hidden modal">
     <div class="modal-content p-6">
         <h3 class="text-xl font-bold mb-4">Edit Topic</h3>
@@ -3494,89 +3497,117 @@ let seoDropdownInitialized = false;
         }
     };
 
-    async function addChapter() {
-        const bookId = document.getElementById('chapterBookId').value;
-        const name = document.getElementById('chapterName').value;
-        const chapterNumber = document.getElementById('chapterNumber').value;
-        
-        if (!bookId || !name) {
-            showToast('Please select a book and enter a chapter name', true);
-            return;
-        }
-        
-        const duplicate = await checkDuplicateChapter(name, parseInt(bookId));
-        if (duplicate) {
-            showToast('Chapter already exists for this book!', true);
-            return;
-        }
-        
-        const chapterData = {
-            book_id: parseInt(bookId),
-            name: name,
-            slug: createSlug(name),
-            chapter_number: chapterNumber ? parseInt(chapterNumber) : null
-        };
-        
-        const { error } = await _supabase.from('chapters').insert([chapterData]);
-        if (error) {
-            showToast('Error: ' + error.message, true);
-        } else {
-            showToast('Chapter added!');
-            document.getElementById('addChapterForm').classList.add('hidden');
-            document.getElementById('chapterName').value = '';
-            document.getElementById('chapterNumber').value = '';
-            chaptersCache = {};
-            await Promise.all([loadChaptersCached(), loadFilterBooksCached(), loadChapterFilterBooksCached(), loadSubTopicChapterFilters(), loadDashboardStats()]);
-        }
+async function addChapter() {
+    const bookId = document.getElementById('chapterBookId').value;
+    const name = document.getElementById('chapterName').value;
+    const chapterNumber = document.getElementById('chapterNumber').value;
+    const definition = document.getElementById('chapterDefinition').value.trim();
+    
+    if (!bookId || !name) {
+        showToast('Please select a book and enter a chapter name', true);
+        return;
     }
-
-    window.openEditChapterModal = function(id, name, chapterNumber, bookId) {
-        document.getElementById('editChapterId').value = id;
-        document.getElementById('editChapterName').value = name;
-        document.getElementById('editChapterNumber').value = chapterNumber;
-        loadBookSelectForEditChapter(bookId);
-        document.getElementById('editChapterModal').classList.remove('hidden');
+    
+    const duplicate = await checkDuplicateChapter(name, parseInt(bookId));
+    if (duplicate) {
+        showToast('Chapter already exists for this book!', true);
+        return;
+    }
+    
+    const chapterData = {
+        book_id: parseInt(bookId),
+        name: name,
+        slug: createSlug(name),
+        chapter_number: chapterNumber ? parseInt(chapterNumber) : null
     };
-
-    async function updateChapter() {
-        const id = document.getElementById('editChapterId').value;
-        const name = document.getElementById('editChapterName').value;
-        const chapterNumber = document.getElementById('editChapterNumber').value;
-        const bookId = document.getElementById('editChapterBookId')?.value;
-        
-        if (!name) {
-            showToast('Please enter a chapter name', true);
-            return;
-        }
-        
-        const { data: currentChapter } = await _supabase.from('chapters').select('book_id').eq('id', id).single();
-        const targetBookId = bookId || currentChapter?.book_id;
-        
-        const duplicate = await checkDuplicateChapter(name, targetBookId, id);
-        if (duplicate) {
-            showToast('Another chapter with same name already exists for this book!', true);
-            return;
-        }
-        
-        const { error } = await _supabase
-            .from('chapters')
-            .update({
-                name,
-                slug: createSlug(name),
-                chapter_number: chapterNumber ? parseInt(chapterNumber) : null,
-                book_id: parseInt(bookId)
-            })
-            .eq('id', id);
-        
-        if (error) {
-            showToast('Error: ' + error.message, true);
-        } else {
-            showToast('Chapter updated!');
-            document.getElementById('editChapterModal').classList.add('hidden');
-            chaptersCache = {};
-            await Promise.all([loadChaptersCached(), loadFilterBooksCached(), loadSubTopicChapterFilters(), loadDashboardStats()]);
-        }
+    
+    if (definition) {
+        chapterData.definition = definition;
     }
+    
+    const { error } = await _supabase.from('chapters').insert([chapterData]);
+    if (error) {
+        showToast('Error: ' + error.message, true);
+    } else {
+        showToast('Chapter added!');
+        document.getElementById('addChapterForm').classList.add('hidden');
+        document.getElementById('chapterName').value = '';
+        document.getElementById('chapterNumber').value = '';
+        document.getElementById('chapterDefinition').value = '';
+        chaptersCache = {};
+        await Promise.all([loadChaptersCached(), loadFilterBooksCached(), loadChapterFilterBooksCached(), loadSubTopicChapterFilters(), loadDashboardStats()]);
+    }
+}
+
+window.openEditChapterModal = async function(id, name, chapterNumber, bookId) {
+    document.getElementById('editChapterId').value = id;
+    document.getElementById('editChapterName').value = name;
+    document.getElementById('editChapterNumber').value = chapterNumber;
+    
+    // Fetch the chapter data to get the definition
+    const { data, error } = await _supabase
+        .from('chapters')
+        .select('definition')
+        .eq('id', id)
+        .single();
+    
+    if (!error && data) {
+        document.getElementById('editChapterDefinition').value = data.definition || '';
+    } else {
+        document.getElementById('editChapterDefinition').value = '';
+    }
+    
+    loadBookSelectForEditChapter(bookId);
+    document.getElementById('editChapterModal').classList.remove('hidden');
+};
+
+async function updateChapter() {
+    const id = document.getElementById('editChapterId').value;
+    const name = document.getElementById('editChapterName').value;
+    const chapterNumber = document.getElementById('editChapterNumber').value;
+    const bookId = document.getElementById('editChapterBookId')?.value;
+    const definition = document.getElementById('editChapterDefinition').value.trim();
+    
+    if (!name) {
+        showToast('Please enter a chapter name', true);
+        return;
+    }
+    
+    const { data: currentChapter } = await _supabase.from('chapters').select('book_id').eq('id', id).single();
+    const targetBookId = bookId || currentChapter?.book_id;
+    
+    const duplicate = await checkDuplicateChapter(name, targetBookId, id);
+    if (duplicate) {
+        showToast('Another chapter with same name already exists for this book!', true);
+        return;
+    }
+    
+    const updateData = {
+        name: name,
+        slug: createSlug(name),
+        chapter_number: chapterNumber ? parseInt(chapterNumber) : null,
+        book_id: parseInt(bookId)
+    };
+    
+    if (definition) {
+        updateData.definition = definition;
+    }
+    
+    const { error } = await _supabase
+        .from('chapters')
+        .update(updateData)
+        .eq('id', id);
+    
+    if (error) {
+        showToast('Error: ' + error.message, true);
+    } else {
+        showToast('Chapter updated!');
+        document.getElementById('editChapterModal').classList.add('hidden');
+        document.getElementById('editChapterDefinition').value = '';
+        chaptersCache = {};
+        await Promise.all([loadChaptersCached(), loadFilterBooksCached(), loadSubTopicChapterFilters(), loadDashboardStats()]);
+    }
+}
     
     async function loadBookSelectForEditChapter(selectedBookId = null) {
         if (booksCache !== null) {
@@ -9998,9 +10029,10 @@ async function deployAllPages() {
         });
         
         document.getElementById('updateChapterBtn').addEventListener('click', updateChapter);
-        document.getElementById('closeChapterModal').addEventListener('click', () => {
-            document.getElementById('editChapterModal').classList.add('hidden');
-        });
+document.getElementById('closeChapterModal').addEventListener('click', () => {
+    document.getElementById('editChapterModal').classList.add('hidden');
+    document.getElementById('editChapterDefinition').value = '';
+});
         
         document.getElementById('updateSubTopicBtn').addEventListener('click', updateSubTopic);
         document.getElementById('closeSubTopicModal').addEventListener('click', () => {
