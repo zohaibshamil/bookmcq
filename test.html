@@ -7530,19 +7530,28 @@ function initSeoBookDropdown() {
         var bookAuthor = book.author ? escapeHtml(book.author) : '';
         var bookCategory = book.category ? escapeHtml(book.category) : '';
     // --- DYNAMIC DEFINITION FROM DATABASE ---
-    var bookDefinitionHtml = '';
-    var bookDefinition = book.definition || ''; // Get the definition from the book object
+// --- DYNAMIC DEFINITION FROM DATABASE ---
+var bookDefinitionHtml = '';
+var bookDefinition = book.definition || ''; // Get the definition from the book object
+
+if (bookDefinition) {
+    // Split by double newlines to get paragraphs
+    var paragraphs = bookDefinition
+        .split(/\n\s*\n/)  // Split by blank lines
+        .filter(function(p) { return p.trim() !== ''; });
     
-    if (bookDefinition) {
-        // Use the dynamic definition from the database
-        bookDefinitionHtml = `
-            <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">About ${bookTitle}</h2>
-            <div style="font-size: 15px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; margin-bottom: 16px;">
-                ${bookDefinition}
-            </div>
-            <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
-        `;
-    }
+    var formattedDefinition = paragraphs
+        .map(function(p) {
+            return '<p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">' + p.replace(/\n/g, ' ') + '</p>';
+        })
+        .join('');
+    
+    bookDefinitionHtml = `
+        <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">About ${bookTitle}</h2>
+        ${formattedDefinition}
+        <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
+    `;
+}
             
         var easyCount = bookDifficultyStats?.easy || 0;
         var mediumCount = bookDifficultyStats?.medium || 0;
@@ -7724,19 +7733,28 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
     var chapterDisplay = chapter.chapter_number ? chapter.chapter_number + '. ' : '';
     var totalQs = chapterQuestions.length;
     // --- DYNAMIC DEFINITION FROM DATABASE ---
-    var chapterDefinitionHtml = '';
-    var chapterDefinition = chapter.definition || ''; // Get the definition from the chapter object
+// --- DYNAMIC DEFINITION FROM DATABASE ---
+var chapterDefinitionHtml = '';
+var chapterDefinition = chapter.definition || ''; // Get the definition from the chapter object
+
+if (chapterDefinition) {
+    // Split by double newlines to get paragraphs
+    var paragraphs = chapterDefinition
+        .split(/\n\s*\n/)  // Split by blank lines
+        .filter(function(p) { return p.trim() !== ''; });
     
-    if (chapterDefinition) {
-        // Use the dynamic definition from the database
-        chapterDefinitionHtml = `
-            <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">About ${chapterDisplay}${chapterName}</h2>
-            <div style="font-size: 15px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; margin-bottom: 16px;">
-                ${chapterDefinition}
-            </div>
-            <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
-        `;
-    }
+    var formattedDefinition = paragraphs
+        .map(function(p) {
+            return '<p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">' + p.replace(/\n/g, ' ') + '</p>';
+        })
+        .join('');
+    
+    chapterDefinitionHtml = `
+        <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">About ${chapterDisplay}${chapterName}</h2>
+        ${formattedDefinition}
+        <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
+    `;
+}
     
     var easyCount = chapterDifficultyStats?.easy || 0;
     var mediumCount = chapterDifficultyStats?.medium || 0;
@@ -8106,34 +8124,42 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     var hardCount = topicDifficultyStats?.hard || 0;
     
     // --- DYNAMIC DEFINITION FROM DATABASE ---
-    var definitionHtml = '';
-    var topicDefinition = topic.definition || ''; // Get the definition from the topic object
+// --- DYNAMIC DEFINITION FROM DATABASE ---
+var definitionHtml = '';
+var topicDefinition = topic.definition || ''; // Get the definition from the topic object
+
+if (topicDefinition) {
+    // Split by double newlines to get paragraphs
+    var paragraphs = topicDefinition
+        .split(/\n\s*\n/)  // Split by blank lines
+        .filter(function(p) { return p.trim() !== ''; });
     
-    if (topicDefinition) {
-        // Use the dynamic definition from the database
-        definitionHtml = `
-            <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">What is ${topicName}?</h2>
-            <div style="font-size: 15px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; margin-bottom: 16px;">
-                ${topicDefinition}
-            </div>
-            <p style="font-size: 14px; color: #475569; margin-bottom: 12px;">
-                Test your knowledge of ${topicName} with the carefully crafted MCQs below, categorized by easy, medium, and hard difficulty levels.
-            </p>
-            <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
-        `;
-    } else {
-        // Fallback: Show a message that no definition is available
-        definitionHtml = `
-            <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">What is ${topicName}?</h2>
-            <p style="font-size: 15px; line-height: 1.6; color: #64748b; margin-bottom: 16px; font-style: italic;">
-                No definition available for this topic yet. Check back later for a detailed explanation of ${topicName}.
-            </p>
-            <p style="font-size: 14px; color: #475569; margin-bottom: 12px;">
-                Test your knowledge of ${topicName} with the carefully crafted MCQs below, categorized by easy, medium, and hard difficulty levels.
-            </p>
-            <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
-        `;
-    }
+    var formattedDefinition = paragraphs
+        .map(function(p) {
+            return '<p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">' + p.replace(/\n/g, ' ') + '</p>';
+        })
+        .join('');
+    
+    definitionHtml = `
+        <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">What is ${topicName}?</h2>
+        ${formattedDefinition}
+        <p style="font-size: 14px; color: #475569; margin-bottom: 12px; text-align: justify; text-justify: inter-word;">
+            Test your knowledge of ${topicName} with the carefully crafted MCQs below, categorized by easy, medium, and hard difficulty levels.
+        </p>
+        <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
+    `;
+} else {
+    definitionHtml = `
+        <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">What is ${topicName}?</h2>
+        <p style="font-size: 15px; line-height: 1.6; color: #64748b; margin-bottom: 16px; font-style: italic; text-align: justify; text-justify: inter-word;">
+            No definition available for this topic yet. Check back later for a detailed explanation of ${topicName}.
+        </p>
+        <p style="font-size: 14px; color: #475569; margin-bottom: 12px; text-align: justify; text-justify: inter-word;">
+            Test your knowledge of ${topicName} with the carefully crafted MCQs below, categorized by easy, medium, and hard difficulty levels.
+        </p>
+        <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
+    `;
+}
     // --- SEO FIX #2: Build ALL questions AND explanations ---
     var fullMcqsHtml = '';
     if (topicQuestions.length > 0) {
