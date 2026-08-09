@@ -2180,14 +2180,14 @@
         <select id="editSubTopicChapterId" class="w-full p-2 border rounded mb-2">
             <option value="">Select Chapter</option>
         </select>
-        <input type="text" id="editSubTopicName" placeholder="Topic Name" class="w-full p-2 border rounded mb-4">
+        <input type="text" id="editSubTopicName" placeholder="Topic Name" class="w-full p-2 border rounded mb-2">
+        <textarea id="editSubTopicDefinition" rows="4" placeholder="Topic Definition / Description (optional)" class="w-full p-2 border rounded mb-4"></textarea>
         <div class="flex gap-2">
             <button id="updateSubTopicBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Update</button>
             <button id="closeSubTopicModal" class="bg-gray-400 text-white px-4 py-2 rounded">Cancel</button>
         </div>
     </div>
 </div>
-
 <div id="editCategoryModal" class="hidden modal">
     <div class="modal-content p-6">
         <h3 class="text-xl font-bold mb-4">Edit Category</h3>
@@ -3836,12 +3836,26 @@ let seoDropdownInitialized = false;
         }
     }
 
-    window.openEditSubTopicModal = function(id, name, chapterId) {
-        document.getElementById('editSubTopicId').value = id;
-        document.getElementById('editSubTopicName').value = name;
-        loadBookAndChapterForEditSubTopic(chapterId);
-        document.getElementById('editSubTopicModal').classList.remove('hidden');
-    };
+window.openEditSubTopicModal = async function(id, name, chapterId) {
+    document.getElementById('editSubTopicId').value = id;
+    document.getElementById('editSubTopicName').value = name;
+    
+    // Fetch the topic data to get the definition
+    const { data, error } = await _supabase
+        .from('subtopics')
+        .select('definition')
+        .eq('id', id)
+        .single();
+    
+    if (!error && data) {
+        document.getElementById('editSubTopicDefinition').value = data.definition || '';
+    } else {
+        document.getElementById('editSubTopicDefinition').value = '';
+    }
+    
+    loadBookAndChapterForEditSubTopic(chapterId);
+    document.getElementById('editSubTopicModal').classList.remove('hidden');
+};
 
 async function loadBookAndChapterForEditSubTopic(selectedChapterId = null) {
     // Step 1: Load books
@@ -3898,41 +3912,49 @@ async function loadBookAndChapterForEditSubTopic(selectedChapterId = null) {
     }
 }
 
-    async function updateSubTopic() {
-        const id = document.getElementById('editSubTopicId').value;
-        const name = document.getElementById('editSubTopicName').value;
-        const chapterId = document.getElementById('editSubTopicChapterId').value;
-        
-        if (!name || !chapterId) {
-            showToast('Please fill all fields', true);
-            return;
-        }
-        
-        const duplicate = await checkDuplicateSubTopic(name, parseInt(chapterId), id);
-        if (duplicate) {
-            showToast('Another topic with same name already exists for this chapter!', true);
-            return;
-        }
-        
-        const { error } = await _supabase
-            .from('subtopics')
-            .update({
-                name,
-                slug: createSlug(name),
-                chapter_id: parseInt(chapterId)
-            })
-            .eq('id', id);
-        
-        if (error) {
-            showToast('Error: ' + error.message, true);
-        } else {
-            showToast('Topic updated!');
-            document.getElementById('editSubTopicModal').classList.add('hidden');
-            subTopicsCache = {};
-            await loadSubTopicsCached();
-        }
+async function updateSubTopic() {
+    const id = document.getElementById('editSubTopicId').value;
+    const name = document.getElementById('editSubTopicName').value;
+    const chapterId = document.getElementById('editSubTopicChapterId').value;
+    const definition = document.getElementById('editSubTopicDefinition').value.trim();
+    
+    if (!name || !chapterId) {
+        showToast('Please fill all fields', true);
+        return;
     }
-
+    
+    const duplicate = await checkDuplicateSubTopic(name, parseInt(chapterId), id);
+    if (duplicate) {
+        showToast('Another topic with same name already exists for this chapter!', true);
+        return;
+    }
+    
+    const updateData = {
+        name: name,
+        slug: createSlug(name),
+        chapter_id: parseInt(chapterId)
+    };
+    
+    // Only include definition if it has a value
+    if (definition) {
+        updateData.definition = definition;
+    }
+    
+    const { error } = await _supabase
+        .from('subtopics')
+        .update(updateData)
+        .eq('id', id);
+    
+    if (error) {
+        showToast('Error: ' + error.message, true);
+    } else {
+        showToast('Topic updated!');
+        document.getElementById('editSubTopicModal').classList.add('hidden');
+        document.getElementById('editSubTopicDefinition').value = '';
+        subTopicsCache = {};
+        await loadSubTopicsCached();
+    }
+}
     // ============ CACHED QUESTIONS HELPERS ============
     async function loadBookSelectsCached() {
         if (booksCache !== null) {
@@ -9970,7 +9992,8 @@ async function deployAllPages() {
         
         document.getElementById('updateSubTopicBtn').addEventListener('click', updateSubTopic);
         document.getElementById('closeSubTopicModal').addEventListener('click', () => {
-            document.getElementById('editSubTopicModal').classList.add('hidden');
+             document.getElementById('editSubTopicModal').classList.add('hidden');
+             document.getElementById('editSubTopicDefinition').value = '';
         });
         
         document.getElementById('updateCategoryBtn').addEventListener('click', updateCategory);
