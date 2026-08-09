@@ -7701,12 +7701,11 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
     var chapterName = escapeHtml(chapter.name);
     var chapterDisplay = chapter.chapter_number ? chapter.chapter_number + '. ' : '';
     var totalQs = chapterQuestions.length;
-    // --- DYNAMIC DEFINITION FROM DATABASE ---
+    
     var chapterDefinitionHtml = '';
-    var chapterDefinition = chapter.definition || ''; // Get the definition from the chapter object
+    var chapterDefinition = chapter.definition || '';
     
     if (chapterDefinition) {
-        // Use the dynamic definition from the database
         chapterDefinitionHtml = `
             <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">About ${chapterDisplay}${chapterName}</h2>
             <div style="font-size: 15px; line-height: 1.8; color: #334155; margin-bottom: 16px;">
@@ -7722,30 +7721,32 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
     
     var topicsHtml = '';
     if (chapterTopics && chapterTopics.length > 0) {
-topicsHtml = '<div style="margin:16px 0;">';
-topicsHtml += '<h3 style="font-size:16px; color:#1e293b;">📝 Topics in this Chapter</h3><ul style="list-style:none; padding:0;">';
-chapterTopics.forEach(function(topic) {
-    var topicSlug = topic.slug || createSlug(topic.name);
-    var topicName = escapeHtml(topic.name);
-    var topicIdNum = Number(topic.id);
-    var topicQuestionCount = chapterQuestions.filter(function(q) {
-        var qTopicId = q.topic_id ? Number(q.topic_id) : null;
-        return qTopicId === topicIdNum;
-    }).length;
+        topicsHtml = '<div style="margin:16px 0;">';
+        topicsHtml += '<h3 style="font-size:16px; color:#1e293b;">📝 Topics in this Chapter</h3><ul style="list-style:none; padding:0;">';
+        chapterTopics.forEach(function(topic) {
+            var topicSlug = topic.slug || createSlug(topic.name);
+            var topicName = escapeHtml(topic.name);
+            var topicIdNum = Number(topic.id);
+            var topicQuestionCount = chapterQuestions.filter(function(q) {
+                var qTopicId = q.topic_id ? Number(q.topic_id) : null;
+                return qTopicId === topicIdNum;
+            }).length;
+            
+            // FIXED: Use \' for escaping single quotes in onmouseover/onmouseout
+            topicsHtml += '<li style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; margin:6px 0; background:#f8fafc; border-radius:10px; border-left:3px solid #8b5cf6; transition:0.2s;" onmouseover="this.style.backgroundColor=\'#ede9fe\'" onmouseout="this.style.backgroundColor=\'#f8fafc\'">';
+            topicsHtml += '<a href="/books/' + bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html" style="text-decoration:none; color:#1e293b; font-weight:500; flex:1;">';
+            topicsHtml += '📝 ' + topicName;
+            topicsHtml += '</a>';
+            topicsHtml += '<div style="display:flex; align-items:center; gap:10px;">';
+            topicsHtml += '    <span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:14px; font-weight:700; min-width:40px; text-align:center;">' + topicQuestionCount + '</span>';
+            topicsHtml += '    <span style="font-size:12px; color:#7c3aed; font-weight:500;">View Topic →</span>';
+            topicsHtml += '</div>';
+            topicsHtml += '</li>';
+        });
+        topicsHtml += '</ul></div>';
+    }
     
-topicsHtml += '<li style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; margin:6px 0; background:#f8fafc; border-radius:10px; border-left:3px solid #8b5cf6; transition:0.2s;" onmouseover="this.style.backgroundColor=\'#ede9fe\'" onmouseout="this.style.backgroundColor=\'#f8fafc\'">';
-    topicsHtml += '<a href="/books/' + bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html" style="text-decoration:none; color:#1e293b; font-weight:500; flex:1;">';
-    topicsHtml += '📝 ' + topicName;
-    topicsHtml += '</a>';
-    topicsHtml += '<div style="display:flex; align-items:center; gap:10px;">';
-    topicsHtml += '    <span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:14px; font-weight:700; min-width:40px; text-align:center;">' + topicQuestionCount + '</span>';
-    topicsHtml += '    <span style="font-size:12px; color:#7c3aed; font-weight:500;">View Topic →</span>';
-    topicsHtml += '</div>';
-    topicsHtml += '</li>';
-});
-topicsHtml += '</ul></div>';
-    
-var sampleMcqsHtml = ''; // Removed - no sample questions on chapter page
+    var sampleMcqsHtml = ''; // Removed
     
     var difficultyHtml = '';
     if (easyCount > 0 || mediumCount > 0 || hardCount > 0) {
@@ -7784,15 +7785,15 @@ var sampleMcqsHtml = ''; // Removed - no sample questions on chapter page
     '    <meta charset="UTF-8">\n' +
     '    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">\n' +
     getGTMHeadCode() + '\n' +
-     '<!-- Site Header -->\n' +
-'<div style="text-align: center; padding: 10px 0 5px 0;">\n' +
-'    <a href="/" style="text-decoration: none;">\n' +
-'        <span style="font-size: 18px; font-weight: 700; color: #7c3aed; background: white; padding: 6px 20px; border-radius: 30px; display: inline-block; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">\n' +
-'            📚 BookMCQ\n' +
-'        </span>\n' +
-'    </a>\n' +
-'</div>\n' +
-'<div class="container">\n' +
+    '<!-- Site Header -->\n' +
+    '<div style="text-align: center; padding: 10px 0 5px 0;">\n' +
+    '    <a href="/" style="text-decoration: none;">\n' +
+    '        <span style="font-size: 18px; font-weight: 700; color: #7c3aed; background: white; padding: 6px 20px; border-radius: 30px; display: inline-block; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">\n' +
+    '            📚 BookMCQ\n' +
+    '        </span>\n' +
+    '    </a>\n' +
+    '</div>\n' +
+    '<div class="container">\n' +
     '    <title>' + chapterDisplay + chapterName + ' - ' + bookTitle + ' Practice Questions with Difficulty Levels | BookMCQ</title>\n' +
     '    <meta name="description" content="' + metaDescription + '">\n' +
     '    <meta name="keywords" content="' + chapterName + ' MCQs, ' + bookTitle + ' ' + chapterName + ' questions, ' + chapterName + ' practice, ' + bookTitle + ' chapter ' + (chapter.chapter_number || '') + ', ' + chapterName + ' easy medium hard">\n' +
@@ -7805,7 +7806,6 @@ var sampleMcqsHtml = ''; // Removed - no sample questions on chapter page
     '    <script type="application/ld+json">\n' + JSON.stringify(schemaData) + '\n' +
     '    <\/script>\n' +
     '    <script src="https://cdn.tailwindcss.com"><\/script>\n' +
-    // ✅ ADDED: MathJax configuration
     '    <script>\n' +
     '        window.MathJax = {\n' +
     '            tex: {\n' +
@@ -7831,7 +7831,6 @@ var sampleMcqsHtml = ''; // Removed - no sample questions on chapter page
     '        };\n' +
     '    <\/script>\n' +
     '    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async><\/script>\n' +
-    // ✅ ADDED: Math rendering functions
     '    <script>\n' +
     '        function escapeHtmlPreserveMath(text) {\n' +
     '            if (!text) return \'\';\n' +
@@ -7947,7 +7946,6 @@ var sampleMcqsHtml = ''; // Removed - no sample questions on chapter page
     '        .breadcrumb a:hover {\n' +
     '            text-decoration: underline;\n' +
     '        }\n' +
-    '        // ✅ ADDED: Math rendering styles\n' +
     '        .math-rendered {\n' +
     '            display: inline;\n' +
     '            line-height: 1.6;\n' +
@@ -7977,14 +7975,14 @@ var sampleMcqsHtml = ''; // Removed - no sample questions on chapter page
     '            <a href="/">🏠 Home</a> &gt; <a href="/books/' + bookSlug + '/">' + bookTitle + '</a> &gt; ' + chapterDisplay + chapterName + '\n' +
     '        </div>\n' +
     '        <a href="/books/' + bookSlug + '/" class="back-link">← Back to ' + bookTitle + '</a>\n' +
-'        <h1>' + chapterDisplay + chapterName + ' - ' + bookTitle + '</h1>\n' +
-'        <p class="chapter-info">📖 From <strong>' + bookTitle + '</strong> • ' + totalQs + ' questions available</p>\n' +
-chapterDefinitionHtml +
+    '        <h1>' + chapterDisplay + chapterName + ' - ' + bookTitle + '</h1>\n' +
+    '        <p class="chapter-info">📖 From <strong>' + bookTitle + '</strong> • ' + totalQs + ' questions available</p>\n' +
+    chapterDefinitionHtml +
     '        <p>Practice MCQs for ' + chapterDisplay + chapterName + '. Test your knowledge with carefully crafted questions across easy, medium, and hard difficulty levels.</p>\n' +
-'        <p style="font-size:13px; color:#64748b; margin-top:4px;">🔄 Last updated: ' + lastUpdated + '</p>\n' +
-difficultyHtml +
-topicsHtml +
-'        <div style="text-align: center; margin-top: 20px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">\n' +
+    '        <p style="font-size:13px; color:#64748b; margin-top:4px;">🔄 Last updated: ' + lastUpdated + '</p>\n' +
+    difficultyHtml +
+    topicsHtml +
+    '        <div style="text-align: center; margin-top: 20px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">\n' +
     '            <a href="/quiz" class="btn-primary">🚀 Start Quiz</a>\n' +
     '            <a href="/practice" class="btn-secondary">📝 Practice Mode</a>\n' +
     '        </div>\n' +
