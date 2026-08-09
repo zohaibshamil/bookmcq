@@ -7990,15 +7990,28 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     var mediumCount = topicDifficultyStats?.medium || 0;
     var hardCount = topicDifficultyStats?.hard || 0;
     
-    // --- SEO FIX #1: Universal "What is..." definition ---
+    // --- DYNAMIC DEFINITION FROM DATABASE ---
     var definitionHtml = '';
-    if (topicName) {
+    var topicDefinition = topic.definition || ''; // Get the definition from the topic object
+    
+    if (topicDefinition) {
+        // Use the dynamic definition from the database
         definitionHtml = `
             <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">What is ${topicName}?</h2>
-            <p style="font-size: 15px; line-height: 1.6; color: #334155; margin-bottom: 16px;">
-                <strong>${topicName}</strong> is a core concept that forms the foundation of this subject area. 
-                Understanding this topic is essential for mastering the principles, applications, and 
-                key terminology required for academic and practical success.
+            <div style="font-size: 15px; line-height: 1.8; color: #334155; margin-bottom: 16px;">
+                ${topicDefinition}
+            </div>
+            <p style="font-size: 14px; color: #475569; margin-bottom: 12px;">
+                Test your knowledge of ${topicName} with the carefully crafted MCQs below, categorized by easy, medium, and hard difficulty levels.
+            </p>
+            <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
+        `;
+    } else {
+        // Fallback: Show a message that no definition is available
+        definitionHtml = `
+            <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">What is ${topicName}?</h2>
+            <p style="font-size: 15px; line-height: 1.6; color: #64748b; margin-bottom: 16px; font-style: italic;">
+                No definition available for this topic yet. Check back later for a detailed explanation of ${topicName}.
             </p>
             <p style="font-size: 14px; color: #475569; margin-bottom: 12px;">
                 Test your knowledge of ${topicName} with the carefully crafted MCQs below, categorized by easy, medium, and hard difficulty levels.
@@ -8006,7 +8019,6 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
             <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
         `;
     }
-
     // --- SEO FIX #2: Build ALL questions AND explanations ---
     var fullMcqsHtml = '';
     if (topicQuestions.length > 0) {
