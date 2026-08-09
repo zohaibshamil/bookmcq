@@ -3327,88 +3327,115 @@ let seoDropdownInitialized = false;
         }
     };
 
-    async function addBook() {
-        const category = document.getElementById('bookCategory').value;
-        const title = document.getElementById('bookTitle').value;
-        const author = document.getElementById('bookAuthor').value;
-        
-        if (!category || !title) {
-            showToast('Please select a category and enter a book title', true);
-            return;
-        }
-        
-        const duplicate = await checkDuplicateBook(title, category);
-        if (duplicate) {
-            showToast('Book already exists in this category!', true);
-            return;
-        }
-        
-        const slug = createSlug(title);
-        const { error } = await _supabase.from('books').insert([
-            {
-                category,
-                title,
-                author,
-                slug
-            }
-        ]);
-        if (error) {
-            showToast('Error: ' + error.message, true);
-        } else {
-            showToast('Book added!');
-            document.getElementById('addBookForm').classList.add('hidden');
-            document.getElementById('bookCategory').value = '';
-            document.getElementById('bookTitle').value = '';
-            document.getElementById('bookAuthor').value = '';
-            booksCache = null;
-            await Promise.all([loadBooksCached(), loadFilterBooksCached(), loadBookSelectsCached(), loadChapterFilterBooksCached(), loadBulkDeleteBooks(), loadDashboardStats()]);
-        }
+async function addBook() {
+    const category = document.getElementById('bookCategory').value;
+    const title = document.getElementById('bookTitle').value;
+    const author = document.getElementById('bookAuthor').value;
+    const definition = document.getElementById('bookDefinition').value.trim();
+    
+    if (!category || !title) {
+        showToast('Please select a category and enter a book title', true);
+        return;
     }
-
-    window.openEditBookModal = function(id, category, title, author) {
-        document.getElementById('editBookId').value = id;
-        document.getElementById('editBookCategory').value = category;
-        document.getElementById('editBookTitle').value = title;
-        document.getElementById('editBookAuthor').value = author;
-        document.getElementById('editBookModal').classList.remove('hidden');
+    
+    const duplicate = await checkDuplicateBook(title, category);
+    if (duplicate) {
+        showToast('Book already exists in this category!', true);
+        return;
+    }
+    
+    const slug = createSlug(title);
+    const bookData = {
+        category,
+        title,
+        author,
+        slug
     };
-
-    async function updateBook() {
-        const id = document.getElementById('editBookId').value;
-        const category = document.getElementById('editBookCategory').value;
-        const title = document.getElementById('editBookTitle').value;
-        const author = document.getElementById('editBookAuthor').value;
-        
-        if (!category || !title) {
-            showToast('Please select a category and enter a book title', true);
-            return;
-        }
-        
-        const duplicate = await checkDuplicateBook(title, category, id);
-        if (duplicate) {
-            showToast('Another book with same title already exists in this category!', true);
-            return;
-        }
-        
-        const slug = createSlug(title);
-        const { error } = await _supabase
-            .from('books')
-            .update({
-                category,
-                title,
-                author,
-                slug
-            })
-            .eq('id', id);
-        if (error) {
-            showToast('Error: ' + error.message, true);
-        } else {
-            showToast('Book updated!');
-            document.getElementById('editBookModal').classList.add('hidden');
-            booksCache = null;
-            await Promise.all([loadBooksCached(), loadFilterBooksCached(), loadBookSelectsCached(), loadChapterFilterBooksCached(), loadBulkDeleteBooks(), loadDashboardStats()]);
-        }
+    
+    if (definition) {
+        bookData.definition = definition;
     }
+    
+    const { error } = await _supabase.from('books').insert([bookData]);
+    if (error) {
+        showToast('Error: ' + error.message, true);
+    } else {
+        showToast('Book added!');
+        document.getElementById('addBookForm').classList.add('hidden');
+        document.getElementById('bookCategory').value = '';
+        document.getElementById('bookTitle').value = '';
+        document.getElementById('bookAuthor').value = '';
+        document.getElementById('bookDefinition').value = '';
+        booksCache = null;
+        await Promise.all([loadBooksCached(), loadFilterBooksCached(), loadBookSelectsCached(), loadChapterFilterBooksCached(), loadBulkDeleteBooks(), loadDashboardStats()]);
+    }
+}
+window.openEditBookModal = async function(id, category, title, author) {
+    document.getElementById('editBookId').value = id;
+    document.getElementById('editBookCategory').value = category;
+    document.getElementById('editBookTitle').value = title;
+    document.getElementById('editBookAuthor').value = author;
+    
+    // Fetch the book data to get the definition
+    const { data, error } = await _supabase
+        .from('books')
+        .select('definition')
+        .eq('id', id)
+        .single();
+    
+    if (!error && data) {
+        document.getElementById('editBookDefinition').value = data.definition || '';
+    } else {
+        document.getElementById('editBookDefinition').value = '';
+    }
+    
+    document.getElementById('editBookModal').classList.remove('hidden');
+};
+
+async function updateBook() {
+    const id = document.getElementById('editBookId').value;
+    const category = document.getElementById('editBookCategory').value;
+    const title = document.getElementById('editBookTitle').value;
+    const author = document.getElementById('editBookAuthor').value;
+    const definition = document.getElementById('editBookDefinition').value.trim();
+    
+    if (!category || !title) {
+        showToast('Please select a category and enter a book title', true);
+        return;
+    }
+    
+    const duplicate = await checkDuplicateBook(title, category, id);
+    if (duplicate) {
+        showToast('Another book with same title already exists in this category!', true);
+        return;
+    }
+    
+    const slug = createSlug(title);
+    const updateData = {
+        category,
+        title,
+        author,
+        slug
+    };
+    
+    if (definition) {
+        updateData.definition = definition;
+    }
+    
+    const { error } = await _supabase
+        .from('books')
+        .update(updateData)
+        .eq('id', id);
+    if (error) {
+        showToast('Error: ' + error.message, true);
+    } else {
+        showToast('Book updated!');
+        document.getElementById('editBookModal').classList.add('hidden');
+        document.getElementById('editBookDefinition').value = '';
+        booksCache = null;
+        await Promise.all([loadBooksCached(), loadFilterBooksCached(), loadBookSelectsCached(), loadChapterFilterBooksCached(), loadBulkDeleteBooks(), loadDashboardStats()]);
+    }
+}
 
     // ============ CACHED CHAPTERS ============
     async function loadChapterFilterBooksCached() {
@@ -7502,7 +7529,21 @@ function initSeoBookDropdown() {
         var bookTitle = escapeHtml(book.title);
         var bookAuthor = book.author ? escapeHtml(book.author) : '';
         var bookCategory = book.category ? escapeHtml(book.category) : '';
-        
+    // --- DYNAMIC DEFINITION FROM DATABASE ---
+    var bookDefinitionHtml = '';
+    var bookDefinition = book.definition || ''; // Get the definition from the book object
+    
+    if (bookDefinition) {
+        // Use the dynamic definition from the database
+        bookDefinitionHtml = `
+            <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">About ${bookTitle}</h2>
+            <div style="font-size: 15px; line-height: 1.8; color: #334155; margin-bottom: 16px;">
+                ${bookDefinition}
+            </div>
+            <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
+        `;
+    }
+            
         var easyCount = bookDifficultyStats?.easy || 0;
         var mediumCount = bookDifficultyStats?.medium || 0;
         var hardCount = bookDifficultyStats?.hard || 0;
@@ -7625,13 +7666,14 @@ function initSeoBookDropdown() {
         '    <div class="card">\n' +
         '        <a href="/" class="back-link">← Back to Home</a>\n' +
         '        <h1>' + bookTitle + ' MCQs</h1>\n' +
-        '        <div class="book-meta">\n' +
-        (bookAuthor ? '            <span><strong>Author:</strong> ' + bookAuthor + '</span>\n' : '') +
-        (bookCategory ? '            <span><strong>Category:</strong> ' + bookCategory + '</span>\n' : '') +
-        '            <span><strong>Total Questions:</strong> ' + totalQuestions + '</span>\n' +
-        '            <span><strong>Chapters:</strong> ' + chapters.length + '</span>\n' +
-        '        </div>\n' +
-        '        <p>Practice chapter-wise MCQs for <strong>' + bookTitle + '</strong>. This book contains <strong>' + chapters.length + ' chapters</strong> and <strong>' + totalQuestions + ' questions</strong> across easy, medium, and hard difficulty levels.</p>\n' +
+'        <div class="book-meta">\n' +
+(bookAuthor ? '            <span><strong>Author:</strong> ' + bookAuthor + '</span>\n' : '') +
+(bookCategory ? '            <span><strong>Category:</strong> ' + bookCategory + '</span>\n' : '') +
+'            <span><strong>Total Questions:</strong> ' + totalQuestions + '</span>\n' +
+'            <span><strong>Chapters:</strong> ' + chapters.length + '</span>\n' +
+'        </div>\n' +
+bookDefinitionHtml +
+'        <p>Practice chapter-wise MCQs for <strong>' + bookTitle + '</strong>. This book contains <strong>' + chapters.length + ' chapters</strong> and <strong>' + totalQuestions + ' questions</strong> across easy, medium, and hard difficulty levels.</p>\n' +
         difficultyHtml +
         '        <h2 style="margin-top:20px;">📚 Chapters</h2>\n' +
         chaptersHtml +
@@ -7648,6 +7690,20 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
     var chapterName = escapeHtml(chapter.name);
     var chapterDisplay = chapter.chapter_number ? chapter.chapter_number + '. ' : '';
     var totalQs = chapterQuestions.length;
+    // --- DYNAMIC DEFINITION FROM DATABASE ---
+    var chapterDefinitionHtml = '';
+    var chapterDefinition = chapter.definition || ''; // Get the definition from the chapter object
+    
+    if (chapterDefinition) {
+        // Use the dynamic definition from the database
+        chapterDefinitionHtml = `
+            <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">About ${chapterDisplay}${chapterName}</h2>
+            <div style="font-size: 15px; line-height: 1.8; color: #334155; margin-bottom: 16px;">
+                ${chapterDefinition}
+            </div>
+            <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
+        `;
+    }
     
     var easyCount = chapterDifficultyStats?.easy || 0;
     var mediumCount = chapterDifficultyStats?.medium || 0;
@@ -7939,8 +7995,9 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
     '            <a href="/">🏠 Home</a> &gt; <a href="/books/' + bookSlug + '/">' + bookTitle + '</a> &gt; ' + chapterDisplay + chapterName + '\n' +
     '        </div>\n' +
     '        <a href="/books/' + bookSlug + '/" class="back-link">← Back to ' + bookTitle + '</a>\n' +
-    '        <h1>' + chapterDisplay + chapterName + ' - ' + bookTitle + '</h1>\n' +
-    '        <p class="chapter-info">📖 From <strong>' + bookTitle + '</strong> • ' + totalQs + ' questions available</p>\n' +
+'        <h1>' + chapterDisplay + chapterName + ' - ' + bookTitle + '</h1>\n' +
+'        <p class="chapter-info">📖 From <strong>' + bookTitle + '</strong> • ' + totalQs + ' questions available</p>\n' +
+chapterDefinitionHtml +
     '        <p>Practice MCQs for ' + chapterDisplay + chapterName + '. Test your knowledge with carefully crafted questions across easy, medium, and hard difficulty levels.</p>\n' +
     '        <p style="font-size:13px; color:#64748b; margin-top:4px;">🔄 Last updated: ' + lastUpdated + '</p>\n' +
     difficultyHtml +
@@ -9906,9 +9963,10 @@ async function deployAllPages() {
         document.getElementById('showAddBookBtn').addEventListener('click', () => {
             document.getElementById('addBookForm').classList.remove('hidden');
         });
-        document.getElementById('cancelBookBtn').addEventListener('click', () => {
-            document.getElementById('addBookForm').classList.add('hidden');
-        });
+document.getElementById('cancelChapterBtn').addEventListener('click', () => {
+    document.getElementById('addChapterForm').classList.add('hidden');
+    document.getElementById('chapterDefinition').value = '';
+});
         document.getElementById('saveBookBtn').addEventListener('click', addBook);
         
         document.getElementById('showAddCategoryBtn').addEventListener('click', () => {
@@ -10024,9 +10082,10 @@ async function deployAllPages() {
         document.getElementById('nextPageBtn').addEventListener('click', goToNextPage);
         
         document.getElementById('updateBookBtn').addEventListener('click', updateBook);
-        document.getElementById('closeBookModal').addEventListener('click', () => {
-            document.getElementById('editBookModal').classList.add('hidden');
-        });
+document.getElementById('closeBookModal').addEventListener('click', () => {
+    document.getElementById('editBookModal').classList.add('hidden');
+    document.getElementById('editBookDefinition').value = '';
+});
         
         document.getElementById('updateChapterBtn').addEventListener('click', updateChapter);
 document.getElementById('closeChapterModal').addEventListener('click', () => {
