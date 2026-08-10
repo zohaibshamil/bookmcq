@@ -159,6 +159,7 @@
             <p class="text-xs text-purple-600 mb-3">💡 Use LaTeX for math: \( \sqrt{x} \), \( \frac{a}{b} \), \( \lim_{x \to 0} \), etc.</p>
             <p class="text-xs text-blue-600 mb-3">📌 <strong>Important:</strong> For correct_answer, use A, B, C, or D (not numbers). Example: A, B, C, or D</p>
             <p class="text-xs text-green-600 mb-3">📌 <strong>Topic:</strong> Enter topic name. If it doesn't exist, it will be auto-created. Leave empty for no topic.</p>
+            <p class="text-xs text-indigo-600 mb-3">📌 <strong>Topic Definition:</strong> Add a definition for the topic. If the topic already exists, the definition will be updated. Leave empty to keep existing definition.</p>
             <button id="downloadBtn" class="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded-xl inline-flex items-center gap-2 transition transform hover:scale-105 shadow-md">
                 <i class="fas fa-download"></i> Download CSV Template
             </button>
@@ -428,24 +429,26 @@
         // ============================================
         function downloadTemplate() {
             addLog('Generating CSV template...', 'info');
-            const headers = ['topic', 'question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'difficulty', 'explanation'];
-            const example = ['JavaScript Basics', 'What does \( \text{typeof null} \) return?', 'null', 'undefined', 'object', 'number', 'C', 'easy', '\( \text{typeof null} \) returns "object" due to a historical bug in JavaScript'];
+            // Updated headers with topic_definition
+            const headers = ['topic', 'topic_definition', 'question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'difficulty', 'explanation'];
+            // Updated example with topic_definition
+            const example = ['JavaScript Basics', 'Fundamental concepts of the JavaScript programming language including data types, functions, and scope', 'What does \( \text{typeof null} \) return?', 'null', 'undefined', 'object', 'number', 'C', 'easy', '\( \text{typeof null} \) returns "object" due to a historical bug in JavaScript'];
             const csv = [headers.join(','), example.map(cell => `"${safeString(cell).replace(/"/g, '""')}"`).join(',')].join('\n');
             
             const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'bookmcq_template_with_topics.csv';
+            a.download = 'bookmcq_template_with_topic_definitions.csv';
             a.click();
             URL.revokeObjectURL(url);
             addLog('✅ Template downloaded', 'success');
         }
         
         // ============================================
-        // 11. GET OR CREATE TOPIC - FIXED
+        // 11. GET OR CREATE TOPIC - UPDATED WITH DEFINITION SUPPORT
         // ============================================
-        async function getOrCreateTopic(chapterId, topicName) {
+        async function getOrCreateTopic(chapterId, topicName, topicDefinition) {
             if (!topicName || topicName.trim() === '') {
                 return null;
             }
@@ -454,6 +457,23 @@
             const cacheKey = `${chapterId}_${trimmedName}`;
             
             if (topicCache[cacheKey]) {
+                // If topic exists in cache, optionally update definition if provided
+                if (topicDefinition && topicDefinition.trim() !== '') {
+                    try {
+                        const { error: updateError } = await supabase
+                            .from('subtopics')
+                            .update({ definition: topicDefinition.trim() })
+                            .eq('id', topicCache[cacheKey]);
+                        
+                        if (!updateError) {
+                            addLog(`✅ Updated definition for existing topic: "${trimmedName}"`, 'success');
+                        } else {
+                            addLog(`⚠️ Could not update definition for "${trimmedName}": ${updateError.message}`, 'warning');
+                        }
+                    } catch(e) {
+                        addLog(`⚠️ Error updating definition: ${e.message}`, 'warning');
+                    }
+                }
                 return topicCache[cacheKey];
             }
             
@@ -462,7 +482,7 @@
             // Try to find existing topic
             const { data: existing, error: findError } = await supabase
                 .from('subtopics')
-                .select('id')
+                .select('id, definition')
                 .eq('chapter_id', chapterIdInt)
                 .eq('name', trimmedName)
                 .maybeSingle();
@@ -474,10 +494,27 @@
             
             if (existing) {
                 topicCache[cacheKey] = existing.id;
+                // Update definition if provided and different
+                if (topicDefinition && topicDefinition.trim() !== '' && existing.definition !== topicDefinition.trim()) {
+                    try {
+                        const { error: updateError } = await supabase
+                            .from('subtopics')
+                            .update({ definition: topicDefinition.trim() })
+                            .eq('id', existing.id);
+                        
+                        if (!updateError) {
+                            addLog(`✅ Updated definition for existing topic: "${trimmedName}"`, 'success');
+                        } else {
+                            addLog(`⚠️ Could not update definition for "${trimmedName}": ${updateError.message}`, 'warning');
+                        }
+                    } catch(e) {
+                        addLog(`⚠️ Error updating definition: ${e.message}`, 'warning');
+                    }
+                }
                 return existing.id;
             }
             
-            // Create new topic with clean slug - just the topic name in slug format
+            // Create new topic with definition if provided
             const cleanSlug = trimmedName
                 .toLowerCase()
                 .trim()
@@ -486,16 +523,20 @@
                 .replace(/\s+/g, '-')
                 .replace(/-+/g, '-');
             
-            // Add chapter ID to make it unique per chapter
-            const finalSlug = `${cleanSlug}`;
+            const topicData = {
+                chapter_id: chapterIdInt,
+                name: trimmedName,
+                slug: cleanSlug
+            };
+            
+            // Add definition if provided
+            if (topicDefinition && topicDefinition.trim() !== '') {
+                topicData.definition = topicDefinition.trim();
+            }
             
             const { data: newTopic, error: createError } = await supabase
                 .from('subtopics')
-                .insert({
-                    chapter_id: chapterIdInt,
-                    name: trimmedName,
-                    slug: finalSlug
-                })
+                .insert(topicData)
                 .select()
                 .single();
             
@@ -505,46 +546,96 @@
             }
             
             topicCache[cacheKey] = newTopic.id;
-            addLog(`✅ Created new topic: "${trimmedName}" (ID: ${newTopic.id})`, 'success');
+            addLog(`✅ Created new topic: "${trimmedName}" (ID: ${newTopic.id})${topicDefinition ? ' with definition' : ''}`, 'success');
             return newTopic.id;
         }
         
         // ============================================
-        // 12. BATCH GET OR CREATE TOPICS - FIXED
+        // 12. BATCH GET OR CREATE TOPICS - UPDATED WITH DEFINITION SUPPORT
         // ============================================
-        async function batchGetOrCreateTopics(chapterId, uniqueTopics) {
+        async function batchGetOrCreateTopics(chapterId, uniqueTopicsWithDefs) {
             const results = {};
             const topicsToCreate = [];
+            const topicsToUpdate = [];
+            
+            // uniqueTopicsWithDefs is an array of { name, definition }
+            const uniqueNames = uniqueTopicsWithDefs.map(t => t.name);
             
             // First, find all existing topics in one query
-            if (uniqueTopics.length > 0) {
+            if (uniqueNames.length > 0) {
                 const { data: existingTopics, error } = await supabase
                     .from('subtopics')
-                    .select('id, name')
+                    .select('id, name, definition')
                     .eq('chapter_id', parseInt(chapterId))
-                    .in('name', uniqueTopics);
+                    .in('name', uniqueNames);
                 
                 if (!error && existingTopics) {
+                    // Build map of existing topics
+                    const existingMap = {};
                     existingTopics.forEach(t => {
-                        const key = `${chapterId}_${t.name}`;
-                        results[key] = t.id;
-                        topicCache[key] = t.id;
+                        existingMap[t.name] = t;
                     });
-                }
-                
-                // Find which topics need to be created
-                uniqueTopics.forEach(name => {
-                    const key = `${chapterId}_${name}`;
-                    if (!results[key]) {
-                        topicsToCreate.push(name);
+                    
+                    // Process each unique topic
+                    uniqueTopicsWithDefs.forEach(({ name, definition }) => {
+                        const key = `${chapterId}_${name}`;
+                        if (existingMap[name]) {
+                            results[key] = existingMap[name].id;
+                            topicCache[key] = existingMap[name].id;
+                            
+                            // Check if definition needs updating
+                            if (definition && definition.trim() !== '' && existingMap[name].definition !== definition.trim()) {
+                                topicsToUpdate.push({
+                                    id: existingMap[name].id,
+                                    definition: definition.trim(),
+                                    name: name
+                                });
+                            }
+                        } else {
+                            topicsToCreate.push({ name, definition });
+                        }
+                    });
+                } else {
+                    // If query fails, fall back to individual processing
+                    addLog(`⚠️ Batch fetch failed, falling back to individual processing`, 'warning');
+                    for (const { name, definition } of uniqueTopicsWithDefs) {
+                        const id = await getOrCreateTopic(chapterId, name, definition);
+                        if (id) {
+                            const key = `${chapterId}_${name}`;
+                            results[key] = id;
+                            topicCache[key] = id;
+                        }
                     }
-                });
+                    return results;
+                }
+            }
+            
+            // Batch update definitions for existing topics
+            if (topicsToUpdate.length > 0) {
+                addLog(`📝 Updating ${topicsToUpdate.length} existing topic definitions...`, 'info');
+                for (const item of topicsToUpdate) {
+                    try {
+                        const { error } = await supabase
+                            .from('subtopics')
+                            .update({ definition: item.definition })
+                            .eq('id', item.id);
+                        
+                        if (!error) {
+                            addLog(`✅ Updated definition for topic: "${item.name}"`, 'success');
+                        } else {
+                            addLog(`⚠️ Failed to update definition for "${item.name}": ${error.message}`, 'warning');
+                        }
+                    } catch(e) {
+                        addLog(`⚠️ Error updating definition for "${item.name}": ${e.message}`, 'warning');
+                    }
+                }
             }
             
             // Batch create all missing topics
             if (topicsToCreate.length > 0) {
-                const topicsData = topicsToCreate.map((name) => {
-                    // Create clean slug - just the topic name
+                addLog(`📝 Creating ${topicsToCreate.length} new topics in batch...`, 'info');
+                
+                const topicsData = topicsToCreate.map(({ name, definition }) => {
                     const cleanSlug = name
                         .toLowerCase()
                         .trim()
@@ -553,31 +644,31 @@
                         .replace(/\s+/g, '-')
                         .replace(/-+/g, '-');
                     
-                    return {
+                    const data = {
                         chapter_id: parseInt(chapterId),
                         name: name,
                         slug: cleanSlug
                     };
+                    
+                    if (definition && definition.trim() !== '') {
+                        data.definition = definition.trim();
+                    }
+                    
+                    return data;
                 });
                 
-                const { data: createdTopics, error } = await supabase
+                // Batch insert all topics
+                const { data: createdTopics, error: createError } = await supabase
                     .from('subtopics')
                     .insert(topicsData)
                     .select();
                 
-                if (!error && createdTopics) {
-                    createdTopics.forEach(t => {
-                        const key = `${chapterId}_${t.name}`;
-                        results[key] = t.id;
-                        topicCache[key] = t.id;
-                        addLog(`✅ Created new topic: "${t.name}" (ID: ${t.id})`, 'success');
-                    });
-                } else {
-                    addLog(`❌ Error creating topics: ${error?.message}`, 'error');
-                    // If batch fails, try one by one
-                    addLog('🔄 Attempting individual topic creation...', 'info');
+                if (createError) {
+                    addLog(`❌ Batch topic creation failed: ${createError.message}`, 'error');
                     
-                    for (const name of topicsToCreate) {
+                    // Fallback: Create one by one (slower but works)
+                    addLog('🔄 Falling back to individual topic creation...', 'info');
+                    for (const { name, definition } of topicsToCreate) {
                         try {
                             const cleanSlug = name
                                 .toLowerCase()
@@ -587,28 +678,41 @@
                                 .replace(/\s+/g, '-')
                                 .replace(/-+/g, '-');
                             
-                            const { data: newTopic, error: createError } = await supabase
+                            const data = {
+                                chapter_id: parseInt(chapterId),
+                                name: name,
+                                slug: cleanSlug
+                            };
+                            
+                            if (definition && definition.trim() !== '') {
+                                data.definition = definition.trim();
+                            }
+                            
+                            const { data: newTopic, error: singleError } = await supabase
                                 .from('subtopics')
-                                .insert({
-                                    chapter_id: parseInt(chapterId),
-                                    name: name,
-                                    slug: cleanSlug
-                                })
+                                .insert(data)
                                 .select()
                                 .single();
                             
-                            if (!createError && newTopic) {
+                            if (!singleError && newTopic) {
                                 const key = `${chapterId}_${name}`;
                                 results[key] = newTopic.id;
                                 topicCache[key] = newTopic.id;
-                                addLog(`✅ Created topic individually: "${name}" (ID: ${newTopic.id})`, 'success');
+                                addLog(`✅ Created topic: "${name}" (ID: ${newTopic.id})${definition ? ' with definition' : ''}`, 'success');
                             } else {
-                                addLog(`❌ Failed to create topic "${name}": ${createError?.message}`, 'error');
+                                addLog(`❌ Failed to create topic "${name}": ${singleError?.message}`, 'error');
                             }
                         } catch(e) {
                             addLog(`❌ Error creating topic "${name}": ${e.message}`, 'error');
                         }
                     }
+                } else if (createdTopics) {
+                    createdTopics.forEach(t => {
+                        const key = `${chapterId}_${t.name}`;
+                        results[key] = t.id;
+                        topicCache[key] = t.id;
+                        addLog(`✅ Created topic: "${t.name}" (ID: ${t.id})${t.definition ? ' with definition' : ''}`, 'success');
+                    });
                 }
             }
             
@@ -616,7 +720,7 @@
         }
         
         // ============================================
-        // 13. PROCESS FILE
+        // 13. PROCESS FILE - UPDATED TO HANDLE topic_definition
         // ============================================
         function processFile(file) {
             addLog(`Processing: ${file.name}`, 'info');
@@ -643,6 +747,11 @@
                         const originalDifficulty = processed.difficulty;
                         processed.difficulty = normalizeDifficulty(originalDifficulty);
                         
+                        // Ensure topic_definition exists (for backwards compatibility)
+                        if (!processed.topic_definition) {
+                            processed.topic_definition = '';
+                        }
+                        
                         return processed;
                     });
                     
@@ -668,10 +777,29 @@
                     html += '</tbody></table></div>';
                     html += `<p class="text-green-600 text-sm mt-2"><i class="fas fa-check-circle"></i> ✅ ${currentQuestions.length} questions ready to upload</p>`;
                     
-                    // Check for topics
-                    const uniqueTopics = [...new Set(currentQuestions.map(q => q.topic).filter(t => t && t.trim() !== ''))];
+                    // Check for topics with definitions
+                    const uniqueTopics = [];
+                    const topicDefMap = {};
+                    currentQuestions.forEach(q => {
+                        if (q.topic && q.topic.trim() !== '') {
+                            const topicName = q.topic.trim();
+                            if (!topicDefMap[topicName]) {
+                                topicDefMap[topicName] = q.topic_definition || '';
+                                uniqueTopics.push(topicName);
+                            }
+                        }
+                    });
+                    
                     if (uniqueTopics.length > 0) {
-                        html += `<p class="text-blue-600 text-sm mt-1"><i class="fas fa-info-circle"></i> ℹ️ ${uniqueTopics.length} unique topic(s) will be auto-created: ${uniqueTopics.slice(0, 5).join(', ')}${uniqueTopics.length > 5 ? `... and ${uniqueTopics.length - 5} more` : ''}</p>`;
+                        const topicsWithDefs = uniqueTopics.map(name => ({
+                            name: name,
+                            definition: topicDefMap[name] || ''
+                        }));
+                        const topicsWithDefCount = topicsWithDefs.filter(t => t.definition && t.definition.trim() !== '').length;
+                        html += `<p class="text-blue-600 text-sm mt-1"><i class="fas fa-info-circle"></i> ℹ️ ${uniqueTopics.length} unique topic(s) will be processed (${topicsWithDefCount} with definitions): ${uniqueTopics.slice(0, 5).join(', ')}${uniqueTopics.length > 5 ? `... and ${uniqueTopics.length - 5} more` : ''}</p>`;
+                        if (topicsWithDefCount > 0) {
+                            html += `<p class="text-indigo-600 text-sm mt-1"><i class="fas fa-pencil-alt"></i> ✏️ ${topicsWithDefCount} topic(s) have definitions that will be added/updated</p>`;
+                        }
                     } else {
                         html += `<p class="text-gray-500 text-sm mt-1"><i class="fas fa-info-circle"></i> ℹ️ No topics found. Questions will be added without a topic.</p>`;
                     }
@@ -685,10 +813,12 @@
                         const questionText = safeString(firstQuestion.question_text);
                         const processedQuestion = safeProcessMathContent(questionText);
                         const topicDisplay = firstQuestion.topic ? `Topic: ${escapeHtml(firstQuestion.topic)}` : 'No topic';
+                        const defDisplay = firstQuestion.topic_definition ? `Definition: ${escapeHtml(firstQuestion.topic_definition.substring(0, 100))}${firstQuestion.topic_definition.length > 100 ? '...' : ''}` : 'No definition';
                         mathPreviewContent.innerHTML = `
                             <div class="mb-2"><strong>Question:</strong> <span class="math-content">${escapeHtml(processedQuestion)}</span></div>
                             <div class="text-sm text-gray-500 mt-2">Correct Answer: ${String.fromCharCode(65 + firstQuestion.correct_answer_numeric)}</div>
                             <div class="text-sm text-gray-500">${topicDisplay}</div>
+                            <div class="text-sm text-gray-500">${defDisplay}</div>
                         `;
                         mathPreviewDiv.classList.remove('hidden');
                         renderMathInElement(mathPreviewContent);
@@ -705,7 +835,7 @@
         }
         
         // ============================================
-        // 14. FAST BULK UPLOAD - FIXED
+        // 14. FAST BULK UPLOAD - UPDATED WITH DEFINITION SUPPORT
         // ============================================
         async function uploadToDatabase() {
             const bookId = document.getElementById('bookSelect').value;
@@ -743,126 +873,44 @@
             updateProgress(0, total, '🚀 Starting fast upload...');
             
             try {
-                // STEP 1: Get all unique topics
-                const uniqueTopics = [];
+                // STEP 1: Get all unique topics with their definitions
+                const uniqueTopicsWithDefs = [];
+                const topicDefMap = {};
+                
                 currentQuestions.forEach(q => {
                     if (q.topic && q.topic.trim() !== '') {
                         const cleanedTopic = q.topic.trim();
-                        if (!uniqueTopics.includes(cleanedTopic)) {
-                            uniqueTopics.push(cleanedTopic);
+                        if (!topicDefMap[cleanedTopic]) {
+                            topicDefMap[cleanedTopic] = q.topic_definition || '';
+                            uniqueTopicsWithDefs.push({
+                                name: cleanedTopic,
+                                definition: q.topic_definition || ''
+                            });
                         }
                     }
                 });
                 
-                addLog(`📝 Found ${uniqueTopics.length} unique topics`, 'info');
+                addLog(`📝 Found ${uniqueTopicsWithDefs.length} unique topics`, 'info');
                 
-                // STEP 2: Process topics - BATCH MODE (FAST)
+                // STEP 2: Process topics - BATCH MODE WITH DEFINITION SUPPORT
                 const topicIdMap = {};
                 
-                if (uniqueTopics.length > 0) {
-                    updateProgress(0, total, `📝 Processing ${uniqueTopics.length} topics...`);
+                if (uniqueTopicsWithDefs.length > 0) {
+                    updateProgress(0, total, `📝 Processing ${uniqueTopicsWithDefs.length} topics...`);
                     
-                    // Fetch ALL existing topics for this chapter in ONE query
-                    const { data: existingTopics, error: fetchError } = await supabase
-                        .from('subtopics')
-                        .select('id, name')
-                        .eq('chapter_id', chapterIdNum);
+                    // Use the enhanced batch function that handles definitions
+                    const results = await batchGetOrCreateTopics(chapterIdNum, uniqueTopicsWithDefs);
                     
-                    if (fetchError) {
-                        addLog(`❌ Error fetching topics: ${fetchError.message}`, 'error');
-                    } else {
-                        // Build map of existing topics
-                        const existingMap = {};
-                        if (existingTopics && existingTopics.length > 0) {
-                            existingTopics.forEach(t => {
-                                existingMap[t.name] = t.id;
-                            });
-                            addLog(`📊 Found ${existingTopics.length} existing topics`, 'info');
+                    // Build the topicIdMap from results
+                    uniqueTopicsWithDefs.forEach(({ name }) => {
+                        const key = `${chapterIdNum}_${name}`;
+                        if (results[key]) {
+                            topicIdMap[name] = results[key];
                         }
-                        
-                        // Separate existing and new topics
-                        const topicsToCreate = [];
-                        uniqueTopics.forEach(name => {
-                            if (existingMap[name]) {
-                                topicIdMap[name] = existingMap[name];
-                            } else {
-                                topicsToCreate.push(name);
-                            }
-                        });
-                        
-                        addLog(`📊 ${Object.keys(topicIdMap).length} topics found, ${topicsToCreate.length} to create`, 'info');
-                        
-                        // BATCH CREATE all new topics at once (FAST)
-                        if (topicsToCreate.length > 0) {
-                            addLog(`📝 Creating ${topicsToCreate.length} new topics in batch...`, 'info');
-                            
-                            const topicsData = topicsToCreate.map((name) => {
-                                // Create clean slug - just the topic name
-                                const cleanSlug = name
-                                    .toLowerCase()
-                                    .trim()
-                                    .replace(/[^a-z0-9\s-]/g, '')
-                                    .replace(/\s+/g, '-')
-                                    .replace(/-+/g, '-');
-                                
-                                return {
-                                    chapter_id: chapterIdNum,
-                                    name: name,
-                                    slug: cleanSlug
-                                };
-                            });
-                            
-                            // Batch insert all topics
-                            const { data: createdTopics, error: createError } = await supabase
-                                .from('subtopics')
-                                .insert(topicsData)
-                                .select();
-                            
-                            if (createError) {
-                                addLog(`❌ Batch topic creation failed: ${createError.message}`, 'error');
-                                
-                                // Fallback: Create one by one (slower but works)
-                                addLog('🔄 Falling back to individual topic creation...', 'info');
-                                for (let i = 0; i < topicsToCreate.length; i++) {
-                                    const name = topicsToCreate[i];
-                                    try {
-                                        const cleanSlug = name
-                                            .toLowerCase()
-                                            .trim()
-                                            .replace(/[^a-z0-9\s-]/g, '')
-                                            .replace(/\s+/g, '-')
-                                            .replace(/-+/g, '-');
-                                        
-                                        const { data: newTopic, error: singleError } = await supabase
-                                            .from('subtopics')
-                                            .insert({
-                                                chapter_id: chapterIdNum,
-                                                name: name,
-                                                slug: cleanSlug
-                                            })
-                                            .select()
-                                            .single();
-                                        
-                                        if (!singleError && newTopic) {
-                                            topicIdMap[name] = newTopic.id;
-                                            addLog(`✅ Created topic: "${name}" (ID: ${newTopic.id})`, 'success');
-                                        } else {
-                                            addLog(`❌ Failed to create topic "${name}": ${singleError?.message}`, 'error');
-                                        }
-                                    } catch(e) {
-                                        addLog(`❌ Error creating topic "${name}": ${e.message}`, 'error');
-                                    }
-                                }
-                            } else if (createdTopics) {
-                                createdTopics.forEach(t => {
-                                    topicIdMap[t.name] = t.id;
-                                    addLog(`✅ Created topic: "${t.name}" (ID: ${t.id})`, 'success');
-                                });
-                            }
-                        }
-                    }
+                    });
                     
-                    addLog(`📊 Topic map ready: ${Object.keys(topicIdMap).length} topics`, 'success');
+                    const topicsWithDefs = uniqueTopicsWithDefs.filter(t => t.definition && t.definition.trim() !== '');
+                    addLog(`📊 Topic map ready: ${Object.keys(topicIdMap).length} topics (${topicsWithDefs.length} with definitions)`, 'success');
                 }
                 
                 // STEP 3: Prepare questions with topic IDs (FAST)
@@ -1001,15 +1049,15 @@
                 }
                 
                 // STEP 6: Final results
-                const topicCount = Object.keys(topicIdMap).length;
+                const topicsWithDefs = uniqueTopicsWithDefs.filter(t => t.definition && t.definition.trim() !== '');
                 updateProgress(insertedQuestions, questionsToInsert.length, '✅ Upload complete!');
                 
                 addLog(`📊 Complete: ${insertedQuestions} questions uploaded`, 'success');
-                addLog(`📊 Topics: ${topicCount} processed (${uniqueTopics.length} unique)`, 'success');
+                addLog(`📊 Topics: ${uniqueTopicsWithDefs.length} processed (${topicsWithDefs.length} with definitions)`, 'success');
                 addLog(`📊 Questions with topics: ${questionsWithTopics}, without: ${questionsWithoutTopics}`, 'info');
                 
                 // Show success message
-                const successMsg = `✅ Upload complete!\n\n📊 ${insertedQuestions} questions added\n📝 ${topicCount} topics processed (${uniqueTopics.length} unique)\n📚 Chapter: ${chapterName}\n\n${questionsWithTopics} questions have topics assigned\n${questionsWithoutTopics} questions without topics`;
+                const successMsg = `✅ Upload complete!\n\n📊 ${insertedQuestions} questions added\n📝 ${uniqueTopicsWithDefs.length} topics processed (${topicsWithDefs.length} with definitions)\n📚 Chapter: ${chapterName}\n\n${questionsWithTopics} questions have topics assigned\n${questionsWithoutTopics} questions without topics`;
                 alert(successMsg);
                 
                 if (insertedQuestions > 0) {
