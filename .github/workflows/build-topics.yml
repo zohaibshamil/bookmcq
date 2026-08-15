@@ -1,16 +1,11 @@
 name: Auto-Build Topics Database
 
 on:
-  # Run automatically when sitemap files change
   push:
     paths:
       - 'sitemap*.xml'
-  
-  # Run automatically every day at midnight
   schedule:
     - cron: '0 0 * * *'
-  
-  # Allow you to manually trigger it too
   workflow_dispatch:
 
 jobs:
@@ -19,12 +14,12 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4  # Updated to v4 (Node.js 24 compatible)
       
       - name: Setup Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4  # Updated to v4 (Node.js 24 compatible)
         with:
-          node-version: '18'
+          node-version: '20'  # Use Node.js 20 for stability
       
       - name: Create build script
         run: |
@@ -194,9 +189,8 @@ jobs:
       
       - name: Commit and push
         run: |
-          git config user.name "GitHub Action"
-          git config user.email "action@github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add topics-data.min.json
           git diff --quiet && git diff --staged --quiet || git commit -m "🤖 Auto-update topics database [skip ci]"
           git push
- 
