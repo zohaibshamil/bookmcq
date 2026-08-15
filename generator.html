@@ -1,0 +1,1852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>⚡ Static Topics Generator · BookMCQ</title>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <!-- Tailwind via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #f3f4f6; font-family: system-ui, -apple-system, sans-serif; }
+    .card { background: white; border-radius: 1.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+    .btn-purple { background: #7c3aed; color: white; transition: 0.2s; }
+    .btn-purple:hover { background: #6d28d9; transform: scale(1.01); }
+    .btn-outline { border: 1.5px solid #d1d5db; background: white; transition: 0.2s; }
+    .btn-outline:hover { border-color: #7c3aed; background: #faf5ff; }
+    .step { display: flex; align-items: center; gap: 8px; color: #4b5563; }
+    .step .num { background: #7c3aed; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 600; }
+    .log-area { font-family: 'Courier New', monospace; font-size: 0.75rem; background: #1e1e2e; color: #a6e22e; padding: 12px; border-radius: 12px; max-height: 180px; overflow-y: auto; }
+    .log-area .err { color: #f14c4c; }
+    .log-area .ok { color: #66d9ef; }
+    .preview-box { background: #faf9fe; border-radius: 12px; border: 1px solid #e5e7eb; max-height: 400px; overflow: auto; }
+  </style>
+</head>
+<body>
+
+<div class="max-w-4xl mx-auto px-4 py-8">
+  
+  <!-- header -->
+  <div class="flex items-center gap-3 mb-6">
+    <div class="bg-purple-100 p-3 rounded-2xl">
+      <i class="fas fa-file-code text-purple-700 text-2xl"></i>
+    </div>
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">📄 Topics · Static Generator</h1>
+      <p class="text-gray-500 text-sm">Generate a single, self-contained <strong>topics.html</strong> page from your JSON data</p>
+    </div>
+  </div>
+
+  <!-- main card -->
+  <div class="card p-6 md:p-8">
+
+    <!-- step 1: load data -->
+    <div class="step mb-4">
+      <span class="num">1</span>
+      <span class="font-medium">Load topic data</span>
+      <span class="text-xs text-gray-400 ml-auto">from GitHub or paste JSON</span>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3 mb-5">
+      <button id="fetchFromGitBtn" class="btn-purple px-5 py-2 rounded-xl text-sm font-medium flex items-center gap-2">
+        <i class="fas fa-cloud-download-alt"></i> Fetch from GitHub
+      </button>
+      <span class="text-gray-400 text-sm">or</span>
+      <label class="btn-outline px-5 py-2 rounded-xl text-sm font-medium cursor-pointer flex items-center gap-2">
+        <i class="fas fa-upload"></i> Paste JSON
+        <input type="file" id="jsonFileInput" accept=".json" class="hidden">
+      </label>
+      <button id="useSampleBtn" class="text-purple-600 text-sm underline hover:no-underline">use sample</button>
+    </div>
+
+    <!-- status / log -->
+    <div id="statusMessage" class="text-sm text-gray-600 mb-3 flex items-center gap-2">
+      <i class="fas fa-circle text-green-400 text-[8px]"></i> Ready — load topics data to start
+    </div>
+
+    <!-- preview raw stats -->
+    <div id="statsPreview" class="flex flex-wrap gap-4 text-sm bg-gray-50 p-3 rounded-xl mb-4 hidden">
+      <div><span class="font-semibold">📚 Books</span> <span id="statBooks" class="ml-1">0</span></div>
+      <div><span class="font-semibold">📖 Chapters</span> <span id="statChapters" class="ml-1">0</span></div>
+      <div><span class="font-semibold">📝 Topics</span> <span id="statTopics" class="ml-1">0</span></div>
+    </div>
+
+    <hr class="my-5 border-gray-200">
+
+    <!-- step 2: generate -->
+    <div class="step mb-4">
+      <span class="num">2</span>
+      <span class="font-medium">Generate topics.html</span>
+      <span class="text-xs text-gray-400 ml-auto">static, self-contained</span>
+    </div>
+
+    <div class="flex flex-wrap gap-3 mb-4">
+      <button id="generateBtn" disabled class="bg-gray-300 text-gray-500 px-6 py-2 rounded-xl text-sm font-medium cursor-not-allowed flex items-center gap-2">
+        <i class="fas fa-cogs"></i> Generate page
+      </button>
+      <button id="downloadBtn" disabled class="bg-green-600 text-white px-6 py-2 rounded-xl text-sm font-medium hover:bg-green-700 transition flex items-center gap-2">
+        <i class="fas fa-download"></i> Download topics.html
+      </button>
+      <button id="previewBtn" disabled class="btn-outline px-5 py-2 rounded-xl text-sm font-medium flex items-center gap-2">
+        <i class="fas fa-eye"></i> Preview
+      </button>
+    </div>
+
+    <!-- generation log -->
+    <div id="genLog" class="log-area hidden"></div>
+
+    <!-- preview area -->
+    <div id="previewContainer" class="hidden mt-4 border rounded-xl overflow-hidden">
+      <div class="bg-gray-100 px-4 py-2 flex justify-between items-center text-sm">
+        <span><i class="fas fa-file-code mr-2"></i> topics.html preview</span>
+        <button id="closePreviewBtn" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times"></i></button>
+      </div>
+      <div id="previewIframeWrap" class="p-2 bg-white" style="height: 500px;">
+        <iframe id="previewIframe" class="w-full h-full border-0" srcdoc=""></iframe>
+      </div>
+    </div>
+
+    <hr class="my-6 border-gray-200">
+
+    <!-- info -->
+    <div class="text-xs text-gray-400 flex flex-wrap gap-4">
+      <span><i class="fas fa-check-circle text-green-500"></i> Single HTML, no external deps except CDN (tailwind, fontawesome)</span>
+      <span><i class="fas fa-database"></i> Uses topics-data.min.json from your repo</span>
+    </div>
+  </div>
+
+  <!-- footer -->
+  <div class="text-center text-xs text-gray-400 mt-6">
+    BookMCQ · static topics generator · v1.0
+  </div>
+</div>
+
+<script>
+  (function() {
+    'use strict';
+
+    // ---------- DOM refs ----------
+    const statusEl = document.getElementById('statusMessage');
+    const statsPreview = document.getElementById('statsPreview');
+    const statBooks = document.getElementById('statBooks');
+    const statChapters = document.getElementById('statChapters');
+    const statTopics = document.getElementById('statTopics');
+
+    const generateBtn = document.getElementById('generateBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const previewBtn = document.getElementById('previewBtn');
+    const genLog = document.getElementById('genLog');
+    const previewContainer = document.getElementById('previewContainer');
+    const previewIframe = document.getElementById('previewIframe');
+    const closePreviewBtn = document.getElementById('closePreviewBtn');
+
+    const fetchBtn = document.getElementById('fetchFromGitBtn');
+    const fileInput = document.getElementById('jsonFileInput');
+    const sampleBtn = document.getElementById('useSampleBtn');
+
+    // ---------- state ----------
+    let currentData = null;        // { library, stats, bookOrder, chapterOrderMap }
+    let generatedHtml = null;      // full html string
+
+    // ---------- helpers ----------
+    function setStatus(msg, type = 'info') {
+      const icon = type === 'info' ? 'fa-circle text-blue-400' :
+                   type === 'success' ? 'fa-check-circle text-green-500' :
+                   type === 'error' ? 'fa-exclamation-circle text-red-500' : 'fa-circle text-gray-400';
+      statusEl.innerHTML = `<i class="fas ${icon} text-[8px] mr-1"></i> ${msg}`;
+    }
+
+    function log(msg, type = 'info') {
+      genLog.classList.remove('hidden');
+      const cls = type === 'error' ? 'err' : type === 'success' ? 'ok' : '';
+      genLog.innerHTML += `<div class="${cls}">${msg}</div>`;
+      genLog.scrollTop = genLog.scrollHeight;
+    }
+
+    function clearLog() { genLog.innerHTML = ''; genLog.classList.add('hidden'); }
+
+    function enableButtons(enabled) {
+      generateBtn.disabled = !enabled;
+      downloadBtn.disabled = !enabled;
+      previewBtn.disabled = !enabled;
+      if (enabled) {
+        generateBtn.classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+        generateBtn.classList.add('btn-purple', 'cursor-pointer');
+        downloadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        previewBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      } else {
+        generateBtn.classList.add('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+        generateBtn.classList.remove('btn-purple', 'cursor-pointer');
+        downloadBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        previewBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+    }
+
+    function showStats(stats) {
+      statsPreview.classList.remove('hidden');
+      statBooks.textContent = stats.bookCount || 0;
+      statChapters.textContent = stats.chapterCount || 0;
+      statTopics.textContent = stats.topicCount || 0;
+    }
+
+    // ---------- load data ----------
+    function loadDataFromJSON(json) {
+      try {
+        const parsed = typeof json === 'string' ? JSON.parse(json) : json;
+        // expected shape: { library, stats, bookOrder, chapterOrderMap }
+        if (!parsed.library || typeof parsed.library !== 'object' || Object.keys(parsed.library).length === 0) {
+          throw new Error('Invalid data: missing library or empty');
+        }
+        // compute stats if not present
+        if (!parsed.stats) {
+          let b = Object.keys(parsed.library).length;
+          let c = 0, t = 0;
+          for (const bk in parsed.library) {
+            const chs = parsed.library[bk].chapters || {};
+            c += Object.keys(chs).length;
+            for (const ch in chs) {
+              t += (chs[ch].topics || []).length;
+            }
+          }
+          parsed.stats = { bookCount: b, chapterCount: c, topicCount: t };
+        }
+        // ensure bookOrder / chapterOrderMap
+        if (!parsed.bookOrder) parsed.bookOrder = Object.keys(parsed.library);
+        if (!parsed.chapterOrderMap) {
+          parsed.chapterOrderMap = {};
+          for (const bk in parsed.library) {
+            parsed.chapterOrderMap[bk] = Object.keys(parsed.library[bk].chapters || {});
+          }
+        }
+        currentData = parsed;
+        showStats(parsed.stats);
+        setStatus(`✅ Loaded ${parsed.stats.bookCount} books, ${parsed.stats.chapterCount} chapters, ${parsed.stats.topicCount} topics`, 'success');
+        enableButtons(true);
+        clearLog();
+        log(`📦 Data loaded: ${parsed.stats.bookCount} books, ${parsed.stats.chapterCount} chapters, ${parsed.stats.topicCount} topics`, 'success');
+        return true;
+      } catch (e) {
+        setStatus(`❌ ${e.message}`, 'error');
+        enableButtons(false);
+        clearLog();
+        log(`❌ Error: ${e.message}`, 'error');
+        return false;
+      }
+    }
+
+    // ---------- fetch from GitHub ----------
+    async function fetchFromGitHub() {
+      setStatus('⏳ Fetching topics-data.min.json ...', 'info');
+      clearLog();
+      log('⏳ Fetching from GitHub ...', 'info');
+      try {
+        const url = 'https://raw.githubusercontent.com/zohaibshamil/bookmcq/main/topics-data.min.json';
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status} ${resp.statusText}`);
+        const json = await resp.json();
+        if (loadDataFromJSON(json)) {
+          log('✅ Fetched and loaded from GitHub', 'success');
+        }
+      } catch (e) {
+        setStatus(`❌ Fetch failed: ${e.message}`, 'error');
+        log(`❌ ${e.message}`, 'error');
+        enableButtons(false);
+      }
+    }
+
+    // ---------- sample data (static) ----------
+    function loadSample() {
+      const sample = {
+        "library": {
+          "calculus": {
+            "name": "Calculus",
+            "slug": "calculus",
+            "chapters": {
+              "limits": {
+                "name": "Limits",
+                "slug": "limits",
+                "topics": [
+                  { "name": "Introduction to Limits", "slug": "intro-limits", "url": "/books/calculus/limits/topics/intro-limits.html" },
+                  { "name": "Limit Laws", "slug": "limit-laws", "url": "/books/calculus/limits/topics/limit-laws.html" }
+                ]
+              },
+              "derivatives": {
+                "name": "Derivatives",
+                "slug": "derivatives",
+                "topics": [
+                  { "name": "Definition of Derivative", "slug": "def-derivative", "url": "/books/calculus/derivatives/topics/def-derivative.html" }
+                ]
+              }
+            }
+          },
+          "physics": {
+            "name": "Physics",
+            "slug": "physics",
+            "chapters": {
+              "mechanics": {
+                "name": "Mechanics",
+                "slug": "mechanics",
+                "topics": [
+                  { "name": "Newton's Laws", "slug": "newton-laws", "url": "/books/physics/mechanics/topics/newton-laws.html" },
+                  { "name": "Work & Energy", "slug": "work-energy", "url": "/books/physics/mechanics/topics/work-energy.html" }
+                ]
+              }
+            }
+          }
+        },
+        "stats": { "bookCount": 2, "chapterCount": 3, "topicCount": 5 },
+        "bookOrder": ["calculus", "physics"],
+        "chapterOrderMap": {
+          "calculus": ["limits", "derivatives"],
+          "physics": ["mechanics"]
+        }
+      };
+      loadDataFromJSON(sample);
+      log('📋 Sample data loaded', 'info');
+    }
+
+    // ---------- generate HTML (EXACT MATCH to topics (4).html) ----------
+    function generateTopicsHTML(data) {
+      if (!data) throw new Error('No data to generate');
+      const { library, stats, bookOrder, chapterOrderMap } = data;
+
+      // escape helper
+      function esc(str) { return String(str).replace(/[&<>"]/g, function(m) { if (m==='&') return '&amp;'; if (m==='<') return '&lt;'; if (m==='>') return '&gt;'; if (m==='"') return '&quot;'; return m; }); }
+
+      // build books array for rendering
+      const booksArray = [];
+      for (const bookSlug of bookOrder) {
+        const book = library[bookSlug];
+        if (!book) continue;
+        const chKeys = chapterOrderMap[bookSlug] || Object.keys(book.chapters || {});
+        const chapters = [];
+        for (const chKey of chKeys) {
+          const ch = book.chapters[chKey];
+          if (!ch) continue;
+          chapters.push({
+            name: ch.name,
+            slug: ch.slug,
+            topics: (ch.topics || []).map(t => ({ name: t.name, slug: t.slug, url: t.url }))
+          });
+        }
+        booksArray.push({ name: book.name, slug: bookSlug, chapters });
+      }
+
+      // ---- EXACT HTML from topics (4).html (fully static, no loading skeletons) ----
+      let html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-PT363CT7');<\/script>
+<!-- End Google Tag Manager -->
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Topic Library - Browse All Books, Chapters & MCQs | BookMCQ</title>
+
+    <!-- FAVICONS -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+    
+    <!-- PRIMARY SEO META TAGS -->
+    <meta name="description" content="Complete topic library with all books, chapters, and MCQs. Browse and practice topic-wise questions from hundreds of books.">
+    <meta name="keywords" content="topic library, book MCQs, chapter-wise questions, practice tests, exam preparation, competitive exams">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://www.bookmcq.com/topics">
+    
+    <!-- OPEN GRAPH -->
+    <meta property="og:title" content="Topic Library - Browse All Books, Chapters & MCQs | BookMCQ">
+    <meta property="og:description" content="Complete topic library with all books, chapters, and MCQs. Browse and practice topic-wise questions.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.bookmcq.com/topics">
+    <meta property="og:site_name" content="BookMCQ">
+    
+    <!-- TWITTER CARD -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Topic Library - Browse All Books, Chapters & MCQs | BookMCQ">
+    <meta name="twitter:description" content="Complete topic library with all books, chapters, and MCQs.">
+    
+    <!-- PERFORMANCE & MOBILE -->
+    <meta name="theme-color" content="#7c3aed">
+    
+    <!-- RESOURCE HINTS -->
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- STRUCTURED DATA -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "Topic Library - BookMCQ",
+      "description": "Browse all books, chapters, and topics with MCQs",
+      "url": "https://www.bookmcq.com/topics"
+    }
+    <\/script>
+    
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-5WGZ1P0EV1"><\/script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-5WGZ1P0EV1');
+    <\/script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"><\/script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300,400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ========== BODY BACKGROUND - GRADIENT ========== */
+        body { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            min-height: 100vh;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+        
+        /* ========== QUIZ CARD - GLASSMORPHISM ========== */
+        .quiz-card { 
+            backdrop-filter: blur(10px); 
+            background: rgba(255,255,255,0.95); 
+            transition: transform 0.3s ease, box-shadow 0.3s ease; 
+            border-radius: 1.5rem; 
+            overflow: hidden; 
+        }
+        .quiz-card:hover { 
+            transform: translateY(-5px); 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2); 
+        }
+
+        /* Navbar scroll */
+        .navbar-scrolled {
+            background: white !important;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .navbar-scrolled .nav-link {
+            color: #4a5568 !important;
+        }
+        .navbar-scrolled .nav-link:hover {
+            color: #667eea !important;
+        }
+        .navbar-scrolled .text-white {
+            color: #2d3748 !important;
+        }
+        .navbar-scrolled .text-white\\/60 {
+            color: #718096 !important;
+        }
+        .navbar-scrolled i {
+            color: #667eea !important;
+        }
+
+        /* Mobile menu */
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        @media (max-width: 768px) {
+            .desktop-menu {
+                display: none !important;
+            }
+            .mobile-menu-btn {
+                display: block;
+            }
+        }
+        
+        @media (min-width: 769px) {
+            .mobile-menu-btn {
+                display: none;
+            }
+            #mobileDropdown {
+                display: none !important;
+            }
+        }
+        
+        nav.bg-white\\/10 {
+            background: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        /* ========== TOPIC LIBRARY SPECIFIC STYLES ========== */
+        
+        /* Search bar */
+        .search-input {
+            transition: all 0.3s ease;
+            border: 2px solid #e5e7eb;
+        }
+        .search-input:focus {
+            border-color: #7c3aed;
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+            outline: none;
+        }
+
+        /* Book accordion */
+        .book-accordion {
+            border: 1px solid #f3e8ff;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        .book-accordion:hover {
+            border-color: #d8b4fe;
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.08);
+        }
+        
+        .book-header {
+            padding: 16px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            transition: background 0.2s ease;
+        }
+        .book-header:hover {
+            background: #faf5ff;
+        }
+        .book-header .book-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            background: #f3e8ff;
+            color: #7c3aed;
+            flex-shrink: 0;
+        }
+        .book-header .book-title {
+            font-weight: 600;
+            color: #1f2937;
+            font-size: 1rem;
+        }
+        .book-header .book-meta {
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+        .book-header .toggle-icon {
+            color: #9ca3af;
+            transition: transform 0.3s ease;
+            font-size: 1rem;
+        }
+        .book-header .toggle-icon.open {
+            transform: rotate(180deg);
+        }
+
+        /* ========== FIXED: Book chapters container using grid for reliable animation ========== */
+        .book-chapters {
+            display: grid;
+            grid-template-rows: 0fr;
+            transition: grid-template-rows 0.4s ease;
+            background: #faf9fe;
+        }
+        .book-chapters.open {
+            grid-template-rows: 1fr;
+        }
+        .book-chapters > .book-chapters-inner {
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        /* ========== FIXED: Chapter topics container using grid for reliable animation ========== */
+        .chapter-topics {
+            display: grid;
+            grid-template-rows: 0fr;
+            transition: grid-template-rows 0.3s ease;
+            background: white;
+        }
+        .chapter-topics.open {
+            grid-template-rows: 1fr;
+        }
+        .chapter-topics > .chapter-topics-inner {
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        .chapter-item {
+            border-top: 1px solid #f3e8ff;
+            padding: 0;
+        }
+        .chapter-header {
+            padding: 12px 20px 12px 56px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #eef2ff !important;
+            border-left: 4px solid #4f46e5;
+            transition: background 0.2s ease;
+        }
+        .chapter-header:hover {
+            background: #dbeafe !important;
+        }
+        .chapter-header .chapter-name {
+            font-weight: 600 !important;
+            color: #1e40af !important;
+            font-size: 0.9rem;
+        }
+        .chapter-header .chapter-number {
+            color: #4f46e5;
+            font-weight: 700;
+            font-size: 0.8rem;
+            background: #c7d2fe;
+            padding: 2px 10px;
+            border-radius: 20px;
+            margin-right: 8px;
+        }
+        .chapter-header .topic-count {
+            font-size: 0.7rem;
+            background: #c7d2fe !important;
+            color: #1e40af !important;
+            padding: 2px 10px;
+            border-radius: 20px;
+        }
+        .chapter-header .chapter-toggle {
+            color: #9ca3af;
+            transition: transform 0.3s ease;
+            font-size: 0.8rem;
+        }
+        .chapter-header .chapter-toggle.open {
+            transform: rotate(180deg);
+        }
+
+        .topic-link {
+            display: block;
+            padding: 10px 20px 10px 72px;
+            color: #4b5563;
+            text-decoration: none;
+            font-size: 0.85rem;
+            border-top: 1px solid #f9f5ff;
+            border-left: 3px solid #8b5cf6;
+            background: #faf5ff;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .topic-link:hover {
+            background: #f3e8ff;
+            color: #7c3aed;
+            padding-left: 80px;
+            border-left-color: #7c3aed;
+        }
+        .topic-link .topic-name {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .topic-link .topic-name i {
+            color: #7c3aed;
+            font-size: 0.7rem;
+        }
+        .topic-link .topic-badge {
+            font-size: 0.6rem;
+            background: #ede9fe !important;
+            color: #5b21b6 !important;
+            padding: 2px 8px;
+            border-radius: 20px;
+        }
+
+        /* Stats badges */
+        .stat-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.7rem;
+            padding: 3px 10px;
+            border-radius: 20px;
+        }
+        .stat-badge.books {
+            background: #ede9fe;
+            color: #5b21b6;
+        }
+        .stat-badge.topics {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .stat-badge.chapters {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        /* Loading skeleton */
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 8px;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        .empty-state i {
+            font-size: 3rem;
+            color: #d1d5db;
+        }
+
+        /* Book count badge on book header */
+        .book-count-badge {
+            font-size: 0.65rem;
+            background: #ede9fe;
+            color: #5b21b6;
+            padding: 2px 10px;
+            border-radius: 20px;
+        }
+
+        /* Scrollbar */
+        .library-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .library-container::-webkit-scrollbar-track {
+            background: #f3f4f6;
+            border-radius: 10px;
+        }
+        .library-container::-webkit-scrollbar-thumb {
+            background: #c4b5fd;
+            border-radius: 10px;
+        }
+        .library-container::-webkit-scrollbar-thumb:hover {
+            background: #a78bfa;
+        }
+
+        /* AI Chat Button */
+        .ai-chat-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 1000;
+        }
+        .ai-chat-window {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 350px;
+            max-width: calc(100vw - 60px);
+            height: 500px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            z-index: 1001;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+        .chat-message {
+            margin-bottom: 12px;
+            display: flex;
+        }
+        .chat-message.user { justify-content: flex-end; }
+        .chat-message.bot { justify-content: flex-start; }
+        .chat-bubble {
+            max-width: 80%;
+            padding: 10px 14px;
+            border-radius: 18px;
+            font-size: 14px;
+        }
+        .chat-message.user .chat-bubble {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .chat-message.bot .chat-bubble {
+            background: #f3f4f6;
+            color: #1f2937;
+            border-bottom-left-radius: 4px;
+        }
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 10px 14px;
+        }
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background: #9ca3af;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-10px); opacity: 1; }
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .book-header {
+                padding: 12px 16px;
+                flex-wrap: wrap;
+            }
+            .book-header .book-title {
+                font-size: 0.85rem;
+            }
+            .chapter-header {
+                padding: 10px 16px 10px 44px;
+            }
+            .chapter-header .chapter-name {
+                font-size: 0.8rem;
+            }
+            .topic-link {
+                padding: 8px 16px 8px 56px;
+                font-size: 0.78rem;
+            }
+            .topic-link:hover {
+                padding-left: 60px;
+            }
+        }
+    <\/style>
+</head>
+<body>
+
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PT363CT7"
+height="0" width="0" style="display:none;visibility:hidden"><\/iframe><\/noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+<div class="max-w-6xl mx-auto px-4">
+    
+    <!-- Navigation -->
+    <nav class="bg-white/10 backdrop-blur-lg rounded-full px-4 md:px-6 py-3 mb-6 sticky top-4 z-50 shadow-lg">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-graduation-cap text-white text-xl md:text-2xl"></i>
+                <span class="text-white font-bold text-lg md:text-xl">BookMCQ</span>
+                <span class="text-white/60 text-xs hidden sm:inline">| Master Every Chapter</span>
+            </div>
+            
+            <div class="desktop-menu flex gap-3 md:gap-6">
+                <a href="/" class="nav-link text-white/80 hover:text-white transition">🏠 Home</a>
+                <a href="/quiz" class="nav-link text-white/80 hover:text-white transition flex items-center gap-1">📝 Quiz <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1">FREE</span></a>
+                <a href="/practice" class="nav-link text-white/80 hover:text-white transition flex items-center gap-1">📚 Practice <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1">FREE</span></a>
+                <a href="/topics" class="nav-link text-white/80 hover:text-white transition">📖 Topics</a>
+                <a href="/contact" class="nav-link text-white/80 hover:text-white transition">📧 Contact</a>
+                <a href="/privacy" class="nav-link text-white/80 hover:text-white transition">🔒 Privacy</a>
+            </div>
+            
+            <button id="mobileMenuBtn" class="mobile-menu-btn text-white text-2xl">
+                ☰
+            </button>
+        </div>
+    </nav>
+    
+    <!-- Mobile Dropdown -->
+    <div id="mobileDropdown" class="hidden bg-white rounded-xl shadow-xl w-full mb-4 py-2 z-50" style="display: none;">
+        <a href="/" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition">🏠 Home</a>
+        <a href="/quiz" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center">📝 Quiz <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span></a>
+        <a href="/practice" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center">📚 Practice <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span></a>
+        <a href="/topics" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition">📖 Topics</a>
+        <a href="/contact" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition">📧 Contact</a>
+        <a href="/privacy" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition">🔒 Privacy</a>
+    </div>
+
+    <!-- Main Topic Library -->
+    <div class="quiz-card rounded-2xl p-6 md:p-8 shadow-xl">
+        
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-3">
+                    <i class="fas fa-book-open text-purple-600"></i>
+                    Topics Library
+                </h1>
+                <p class="text-gray-500 text-sm mt-1">Browse all books, chapters, and practice topics</p>
+            </div>
+            <div class="flex items-center gap-3 flex-wrap">
+                <span class="stat-badge books" id="totalBooks"><i class="fas fa-book"></i> <span id="bookCount">${stats.bookCount}</span> Books</span>
+                <span class="stat-badge chapters" id="totalChapters"><i class="fas fa-layer-group"></i> <span id="chapterCount">${stats.chapterCount}</span> Chapters</span>
+                <span class="stat-badge topics" id="totalTopics"><i class="fas fa-tag"></i> <span id="topicCount">${stats.topicCount}</span> Topics</span>
+            </div>
+        </div>
+
+        <!-- Search -->
+        <div class="relative mb-6">
+            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            <input 
+                type="text" 
+                id="searchInput" 
+                placeholder="Search books, chapters, or topics..." 
+                class="search-input w-full pl-11 pr-4 py-3 rounded-xl text-gray-700 placeholder-gray-400 text-sm bg-white/80"
+            >
+        </div>
+
+        <!-- Stats Summary -->
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+            <div class="bg-purple-50 rounded-xl p-3 text-center">
+                <div class="text-xl font-bold text-purple-700" id="statBooks">${stats.bookCount}</div>
+                <div class="text-xs text-gray-500">Total Books</div>
+            </div>
+            <div class="bg-blue-50 rounded-xl p-3 text-center">
+                <div class="text-xl font-bold text-blue-700" id="statChapters">${stats.chapterCount}</div>
+                <div class="text-xs text-gray-500">Total Chapters</div>
+            </div>
+            <div class="bg-green-50 rounded-xl p-3 text-center">
+                <div class="text-xl font-bold text-green-700" id="statTopics">${stats.topicCount}</div>
+                <div class="text-xs text-gray-500">Total Topics</div>
+            </div>
+        </div>
+
+        <!-- Library Content -->
+        <div id="libraryContent" class="library-container pr-2">
+            <!-- Loading Skeleton - hidden because static -->
+            <div id="loadingSkeleton" style="display:none;">
+                <div class="space-y-3">
+                    <div class="skeleton h-16 rounded-xl"></div>
+                    <div class="skeleton h-16 rounded-xl"></div>
+                    <div class="skeleton h-16 rounded-xl"></div>
+                    <div class="skeleton h-16 rounded-xl"></div>
+                    <div class="skeleton h-16 rounded-xl"></div>
+                </div>
+            </div>
+
+            <!-- No Results -->
+            <div id="noResults" class="empty-state hidden">
+                <i class="fas fa-search text-4xl text-gray-300 mb-3"></i>
+                <p class="text-gray-500">No results found for your search.</p>
+                <p class="text-gray-400 text-sm">Try adjusting your search terms.</p>
+            </div>
+
+            <!-- Books Container -->
+            <div id="booksContainer">`;
+
+      // render books
+      for (const book of booksArray) {
+        const totalTopics = book.chapters.reduce((acc, ch) => acc + ch.topics.length, 0);
+        html += `<div class="book-accordion mb-3" data-book="${book.slug}">
+          <div class="book-header" onclick="toggleBook('${book.slug}')">
+            <div class="flex items-center gap-3 flex-1 min-w-0">
+              <div class="book-icon">📚</div>
+              <div class="flex-1 min-w-0">
+                <div class="book-title">${esc(book.name)}</div>
+                <div class="book-meta">${book.chapters.length} chapters · ${totalTopics} topics</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-3 flex-shrink-0">
+              <span class="book-count-badge">${totalTopics}</span>
+              <i class="fas fa-chevron-down toggle-icon" id="toggle-${book.slug}"></i>
+            </div>
+          </div>
+          <div class="book-chapters" id="chapters-${book.slug}">
+            <div class="book-chapters-inner">`;
+
+        for (const ch of book.chapters) {
+          html += `<div class="chapter-item">
+            <div class="chapter-header" onclick="toggleChapter('${book.slug}','${ch.slug}')">
+              <span class="chapter-name">${esc(ch.name)}</span>
+              <div class="flex items-center gap-3">
+                <span class="topic-count">${ch.topics.length} topics</span>
+                <i class="fas fa-chevron-down chapter-toggle" id="ctoggle-${book.slug}-${ch.slug}"></i>
+              </div>
+            </div>
+            <div class="chapter-topics" id="ctopics-${book.slug}-${ch.slug}">
+              <div class="chapter-topics-inner">`;
+
+          for (const t of ch.topics) {
+            html += `<a href="${esc(t.url)}" target="_blank" class="topic-link" title="Open ${esc(t.name)}">
+              <span class="topic-name">
+                <i class="fas fa-file-alt"></i>
+                ${esc(t.name)}
+              </span>
+              <span class="topic-badge">Practice →</span>
+            </a>`;
+          }
+
+          html += `</div></div></div>`;
+        }
+
+        html += `</div></div></div>`;
+      }
+
+      html += `</div>
+        </div>
+
+        <!-- Footer Note -->
+        <div class="mt-6 pt-4 border-t border-gray-200 flex justify-between items-center flex-wrap gap-2">
+            <p class="text-xs text-gray-400">
+                <i class="fas fa-sync-alt text-purple-400 mr-1"></i> 
+                <span id="lastUpdated">${new Date().toISOString().slice(0,10)}</span>
+            </p>
+            <p class="text-xs text-gray-400">
+                <i class="fas fa-external-link-alt text-purple-400 mr-1"></i> 
+                Click any topic to start practicing
+            </p>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-8 text-center text-white/60 text-xs md:text-sm py-4">
+        <p>&copy; 2025 BookMCQ. All rights reserved. | Master Every Chapter</p>
+    </footer>
+</div>
+
+<!-- AI Chat -->
+<div class="ai-chat-btn">
+    <button id="aiChatBtn" class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 rounded-full shadow-xl hover:scale-105 transition">
+        <i class="fas fa-robot text-xl"></i>
+    </button>
+</div>
+
+<div id="aiChatWindow" class="ai-chat-window hidden">
+    <div class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-3 flex justify-between items-center">
+        <div class="flex items-center gap-2">
+            <i class="fas fa-robot"></i>
+            <span class="font-semibold">MCQ Assistant</span>
+        </div>
+        <button id="closeChatBtn" class="text-white hover:opacity-70">&times;</button>
+    </div>
+    <div id="chatMessages" class="chat-messages bg-gray-50">
+        <div class="chat-message bot">
+            <div class="chat-bubble">
+                👋 Hi! I can help you find topics. Ask me about any book or subject!
+            </div>
+        </div>
+    </div>
+    <div class="p-3 border-t bg-white">
+        <div class="flex gap-2">
+            <input type="text" id="chatInput" placeholder="Ask about topics, books..." class="flex-1 p-2 border rounded-xl text-sm">
+            <button id="sendChatBtn" class="bg-purple-600 text-white px-4 py-2 rounded-xl">Send</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ============================================
+    // BOOKMCQ - TOPIC LIBRARY (STATIC VERSION)
+    // ============================================
+
+    // Debug logger
+    const debugLog = [];
+    function logDebug(msg) {
+        console.log(msg);
+        debugLog.push(new Date().toISOString() + ' - ' + msg);
+    }
+
+    // ============================================
+    // 1. SECURITY MANAGER
+    // ============================================
+    class SecurityManager {
+        constructor() {
+            logDebug('🔓 Security: Right click enabled');
+        }
+    }
+
+    // ============================================
+    // 2. TOPIC LIBRARY RENDERER - STATIC
+    // ============================================
+    class TopicLibraryRenderer {
+        constructor() {
+            this.searchQuery = '';
+            this.scrollPosition = 0;
+            this.booksArray = [];
+            this._lastRenderData = null;
+            this._lastStats = null;
+            this.libraryData = null;
+            this.bookOrder = [];
+            this.chapterOrderMap = {};
+        }
+
+        setLibraryData(libraryData, bookOrder, chapterOrderMap) {
+            this.libraryData = libraryData;
+            this.bookOrder = bookOrder;
+            this.chapterOrderMap = chapterOrderMap;
+            this.booksArray = this.buildArrayStructure(libraryData, bookOrder, chapterOrderMap);
+        }
+
+        buildArrayStructure(library, bookOrder, chapterOrderMap) {
+            const booksArray = [];
+            for (const bookSlug of bookOrder) {
+                const book = library[bookSlug];
+                if (!book) continue;
+                const chapters = book.chapters;
+                const chapterKeys = chapterOrderMap[bookSlug] || Object.keys(chapters);
+                const chaptersArray = [];
+                for (const chapterKey of chapterKeys) {
+                    const chapter = chapters[chapterKey];
+                    if (!chapter) continue;
+                    chaptersArray.push({
+                        chapterName: chapter.name,
+                        chapterSlug: chapter.slug,
+                        topics: chapter.topics.map(t => ({
+                            name: t.name,
+                            slug: t.slug,
+                            url: t.url
+                        }))
+                    });
+                }
+                booksArray.push({
+                    bookName: book.name,
+                    bookSlug: book.slug,
+                    chapters: chaptersArray
+                });
+            }
+            return booksArray;
+        }
+
+        searchInArray(query) {
+            if (!query || query.trim() === '') {
+                return this.booksArray;
+            }
+            
+            const lowerQuery = query.toLowerCase().trim();
+            const results = [];
+            
+            for (const book of this.booksArray) {
+                const bookMatches = book.bookName.toLowerCase().includes(lowerQuery);
+                const matchingChapters = [];
+                
+                for (const chapter of book.chapters) {
+                    const chapterMatches = chapter.chapterName.toLowerCase().includes(lowerQuery);
+                    const matchingTopics = [];
+                    
+                    for (const topic of chapter.topics) {
+                        if (topic.name.toLowerCase().includes(lowerQuery)) {
+                            matchingTopics.push({
+                                name: topic.name,
+                                slug: topic.slug,
+                                url: topic.url
+                            });
+                        }
+                    }
+                    
+                    if (chapterMatches || matchingTopics.length > 0 || bookMatches) {
+                        matchingChapters.push({
+                            chapterName: chapter.chapterName,
+                            chapterSlug: chapter.chapterSlug,
+                            topics: chapterMatches ? chapter.topics.map(t => ({ name: t.name, slug: t.slug, url: t.url })) : matchingTopics
+                        });
+                    }
+                }
+                
+                if (bookMatches || matchingChapters.length > 0) {
+                    results.push({
+                        bookName: book.bookName,
+                        bookSlug: book.bookSlug,
+                        chapters: bookMatches ? book.chapters.map(c => ({
+                            chapterName: c.chapterName,
+                            chapterSlug: c.chapterSlug,
+                            topics: c.topics.map(t => ({ name: t.name, slug: t.slug, url: t.url }))
+                        })) : matchingChapters
+                    });
+                }
+            }
+            
+            return results;
+        }
+
+        render(libraryData, stats, bookOrder, chapterOrderMap) {
+            this._lastRenderData = libraryData;
+            this._lastStats = stats;
+            
+            if (libraryData && bookOrder && chapterOrderMap) {
+                this.setLibraryData(libraryData, bookOrder, chapterOrderMap);
+            }
+            
+            const container = document.getElementById('booksContainer');
+            const loading = document.getElementById('loadingSkeleton');
+            const noResults = document.getElementById('noResults');
+            
+            loading.style.display = 'none';
+            
+            document.getElementById('bookCount').textContent = stats.bookCount || 0;
+            document.getElementById('chapterCount').textContent = stats.chapterCount || 0;
+            document.getElementById('topicCount').textContent = stats.topicCount || 0;
+            document.getElementById('statBooks').textContent = stats.bookCount || 0;
+            document.getElementById('statChapters').textContent = stats.chapterCount || 0;
+            document.getElementById('statTopics').textContent = stats.topicCount || 0;
+            
+            if (!libraryData || Object.keys(libraryData).length === 0) {
+                noResults.classList.remove('hidden');
+                container.innerHTML = '';
+                return;
+            }
+            
+            noResults.classList.add('hidden');
+            
+            const bookKeys = bookOrder || Object.keys(libraryData);
+            let html = '';
+            
+            for (const bookKey of bookKeys) {
+                const book = libraryData[bookKey];
+                if (!book) continue;
+                
+                let chapterKeys = chapterOrderMap[bookKey] || [];
+                if (chapterKeys.length === 0) {
+                    chapterKeys = Object.keys(book.chapters);
+                }
+                chapterKeys = chapterKeys.filter(key => book.chapters[key] !== undefined);
+                
+                const totalTopics = chapterKeys.reduce((sum, ck) => {
+                    const chapter = book.chapters[ck];
+                    return sum + (chapter ? chapter.topics.length : 0);
+                }, 0);
+                
+                html += \`
+                    <div class="book-accordion mb-3" data-book="\${bookKey}">
+                        <div class="book-header" onclick="toggleBook('\${bookKey}')">
+                            <div class="flex items-center gap-3 flex-1 min-w-0">
+                                <div class="book-icon">📚</div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="book-title">\${this.escapeHtml(book.name)}</div>
+                                    <div class="book-meta">\${chapterKeys.length} chapters · \${totalTopics} topics</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 flex-shrink-0">
+                                <span class="book-count-badge">\${totalTopics}</span>
+                                <i class="fas fa-chevron-down toggle-icon" id="toggle-\${bookKey}"></i>
+                            </div>
+                        </div>
+                        <div class="book-chapters" id="chapters-\${bookKey}">
+                            <div class="book-chapters-inner">
+                \`;
+                
+                for (const chapterKey of chapterKeys) {
+                    const chapter = book.chapters[chapterKey];
+                    if (!chapter) continue;
+                    
+                    const topicCount = chapter.topics.length;
+                    
+                    html += \`
+                        <div class="chapter-item">
+                            <div class="chapter-header" onclick="toggleChapter('\${bookKey}', '\${chapterKey}')">
+                                <span class="chapter-name">
+                                    \${this.escapeHtml(chapter.name)}
+                                </span>
+                                <div class="flex items-center gap-3">
+                                    <span class="topic-count">\${topicCount} topics</span>
+                                    <i class="fas fa-chevron-down chapter-toggle" id="ctoggle-\${bookKey}-\${chapterKey}"></i>
+                                </div>
+                            </div>
+                            <div class="chapter-topics" id="ctopics-\${bookKey}-\${chapterKey}">
+                                <div class="chapter-topics-inner">
+                    \`;
+                    
+                    const sortedTopics = [...chapter.topics].sort((a, b) => {
+                        const nameA = a.name || '';
+                        const nameB = b.name || '';
+                        return nameA.localeCompare(nameB);
+                    });
+                    
+                    for (const topic of sortedTopics) {
+                        html += \`
+                            <a href="\${topic.url}" target="_blank" class="topic-link" title="Open \${topic.name}">
+                                <span class="topic-name">
+                                    <i class="fas fa-file-alt"></i>
+                                    \${this.escapeHtml(topic.name)}
+                                </span>
+                                <span class="topic-badge">Practice →</span>
+                            </a>
+                        \`;
+                    }
+                    
+                    html += \`
+                                </div>
+                            </div>
+                        </div>
+                    \`;
+                }
+                
+                html += \`
+                            </div>
+                        </div>
+                    </div>
+                \`;
+            }
+            
+            container.innerHTML = html;
+            
+            if (this.searchQuery !== '') {
+                document.querySelectorAll('.book-accordion').forEach(book => {
+                    const bookKey = book.dataset.book;
+                    const hasVisibleChapters = book.querySelector('.chapter-item:not([style*="display:none"])');
+                    if (hasVisibleChapters) {
+                        const chaptersDiv = document.getElementById('chapters-' + bookKey);
+                        if (chaptersDiv) {
+                            chaptersDiv.classList.add('open');
+                            const toggle = document.getElementById('toggle-' + bookKey);
+                            if (toggle) toggle.classList.add('open');
+                        }
+                    }
+                });
+            }
+            
+            if (this.scrollPosition > 0) {
+                const container = document.querySelector('.quiz-card');
+                if (container) {
+                    container.scrollIntoView({ block: 'start' });
+                }
+                this.scrollPosition = 0;
+            }
+            
+            document.getElementById('lastUpdated').textContent = new Date().toLocaleString();
+            
+            logDebug('✅ Render complete: ' + Object.keys(libraryData).length + ' books displayed');
+        }
+
+        escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>"]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                if (m === '"') return '&quot;';
+                return m;
+            });
+        }
+
+        renderLoading() {
+            // static page – no loading
+        }
+
+        renderError(message) {
+            const container = document.getElementById('booksContainer');
+            document.getElementById('loadingSkeleton').style.display = 'none';
+            document.getElementById('noResults').classList.add('hidden');
+            container.innerHTML = \`
+                <div class="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+                    <i class="fas fa-exclamation-circle text-red-500 text-3xl mb-3"></i>
+                    <p class="text-red-700 font-medium">\${message || 'Failed to load topic library'}</p>
+                    <button onclick="location.reload()" class="mt-3 text-purple-600 hover:text-purple-800 text-sm font-medium">
+                        <i class="fas fa-sync-alt mr-1"></i> Try again
+                    </button>
+                </div>
+            \`;
+        }
+    }
+
+    // ============================================
+    // 5. TOGGLE FUNCTIONS
+    // ============================================
+    
+    window.toggleBook = function(bookKey) {
+        const chaptersDiv = document.getElementById('chapters-' + bookKey);
+        const toggle = document.getElementById('toggle-' + bookKey);
+        const isCurrentlyOpen = chaptersDiv && chaptersDiv.classList.contains('open');
+        const bookElement = document.querySelector('.book-accordion[data-book="' + bookKey + '"]');
+        const bookHeader = bookElement ? bookElement.querySelector('.book-header') : null;
+        
+        if (window._scrollTimeout) {
+            clearTimeout(window._scrollTimeout);
+            window._scrollTimeout = null;
+        }
+        
+        const allBooks = document.querySelectorAll('.book-accordion');
+        allBooks.forEach(book => {
+            const otherBookKey = book.dataset.book;
+            if (otherBookKey !== bookKey) {
+                const otherChapters = document.getElementById('chapters-' + otherBookKey);
+                const otherToggle = document.getElementById('toggle-' + otherBookKey);
+                if (otherChapters && otherChapters.classList.contains('open')) {
+                    otherChapters.classList.remove('open');
+                    if (otherToggle) {
+                        otherToggle.classList.remove('open');
+                    }
+                }
+            }
+        });
+        
+        if (isCurrentlyOpen) {
+            if (chaptersDiv) {
+                chaptersDiv.classList.remove('open');
+                if (toggle) toggle.classList.remove('open');
+            }
+            return;
+        }
+        
+        if (chaptersDiv) {
+            chaptersDiv.classList.add('open');
+            if (toggle) toggle.classList.add('open');
+        }
+        
+        window._scrollTimeout = setTimeout(() => {
+            if (bookHeader) {
+                const headerRect = bookHeader.getBoundingClientRect();
+                const currentScrollY = window.scrollY;
+                const targetY = currentScrollY + headerRect.top - 100;
+                
+                window.scrollTo({
+                    top: Math.max(0, targetY),
+                    behavior: 'smooth'
+                });
+            }
+            window._scrollTimeout = null;
+        }, 450);
+    };
+
+    window.toggleChapter = function(bookKey, chapterKey) {
+        const topicsDiv = document.getElementById('ctopics-' + bookKey + '-' + chapterKey);
+        const toggle = document.getElementById('ctoggle-' + bookKey + '-' + chapterKey);
+        const isOpening = topicsDiv && !topicsDiv.classList.contains('open');
+        
+        const chaptersDiv = document.getElementById('chapters-' + bookKey);
+        
+        if (chaptersDiv) {
+            const allChapterTopics = chaptersDiv.querySelectorAll('.chapter-topics');
+            allChapterTopics.forEach(chapterTopics => {
+                if (chapterTopics.id !== 'ctopics-' + bookKey + '-' + chapterKey) {
+                    if (chapterTopics.classList.contains('open')) {
+                        chapterTopics.classList.remove('open');
+                        
+                        const chapterItem = chapterTopics.closest('.chapter-item');
+                        if (chapterItem) {
+                            const chapterHeader = chapterItem.querySelector('.chapter-header');
+                            if (chapterHeader) {
+                                const otherToggle = chapterHeader.querySelector('.chapter-toggle');
+                                if (otherToggle) {
+                                    otherToggle.classList.remove('open');
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        if (topicsDiv) {
+            if (isOpening) {
+                topicsDiv.classList.add('open');
+                if (toggle) toggle.classList.add('open');
+                
+                const resizeObserver = new ResizeObserver((entries) => {
+                    for (const entry of entries) {
+                        if (entry.target === topicsDiv) {
+                            requestAnimationFrame(() => {
+                                requestAnimationFrame(() => {
+                                    recalculateBookChaptersHeight(bookKey);
+                                    resizeObserver.disconnect();
+                                });
+                            });
+                            break;
+                        }
+                    }
+                });
+                
+                resizeObserver.observe(topicsDiv);
+                
+                setTimeout(() => {
+                    if (resizeObserver && !resizeObserver._disconnected) {
+                        resizeObserver.disconnect();
+                        requestAnimationFrame(() => {
+                            requestAnimationFrame(() => {
+                                recalculateBookChaptersHeight(bookKey);
+                            });
+                        });
+                    }
+                }, 300);
+                
+                setTimeout(() => {
+                    let chapterHeader = null;
+                    
+                    const chapterItem = topicsDiv.closest('.chapter-item');
+                    if (chapterItem) {
+                        chapterHeader = chapterItem.querySelector('.chapter-header');
+                    }
+                    
+                    if (!chapterHeader) {
+                        const toggleIcon = document.getElementById('ctoggle-' + bookKey + '-' + chapterKey);
+                        if (toggleIcon) {
+                            chapterHeader = toggleIcon.closest('.chapter-header');
+                        }
+                    }
+                    
+                    if (!chapterHeader) {
+                        const allHeaders = document.querySelectorAll('.chapter-header');
+                        for (const header of allHeaders) {
+                            const onclickAttr = header.getAttribute('onclick');
+                            if (onclickAttr && onclickAttr.includes("'" + bookKey + "'") && onclickAttr.includes("'" + chapterKey + "'")) {
+                                chapterHeader = header;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (chapterHeader) {
+                        const headerRect = chapterHeader.getBoundingClientRect();
+                        const currentScrollY = window.scrollY;
+                        const targetY = currentScrollY + headerRect.top - 80;
+                        
+                        window.scrollTo({
+                            top: Math.max(0, targetY),
+                            behavior: 'smooth'
+                        });
+                    } else {
+                        const fallbackHeader = chaptersDiv ? chaptersDiv.querySelector('.chapter-header') : null;
+                        if (fallbackHeader) {
+                            const headerRect = fallbackHeader.getBoundingClientRect();
+                            const currentScrollY = window.scrollY;
+                            const targetY = currentScrollY + headerRect.top - 80;
+                            
+                            window.scrollTo({
+                                top: Math.max(0, targetY),
+                                behavior: 'smooth'
+                            });
+                        }
+                    }
+                }, 450);
+                
+            } else {
+                topicsDiv.classList.remove('open');
+                if (toggle) toggle.classList.remove('open');
+                
+                setTimeout(() => {
+                    recalculateBookChaptersHeight(bookKey);
+                }, 350);
+            }
+        }
+    };
+
+    function recalculateBookChaptersHeight(bookKey) {
+        const chaptersDiv = document.getElementById('chapters-' + bookKey);
+        if (!chaptersDiv) return;
+        void chaptersDiv.offsetHeight;
+    }
+
+    // ============================================
+    // 6. MOBILE MENU
+    // ============================================
+    function initMobileMenu() {
+        const mobileBtn = document.getElementById('mobileMenuBtn');
+        const dropdown = document.getElementById('mobileDropdown');
+        
+        if (mobileBtn && dropdown) {
+            mobileBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+            });
+            
+            document.addEventListener('click', function(e) {
+                if (window.innerWidth <= 768 && dropdown) {
+                    if (!mobileBtn.contains(e.target) && !dropdown.contains(e.target)) {
+                        dropdown.style.display = 'none';
+                    }
+                }
+            });
+            
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 768) {
+                    dropdown.style.display = 'none';
+                }
+            });
+        }
+    }
+
+    // ============================================
+    // 7. NAVBAR SCROLL
+    // ============================================
+    function initNavbarScroll() {
+        const navbar = document.querySelector('nav.bg-white\\/10');
+        if (!navbar) return;
+        window.addEventListener('scroll', () => {
+            navbar.classList.toggle('navbar-scrolled', window.scrollY > 50);
+        });
+    }
+
+    // ============================================
+    // 8. AI CHAT
+    // ============================================
+    function setupAIChat() {
+        const chatBtn = document.getElementById('aiChatBtn');
+        const chatWindow = document.getElementById('aiChatWindow');
+        const closeChatBtn = document.getElementById('closeChatBtn');
+        const sendBtn = document.getElementById('sendChatBtn');
+        const chatInput = document.getElementById('chatInput');
+        const chatMessages = document.getElementById('chatMessages');
+        
+        chatBtn.onclick = () => chatWindow.classList.toggle('hidden');
+        closeChatBtn.onclick = () => chatWindow.classList.add('hidden');
+        
+        const addMessage = (text, isUser) => {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'chat-message ' + (isUser ? 'user' : 'bot');
+            messageDiv.innerHTML = '<div class="chat-bubble">' + text + '</div>';
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        };
+        
+        const showTyping = () => {
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'chat-message bot';
+            typingDiv.id = 'typingIndicator';
+            typingDiv.innerHTML = '<div class="chat-bubble"><div class="typing-indicator"><span></span><span></span><span></span></div></div>';
+            chatMessages.appendChild(typingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        };
+        
+        const removeTyping = () => {
+            const typing = document.getElementById('typingIndicator');
+            if (typing) typing.remove();
+        };
+        
+        const sendMessage = async () => {
+            const message = chatInput.value.trim();
+            if (!message) return;
+            addMessage(message, true);
+            chatInput.value = '';
+            showTyping();
+            
+            let response = '';
+            const lower = message.toLowerCase();
+            if (lower.includes('book') || lower.includes('topic')) {
+                response = "📚 You can browse all books and topics in the Topic Library above. Click on any book to see its chapters and topics!";
+            } else if (lower.includes('search') || lower.includes('find')) {
+                response = "🔍 Use the search bar above to find specific books, chapters, or topics by name.";
+            } else {
+                response = "I can help you find topics! Try searching for a book name, chapter, or topic in the search bar above. Or ask me about a specific subject.";
+            }
+            
+            setTimeout(() => {
+                removeTyping();
+                addMessage(response, false);
+            }, 500);
+        };
+        
+        sendBtn.onclick = sendMessage;
+        chatInput.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
+    }
+
+    // ============================================
+    // 9. MAIN INITIALIZATION - STATIC VERSION
+    // ============================================
+    document.addEventListener('DOMContentLoaded', function() {
+        logDebug('🚀 Page loaded - Initializing...');
+        
+        new SecurityManager();
+        initMobileMenu();
+        initNavbarScroll();
+        setupAIChat();
+
+        const renderer = new TopicLibraryRenderer();
+
+        // ================================================================
+        // ★ STATIC DATA - EMBEDDED DIRECTLY (no loading, no cache) ★
+        // ================================================================
+        const staticData = ${JSON.stringify(data)};
+        
+        renderer.render(
+            staticData.library,
+            staticData.stats,
+            staticData.bookOrder || Object.keys(staticData.library),
+            staticData.chapterOrderMap || {}
+        );
+        
+        logDebug('✅ Static page rendered successfully');
+
+        // ================================================================
+        // ★ SEARCH FUNCTIONALITY ★
+        // ================================================================
+        const searchInput = document.getElementById('searchInput');
+        let searchTimeout = null;
+
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const query = this.value.trim().toLowerCase();
+                renderer.searchQuery = query;
+                if (query === '') {
+                    renderer.render(
+                        staticData.library,
+                        staticData.stats,
+                        staticData.bookOrder || Object.keys(staticData.library),
+                        staticData.chapterOrderMap || {}
+                    );
+                    document.getElementById('noResults').classList.add('hidden');
+                } else {
+                    const searchResults = renderer.searchInArray(query);
+                    if (searchResults.length === 0) {
+                        document.getElementById('booksContainer').innerHTML = \`
+                            <div class="empty-state">
+                                <i class="fas fa-search text-4xl text-gray-300 mb-3"></i>
+                                <p class="text-gray-500">No results found for "\${query}"</p>
+                                <p class="text-gray-400 text-sm">Try adjusting your search terms.</p>
+                            </div>
+                        \`;
+                        document.getElementById('noResults').classList.remove('hidden');
+                        return;
+                    }
+                    
+                    const searchLibrary = {};
+                    const searchBookOrder = [];
+                    const searchChapterOrderMap = {};
+                    
+                    for (const book of searchResults) {
+                        const chaptersObj = {};
+                        const chapterOrder = [];
+                        for (const chapter of book.chapters) {
+                            chaptersObj[chapter.chapterSlug] = {
+                                name: chapter.chapterName,
+                                slug: chapter.chapterSlug,
+                                topics: chapter.topics.map(t => ({
+                                    name: t.name,
+                                    slug: t.slug,
+                                    url: t.url
+                                }))
+                            };
+                            chapterOrder.push(chapter.chapterSlug);
+                        }
+                        searchLibrary[book.bookSlug] = {
+                            name: book.bookName,
+                            slug: book.bookSlug,
+                            chapters: chaptersObj
+                        };
+                        searchBookOrder.push(book.bookSlug);
+                        searchChapterOrderMap[book.bookSlug] = chapterOrder;
+                    }
+                    
+                    const searchStats = (() => {
+                        const b = Object.keys(searchLibrary).length;
+                        let c = 0, t = 0;
+                        for (const bk in searchLibrary) {
+                            const chs = searchLibrary[bk].chapters || {};
+                            c += Object.keys(chs).length;
+                            for (const ch in chs) {
+                                t += (chs[ch].topics || []).length;
+                            }
+                        }
+                        return { bookCount: b, chapterCount: c, topicCount: t };
+                    })();
+                    
+                    renderer.render(searchLibrary, searchStats, searchBookOrder, searchChapterOrderMap);
+                    document.getElementById('noResults').classList.add('hidden');
+                    
+                    logDebug('🔍 Search results: ' + searchResults.length + ' books found for "' + query + '"');
+                }
+            }, 300);
+        });
+    });
+
+    logDebug('📚 Static Topic Library loaded');
+<\/script>
+</body>
+</html>`;
+      return html;
+    }
+
+    // ---------- generate action ----------
+    function generate() {
+      if (!currentData) {
+        setStatus('❌ No data loaded', 'error');
+        return;
+      }
+      try {
+        const html = generateTopicsHTML(currentData);
+        generatedHtml = html;
+        setStatus(`✅ topics.html generated (${html.length} chars)`, 'success');
+        log(`✅ Generated ${html.length} bytes`, 'success');
+        // enable download
+        downloadBtn.disabled = false;
+        downloadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        previewBtn.disabled = false;
+        previewBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      } catch (e) {
+        setStatus(`❌ Generation error: ${e.message}`, 'error');
+        log(`❌ ${e.message}`, 'error');
+      }
+    }
+
+    // ---------- download ----------
+    function download() {
+      if (!generatedHtml) {
+        setStatus('❌ Generate first', 'error');
+        return;
+      }
+      const blob = new Blob([generatedHtml], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'topics.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setStatus('⬇️ Download started', 'success');
+      log('⬇️ topics.html downloaded', 'info');
+    }
+
+    // ---------- preview ----------
+    function preview() {
+      if (!generatedHtml) {
+        setStatus('❌ Generate first', 'error');
+        return;
+      }
+      previewContainer.classList.remove('hidden');
+      previewIframe.srcdoc = generatedHtml;
+      setStatus('👁️ Preview opened', 'info');
+      log('👁️ Preview opened', 'info');
+    }
+
+    // ---------- events ----------
+    fetchBtn.addEventListener('click', fetchFromGitHub);
+    fileInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        try {
+          const json = JSON.parse(ev.target.result);
+          if (loadDataFromJSON(json)) {
+            log('✅ Loaded from JSON file', 'success');
+          }
+        } catch (err) {
+          setStatus(`❌ Invalid JSON: ${err.message}`, 'error');
+          log(`❌ ${err.message}`, 'error');
+        }
+        fileInput.value = '';
+      };
+      reader.readAsText(file);
+    });
+    sampleBtn.addEventListener('click', loadSample);
+
+    generateBtn.addEventListener('click', generate);
+    downloadBtn.addEventListener('click', download);
+    previewBtn.addEventListener('click', preview);
+    closePreviewBtn.addEventListener('click', function() {
+      previewContainer.classList.add('hidden');
+      previewIframe.srcdoc = '';
+    });
+
+    // init: disabled
+    enableButtons(false);
+    setStatus('📂 Load topics data to start', 'info');
+    clearLog();
+
+    // auto fetch sample for demo?
+    // loadSample(); // uncomment if you want sample on load
+  })();
+</script>
+</body>
+</html>
