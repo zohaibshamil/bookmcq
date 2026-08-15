@@ -495,43 +495,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                 padding-left: 60px;
             }
         }
-
-        /* Debug panel */
-        #debugPanel {
-            position: fixed;
-            bottom: 100px;
-            left: 20px;
-            background: rgba(0,0,0,0.9);
-            color: #0f0;
-            font-family: monospace;
-            font-size: 11px;
-            padding: 15px;
-            border-radius: 10px;
-            max-width: 400px;
-            max-height: 300px;
-            overflow-y: auto;
-            z-index: 9999;
-            display: none;
-            white-space: pre-wrap;
-            line-height: 1.4;
-        }
-        #debugPanel.visible {
-            display: block;
-        }
-        #debugToggle {
-            position: fixed;
-            bottom: 100px;
-            left: 20px;
-            z-index: 9998;
-            background: rgba(0,0,0,0.8);
-            color: #0f0;
-            border: 1px solid #0f0;
-            padding: 8px 12px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-family: monospace;
-            font-size: 12px;
-        }
     </style>
 </head>
 <body>
@@ -666,10 +629,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </footer>
 </div>
 
-<!-- Debug Toggle -->
-<button id="debugToggle">🐛 Debug</button>
-<div id="debugPanel"></div>
-
 <!-- AI Chat -->
 <div class="ai-chat-btn">
     <button id="aiChatBtn" class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 rounded-full shadow-xl hover:scale-105 transition">
@@ -710,11 +669,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     function logDebug(msg) {
         console.log(msg);
         debugLog.push(new Date().toISOString() + ' - ' + msg);
-        const panel = document.getElementById('debugPanel');
-        if (panel) {
-            panel.textContent = debugLog.slice(-30).join('\n');
-            panel.scrollTop = panel.scrollHeight;
-        }
     }
 
     // ============================================
@@ -1423,25 +1377,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     }
 
     // ============================================
-    // 9. DEBUG TOGGLE
-    // ============================================
-    function setupDebug() {
-        const toggle = document.getElementById('debugToggle');
-        const panel = document.getElementById('debugPanel');
-        let visible = false;
-        
-        toggle.addEventListener('click', () => {
-            visible = !visible;
-            panel.classList.toggle('visible', visible);
-            toggle.textContent = visible ? '🐛 Hide Debug' : '🐛 Debug';
-            if (visible) {
-                panel.textContent = debugLog.slice(-30).join('\n');
-            }
-        });
-    }
-
-    // ============================================
-    // 10. MAIN INITIALIZATION - UPDATED
+    // 9. MAIN INITIALIZATION - UPDATED
     // ============================================
     document.addEventListener('DOMContentLoaded', function() {
         logDebug('🚀 Page loaded - Initializing...');
@@ -1450,7 +1386,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         initMobileMenu();
         initNavbarScroll();
         setupAIChat();
-        setupDebug();
 
         const renderer = new TopicLibraryRenderer();
 
@@ -1667,7 +1602,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     logDebug('   - Single JSON file instead of 47 sitemaps');
     logDebug('   - Loads in 1-2 seconds');
     logDebug('   - Cached in sessionStorage');
-    logDebug('   - Debug panel available (click 🐛)');
 </script>
 </body>
 </html>
