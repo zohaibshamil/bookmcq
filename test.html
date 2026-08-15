@@ -1786,6 +1786,34 @@
                     <p class="text-sm text-gray-600 mt-1">Select a book above to download its pages.</p>
                 </div>
             </div>
+                     <!-- ===== TOPIC LIBRARY GENERATOR ===== -->
+            <div class="mt-6 pt-4 border-t border-gray-200">
+                <h3 class="font-bold text-gray-700 mb-3 flex items-center gap-2">
+                    <i class="fas fa-book-open text-purple-600"></i> Static Topic Library Generator
+                </h3>
+                <p class="text-sm text-gray-600 mb-3">Generate a fully static topic-library.html with all data embedded for lightning-fast loading.</p>
+                <div class="flex items-center gap-4 flex-wrap">
+                    <button id="generateTopicLibraryBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-bold transition flex items-center gap-2">
+                        <i class="fas fa-book-open"></i> Generate Static Topic Library
+                    </button>
+                    <button id="downloadTopicLibraryBtn" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-bold transition hidden flex items-center gap-2">
+                        <i class="fas fa-download"></i> Download topic-library.html
+                    </button>
+                    <button id="deployTopicLibraryBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold transition hidden flex items-center gap-2">
+                        <i class="fab fa-github"></i> Deploy to GitHub
+                    </button>
+                </div>
+                <div id="topicLibraryResult" class="hidden mt-4"></div>
+                <div id="topicLibraryProgress" class="mt-4">
+                    <div class="flex justify-between text-sm text-gray-600 mb-1">
+                        <span id="topicLibraryStatus">Ready</span>
+                        <span id="topicLibraryCount">0 items</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div id="topicLibraryProgressBar" class="bg-purple-600 h-2 rounded-full transition-all" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -6560,6 +6588,1391 @@ function generateUrlItemHtml(url, type, isIndented = false) {
     });
 
     // ============ SEO PAGE GENERATION FUNCTIONS ============
+ // ============================================
+// TOPIC LIBRARY STATIC GENERATOR
+// ============================================
+
+let topicLibraryGeneratedFiles = [];
+
+/**
+ * Generate a fully static topic-library.html with embedded data
+ */
+async function generateStaticTopicLibrary() {
+    const statusEl = document.getElementById('topicLibraryStatus');
+    const progressBar = document.getElementById('topicLibraryProgressBar');
+    const resultEl = document.getElementById('topicLibraryResult');
+    const downloadBtn = document.getElementById('downloadTopicLibraryBtn');
+    const deployBtn = document.getElementById('deployTopicLibraryBtn');
+    
+    if (statusEl) statusEl.textContent = '📦 Fetching data...';
+    if (progressBar) progressBar.style.width = '10%';
+    if (resultEl) {
+        resultEl.classList.remove('hidden');
+        resultEl.innerHTML = '<div class="bg-blue-50 border border-blue-300 p-4 rounded-lg"><p class="text-blue-800"><i class="fas fa-spinner fa-spin"></i> Generating topic library...</p></div>';
+    }
+    
+    downloadBtn.classList.add('hidden');
+    deployBtn.classList.add('hidden');
+    
+    try {
+        // 1. Fetch ALL books
+        const { data: books, error: booksError } = await _supabase
+            .from('books')
+            .select('id, title, slug, category, author')
+            .order('title');
+        
+        if (booksError) throw booksError;
+        
+        if (statusEl) statusEl.textContent = `📚 Found ${books.length} books...`;
+        if (progressBar) progressBar.style.width = '20%';
+        
+        // 2. Fetch ALL chapters with book info
+        const { data: chapters, error: chaptersError } = await _supabase
+            .from('chapters')
+            .select('id, name, slug, book_id, chapter_number, books(id, title, slug)')
+            .order('book_id')
+            .order('chapter_number', { ascending: true, nullsFirst: false });
+        
+        if (chaptersError) throw chaptersError;
+        
+        if (statusEl) statusEl.textContent = `📖 Found ${chapters.length} chapters...`;
+        if (progressBar) progressBar.style.width = '35%';
+        
+        // 3. Fetch ALL topics with pagination
+        let allTopics = [];
+        let page = 0;
+        const pageSize = 1000;
+        let hasMore = true;
+        
+        while (hasMore) {
+            const from = page * pageSize;
+            const to = from + pageSize - 1;
+            
+            const { data: topicsPage, error: topicsError } = await _supabase
+                .from('subtopics')
+                .select('id, name, slug, chapter_id, chapters(id, slug, book_id, name, books(id, slug, title))')
+                .range(from, to)
+                .order('chapter_id')
+                .order('name');
+            
+            if (topicsError) throw topicsError;
+            
+            if (!topicsPage || topicsPage.length === 0) {
+                hasMore = false;
+            } else {
+                allTopics = allTopics.concat(topicsPage);
+                page++;
+                if (statusEl) statusEl.textContent = `📝 Fetched ${allTopics.length} topics...`;
+                if (topicsPage.length < pageSize) hasMore = false;
+            }
+        }
+        
+        if (statusEl) statusEl.textContent = `📝 Found ${allTopics.length} topics...`;
+        if (progressBar) progressBar.style.width = '50%';
+        
+        // 4. Build the library structure
+        const library = {};
+        const bookOrder = [];
+        const bookSeen = {};
+        const chapterOrderMap = {};
+        
+        // Process books first
+        books.forEach(book => {
+            const slug = book.slug || createSlug(book.title);
+            library[slug] = {
+                name: book.title,
+                slug: slug,
+                category: book.category || '',
+                author: book.author || '',
+                chapters: {}
+            };
+            if (!bookSeen[slug]) {
+                bookSeen[slug] = true;
+                bookOrder.push(slug);
+            }
+            chapterOrderMap[slug] = [];
+        });
+        
+        // Process chapters
+        chapters.forEach(chapter => {
+            const bookSlug = chapter.books?.slug || createSlug(chapter.books?.title || 'unknown');
+            const chapterSlug = chapter.slug || createSlug(chapter.name);
+            
+            if (library[bookSlug]) {
+                library[bookSlug].chapters[chapterSlug] = {
+                    name: chapter.name,
+                    slug: chapterSlug,
+                    chapter_number: chapter.chapter_number || null,
+                    topics: []
+                };
+                if (!chapterOrderMap[bookSlug].includes(chapterSlug)) {
+                    chapterOrderMap[bookSlug].push(chapterSlug);
+                }
+            }
+        });
+        
+        // Process topics
+        allTopics.forEach(topic => {
+            const bookSlug = topic.chapters?.books?.slug || createSlug(topic.chapters?.books?.title || 'unknown');
+            const chapterSlug = topic.chapters?.slug || createSlug(topic.chapters?.name || 'unknown');
+            const topicSlug = topic.slug || createSlug(topic.name);
+            
+            if (library[bookSlug] && library[bookSlug].chapters[chapterSlug]) {
+                const url = `/books/${bookSlug}/${chapterSlug}/topics/${topicSlug}.html`;
+                library[bookSlug].chapters[chapterSlug].topics.push({
+                    name: topic.name,
+                    slug: topicSlug,
+                    url: url
+                });
+            }
+        });
+        
+        // Calculate stats
+        const bookCount = Object.keys(library).length;
+        let chapterCount = 0;
+        let topicCount = 0;
+        for (const bk in library) {
+            chapterCount += Object.keys(library[bk].chapters).length;
+            for (const ch in library[bk].chapters) {
+                topicCount += library[bk].chapters[ch].topics.length;
+            }
+        }
+        
+        const stats = { bookCount, chapterCount, topicCount };
+        
+        if (statusEl) statusEl.textContent = `📊 ${bookCount} books, ${chapterCount} chapters, ${topicCount} topics`;
+        if (progressBar) progressBar.style.width = '70%';
+        
+        // 5. Generate the static HTML
+        const staticHtml = buildStaticTopicLibraryHTML(library, stats, bookOrder, chapterOrderMap);
+        
+        if (statusEl) statusEl.textContent = `📄 Generated (${(staticHtml.length / 1024).toFixed(1)} KB)`;
+        if (progressBar) progressBar.style.width = '90%';
+        
+        // 6. Store for download
+        topicLibraryGeneratedFiles = [{
+            name: 'topic-library.html',
+            content: staticHtml,
+            displayName: '📖 Topic Library'
+        }];
+        
+        // Show download and deploy buttons
+        downloadBtn.classList.remove('hidden');
+        downloadBtn.style.display = 'inline-flex';
+        deployBtn.classList.remove('hidden');
+        deployBtn.style.display = 'inline-flex';
+        
+        if (statusEl) statusEl.textContent = `✅ Done! ${topicCount} topics embedded`;
+        if (progressBar) progressBar.style.width = '100%';
+        
+        if (resultEl) {
+            resultEl.innerHTML = `
+                <div class="bg-green-50 border border-green-300 p-4 rounded-lg">
+                    <p class="text-green-800 font-semibold"><i class="fas fa-check-circle text-green-600"></i> Topic Library generated successfully!</p>
+                    <p class="text-sm text-gray-600 mt-1">${bookCount} books, ${chapterCount} chapters, ${topicCount} topics embedded</p>
+                    <p class="text-sm text-gray-600">File size: ${(staticHtml.length / 1024).toFixed(1)} KB</p>
+                    <div class="flex gap-3 mt-3 flex-wrap">
+                        <button onclick="downloadTopicLibrary()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition flex items-center gap-2">
+                            <i class="fas fa-download"></i> Download topic-library.html
+                        </button>
+                        <button onclick="deployTopicLibraryToGitHub()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition flex items-center gap-2">
+                            <i class="fab fa-github"></i> Deploy to GitHub
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+    } catch (error) {
+        console.error('Topic Library Generation Error:', error);
+        if (statusEl) statusEl.textContent = '❌ Error: ' + error.message;
+        if (resultEl) {
+            resultEl.innerHTML = `
+                <div class="bg-red-50 border border-red-300 p-4 rounded-lg">
+                    <p class="text-red-800 font-semibold"><i class="fas fa-exclamation-circle text-red-600"></i> Error generating topic library</p>
+                    <p class="text-sm text-red-600 mt-1">${error.message}</p>
+                </div>
+            `;
+        }
+        showToast('Error generating topic library: ' + error.message, true);
+    }
+}
+
+/**
+ * Build the complete static HTML for topic-library.html
+ */
+function buildStaticTopicLibraryHTML(library, stats, bookOrder, chapterOrderMap) {
+    const GTM_HEAD = `<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-PT363CT7');<\/script>
+<!-- End Google Tag Manager -->`;
+
+    const GTM_BODY = `<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PT363CT7"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->`;
+
+    // Build the HTML structure for books
+    let booksHtml = '';
+    for (const bookKey of bookOrder) {
+        const book = library[bookKey];
+        if (!book) continue;
+        
+        const chapterKeys = chapterOrderMap[bookKey] || Object.keys(book.chapters);
+        const filteredChapterKeys = chapterKeys.filter(key => book.chapters[key] !== undefined);
+        
+        let totalTopics = 0;
+        for (const ck of filteredChapterKeys) {
+            totalTopics += book.chapters[ck].topics.length;
+        }
+        
+        booksHtml += `
+            <div class="book-accordion mb-3" data-book="${escapeHtmlStatic(bookKey)}">
+                <div class="book-header" onclick="toggleBook('${escapeHtmlStatic(bookKey)}')">
+                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                        <div class="book-icon">📚</div>
+                        <div class="flex-1 min-w-0">
+                            <div class="book-title">${escapeHtmlStatic(book.name)}</div>
+                            <div class="book-meta">${filteredChapterKeys.length} chapters · ${totalTopics} topics</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 flex-shrink-0">
+                        <span class="book-count-badge">${totalTopics}</span>
+                        <i class="fas fa-chevron-down toggle-icon" id="toggle-${escapeHtmlStatic(bookKey)}"></i>
+                    </div>
+                </div>
+                <div class="book-chapters" id="chapters-${escapeHtmlStatic(bookKey)}">
+                    <div class="book-chapters-inner">
+        `;
+        
+        for (const chapterKey of filteredChapterKeys) {
+            const chapter = book.chapters[chapterKey];
+            if (!chapter) continue;
+            
+            const topicCount = chapter.topics.length;
+            
+            booksHtml += `
+                <div class="chapter-item">
+                    <div class="chapter-header" onclick="toggleChapter('${escapeHtmlStatic(bookKey)}', '${escapeHtmlStatic(chapterKey)}')">
+                        <span class="chapter-name">
+                            ${escapeHtmlStatic(chapter.name)}
+                        </span>
+                        <div class="flex items-center gap-3">
+                            <span class="topic-count">${topicCount} topics</span>
+                            <i class="fas fa-chevron-down chapter-toggle" id="ctoggle-${escapeHtmlStatic(bookKey)}-${escapeHtmlStatic(chapterKey)}"></i>
+                        </div>
+                    </div>
+                    <div class="chapter-topics" id="ctopics-${escapeHtmlStatic(bookKey)}-${escapeHtmlStatic(chapterKey)}">
+                        <div class="chapter-topics-inner">
+            `;
+            
+            const sortedTopics = [...chapter.topics].sort((a, b) => a.name.localeCompare(b.name));
+            
+            for (const topic of sortedTopics) {
+                booksHtml += `
+                    <a href="${escapeHtmlStatic(topic.url)}" target="_blank" class="topic-link" title="Open ${escapeHtmlStatic(topic.name)}">
+                        <span class="topic-name">
+                            <i class="fas fa-file-alt"></i>
+                            ${escapeHtmlStatic(topic.name)}
+                        </span>
+                        <span class="topic-badge">Practice →</span>
+                    </a>
+                `;
+            }
+            
+            booksHtml += `
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        booksHtml += `
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Build the complete HTML
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+
+${GTM_HEAD}
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Topic Library - Browse All Books, Chapters & MCQs | BookMCQ</title>
+
+    <!-- FAVICONS -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+    
+    <!-- PRIMARY SEO META TAGS -->
+    <meta name="description" content="Complete topic library with all books, chapters, and MCQs. Browse and practice topic-wise questions from hundreds of books.">
+    <meta name="keywords" content="topic library, book MCQs, chapter-wise questions, practice tests, exam preparation, competitive exams">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://www.bookmcq.com/topic-library">
+    
+    <!-- OPEN GRAPH -->
+    <meta property="og:title" content="Topic Library - Browse All Books, Chapters & MCQs | BookMCQ">
+    <meta property="og:description" content="Complete topic library with all books, chapters, and MCQs. Browse and practice topic-wise questions.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.bookmcq.com/topic-library">
+    <meta property="og:site_name" content="BookMCQ">
+    
+    <!-- TWITTER CARD -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Topic Library - Browse All Books, Chapters & MCQs | BookMCQ">
+    <meta name="twitter:description" content="Complete topic library with all books, chapters, and MCQs.">
+    
+    <!-- PERFORMANCE & MOBILE -->
+    <meta name="theme-color" content="#7c3aed">
+    
+    <!-- RESOURCE HINTS -->
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+    
+    <!-- STRUCTURED DATA -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "Topic Library - BookMCQ",
+      "description": "Browse all books, chapters, and topics with MCQs",
+      "url": "https://www.bookmcq.com/topic-library"
+    }
+    </script>
+    
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-5WGZ1P0EV1"><\/script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-5WGZ1P0EV1');
+    <\/script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"><\/script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300,400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ========== BODY BACKGROUND - GRADIENT ========== */
+        body { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            min-height: 100vh;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+        
+        /* ========== QUIZ CARD - GLASSMORPHISM ========== */
+        .quiz-card { 
+            backdrop-filter: blur(10px); 
+            background: rgba(255,255,255,0.95); 
+            transition: transform 0.3s ease, box-shadow 0.3s ease; 
+            border-radius: 1.5rem; 
+            overflow: hidden; 
+        }
+        .quiz-card:hover { 
+            transform: translateY(-5px); 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2); 
+        }
+
+        /* Navbar scroll */
+        .navbar-scrolled {
+            background: white !important;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .navbar-scrolled .nav-link {
+            color: #4a5568 !important;
+        }
+        .navbar-scrolled .nav-link:hover {
+            color: #667eea !important;
+        }
+        .navbar-scrolled .text-white {
+            color: #2d3748 !important;
+        }
+        .navbar-scrolled .text-white\\/60 {
+            color: #718096 !important;
+        }
+        .navbar-scrolled i {
+            color: #667eea !important;
+        }
+
+        /* Mobile menu */
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        @media (max-width: 768px) {
+            .desktop-menu {
+                display: none !important;
+            }
+            .mobile-menu-btn {
+                display: block;
+            }
+        }
+        
+        @media (min-width: 769px) {
+            .mobile-menu-btn {
+                display: none;
+            }
+            #mobileDropdown {
+                display: none !important;
+            }
+        }
+        
+        nav.bg-white\\/10 {
+            background: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        /* ========== TOPIC LIBRARY SPECIFIC STYLES ========== */
+        
+        /* Search bar */
+        .search-input {
+            transition: all 0.3s ease;
+            border: 2px solid #e5e7eb;
+        }
+        .search-input:focus {
+            border-color: #7c3aed;
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+            outline: none;
+        }
+
+        /* Book accordion */
+        .book-accordion {
+            border: 1px solid #f3e8ff;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        .book-accordion:hover {
+            border-color: #d8b4fe;
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.08);
+        }
+        
+        .book-header {
+            padding: 16px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            transition: background 0.2s ease;
+        }
+        .book-header:hover {
+            background: #faf5ff;
+        }
+        .book-header .book-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            background: #f3e8ff;
+            color: #7c3aed;
+            flex-shrink: 0;
+        }
+        .book-header .book-title {
+            font-weight: 600;
+            color: #1f2937;
+            font-size: 1rem;
+        }
+        .book-header .book-meta {
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+        .book-header .toggle-icon {
+            color: #9ca3af;
+            transition: transform 0.3s ease;
+            font-size: 1rem;
+        }
+        .book-header .toggle-icon.open {
+            transform: rotate(180deg);
+        }
+
+        /* ========== FIXED: Book chapters container using grid for reliable animation ========== */
+        .book-chapters {
+            display: grid;
+            grid-template-rows: 0fr;
+            transition: grid-template-rows 0.4s ease;
+            background: #faf9fe;
+        }
+        .book-chapters.open {
+            grid-template-rows: 1fr;
+        }
+        .book-chapters > .book-chapters-inner {
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        /* ========== FIXED: Chapter topics container using grid for reliable animation ========== */
+        .chapter-topics {
+            display: grid;
+            grid-template-rows: 0fr;
+            transition: grid-template-rows 0.3s ease;
+            background: white;
+        }
+        .chapter-topics.open {
+            grid-template-rows: 1fr;
+        }
+        .chapter-topics > .chapter-topics-inner {
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        .chapter-item {
+            border-top: 1px solid #f3e8ff;
+            padding: 0;
+        }
+        .chapter-header {
+            padding: 12px 20px 12px 56px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #eef2ff !important;
+            border-left: 4px solid #4f46e5;
+            transition: background 0.2s ease;
+        }
+        .chapter-header:hover {
+            background: #dbeafe !important;
+        }
+        .chapter-header .chapter-name {
+            font-weight: 600 !important;
+            color: #1e40af !important;
+            font-size: 0.9rem;
+        }
+        .chapter-header .chapter-number {
+            color: #4f46e5;
+            font-weight: 700;
+            font-size: 0.8rem;
+            background: #c7d2fe;
+            padding: 2px 10px;
+            border-radius: 20px;
+            margin-right: 8px;
+        }
+        .chapter-header .topic-count {
+            font-size: 0.7rem;
+            background: #c7d2fe !important;
+            color: #1e40af !important;
+            padding: 2px 10px;
+            border-radius: 20px;
+        }
+        .chapter-header .chapter-toggle {
+            color: #9ca3af;
+            transition: transform 0.3s ease;
+            font-size: 0.8rem;
+        }
+        .chapter-header .chapter-toggle.open {
+            transform: rotate(180deg);
+        }
+
+        .topic-link {
+            display: block;
+            padding: 10px 20px 10px 72px;
+            color: #4b5563;
+            text-decoration: none;
+            font-size: 0.85rem;
+            border-top: 1px solid #f9f5ff;
+            border-left: 3px solid #8b5cf6;
+            background: #faf5ff;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .topic-link:hover {
+            background: #f3e8ff;
+            color: #7c3aed;
+            padding-left: 80px;
+            border-left-color: #7c3aed;
+        }
+        .topic-link .topic-name {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .topic-link .topic-name i {
+            color: #7c3aed;
+            font-size: 0.7rem;
+        }
+        .topic-link .topic-badge {
+            font-size: 0.6rem;
+            background: #ede9fe !important;
+            color: #5b21b6 !important;
+            padding: 2px 8px;
+            border-radius: 20px;
+        }
+
+        /* Stats badges */
+        .stat-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.7rem;
+            padding: 3px 10px;
+            border-radius: 20px;
+        }
+        .stat-badge.books {
+            background: #ede9fe;
+            color: #5b21b6;
+        }
+        .stat-badge.topics {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .stat-badge.chapters {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        /* Loading skeleton */
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 8px;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        .empty-state i {
+            font-size: 3rem;
+            color: #d1d5db;
+        }
+
+        /* Book count badge on book header */
+        .book-count-badge {
+            font-size: 0.65rem;
+            background: #ede9fe;
+            color: #5b21b6;
+            padding: 2px 10px;
+            border-radius: 20px;
+        }
+
+        /* Scrollbar */
+        .library-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .library-container::-webkit-scrollbar-track {
+            background: #f3f4f6;
+            border-radius: 10px;
+        }
+        .library-container::-webkit-scrollbar-thumb {
+            background: #c4b5fd;
+            border-radius: 10px;
+        }
+        .library-container::-webkit-scrollbar-thumb:hover {
+            background: #a78bfa;
+        }
+
+        /* AI Chat Button */
+        .ai-chat-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 1000;
+        }
+        .ai-chat-window {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 350px;
+            max-width: calc(100vw - 60px);
+            height: 500px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            z-index: 1001;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+        .chat-message {
+            margin-bottom: 12px;
+            display: flex;
+        }
+        .chat-message.user { justify-content: flex-end; }
+        .chat-message.bot { justify-content: flex-start; }
+        .chat-bubble {
+            max-width: 80%;
+            padding: 10px 14px;
+            border-radius: 18px;
+            font-size: 14px;
+        }
+        .chat-message.user .chat-bubble {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .chat-message.bot .chat-bubble {
+            background: #f3f4f6;
+            color: #1f2937;
+            border-bottom-left-radius: 4px;
+        }
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 10px 14px;
+        }
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background: #9ca3af;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-10px); opacity: 1; }
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .book-header {
+                padding: 12px 16px;
+                flex-wrap: wrap;
+            }
+            .book-header .book-title {
+                font-size: 0.85rem;
+            }
+            .chapter-header {
+                padding: 10px 16px 10px 44px;
+            }
+            .chapter-header .chapter-name {
+                font-size: 0.8rem;
+            }
+            .topic-link {
+                padding: 8px 16px 8px 56px;
+                font-size: 0.78rem;
+            }
+            .topic-link:hover {
+                padding-left: 60px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+${GTM_BODY}
+
+<div class="max-w-6xl mx-auto px-4">
+    
+    <!-- Navigation -->
+    <nav class="bg-white/10 backdrop-blur-lg rounded-full px-4 md:px-6 py-3 mb-6 sticky top-4 z-50 shadow-lg">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-graduation-cap text-white text-xl md:text-2xl"></i>
+                <span class="text-white font-bold text-lg md:text-xl">BookMCQ</span>
+                <span class="text-white/60 text-xs hidden sm:inline">| Topic Library</span>
+            </div>
+            
+            <div class="desktop-menu flex gap-3 md:gap-6">
+                <a href="/" class="nav-link text-white/80 hover:text-white transition">🏠 Home</a>
+                <a href="/quiz" class="nav-link text-white/80 hover:text-white transition flex items-center gap-1">📝 Quiz <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1">FREE</span></a>
+                <a href="/practice" class="nav-link text-white/80 hover:text-white transition flex items-center gap-1">📚 Practice <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1">FREE</span></a>
+                <a href="/topic-library" class="nav-link text-white transition font-medium">📖 Topics</a>
+                <a href="/contact" class="nav-link text-white/80 hover:text-white transition">📧 Contact</a>
+                <a href="/privacy" class="nav-link text-white/80 hover:text-white transition">🔒 Privacy</a>
+            </div>
+            
+            <button id="mobileMenuBtn" class="mobile-menu-btn text-white text-2xl">
+                ☰
+            </button>
+        </div>
+    </nav>
+    
+    <!-- Mobile Dropdown -->
+    <div id="mobileDropdown" class="hidden bg-white rounded-xl shadow-xl w-full mb-4 py-2 z-50" style="display: none;">
+        <a href="/" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition">🏠 Home</a>
+        <a href="/quiz" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center">📝 Quiz <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span></a>
+        <a href="/practice" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center">📚 Practice <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span></a>
+        <a href="/topic-library" class="block px-4 py-3 text-purple-700 bg-purple-50 font-medium transition">📖 Topics</a>
+        <a href="/contact" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition">📧 Contact</a>
+        <a href="/privacy" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition">🔒 Privacy</a>
+    </div>
+
+    <!-- Main Topic Library -->
+    <div class="quiz-card rounded-2xl p-6 md:p-8 shadow-xl">
+        
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-3">
+                    <i class="fas fa-book-open text-purple-600"></i>
+                    Topic Library
+                </h1>
+                <p class="text-gray-500 text-sm mt-1">Browse all books, chapters, and practice topics</p>
+            </div>
+            <div class="flex items-center gap-3 flex-wrap">
+                <span class="stat-badge books"><i class="fas fa-book"></i> ${stats.bookCount} Books</span>
+                <span class="stat-badge chapters"><i class="fas fa-layer-group"></i> ${stats.chapterCount} Chapters</span>
+                <span class="stat-badge topics"><i class="fas fa-tag"></i> ${stats.topicCount} Topics</span>
+            </div>
+        </div>
+
+        <!-- Search -->
+        <div class="relative mb-6">
+            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            <input 
+                type="text" 
+                id="searchInput" 
+                placeholder="Search books, chapters, or topics..." 
+                class="search-input w-full pl-11 pr-4 py-3 rounded-xl text-gray-700 placeholder-gray-400 text-sm bg-white/80"
+            >
+        </div>
+
+        <!-- Stats Summary -->
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+            <div class="bg-purple-50 rounded-xl p-3 text-center">
+                <div class="text-xl font-bold text-purple-700">${stats.bookCount}</div>
+                <div class="text-xs text-gray-500">Total Books</div>
+            </div>
+            <div class="bg-blue-50 rounded-xl p-3 text-center">
+                <div class="text-xl font-bold text-blue-700">${stats.chapterCount}</div>
+                <div class="text-xs text-gray-500">Total Chapters</div>
+            </div>
+            <div class="bg-green-50 rounded-xl p-3 text-center">
+                <div class="text-xl font-bold text-green-700">${stats.topicCount}</div>
+                <div class="text-xs text-gray-500">Total Topics</div>
+            </div>
+        </div>
+
+        <!-- Library Content -->
+        <div id="libraryContent" class="library-container pr-2">
+            <!-- Books Container -->
+            <div id="booksContainer">
+                ${booksHtml}
+            </div>
+        </div>
+
+        <!-- Footer Note -->
+        <div class="mt-6 pt-4 border-t border-gray-200 flex justify-between items-center flex-wrap gap-2">
+            <p class="text-xs text-gray-400">
+                <i class="fas fa-sync-alt text-purple-400 mr-1"></i> 
+                Last updated: ${new Date().toISOString().replace('T', ' ').slice(0, 19)}
+            </p>
+            <p class="text-xs text-gray-400">
+                <i class="fas fa-external-link-alt text-purple-400 mr-1"></i> 
+                Click any topic to start practicing
+            </p>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-8 text-center text-white/60 text-xs md:text-sm py-4">
+        <p>&copy; ${new Date().getFullYear()} BookMCQ. All rights reserved. | Master Every Chapter</p>
+    </footer>
+</div>
+
+<!-- AI Chat -->
+<div class="ai-chat-btn">
+    <button id="aiChatBtn" class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 rounded-full shadow-xl hover:scale-105 transition">
+        <i class="fas fa-robot text-xl"></i>
+    </button>
+</div>
+
+<div id="aiChatWindow" class="ai-chat-window hidden">
+    <div class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-3 flex justify-between items-center">
+        <div class="flex items-center gap-2">
+            <i class="fas fa-robot"></i>
+            <span class="font-semibold">MCQ Assistant</span>
+        </div>
+        <button id="closeChatBtn" class="text-white hover:opacity-70">&times;</button>
+    </div>
+    <div id="chatMessages" class="chat-messages bg-gray-50">
+        <div class="chat-message bot">
+            <div class="chat-bubble">
+                👋 Hi! I can help you find topics. Ask me about any book or subject!
+            </div>
+        </div>
+    </div>
+    <div class="p-3 border-t bg-white">
+        <div class="flex gap-2">
+            <input type="text" id="chatInput" placeholder="Ask about topics, books..." class="flex-1 p-2 border rounded-xl text-sm">
+            <button id="sendChatBtn" class="bg-purple-600 text-white px-4 py-2 rounded-xl">Send</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ============================================
+    // TOPIC LIBRARY - STATIC VERSION
+    // All data is embedded in the page
+    // ============================================
+
+    // ============================================
+    // TOGGLE FUNCTIONS
+    // ============================================
+    
+    function toggleBook(bookKey) {
+        const chaptersDiv = document.getElementById('chapters-' + bookKey);
+        const toggle = document.getElementById('toggle-' + bookKey);
+        const isCurrentlyOpen = chaptersDiv && chaptersDiv.classList.contains('open');
+        const bookElement = document.querySelector('.book-accordion[data-book="' + bookKey + '"]');
+        const bookHeader = bookElement ? bookElement.querySelector('.book-header') : null;
+        
+        if (window._scrollTimeout) {
+            clearTimeout(window._scrollTimeout);
+            window._scrollTimeout = null;
+        }
+        
+        const allBooks = document.querySelectorAll('.book-accordion');
+        allBooks.forEach(function(book) {
+            const otherBookKey = book.dataset.book;
+            if (otherBookKey !== bookKey) {
+                const otherChapters = document.getElementById('chapters-' + otherBookKey);
+                const otherToggle = document.getElementById('toggle-' + otherBookKey);
+                if (otherChapters && otherChapters.classList.contains('open')) {
+                    otherChapters.classList.remove('open');
+                    if (otherToggle) {
+                        otherToggle.classList.remove('open');
+                    }
+                }
+            }
+        });
+        
+        if (isCurrentlyOpen) {
+            if (chaptersDiv) {
+                chaptersDiv.classList.remove('open');
+                if (toggle) toggle.classList.remove('open');
+            }
+            return;
+        }
+        
+        if (chaptersDiv) {
+            chaptersDiv.classList.add('open');
+            if (toggle) toggle.classList.add('open');
+        }
+        
+        window._scrollTimeout = setTimeout(function() {
+            if (bookHeader) {
+                var headerRect = bookHeader.getBoundingClientRect();
+                var currentScrollY = window.scrollY;
+                var targetY = currentScrollY + headerRect.top - 100;
+                
+                window.scrollTo({
+                    top: Math.max(0, targetY),
+                    behavior: 'smooth'
+                });
+            }
+            window._scrollTimeout = null;
+        }, 450);
+    }
+
+    function toggleChapter(bookKey, chapterKey) {
+        var topicsDiv = document.getElementById('ctopics-' + bookKey + '-' + chapterKey);
+        var toggle = document.getElementById('ctoggle-' + bookKey + '-' + chapterKey);
+        var isOpening = topicsDiv && !topicsDiv.classList.contains('open');
+        
+        var chaptersDiv = document.getElementById('chapters-' + bookKey);
+        
+        if (chaptersDiv) {
+            var allChapterTopics = chaptersDiv.querySelectorAll('.chapter-topics');
+            allChapterTopics.forEach(function(chapterTopics) {
+                if (chapterTopics.id !== 'ctopics-' + bookKey + '-' + chapterKey) {
+                    if (chapterTopics.classList.contains('open')) {
+                        chapterTopics.classList.remove('open');
+                        var chapterItem = chapterTopics.closest('.chapter-item');
+                        if (chapterItem) {
+                            var chapterHeader = chapterItem.querySelector('.chapter-header');
+                            if (chapterHeader) {
+                                var otherToggle = chapterHeader.querySelector('.chapter-toggle');
+                                if (otherToggle) {
+                                    otherToggle.classList.remove('open');
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        if (topicsDiv) {
+            if (isOpening) {
+                topicsDiv.classList.add('open');
+                if (toggle) toggle.classList.add('open');
+                
+                setTimeout(function() {
+                    recalculateBookChaptersHeight(bookKey);
+                }, 100);
+                
+                setTimeout(function() {
+                    var chapterHeader = null;
+                    var chapterItem = topicsDiv.closest('.chapter-item');
+                    if (chapterItem) {
+                        chapterHeader = chapterItem.querySelector('.chapter-header');
+                    }
+                    
+                    if (!chapterHeader) {
+                        var toggleIcon = document.getElementById('ctoggle-' + bookKey + '-' + chapterKey);
+                        if (toggleIcon) {
+                            chapterHeader = toggleIcon.closest('.chapter-header');
+                        }
+                    }
+                    
+                    if (chapterHeader) {
+                        var headerRect = chapterHeader.getBoundingClientRect();
+                        var currentScrollY = window.scrollY;
+                        var targetY = currentScrollY + headerRect.top - 80;
+                        
+                        window.scrollTo({
+                            top: Math.max(0, targetY),
+                            behavior: 'smooth'
+                        });
+                    }
+                }, 450);
+                
+            } else {
+                topicsDiv.classList.remove('open');
+                if (toggle) toggle.classList.remove('open');
+                
+                setTimeout(function() {
+                    recalculateBookChaptersHeight(bookKey);
+                }, 350);
+            }
+        }
+    }
+
+    function recalculateBookChaptersHeight(bookKey) {
+        var chaptersDiv = document.getElementById('chapters-' + bookKey);
+        if (!chaptersDiv) return;
+        void chaptersDiv.offsetHeight;
+    }
+
+    // ============================================
+    // MOBILE MENU
+    // ============================================
+    function initMobileMenu() {
+        var mobileBtn = document.getElementById('mobileMenuBtn');
+        var dropdown = document.getElementById('mobileDropdown');
+        
+        if (mobileBtn && dropdown) {
+            mobileBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+            });
+            
+            document.addEventListener('click', function(e) {
+                if (window.innerWidth <= 768 && dropdown) {
+                    if (!mobileBtn.contains(e.target) && !dropdown.contains(e.target)) {
+                        dropdown.style.display = 'none';
+                    }
+                }
+            });
+            
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 768) {
+                    dropdown.style.display = 'none';
+                }
+            });
+        }
+    }
+
+    // ============================================
+    // NAVBAR SCROLL
+    // ============================================
+    function initNavbarScroll() {
+        var navbar = document.querySelector('nav.bg-white\\/10');
+        if (!navbar) return;
+        window.addEventListener('scroll', function() {
+            navbar.classList.toggle('navbar-scrolled', window.scrollY > 50);
+        });
+    }
+
+    // ============================================
+    // AI CHAT
+    // ============================================
+    function setupAIChat() {
+        var chatBtn = document.getElementById('aiChatBtn');
+        var chatWindow = document.getElementById('aiChatWindow');
+        var closeChatBtn = document.getElementById('closeChatBtn');
+        var sendBtn = document.getElementById('sendChatBtn');
+        var chatInput = document.getElementById('chatInput');
+        var chatMessages = document.getElementById('chatMessages');
+        
+        chatBtn.onclick = function() { chatWindow.classList.toggle('hidden'); };
+        closeChatBtn.onclick = function() { chatWindow.classList.add('hidden'); };
+        
+        var addMessage = function(text, isUser) {
+            var messageDiv = document.createElement('div');
+            messageDiv.className = 'chat-message ' + (isUser ? 'user' : 'bot');
+            messageDiv.innerHTML = '<div class="chat-bubble">' + text + '</div>';
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        };
+        
+        var showTyping = function() {
+            var typingDiv = document.createElement('div');
+            typingDiv.className = 'chat-message bot';
+            typingDiv.id = 'typingIndicator';
+            typingDiv.innerHTML = '<div class="chat-bubble"><div class="typing-indicator"><span></span><span></span><span></span></div></div>';
+            chatMessages.appendChild(typingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        };
+        
+        var removeTyping = function() {
+            var typing = document.getElementById('typingIndicator');
+            if (typing) typing.remove();
+        };
+        
+        var sendMessage = function() {
+            var message = chatInput.value.trim();
+            if (!message) return;
+            addMessage(message, true);
+            chatInput.value = '';
+            showTyping();
+            
+            var lower = message.toLowerCase();
+            var response = '';
+            if (lower.includes('book') || lower.includes('topic')) {
+                response = "📚 You can browse all books and topics in the Topic Library above. Click on any book to see its chapters and topics!";
+            } else if (lower.includes('search') || lower.includes('find')) {
+                response = "🔍 Use the search bar above to find specific books, chapters, or topics by name.";
+            } else {
+                response = "I can help you find topics! Try searching for a book name, chapter, or topic in the search bar above. Or ask me about a specific subject.";
+            }
+            
+            setTimeout(function() {
+                removeTyping();
+                addMessage(response, false);
+            }, 500);
+        };
+        
+        sendBtn.onclick = sendMessage;
+        chatInput.onkeypress = function(e) { if (e.key === 'Enter') sendMessage(); };
+    }
+
+    // ============================================
+    // SEARCH FUNCTIONALITY
+    // ============================================
+    function setupSearch() {
+        var searchInput = document.getElementById('searchInput');
+        var booksContainer = document.getElementById('booksContainer');
+        var allBooks = booksContainer ? booksContainer.querySelectorAll('.book-accordion') : [];
+        var allChapters = booksContainer ? booksContainer.querySelectorAll('.chapter-item') : [];
+        var allTopics = booksContainer ? booksContainer.querySelectorAll('.topic-link') : [];
+        
+        if (!searchInput) return;
+        
+        searchInput.addEventListener('input', function() {
+            var query = this.value.trim().toLowerCase();
+            var hasResults = false;
+            
+            // Reset all visibility first
+            allBooks.forEach(function(book) {
+                book.style.display = '';
+            });
+            allChapters.forEach(function(chapter) {
+                chapter.style.display = '';
+            });
+            allTopics.forEach(function(topic) {
+                topic.style.display = '';
+            });
+            
+            if (query === '') {
+                // Collapse all
+                allBooks.forEach(function(book) {
+                    var bookKey = book.dataset.book;
+                    var chaptersDiv = document.getElementById('chapters-' + bookKey);
+                    var toggle = document.getElementById('toggle-' + bookKey);
+                    if (chaptersDiv) chaptersDiv.classList.remove('open');
+                    if (toggle) toggle.classList.remove('open');
+                    
+                    var chapterTopics = book.querySelectorAll('.chapter-topics');
+                    chapterTopics.forEach(function(ct) {
+                        ct.classList.remove('open');
+                        var ctToggle = ct.closest('.chapter-item').querySelector('.chapter-toggle');
+                        if (ctToggle) ctToggle.classList.remove('open');
+                    });
+                });
+                return;
+            }
+            
+            // Search
+            allBooks.forEach(function(book) {
+                var bookKey = book.dataset.book;
+                var bookText = book.textContent.toLowerCase();
+                var bookMatches = bookText.includes(query);
+                var hasVisibleChapter = false;
+                
+                var chaptersInBook = book.querySelectorAll('.chapter-item');
+                chaptersInBook.forEach(function(chapter) {
+                    var chapterText = chapter.textContent.toLowerCase();
+                    var chapterMatches = chapterText.includes(query);
+                    
+                    var topicsInChapter = chapter.querySelectorAll('.topic-link');
+                    var hasVisibleTopic = false;
+                    topicsInChapter.forEach(function(topic) {
+                        var topicText = topic.textContent.toLowerCase();
+                        if (topicText.includes(query)) {
+                            topic.style.display = '';
+                            hasVisibleTopic = true;
+                            hasVisibleChapter = true;
+                        } else {
+                            topic.style.display = 'none';
+                        }
+                    });
+                    
+                    if (chapterMatches || hasVisibleTopic) {
+                        chapter.style.display = '';
+                        hasVisibleChapter = true;
+                    } else {
+                        chapter.style.display = 'none';
+                    }
+                });
+                
+                if (bookMatches || hasVisibleChapter) {
+                    book.style.display = '';
+                    hasResults = true;
+                    // Auto-expand
+                    var chaptersDiv = document.getElementById('chapters-' + bookKey);
+                    var toggle = document.getElementById('toggle-' + bookKey);
+                    if (chaptersDiv) chaptersDiv.classList.add('open');
+                    if (toggle) toggle.classList.add('open');
+                } else {
+                    book.style.display = 'none';
+                }
+            });
+            
+            // Show no results message
+            var noResults = document.querySelector('.empty-state');
+            if (!hasResults) {
+                if (!noResults) {
+                    var emptyDiv = document.createElement('div');
+                    emptyDiv.className = 'empty-state';
+                    emptyDiv.innerHTML = '<i class="fas fa-search text-4xl text-gray-300 mb-3"></i><p class="text-gray-500">No results found for "' + query + '"</p><p class="text-gray-400 text-sm">Try adjusting your search terms.</p>';
+                    booksContainer.appendChild(emptyDiv);
+                } else {
+                    noResults.style.display = 'block';
+                }
+            } else {
+                if (noResults) noResults.style.display = 'none';
+            }
+        });
+    }
+
+    // ============================================
+    // INITIALIZATION
+    // ============================================
+    document.addEventListener('DOMContentLoaded', function() {
+        initMobileMenu();
+        initNavbarScroll();
+        setupAIChat();
+        setupSearch();
+    });
+<\/script>
+</body>
+</html>`;
+}
+
+/**
+ * Escape HTML for static generation
+ */
+function escapeHtmlStatic(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+/**
+ * Download the generated topic-library.html
+ */
+function downloadTopicLibrary() {
+    if (!topicLibraryGeneratedFiles || topicLibraryGeneratedFiles.length === 0) {
+        showToast('Please generate the topic library first', true);
+        return;
+    }
+    
+    const file = topicLibraryGeneratedFiles[0];
+    const blob = new Blob([file.content], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'topic-library.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showToast('✅ topic-library.html downloaded!');
+}
+
+/**
+ * Deploy topic-library.html to GitHub
+ */
+async function deployTopicLibraryToGitHub() {
+    if (!topicLibraryGeneratedFiles || topicLibraryGeneratedFiles.length === 0) {
+        showToast('Please generate the topic library first', true);
+        return;
+    }
+    
+    const config = getGitHubConfig();
+    if (!config) return;
+    
+    const file = topicLibraryGeneratedFiles[0];
+    
+    if (!confirm(`📖 Deploy topic-library.html to GitHub?\n\nFile size: ${(file.content.length / 1024).toFixed(1)} KB\nContinue?`)) return;
+    
+    addDeployLog('📖 Deploying static topic library...', 'info');
+    
+    try {
+        const result = await commitToGitHub([{
+            path: 'topic-library.html',
+            content: file.content
+        }], config);
+        
+        if (result.success) {
+            addDeployLog('✅ topic-library.html deployed successfully!', 'success');
+            showToast('✅ topic-library.html deployed to GitHub!');
+        } else {
+            throw new Error(result.message || 'Commit failed');
+        }
+    } catch (error) {
+        addDeployLog('❌ Error deploying: ' + error.message, 'error');
+        showToast('❌ Deployment failed: ' + error.message, true);
+    }
+}
     let seoGeneratedFiles = [];
     let seoTotalBooks = 0;
     let seoGeneratedCount = 0;
@@ -10023,6 +11436,10 @@ async function deployAllPages() {
         
         document.getElementById('tabSitemapBtn').addEventListener('click', () => showTab('sitemap'));
         document.getElementById('tabGitHubBtn').addEventListener('click', () => showTab('github'));
+             // Topic Library Generator
+        document.getElementById('generateTopicLibraryBtn').addEventListener('click', generateStaticTopicLibrary);
+        document.getElementById('downloadTopicLibraryBtn').addEventListener('click', downloadTopicLibrary);
+        document.getElementById('deployTopicLibraryBtn').addEventListener('click', deployTopicLibraryToGitHub);
         
         document.getElementById('downloadAllSEOBtn').addEventListener('click', downloadAllSEOPages);
         
