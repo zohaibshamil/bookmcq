@@ -11,6 +11,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # 👈 THIS IS THE KEY FIX
     
     steps:
       - name: Checkout repository
@@ -19,7 +21,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'  # Use Node.js 24 (current)
+          node-version: '24'
       
       - name: Create build script
         run: |
@@ -191,6 +193,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
           git add topics-data.min.json
           git diff --quiet && git diff --staged --quiet || git commit -m "🤖 Auto-update topics database [skip ci]"
           git push
