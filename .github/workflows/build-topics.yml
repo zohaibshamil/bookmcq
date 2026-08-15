@@ -1,0 +1,201 @@
+name: Auto-Build Topics Database
+
+on:
+  # Run automatically when sitemap files change
+  push:
+    paths:
+      - 'sitemap*.xml'
+  
+  # Run automatically every day at midnight
+  schedule:
+    - cron: '0 0 * * *'
+  
+  # Allow you to manually trigger it too
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'
+      
+      - name: Create build script
+        run: |
+          cat > build.js << 'EOF'
+          const fs = require('fs');
+          const https = require('https');
+          
+          function parseXML(xml) {
+              const urls = [];
+              const regex = /<loc>(https?:\/\/[^<]+)<\/loc>/g;
+              let match;
+              while ((match = regex.exec(xml)) !== null) {
+                  urls.push(match[1]);
+              }
+              return urls;
+          }
+          
+          function formatName(slug) {
+              return slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+          }
+          
+          function extractInfo(url) {
+              let m = url.match(/\/books\/([^\/]+)\/([^\/]+)\/topics?\/([^\/]+)\.html/);
+              if (!m) {
+                  m = url.match(/\/books\/([^\/]+)\/([^\/]+)\/([^\/]+)\.html/);
+              }
+              if (!m) return null;
+              return {
+                  bookSlug: decodeURIComponent(m[1]),
+                  chapterSlug: decodeURIComponent(m[2]),
+                  topicSlug: decodeURIComponent(m[3]),
+                  bookName: formatName(decodeURIComponent(m[1])),
+                  chapterName: formatName(decodeURIComponent(m[2])),
+                  topicName: formatName(decodeURIComponent(m[3])),
+                  url
+              };
+          }
+          
+          async function fetchSitemap(index) {
+              const url = `https://raw.githubusercontent.com/zohaibshamil/bookmcq/main/sitemap${index}.xml`;
+              return new Promise((resolve, reject) => {
+                  https.get(url, (res) => {
+                      let data = '';
+                      res.on('data', chunk => data += chunk);
+                      res.on('end', () => resolve(data));
+                      res.on('error', reject);
+                  });
+              });
+          }
+          
+          async function buildTopicsJSON() {
+              console.log('📚 Building topics database...');
+              
+              let allUrls = [];
+              let index = 1;
+              
+              while (true) {
+                  try {
+                      console.log(`  📥 Fetching sitemap${index}.xml...`);
+                      const xml = await fetchSitemap(index);
+                      
+                      if (!xml || !xml.includes('<?xml')) break;
+                      
+                      const urls = parseXML(xml);
+                      const bookUrls = urls.filter(url => url.includes('/books/'));
+                      
+                      if (bookUrls.length === 0) break;
+                      
+                      allUrls = allUrls.concat(bookUrls);
+                      console.log(`    ✅ Found ${bookUrls.length} URLs (Total: ${allUrls.length})`);
+                      index++;
+                  } catch (error) {
+                      console.log(`    📌 No more sitemaps (stopped at ${index})`);
+                      break;
+                  }
+              }
+              
+              console.log(`✅ Total URLs found: ${allUrls.length}`);
+              
+              if (allUrls.length === 0) {
+                  console.log('❌ No URLs found');
+                  process.exit(1);
+              }
+              
+              // Build library structure
+              const library = {};
+              const bookOrder = [];
+              const chapterOrderMap = {};
+              const bookSeen = {};
+              const chapterSeen = {};
+              const topicSet = new Set();
+              
+              for (const url of allUrls) {
+                  const info = extractInfo(url);
+                  if (!info) continue;
+                  
+                  const { bookSlug, chapterSlug, topicSlug, bookName, chapterName, topicName } = info;
+                  
+                  if (!library[bookSlug]) {
+                      library[bookSlug] = { name: bookName, slug: bookSlug, chapters: {} };
+                      if (!bookSeen[bookSlug]) {
+                          bookSeen[bookSlug] = true;
+                          bookOrder.push(bookSlug);
+                      }
+                  }
+                  
+                  if (!library[bookSlug].chapters[chapterSlug]) {
+                      library[bookSlug].chapters[chapterSlug] = { 
+                          name: chapterName, 
+                          slug: chapterSlug, 
+                          topics: [] 
+                      };
+                      if (!chapterSeen[bookSlug+'-'+chapterSlug]) {
+                          chapterSeen[bookSlug+'-'+chapterSlug] = true;
+                          if (!chapterOrderMap[bookSlug]) chapterOrderMap[bookSlug] = [];
+                          chapterOrderMap[bookSlug].push(chapterSlug);
+                      }
+                  }
+                  
+                  const topicKey = bookSlug + '|' + chapterSlug + '|' + topicSlug;
+                  if (!topicSet.has(topicKey)) {
+                      topicSet.add(topicKey);
+                      library[bookSlug].chapters[chapterSlug].topics.push({
+                          name: topicName,
+                          slug: topicSlug,
+                          url: url
+                      });
+                  }
+              }
+              
+              let chapterCount = 0;
+              for (const bookKey in library) {
+                  chapterCount += Object.keys(library[bookKey].chapters).length;
+              }
+              
+              const finalData = {
+                  version: '2.0',
+                  generated: new Date().toISOString(),
+                  stats: {
+                      bookCount: Object.keys(library).length,
+                      chapterCount: chapterCount,
+                      topicCount: topicSet.size
+                  },
+                  bookOrder: bookOrder,
+                  chapterOrderMap: chapterOrderMap,
+                  library: library
+              };
+              
+              const minified = JSON.stringify(finalData);
+              fs.writeFileSync('topics-data.min.json', minified);
+              
+              console.log('\n✅ BUILD COMPLETE!');
+              console.log(`📚 Books: ${finalData.stats.bookCount}`);
+              console.log(`📖 Chapters: ${finalData.stats.chapterCount}`);
+              console.log(`📝 Topics: ${finalData.stats.topicCount}`);
+              console.log(`📁 File size: ${(minified.length / 1024).toFixed(1)} KB`);
+          }
+          
+          buildTopicsJSON().catch(error => {
+              console.error('❌ Build failed:', error);
+              process.exit(1);
+          });
+          EOF
+      
+      - name: Run build script
+        run: node build.js
+      
+      - name: Commit and push
+        run: |
+          git config user.name "GitHub Action"
+          git config user.email "action@github.com"
+          git add topics-data.min.json
+          git diff --quiet && git diff --staged --quiet || git commit -m "🤖 Auto-update topics database [skip ci]"
+          git push
