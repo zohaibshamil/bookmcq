@@ -21,6 +21,7 @@
     .log-area .err { color: #f14c4c; }
     .log-area .ok { color: #66d9ef; }
     .preview-box { background: #faf9fe; border-radius: 12px; border: 1px solid #e5e7eb; max-height: 400px; overflow: auto; }
+    .file-size-badge { font-size: 0.65rem; background: #ede9fe; color: #5b21b6; padding: 2px 10px; border-radius: 20px; }
   </style>
 </head>
 <body>
@@ -91,6 +92,9 @@
       <button id="previewBtn" disabled class="btn-outline px-5 py-2 rounded-xl text-sm font-medium flex items-center gap-2">
         <i class="fas fa-eye"></i> Preview
       </button>
+      <button id="copyBtn" disabled class="btn-outline px-5 py-2 rounded-xl text-sm font-medium flex items-center gap-2">
+        <i class="fas fa-copy"></i> Copy
+      </button>
     </div>
 
     <!-- generation log -->
@@ -118,7 +122,7 @@
 
   <!-- footer -->
   <div class="text-center text-xs text-gray-400 mt-6">
-    BookMCQ · static topics generator · v1.0
+    BookMCQ · static topics generator · v2.0
   </div>
 </div>
 
@@ -136,6 +140,7 @@
     const generateBtn = document.getElementById('generateBtn');
     const downloadBtn = document.getElementById('downloadBtn');
     const previewBtn = document.getElementById('previewBtn');
+    const copyBtn = document.getElementById('copyBtn');
     const genLog = document.getElementById('genLog');
     const previewContainer = document.getElementById('previewContainer');
     const previewIframe = document.getElementById('previewIframe');
@@ -148,6 +153,7 @@
     // ---------- state ----------
     let currentData = null;        // { library, stats, bookOrder, chapterOrderMap }
     let generatedHtml = null;      // full html string
+    let currentFileSize = 0;
 
     // ---------- helpers ----------
     function setStatus(msg, type = 'info') {
@@ -170,16 +176,19 @@
       generateBtn.disabled = !enabled;
       downloadBtn.disabled = !enabled;
       previewBtn.disabled = !enabled;
+      copyBtn.disabled = !enabled;
       if (enabled) {
         generateBtn.classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
         generateBtn.classList.add('btn-purple', 'cursor-pointer');
         downloadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
         previewBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        copyBtn.classList.remove('opacity-50', 'cursor-not-allowed');
       } else {
         generateBtn.classList.add('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
         generateBtn.classList.remove('btn-purple', 'cursor-pointer');
         downloadBtn.classList.add('opacity-50', 'cursor-not-allowed');
         previewBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        copyBtn.classList.add('opacity-50', 'cursor-not-allowed');
       }
     }
 
@@ -190,15 +199,19 @@
       statTopics.textContent = stats.topicCount || 0;
     }
 
+    function formatFileSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / 1048576).toFixed(1) + ' MB';
+    }
+
     // ---------- load data ----------
     function loadDataFromJSON(json) {
       try {
         const parsed = typeof json === 'string' ? JSON.parse(json) : json;
-        // expected shape: { library, stats, bookOrder, chapterOrderMap }
         if (!parsed.library || typeof parsed.library !== 'object' || Object.keys(parsed.library).length === 0) {
           throw new Error('Invalid data: missing library or empty');
         }
-        // compute stats if not present
         if (!parsed.stats) {
           let b = Object.keys(parsed.library).length;
           let c = 0, t = 0;
@@ -211,7 +224,6 @@
           }
           parsed.stats = { bookCount: b, chapterCount: c, topicCount: t };
         }
-        // ensure bookOrder / chapterOrderMap
         if (!parsed.bookOrder) parsed.bookOrder = Object.keys(parsed.library);
         if (!parsed.chapterOrderMap) {
           parsed.chapterOrderMap = {};
@@ -306,15 +318,13 @@
       log('📋 Sample data loaded', 'info');
     }
 
-    // ---------- generate HTML (EXACT MATCH to topics (4).html) ----------
+    // ---------- generate HTML (IMPROVED VERSION - NO QUICK LINKS CARDS) ----------
     function generateTopicsHTML(data) {
       if (!data) throw new Error('No data to generate');
       const { library, stats, bookOrder, chapterOrderMap } = data;
 
-      // escape helper
       function esc(str) { return String(str).replace(/[&<>"]/g, function(m) { if (m==='&') return '&amp;'; if (m==='<') return '&lt;'; if (m==='>') return '&gt;'; if (m==='"') return '&quot;'; return m; }); }
 
-      // build books array for rendering
       const booksArray = [];
       for (const bookSlug of bookOrder) {
         const book = library[bookSlug];
@@ -333,7 +343,6 @@
         booksArray.push({ name: book.name, slug: bookSlug, chapters });
       }
 
-      // ---- EXACT HTML from topics (4).html (fully static, no loading skeletons) ----
       let html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -357,13 +366,13 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     <link rel="manifest" href="/site.webmanifest">
     
     <!-- PRIMARY SEO META TAGS -->
-    <meta name="description" content="Complete topic library with all books, chapters, and MCQs. Browse and practice topic-wise questions from hundreds of books.">
+    <meta name="description" content="Complete topic library with ${stats.topicCount} MCQs across ${stats.bookCount} books and ${stats.chapterCount} chapters. Browse and practice topic-wise questions.">
     <meta name="keywords" content="topic library, book MCQs, chapter-wise questions, practice tests, exam preparation, competitive exams">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://www.bookmcq.com/topics">
     
     <!-- OPEN GRAPH -->
-    <meta property="og:title" content="Topic Library - Browse All Books, Chapters & MCQs | BookMCQ">
+    <meta property="og:title" content="Topic Library - ${stats.bookCount} Books, ${stats.chapterCount} Chapters, ${stats.topicCount} MCQs | BookMCQ">
     <meta property="og:description" content="Complete topic library with all books, chapters, and MCQs. Browse and practice topic-wise questions.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://www.bookmcq.com/topics">
@@ -387,10 +396,37 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "WebPage",
+      "@type": "CollectionPage",
       "name": "Topic Library - BookMCQ",
       "description": "Browse all books, chapters, and topics with MCQs",
-      "url": "https://www.bookmcq.com/topics"
+      "url": "https://www.bookmcq.com/topics",
+      "about": {
+        "@type": "Thing",
+        "name": "BookMCQ Topics Library"
+      },
+      "mainEntity": {
+        "@type": "ItemList",
+        "itemListElement": [
+          ${booksArray.map((b, i) => `{
+            "@type": "ListItem",
+            "position": ${i+1},
+            "name": "${esc(b.name)}",
+            "description": "${b.chapters.length} chapters"
+          }`).join(',\n          ')}
+        ]
+      }
+    }
+    <\/script>
+    
+    <!-- Breadcrumb Schema -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.bookmcq.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Topics Library", "item": "https://www.bookmcq.com/topics" }
+      ]
     }
     <\/script>
     
@@ -445,13 +481,13 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 .navbar-scrolled .text-white {
     color: #2d3748 !important;
 }
-.navbar-scrolled .text-white\/60 {
+.navbar-scrolled .text-white\\/60 {
     color: #718096 !important;
 }
 .navbar-scrolled i {
     color: #667eea !important;
 }
-.navbar-scrolled .text-white\/80 {
+.navbar-scrolled .text-white\\/80 {
     color: #4a5568 !important;
 }
 .navbar-scrolled .font-bold {
@@ -903,6 +939,23 @@ height="0" width="0" style="display:none;visibility:hidden"><\/iframe><\/noscrip
             </div>
         </div>
 
+        <!-- About Section -->
+        <div class="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-5 mb-6 border border-purple-100">
+            <h2 class="text-lg font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                <i class="fas fa-info-circle text-purple-600"></i> About This Library
+            </h2>
+            <p class="text-sm text-gray-600 leading-relaxed">
+                This comprehensive topic library contains <strong>${stats.topicCount}</strong> practice topics across 
+                <strong>${stats.bookCount}</strong> books and <strong>${stats.chapterCount}</strong> chapters. 
+                Browse by book below, expand chapters to explore topics, or use the search bar above to find specific content. 
+                Each topic links to a dedicated practice page with MCQs.
+            </p>
+            <p class="text-xs text-gray-500 mt-2">
+                <i class="fas fa-lightbulb text-yellow-500 mr-1"></i> 
+                Pro tip: Click the <strong>Practice →</strong> button on any topic to start answering questions.
+            </p>
+        </div>
+
         <!-- Search -->
         <div class="relative mb-6">
             <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
@@ -973,10 +1026,13 @@ height="0" width="0" style="display:none;visibility:hidden"><\/iframe><\/noscrip
           <div class="book-chapters" id="chapters-${book.slug}">
             <div class="book-chapters-inner">`;
 
+        let chapterNum = 1;
         for (const ch of book.chapters) {
           html += `<div class="chapter-item">
             <div class="chapter-header" onclick="toggleChapter('${book.slug}','${ch.slug}')">
-              <span class="chapter-name">${esc(ch.name)}</span>
+              <span class="chapter-name">
+                <span class="chapter-number">${chapterNum}.</span> ${esc(ch.name)}
+              </span>
               <div class="flex items-center gap-3">
                 <span class="topic-count">${ch.topics.length} topics</span>
                 <i class="fas fa-chevron-down chapter-toggle" id="ctoggle-${book.slug}-${ch.slug}"></i>
@@ -996,6 +1052,7 @@ height="0" width="0" style="display:none;visibility:hidden"><\/iframe><\/noscrip
           }
 
           html += `</div></div></div>`;
+          chapterNum++;
         }
 
         html += `</div></div></div>`;
@@ -1007,8 +1064,9 @@ height="0" width="0" style="display:none;visibility:hidden"><\/iframe><\/noscrip
         <!-- Footer Note -->
         <div class="mt-6 pt-4 border-t border-gray-200 flex justify-between items-center flex-wrap gap-2">
             <p class="text-xs text-gray-400">
-                <i class="fas fa-sync-alt text-purple-400 mr-1"></i> 
-                <span id="lastUpdated">${new Date().toISOString().slice(0,10)}</span>
+                <i class="fas fa-database text-purple-400 mr-1"></i> 
+                ${stats.bookCount} books · ${stats.topicCount} topics · 
+                Updated: <span id="lastUpdated">${new Date().toISOString().slice(0,10)}</span>
             </p>
             <p class="text-xs text-gray-400">
                 <i class="fas fa-external-link-alt text-purple-400 mr-1"></i> 
@@ -1058,7 +1116,6 @@ height="0" width="0" style="display:none;visibility:hidden"><\/iframe><\/noscrip
     // BOOKMCQ - TOPIC LIBRARY (STATIC VERSION)
     // ============================================
 
-    // Debug logger
     const debugLog = [];
     function logDebug(msg) {
         console.log(msg);
@@ -1243,6 +1300,7 @@ height="0" width="0" style="display:none;visibility:hidden"><\/iframe><\/noscrip
                             <div class="book-chapters-inner">
                 \`;
                 
+                let chapterNum = 1;
                 for (const chapterKey of chapterKeys) {
                     const chapter = book.chapters[chapterKey];
                     if (!chapter) continue;
@@ -1253,7 +1311,7 @@ height="0" width="0" style="display:none;visibility:hidden"><\/iframe><\/noscrip
                         <div class="chapter-item">
                             <div class="chapter-header" onclick="toggleChapter('\${bookKey}', '\${chapterKey}')">
                                 <span class="chapter-name">
-                                    \${this.escapeHtml(chapter.name)}
+                                    <span class="chapter-number">\${chapterNum}.</span> \${this.escapeHtml(chapter.name)}
                                 </span>
                                 <div class="flex items-center gap-3">
                                     <span class="topic-count">\${topicCount} topics</span>
@@ -1287,6 +1345,7 @@ height="0" width="0" style="display:none;visibility:hidden"><\/iframe><\/noscrip
                             </div>
                         </div>
                     \`;
+                    chapterNum++;
                 }
                 
                 html += \`
@@ -1777,13 +1836,16 @@ function initNavbarScroll() {
       try {
         const html = generateTopicsHTML(currentData);
         generatedHtml = html;
-        setStatus(`✅ topics.html generated (${html.length} chars)`, 'success');
-        log(`✅ Generated ${html.length} bytes`, 'success');
-        // enable download
+        currentFileSize = html.length;
+        setStatus(`✅ topics.html generated (${formatFileSize(html.length)})`, 'success');
+        log(`✅ Generated ${formatFileSize(html.length)}`, 'success');
         downloadBtn.disabled = false;
         downloadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
         previewBtn.disabled = false;
         previewBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        copyBtn.disabled = false;
+        copyBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        downloadBtn.innerHTML = `<i class="fas fa-download"></i> Download topics.html (${formatFileSize(html.length)})`;
       } catch (e) {
         setStatus(`❌ Generation error: ${e.message}`, 'error');
         log(`❌ ${e.message}`, 'error');
@@ -1821,6 +1883,27 @@ function initNavbarScroll() {
       log('👁️ Preview opened', 'info');
     }
 
+    // ---------- copy to clipboard ----------
+    function copyToClipboard() {
+      if (!generatedHtml) {
+        setStatus('❌ Generate first', 'error');
+        return;
+      }
+      navigator.clipboard.writeText(generatedHtml).then(() => {
+        setStatus('📋 Copied to clipboard!', 'success');
+        log('📋 Copied to clipboard', 'success');
+      }).catch(() => {
+        const textarea = document.createElement('textarea');
+        textarea.value = generatedHtml;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        setStatus('📋 Copied to clipboard!', 'success');
+        log('📋 Copied to clipboard', 'success');
+      });
+    }
+
     // ---------- events ----------
     fetchBtn.addEventListener('click', fetchFromGitHub);
     fileInput.addEventListener('change', function(e) {
@@ -1846,18 +1929,16 @@ function initNavbarScroll() {
     generateBtn.addEventListener('click', generate);
     downloadBtn.addEventListener('click', download);
     previewBtn.addEventListener('click', preview);
+    copyBtn.addEventListener('click', copyToClipboard);
     closePreviewBtn.addEventListener('click', function() {
       previewContainer.classList.add('hidden');
       previewIframe.srcdoc = '';
     });
 
-    // init: disabled
     enableButtons(false);
     setStatus('📂 Load topics data to start', 'info');
     clearLog();
 
-    // auto fetch sample for demo?
-    // loadSample(); // uncomment if you want sample on load
   })();
 </script>
 </body>
