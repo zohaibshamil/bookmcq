@@ -1,0 +1,42 @@
+name: Submit to IndexNow
+
+on:
+  push:
+    branches: [ main, master ]
+  schedule:
+    - cron: '0 0 * * *'  # Runs daily at midnight
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Submit URLs to IndexNow
+        run: |
+          # Get all HTML files from your site
+          URLs=$(find . -name "*.html" | sed 's/^\.//' | sed 's/\/index.html$//' | sed 's/\.html$//' | awk '{print "https://YOUR-USERNAME.github.io" $0}')
+          
+          # Prepare JSON payload
+          JSON=$(printf '{"host":"YOUR-USERNAME.github.io","key":"6bbe7d3e1e8b40dc9dbf374b9de2010b","keyLocation":"https://YOUR-USERNAME.github.io/6bbe7d3e1e8b40dc9dbf374b9de2010b.txt","urlList":[')
+          
+          # Add URLs to JSON (first 10,000)
+          count=0
+          for url in $URLs; do
+            if [ $count -gt 0 ]; then
+              JSON="$JSON,"
+            fi
+            JSON="$JSON\"$url\""
+            count=$((count+1))
+            if [ $count -ge 10000 ]; then
+              break
+            fi
+          done
+          
+          JSON="$JSON]}"
+          
+          # Send to IndexNow
+          curl -X POST "https://api.indexnow.org/IndexNow" \
+            -H "Content-Type: application/json; charset=utf-8" \
+            -d "$JSON"
