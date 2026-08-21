@@ -3123,161 +3123,208 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         });
     }
 
-    // ============================================
-    // 4. SEARCH FUNCTIONALITY
-    // ============================================
-    function performSearch(query) {
-        if (!fullLibraryData) return;
-        
-        const lowerQuery = query.toLowerCase().trim();
-        const container = document.getElementById('booksContainer');
-        const noResults = document.getElementById('noResults');
-        
-        if (lowerQuery === '') {
-            document.querySelectorAll('.book-accordion').forEach(book => {
-                book.style.display = '';
-                const bookKey = book.dataset.book;
-                const chaptersDiv = document.getElementById('chapters-' + bookKey);
-                if (chaptersDiv) {
-                    chaptersDiv.classList.remove('open');
-                }
-                const toggle = document.getElementById('toggle-' + bookKey);
-                if (toggle) toggle.classList.remove('open');
-            });
-            noResults.classList.add('hidden');
-            return;
-        }
-        
-        let hasResults = false;
-        
+// ============================================
+// 4. SEARCH FUNCTIONALITY - FIXED VERSION
+// ============================================
+function performSearch(query) {
+    if (!fullLibraryData) return;
+    
+    const lowerQuery = query.toLowerCase().trim();
+    const container = document.getElementById('booksContainer');
+    const noResults = document.getElementById('noResults');
+    
+    // Clear search - reset everything
+    if (lowerQuery === '') {
         document.querySelectorAll('.book-accordion').forEach(book => {
+            book.style.display = '';
             const bookKey = book.dataset.book;
-            const bookData = fullLibraryData[bookKey];
-            if (!bookData) {
-                book.style.display = 'none';
-                return;
+            const chaptersDiv = document.getElementById('chapters-' + bookKey);
+            if (chaptersDiv) {
+                chaptersDiv.classList.remove('open');
             }
+            const toggle = document.getElementById('toggle-' + bookKey);
+            if (toggle) toggle.classList.remove('open');
             
-            const bookMatches = bookData.name.toLowerCase().includes(lowerQuery);
-            let hasMatchingChapters = false;
-            
+            // Restore all topics to their original state
             const chapters = book.querySelectorAll('.chapter-item');
             chapters.forEach(chapterEl => {
+                chapterEl.style.display = '';
                 const chapterKey = chapterEl.dataset.chapter;
-                const chapterData = bookData.chapters[chapterKey];
-                if (!chapterData) {
-                    chapterEl.style.display = 'none';
-                    return;
+                const topicsContainer = document.getElementById('ctopics-' + bookKey + '-' + chapterKey);
+                if (topicsContainer) {
+                    topicsContainer.classList.remove('open');
                 }
+                const ctoggle = document.getElementById('ctoggle-' + bookKey + '-' + chapterKey);
+                if (ctoggle) ctoggle.classList.remove('open');
                 
-                const chapterMatches = chapterData.name.toLowerCase().includes(lowerQuery);
-                const matchingTopics = chapterData.topics.filter(t => 
-                    t.name.toLowerCase().includes(lowerQuery)
-                );
-                
-                if (chapterMatches || matchingTopics.length > 0 || bookMatches) {
-                    chapterEl.style.display = '';
-                    hasMatchingChapters = true;
-                    hasResults = true;
-                    
-                    if (matchingTopics.length > 0 || chapterMatches) {
-                        const topicsContainer = document.getElementById('ctopics-' + bookKey + '-' + chapterKey);
-                        const toggle = document.getElementById('ctoggle-' + bookKey + '-' + chapterKey);
-                        if (topicsContainer) {
-                            topicsContainer.classList.add('open');
-                            if (toggle) toggle.classList.add('open');
-                            
-                            const innerContainer = document.getElementById('topicsInner-' + bookKey + '-' + chapterKey);
-                            if (innerContainer && (matchingTopics.length > 0 || chapterMatches)) {
-                                let topicsHtml = '';
-                                const topicsToShow = matchingTopics.length > 0 ? matchingTopics : chapterData.topics;
-                                for (const topic of topicsToShow) {
-                                    topicsHtml += `
-                                        <a href="${topic.url}" target="_blank" class="topic-link" title="Practice ${topic.name}">
-                                            <span class="topic-name">
-                                                <i class="fas fa-file-alt"></i>
-                                                ${escapeHtml(topic.name)}
-                                            </span>
-                                            <span class="topic-badge">Practice →</span>
-                                        </a>
-                                    `;
-                                }
-                                innerContainer.innerHTML = topicsHtml;
-                            }
-                        }
-                    }
-                } else {
-                    chapterEl.style.display = 'none';
-                }
-            });
-            
-            if (hasMatchingChapters || bookMatches) {
-                book.style.display = '';
-                if (bookMatches) {
-                    const chaptersDiv = document.getElementById('chapters-' + bookKey);
-                    const toggle = document.getElementById('toggle-' + bookKey);
-                    if (chaptersDiv) chaptersDiv.classList.add('open');
-                    if (toggle) toggle.classList.add('open');
-                    
-                    chapters.forEach(chapterEl => {
-                        chapterEl.style.display = '';
-                        const chapterKey = chapterEl.dataset.chapter;
-                        const topicsContainer = document.getElementById('ctopics-' + bookKey + '-' + chapterKey);
-                        const chapterData = fullLibraryData[bookKey]?.chapters[chapterKey];
-                        if (topicsContainer && chapterData) {
-                            const innerContainer = document.getElementById('topicsInner-' + bookKey + '-' + chapterKey);
-                            if (innerContainer) {
-                                let topicsHtml = '';
-                                for (const topic of chapterData.topics) {
-                                    topicsHtml += `
-                                        <a href="${topic.url}" target="_blank" class="topic-link" title="Practice ${topic.name}">
-                                            <span class="topic-name">
-                                                <i class="fas fa-file-alt"></i>
-                                                ${escapeHtml(topic.name)}
-                                            </span>
-                                            <span class="topic-badge">Practice →</span>
-                                        </a>
-                                    `;
-                                }
-                                innerContainer.innerHTML = topicsHtml;
-                            }
-                        }
-                    });
-                }
-            } else {
-                book.style.display = 'none';
-            }
-        });
-        
-        if (!hasResults) {
-            noResults.classList.remove('hidden');
-            document.querySelectorAll('#booksContainer .chapter-item').forEach(el => {
-                const bookKey = el.dataset.book;
-                const chapterKey = el.dataset.chapter;
+                // Restore original topics
                 const innerContainer = document.getElementById('topicsInner-' + bookKey + '-' + chapterKey);
-                if (innerContainer) {
-                    const chapterData = fullLibraryData[bookKey]?.chapters[chapterKey];
+                if (innerContainer && fullLibraryData[bookKey]?.chapters[chapterKey]) {
+                    const chapterData = fullLibraryData[bookKey].chapters[chapterKey];
                     if (chapterData) {
                         let topicsHtml = '';
-                        for (const topic of chapterData.topics) {
-                            topicsHtml += `
-                                <a href="${topic.url}" target="_blank" class="topic-link" title="Practice ${topic.name}">
-                                    <span class="topic-name">
-                                        <i class="fas fa-file-alt"></i>
-                                        ${escapeHtml(topic.name)}
-                                    </span>
-                                    <span class="topic-badge">Practice →</span>
-                                </a>
-                            `;
+                        const sortedTopics = [...chapterData.topics].sort((a, b) => {
+                            const nameA = a.name || '';
+                            const nameB = b.name || '';
+                            return nameA.localeCompare(nameB);
+                        });
+                        for (const topic of sortedTopics) {
+                            topicsHtml += '<a href="' + topic.url + '" target="_blank" class="topic-link" title="Practice ' + escapeHtml(topic.name) + '">' +
+                                '<span class="topic-name">' +
+                                    '<i class="fas fa-file-alt"></i>' +
+                                    escapeHtml(topic.name) +
+                                '</span>' +
+                                '<span class="topic-badge">Practice →</span>' +
+                            '</a>';
                         }
                         innerContainer.innerHTML = topicsHtml;
                     }
                 }
             });
-        } else {
-            noResults.classList.add('hidden');
-        }
+        });
+        noResults.classList.add('hidden');
+        return;
     }
+    
+    // Track if ANY results found
+    let hasResults = false;
+    
+    // Process each book
+    document.querySelectorAll('.book-accordion').forEach(book => {
+        const bookKey = book.dataset.book;
+        const bookData = fullLibraryData[bookKey];
+        if (!bookData) {
+            book.style.display = 'none';
+            return;
+        }
+        
+        // Check if book name matches
+        const bookMatches = bookData.name.toLowerCase().includes(lowerQuery);
+        let bookHasVisibleChapters = false;
+        
+        const chapters = book.querySelectorAll('.chapter-item');
+        chapters.forEach(chapterEl => {
+            const chapterKey = chapterEl.dataset.chapter;
+            const chapterData = bookData.chapters[chapterKey];
+            if (!chapterData) {
+                chapterEl.style.display = 'none';
+                return;
+            }
+            
+            // Find matching topics in this chapter
+            const matchingTopics = chapterData.topics.filter(function(t) {
+                return t.name.toLowerCase().includes(lowerQuery);
+            });
+            
+            // Check if chapter name matches
+            const chapterMatches = chapterData.name.toLowerCase().includes(lowerQuery);
+            
+            // Determine if this chapter should be visible
+            const chapterVisible = bookMatches || chapterMatches || matchingTopics.length > 0;
+            
+            if (chapterVisible) {
+                chapterEl.style.display = '';
+                bookHasVisibleChapters = true;
+                hasResults = true;
+                
+                // Get the topics container
+                const topicsContainer = document.getElementById('ctopics-' + bookKey + '-' + chapterKey);
+                const toggle = document.getElementById('ctoggle-' + bookKey + '-' + chapterKey);
+                const innerContainer = document.getElementById('topicsInner-' + bookKey + '-' + chapterKey);
+                
+                // Determine which topics to show
+                let topicsToShow = [];
+                
+                if (matchingTopics.length > 0) {
+                    // Show ONLY matching topics
+                    topicsToShow = matchingTopics;
+                } else if (chapterMatches || bookMatches) {
+                    // If chapter or book matches but NO topic matches, show ALL topics
+                    topicsToShow = chapterData.topics;
+                }
+                
+                // Expand the chapter if it has content to show
+                if (topicsToShow.length > 0 && innerContainer) {
+                    if (topicsContainer) {
+                        topicsContainer.classList.add('open');
+                    }
+                    if (toggle) {
+                        toggle.classList.add('open');
+                    }
+                    
+                    // Render the topics
+                    let topicsHtml = '';
+                    var sortedTopics = [...topicsToShow].sort(function(a, b) {
+                        var nameA = a.name || '';
+                        var nameB = b.name || '';
+                        return nameA.localeCompare(nameB);
+                    });
+                    for (var i = 0; i < sortedTopics.length; i++) {
+                        var topic = sortedTopics[i];
+                        topicsHtml += '<a href="' + topic.url + '" target="_blank" class="topic-link" title="Practice ' + escapeHtml(topic.name) + '">' +
+                            '<span class="topic-name">' +
+                                '<i class="fas fa-file-alt"></i>' +
+                                escapeHtml(topic.name) +
+                            '</span>' +
+                            '<span class="topic-badge">Practice →</span>' +
+                        '</a>';
+                    }
+                    innerContainer.innerHTML = topicsHtml;
+                } else {
+                    // No topics to show - hide the chapter content
+                    if (topicsContainer) {
+                        topicsContainer.classList.remove('open');
+                    }
+                    if (toggle) {
+                        toggle.classList.remove('open');
+                    }
+                }
+            } else {
+                // Hide this chapter
+                chapterEl.style.display = 'none';
+                var topicsContainer = document.getElementById('ctopics-' + bookKey + '-' + chapterKey);
+                if (topicsContainer) {
+                    topicsContainer.classList.remove('open');
+                }
+                var toggle = document.getElementById('ctoggle-' + bookKey + '-' + chapterKey);
+                if (toggle) {
+                    toggle.classList.remove('open');
+                }
+            }
+        });
+        
+        // Show/hide the book based on whether it has visible chapters
+        if (bookHasVisibleChapters) {
+            book.style.display = '';
+            // Auto-expand the book if it has visible chapters
+            var chaptersDiv = document.getElementById('chapters-' + bookKey);
+            var toggle = document.getElementById('toggle-' + bookKey);
+            if (chaptersDiv) {
+                chaptersDiv.classList.add('open');
+            }
+            if (toggle) {
+                toggle.classList.add('open');
+            }
+        } else {
+            book.style.display = 'none';
+            var chaptersDiv = document.getElementById('chapters-' + bookKey);
+            if (chaptersDiv) {
+                chaptersDiv.classList.remove('open');
+            }
+            var toggle = document.getElementById('toggle-' + bookKey);
+            if (toggle) {
+                toggle.classList.remove('open');
+            }
+        }
+    });
+    
+    // Show/hide no results message
+    if (!hasResults) {
+        noResults.classList.remove('hidden');
+    } else {
+        noResults.classList.add('hidden');
+    }
+}
 
     // ============================================
     // 5. TOGGLE FUNCTIONS
