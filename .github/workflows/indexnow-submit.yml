@@ -23,53 +23,144 @@ jobs:
         run: |
           echo '🚀 Starting IndexNow submission...'
           
-          # Get all sitemaps
-          for i in {1..10}; do
-            if [ -f "sitemap${i}.xml" ]; then
-              echo "📄 Processing sitemap${i}.xml..."
-              # Extract URLs from sitemap
-              grep -o '<loc>[^<]*</loc>' "sitemap${i}.xml" | sed 's/<loc>//g' | sed 's/<\/loc>//g' >> all-urls.txt
-            fi
-          done
+          # DYNAMIC: Find ALL sitemap files automatically
+          echo '📄 Discovering all sitemap files...'
+          SITEMAP_FILES=$(find . -maxdepth 1 -name "sitemap*.xml" -type f | sort -V)
+          SITEMAP_COUNT=$(echo "$SITEMAP_FILES" | wc -l)
           
-          # If no sitemaps found, use HTML files
-          if [ ! -f all-urls.txt ] || [ ! -s all-urls.txt ]; then
-            echo "📄 No sitemaps found, using HTML files..."
-            find . -name "*.html" -not -path "./.git/*" | sed 's/^\.//' | while read file; do
-              # Remove ./ from start and handle index.html
+          if [ -z "$SITEMAP_FILES" ] || [ "$SITEMAP_COUNT" -eq 0 ]; then
+            echo '⚠️ No sitemap files found, using HTML files...'
+            # Fallback: Find all HTML files
+            find . -name "*.html" -not -path "./.git/*" -not -path "./node_modules/*" | while read file; do
               url_path=$(echo "$file" | sed 's/^\.\///' | sed 's/\/index.html$//' | sed 's/\.html$//')
               echo "https://www.bookmcq.com/$url_path"
             done > all-urls.txt
           else
+            echo "📊 Found $SITEMAP_COUNT sitemap files"
+            
+            # Process each sitemap dynamically
+            echo "$SITEMAP_FILES" | while read sitemap; do
+              echo "  📄 Processing: $sitemap"
+              # Extract URLs from sitemap
+              grep -o '<loc>[^<]*</loc>' "$sitemap" | sed 's/<loc>//g' | sed 's/<\/loc>//g' >> all-urls.txt
+            done
+            
             # Replace any github.io URLs with your actual domain
             sed -i 's|https://zohaibshamil.github.io/bookmcq|https://www.bookmcq.com|g' all-urls.txt
           fi
           
-          # Limit to 10,000 URLs (IndexNow limit)
-          head -10000 all-urls.txt > urls-limited.txt
+          # Remove duplicates and empty lines
+          echo '🧹 Cleaning up URLs...'
+          sort -u all-urls.txt | grep -v '^$' > unique-urls.txt
           
-          # Build JSON payload
-          echo '📝 Building JSON payload...'
-          URLs=$(cat urls-limited.txt | sed 's/^/"/' | sed 's/$/"/' | paste -sd,)
-          JSON="{\"host\":\"www.bookmcq.com\",\"key\":\"6bbe7d3e1e8b40dc9dbf374b9de2010b\",\"keyLocation\":\"https://www.bookmcq.com/6bbe7d3e1e8b40dc9dbf374b9de2010b.txt\",\"urlList\":[$URLs]}"
+          TOTAL_UNIQUE=$(wc -l < unique-urls.txt)
+          echo "📊 Total unique URLs found: $TOTAL_UNIQUE"
           
-          # Submit to IndexNow
-          echo '📤 Submitting to IndexNow...'
-          RESPONSE=$(curl -s -w "%{http_code}" -X POST "https://api.indexnow.org/IndexNow" \
-            -H "Content-Type: application/json; charset=utf-8" \
-            -d "$JSON")
+          # Check if we have URLs to submit
+          if [ "$TOTAL_UNIQUE" -eq 0 ]; then
+            echo '❌ No URLs found to submit'
+            exit 1
+          fi
           
-          HTTP_CODE="${RESPONSE: -3}"
-          BODY="${RESPONSE%???}"
+          # ============================================
+          # AUTO-CHUNKING: Split into 10,000 URL chunks
+          # ============================================
+          echo '📦 Splitting URLs into chunks of 10,000...'
+          split -l 10000 unique-urls.txt chunk_
+          CHUNK_COUNT=$(ls chunk_* 2>/dev/null | wc -l)
+          echo "📊 Created $CHUNK_COUNT chunk(s)"
           
-          echo "HTTP Status: $HTTP_CODE"
+          # ============================================
+          # Submit each chunk to IndexNow
+          # ============================================
+          SUCCESS_COUNT=0
+          FAIL_COUNT=0
+          CHUNK_NUM=1
           
-          if [ "$HTTP_CODE" == "200" ]; then
-            echo '✅ Successfully submitted to IndexNow!'
-            echo "URLs submitted: $(wc -l < urls-limited.txt)"
-          elif [ "$HTTP_CODE" == "403" ]; then
-            echo '❌ Forbidden - Key file not accessible or invalid'
-            echo "Make sure: https://www.bookmcq.com/6bbe7d3e1e8b40dc9dbf374b9de2010b.txt is accessible"
+          for chunk in chunk_*; do
+            echo ""
+            echo "📤 Submitting chunk $CHUNK_NUM/$CHUNK_COUNT..."
+            
+            URL_COUNT=$(wc -l < "$chunk")
+            echo "  📊 URLs in this chunk: $URL_COUNT"
+            
+            # Build JSON payload for this chunk
+            URLs=$(cat "$chunk" | sed 's/^/"/' | sed 's/$/"/' | paste -sd,)
+            JSON="{\"host\":\"www.bookmcq.com\",\"key\":\"6bbe7d3e1e8b40dc9dbf374b9de2010b\",\"keyLocation\":\"https://www.bookmcq.com/6bbe7d3e1e8b40dc9dbf374b9de2010b.txt\",\"urlList\":[$URLs]}"
+            
+            # Submit to IndexNow
+            RESPONSE=$(curl -s -w "%{http_code}" -X POST "https://api.indexnow.org/IndexNow" \
+              -H "Content-Type: application/json; charset=utf-8" \
+              -d "$JSON")
+            
+            HTTP_CODE="${RESPONSE: -3}"
+            BODY="${RESPONSE%???}"
+            
+            echo "  HTTP Status: $HTTP_CODE"
+            
+            if [ "$HTTP_CODE" == "200" ]; then
+              echo "  ✅ Chunk $CHUNK_NUM submitted successfully!"
+              SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+            elif [ "$HTTP_CODE" == "403" ]; then
+              echo "  ❌ Forbidden - Key file not accessible"
+              echo "  Make sure: https://www.bookmcq.com/6bbe7d3e1e8b40dc9dbf374b9de2010b.txt is accessible"
+              FAIL_COUNT=$((FAIL_COUNT + 1))
+            elif [ "$HTTP_CODE" == "422" ]; then
+              echo "  ❌ Unprocessable - Check URL formatting"
+              echo "  Response: $BODY"
+              FAIL_COUNT=$((FAIL_COUNT + 1))
+            elif [ "$HTTP_CODE" == "429" ]; then
+              echo "  ⏳ Rate limited - Waiting 60 seconds before retry..."
+              sleep 60
+              # Retry once
+              echo "  🔄 Retrying chunk $CHUNK_NUM..."
+              RESPONSE_RETRY=$(curl -s -w "%{http_code}" -X POST "https://api.indexnow.org/IndexNow" \
+                -H "Content-Type: application/json; charset=utf-8" \
+                -d "$JSON")
+              HTTP_CODE_RETRY="${RESPONSE_RETRY: -3}"
+              if [ "$HTTP_CODE_RETRY" == "200" ]; then
+                echo "  ✅ Chunk $CHUNK_NUM submitted successfully on retry!"
+                SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+              else
+                echo "  ❌ Chunk $CHUNK_NUM failed on retry"
+                FAIL_COUNT=$((FAIL_COUNT + 1))
+              fi
+            else
+              echo "  ⚠️ Response: $BODY"
+              FAIL_COUNT=$((FAIL_COUNT + 1))
+            fi
+            
+            CHUNK_NUM=$((CHUNK_NUM + 1))
+            
+            # Small delay between chunks to avoid rate limiting
+            if [ "$CHUNK_NUM" -le "$CHUNK_COUNT" ]; then
+              echo "  ⏳ Waiting 2 seconds before next chunk..."
+              sleep 2
+            fi
+          done
+          
+          # ============================================
+          # Clean up chunk files
+          # ============================================
+          rm -f chunk_* 2>/dev/null
+          
+          # ============================================
+          # Final Summary
+          # ============================================
+          echo ""
+          echo "═══════════════════════════════════════════"
+          echo "📊 SUBMISSION SUMMARY"
+          echo "═══════════════════════════════════════════"
+          echo "📊 Total unique URLs: $TOTAL_UNIQUE"
+          echo "📦 Total chunks: $CHUNK_COUNT"
+          echo "✅ Successful chunks: $SUCCESS_COUNT"
+          echo "❌ Failed chunks: $FAIL_COUNT"
+          echo "═══════════════════════════════════════════"
+          
+          if [ "$FAIL_COUNT" -eq 0 ]; then
+            echo "🎉 ALL URLs submitted successfully!"
+            exit 0
           else
-            echo "⚠️ Response: $BODY"
+            echo "⚠️ Some chunks failed. Check the logs above."
+            exit 1
           fi
