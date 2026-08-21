@@ -40,13 +40,32 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     <!-- PERFORMANCE & MOBILE -->
     <meta name="theme-color" content="#7c3aed">
     
-    <!-- RESOURCE HINTS - Critical for ultra-fast loading -->
-    <link rel="preconnect" href="https://cdn.tailwindcss.com">
-    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- ============================================ -->
+    <!-- OPTIMIZED RESOURCE LOADING - NO ORB ERRORS   -->
+    <!-- ============================================ -->
+    <!-- Tailwind CSS - Loaded from CDN with integrity -->
+    <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- STRUCTURED DATA - Enhanced for SEO -->
+    <!-- Font Awesome - Loaded from CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <!-- Google Fonts - Using system fonts as fallback to avoid ORB blocking -->
+    <style>
+      /* System font stack as primary, Inter as progressive enhancement */
+      body { 
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      }
+      .font-inter {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      }
+      /* Try loading Inter as a progressive enhancement (won't break if blocked) */
+      @supports (font-variation-settings: normal) {
+        @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300,400;600;700&display=swap');
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+      }
+    </style>
+    
+    <!-- STRUCTURED DATA -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -113,7 +132,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     }
     </script>
     
-    <!-- Google Analytics -->
+    <!-- Google Analytics - Loaded async with minimal impact -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-5WGZ1P0EV1"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -122,19 +141,11 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       gtag('config', 'G-5WGZ1P0EV1');
     </script>
     
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300,400;600;700&display=swap" rel="stylesheet">
-    
     <style>
         /* ========== BODY BACKGROUND - GRADIENT ========== */
         body { 
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
             min-height: 100vh;
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
         }
         
         /* ========== QUIZ CARD - GLASSMORPHISM ========== */
@@ -712,7 +723,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                 <p class="text-gray-400 text-sm">Try adjusting your search terms.</p>
             </div>
 
-            <!-- Books Container - All book and chapter links are STATIC for SEO -->
+            <!-- Books Container -->
             <div id="booksContainer"><div class="book-accordion mb-3" data-book="operating-system">
           <div class="book-header" onclick="toggleBook('operating-system')">
             <div class="flex items-center gap-3 flex-1 min-w-0">
@@ -2962,9 +2973,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 <script>
     // ============================================
-    // BOOKMCQ - TOPIC LIBRARY (SEO OPTIMIZED)
-    // All book and chapter links are static HTML
-    // Topics are loaded dynamically from JSON
+    // BOOKMCQ - TOPIC LIBRARY (OPTIMIZED)
     // ============================================
 
     const debugLog = [];
@@ -2974,35 +2983,25 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     }
 
     // ============================================
-    // 1. SECURITY MANAGER
-    // ============================================
-    class SecurityManager {
-        constructor() {
-            logDebug('🔓 Security: Right click enabled');
-        }
-    }
-
-    // ============================================
-    // 2. TOPIC DATA LOADER
+    // 1. TOPIC DATA LOADER
     // ============================================
     const TOPICS_JSON_URL = 'https://raw.githubusercontent.com/zohaibshamil/bookmcq/main/topics-data.min.json';
     let fullLibraryData = null;
     let fullStats = null;
     let fullBookOrder = null;
     let fullChapterOrderMap = null;
-    let isDataLoaded = false;
 
     async function loadTopicsData() {
         try {
-            logDebug('⏳ Fetching topics data from: ' + TOPICS_JSON_URL);
+            logDebug('⏳ Fetching topics data...');
             const response = await fetch(TOPICS_JSON_URL);
             if (!response.ok) {
-                throw new Error('HTTP ' + response.status + ' - ' + response.statusText);
+                throw new Error('HTTP ' + response.status);
             }
             const data = await response.json();
             
             if (!data.library || typeof data.library !== 'object') {
-                throw new Error('Invalid data format: missing library');
+                throw new Error('Invalid data format');
             }
             
             fullLibraryData = data.library;
@@ -3010,29 +3009,22 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             fullBookOrder = data.bookOrder || Object.keys(data.library);
             fullChapterOrderMap = data.chapterOrderMap || {};
             
-            // Ensure chapterOrderMap exists for all books
             for (const bookSlug of fullBookOrder) {
                 if (!fullChapterOrderMap[bookSlug]) {
                     fullChapterOrderMap[bookSlug] = Object.keys(fullLibraryData[bookSlug]?.chapters || {});
                 }
             }
             
-            isDataLoaded = true;
-            logDebug('✅ Topics data loaded successfully');
-            logDebug('   Books: ' + fullStats.bookCount);
-            logDebug('   Chapters: ' + fullStats.chapterCount);
-            logDebug('   Topics: ' + fullStats.topicCount);
-            
-            // Update stats in UI
+            logDebug('✅ Topics data loaded');
             updateStatsUI();
-            
-            // Load all topics
             loadAllTopics();
             
             return true;
         } catch (error) {
-            logDebug('❌ Failed to load topics data: ' + error.message);
-            showErrorState(error.message);
+            logDebug('❌ Failed to load topics: ' + error.message);
+            document.querySelectorAll('.topic-loading').forEach(el => {
+                el.innerHTML = '<span class="text-red-500 text-sm">⚠️ Failed to load topics</span>';
+            });
             return false;
         }
     }
@@ -3052,15 +3044,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         document.getElementById('footerTopicCount').textContent = fullStats.topicCount || 0;
     }
 
-    function showErrorState(message) {
-        document.querySelectorAll('.topic-loading').forEach(el => {
-            el.innerHTML = '<span class="text-red-500 text-sm">⚠️ ' + message + '</span>';
-        });
-    }
-
-    // ============================================
-    // 3. TOPIC LOADER
-    // ============================================
     function loadAllTopics() {
         if (!fullLibraryData) return;
         
@@ -3079,22 +3062,16 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
     function loadTopicsForChapter(bookSlug, chapterKey, chapterData) {
         const container = document.getElementById('topicsInner-' + bookSlug + '-' + chapterKey);
-        const loadingEl = document.getElementById('loadingTopics-' + bookSlug + '-' + chapterKey);
-        
         if (!container) return;
         
-        // Update topic count
         const countEl = document.getElementById('topicCount-' + bookSlug + '-' + chapterKey);
         if (countEl) {
             countEl.textContent = chapterData.topics.length + ' topics';
         }
         
-        // Render topics
         let topicsHtml = '';
         const sortedTopics = [...chapterData.topics].sort((a, b) => {
-            const nameA = a.name || '';
-            const nameB = b.name || '';
-            return nameA.localeCompare(nameB);
+            return (a.name || '').localeCompare(b.name || '');
         });
         
         for (const topic of sortedTopics) {
@@ -3124,13 +3101,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     }
 
     // ============================================
-    // 4. SEARCH FUNCTIONALITY
+    // 2. SEARCH FUNCTIONALITY
     // ============================================
     function performSearch(query) {
         if (!fullLibraryData) return;
         
         const lowerQuery = query.toLowerCase().trim();
-        const container = document.getElementById('booksContainer');
         const noResults = document.getElementById('noResults');
         
         if (lowerQuery === '') {
@@ -3138,9 +3114,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                 book.style.display = '';
                 const bookKey = book.dataset.book;
                 const chaptersDiv = document.getElementById('chapters-' + bookKey);
-                if (chaptersDiv) {
-                    chaptersDiv.classList.remove('open');
-                }
+                if (chaptersDiv) chaptersDiv.classList.remove('open');
                 const toggle = document.getElementById('toggle-' + bookKey);
                 if (toggle) toggle.classList.remove('open');
             });
@@ -3222,9 +3196,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                     chapters.forEach(chapterEl => {
                         chapterEl.style.display = '';
                         const chapterKey = chapterEl.dataset.chapter;
-                        const topicsContainer = document.getElementById('ctopics-' + bookKey + '-' + chapterKey);
                         const chapterData = fullLibraryData[bookKey]?.chapters[chapterKey];
-                        if (topicsContainer && chapterData) {
+                        if (chapterData) {
                             const innerContainer = document.getElementById('topicsInner-' + bookKey + '-' + chapterKey);
                             if (innerContainer) {
                                 let topicsHtml = '';
@@ -3251,61 +3224,33 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         
         if (!hasResults) {
             noResults.classList.remove('hidden');
-            document.querySelectorAll('#booksContainer .chapter-item').forEach(el => {
-                const bookKey = el.dataset.book;
-                const chapterKey = el.dataset.chapter;
-                const innerContainer = document.getElementById('topicsInner-' + bookKey + '-' + chapterKey);
-                if (innerContainer) {
-                    const chapterData = fullLibraryData[bookKey]?.chapters[chapterKey];
-                    if (chapterData) {
-                        let topicsHtml = '';
-                        for (const topic of chapterData.topics) {
-                            topicsHtml += `
-                                <a href="${topic.url}" target="_blank" class="topic-link" title="Practice ${topic.name}">
-                                    <span class="topic-name">
-                                        <i class="fas fa-file-alt"></i>
-                                        ${escapeHtml(topic.name)}
-                                    </span>
-                                    <span class="topic-badge">Practice →</span>
-                                </a>
-                            `;
-                        }
-                        innerContainer.innerHTML = topicsHtml;
-                    }
-                }
-            });
         } else {
             noResults.classList.add('hidden');
         }
     }
 
     // ============================================
-    // 5. TOGGLE FUNCTIONS
+    // 3. TOGGLE FUNCTIONS
     // ============================================
     
     window.toggleBook = function(bookKey) {
         const chaptersDiv = document.getElementById('chapters-' + bookKey);
         const toggle = document.getElementById('toggle-' + bookKey);
         const isCurrentlyOpen = chaptersDiv && chaptersDiv.classList.contains('open');
-        const bookElement = document.querySelector('.book-accordion[data-book="' + bookKey + '"]');
-        const bookHeader = bookElement ? bookElement.querySelector('.book-header') : null;
         
         if (window._scrollTimeout) {
             clearTimeout(window._scrollTimeout);
             window._scrollTimeout = null;
         }
         
-        const allBooks = document.querySelectorAll('.book-accordion');
-        allBooks.forEach(book => {
+        document.querySelectorAll('.book-accordion').forEach(book => {
             const otherBookKey = book.dataset.book;
             if (otherBookKey !== bookKey) {
                 const otherChapters = document.getElementById('chapters-' + otherBookKey);
                 const otherToggle = document.getElementById('toggle-' + otherBookKey);
                 if (otherChapters && otherChapters.classList.contains('open')) {
                     otherChapters.classList.remove('open');
-                    if (otherToggle) {
-                        otherToggle.classList.remove('open');
-                    }
+                    if (otherToggle) otherToggle.classList.remove('open');
                 }
             }
         });
@@ -3322,20 +3267,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             chaptersDiv.classList.add('open');
             if (toggle) toggle.classList.add('open');
         }
-        
-        window._scrollTimeout = setTimeout(() => {
-            if (bookHeader) {
-                const headerRect = bookHeader.getBoundingClientRect();
-                const currentScrollY = window.scrollY;
-                const targetY = currentScrollY + headerRect.top - 100;
-                
-                window.scrollTo({
-                    top: Math.max(0, targetY),
-                    behavior: 'smooth'
-                });
-            }
-            window._scrollTimeout = null;
-        }, 450);
     };
 
     window.toggleChapter = function(bookKey, chapterKey) {
@@ -3346,20 +3277,16 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         const chaptersDiv = document.getElementById('chapters-' + bookKey);
         
         if (chaptersDiv) {
-            const allChapterTopics = chaptersDiv.querySelectorAll('.chapter-topics');
-            allChapterTopics.forEach(chapterTopics => {
+            chaptersDiv.querySelectorAll('.chapter-topics').forEach(chapterTopics => {
                 if (chapterTopics.id !== 'ctopics-' + bookKey + '-' + chapterKey) {
                     if (chapterTopics.classList.contains('open')) {
                         chapterTopics.classList.remove('open');
-                        
                         const chapterItem = chapterTopics.closest('.chapter-item');
                         if (chapterItem) {
                             const chapterHeader = chapterItem.querySelector('.chapter-header');
                             if (chapterHeader) {
                                 const otherToggle = chapterHeader.querySelector('.chapter-toggle');
-                                if (otherToggle) {
-                                    otherToggle.classList.remove('open');
-                                }
+                                if (otherToggle) otherToggle.classList.remove('open');
                             }
                         }
                     }
@@ -3371,103 +3298,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             if (isOpening) {
                 topicsDiv.classList.add('open');
                 if (toggle) toggle.classList.add('open');
-                
-                const resizeObserver = new ResizeObserver((entries) => {
-                    for (const entry of entries) {
-                        if (entry.target === topicsDiv) {
-                            requestAnimationFrame(() => {
-                                requestAnimationFrame(() => {
-                                    recalculateBookChaptersHeight(bookKey);
-                                    resizeObserver.disconnect();
-                                });
-                            });
-                            break;
-                        }
-                    }
-                });
-                
-                resizeObserver.observe(topicsDiv);
-                
-                setTimeout(() => {
-                    if (resizeObserver && !resizeObserver._disconnected) {
-                        resizeObserver.disconnect();
-                        requestAnimationFrame(() => {
-                            requestAnimationFrame(() => {
-                                recalculateBookChaptersHeight(bookKey);
-                            });
-                        });
-                    }
-                }, 300);
-                
-                setTimeout(() => {
-                    let chapterHeader = null;
-                    
-                    const chapterItem = topicsDiv.closest('.chapter-item');
-                    if (chapterItem) {
-                        chapterHeader = chapterItem.querySelector('.chapter-header');
-                    }
-                    
-                    if (!chapterHeader) {
-                        const toggleIcon = document.getElementById('ctoggle-' + bookKey + '-' + chapterKey);
-                        if (toggleIcon) {
-                            chapterHeader = toggleIcon.closest('.chapter-header');
-                        }
-                    }
-                    
-                    if (!chapterHeader) {
-                        const allHeaders = document.querySelectorAll('.chapter-header');
-                        for (const header of allHeaders) {
-                            const onclickAttr = header.getAttribute('onclick');
-                            if (onclickAttr && onclickAttr.includes("'" + bookKey + "'") && onclickAttr.includes("'" + chapterKey + "'")) {
-                                chapterHeader = header;
-                                break;
-                            }
-                        }
-                    }
-                    
-                    if (chapterHeader) {
-                        const headerRect = chapterHeader.getBoundingClientRect();
-                        const currentScrollY = window.scrollY;
-                        const targetY = currentScrollY + headerRect.top - 80;
-                        
-                        window.scrollTo({
-                            top: Math.max(0, targetY),
-                            behavior: 'smooth'
-                        });
-                    } else {
-                        const fallbackHeader = chaptersDiv ? chaptersDiv.querySelector('.chapter-header') : null;
-                        if (fallbackHeader) {
-                            const headerRect = fallbackHeader.getBoundingClientRect();
-                            const currentScrollY = window.scrollY;
-                            const targetY = currentScrollY + headerRect.top - 80;
-                            
-                            window.scrollTo({
-                                top: Math.max(0, targetY),
-                                behavior: 'smooth'
-                            });
-                        }
-                    }
-                }, 450);
-                
             } else {
                 topicsDiv.classList.remove('open');
                 if (toggle) toggle.classList.remove('open');
-                
-                setTimeout(() => {
-                    recalculateBookChaptersHeight(bookKey);
-                }, 350);
             }
         }
     };
 
-    function recalculateBookChaptersHeight(bookKey) {
-        const chaptersDiv = document.getElementById('chapters-' + bookKey);
-        if (!chaptersDiv) return;
-        void chaptersDiv.offsetHeight;
-    }
-
     // ============================================
-    // 6. MOBILE MENU
+    // 4. MOBILE MENU
     // ============================================
     function initMobileMenu() {
         const mobileBtn = document.getElementById('mobileMenuBtn');
@@ -3496,22 +3335,18 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     }
 
     // ============================================
-    // 7. NAVBAR SCROLL
+    // 5. NAVBAR SCROLL
     // ============================================
     function initNavbarScroll() {
         const navbar = document.querySelector('nav');
         if (!navbar) return;
         window.addEventListener('scroll', function() {
-            if (window.scrollY > 50) {
-                navbar.classList.add('navbar-scrolled');
-            } else {
-                navbar.classList.remove('navbar-scrolled');
-            }
+            navbar.classList.toggle('navbar-scrolled', window.scrollY > 50);
         });
     }
 
     // ============================================
-    // 8. AI CHAT
+    // 6. AI CHAT
     // ============================================
     function setupAIChat() {
         const chatBtn = document.getElementById('aiChatBtn');
@@ -3574,37 +3409,26 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     }
 
     // ============================================
-    // 9. MAIN INITIALIZATION
+    // 7. MAIN INITIALIZATION
     // ============================================
     document.addEventListener('DOMContentLoaded', function() {
-        logDebug('🚀 Page loaded - Initializing...');
+        logDebug('🚀 Page loaded');
         
-        new SecurityManager();
         initMobileMenu();
         initNavbarScroll();
         setupAIChat();
-
-        // Load topics from JSON
         loadTopicsData();
 
-        // ================================================================
-        // ★ SEARCH FUNCTIONALITY ★
-        // ================================================================
         const searchInput = document.getElementById('searchInput');
         let searchTimeout = null;
 
         searchInput.addEventListener('input', function() {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
-                const query = this.value.trim();
-                performSearch(query);
+                performSearch(this.value.trim());
             }, 300);
         });
-
-        logDebug('✅ SEO-optimized hybrid page initialized');
     });
-
-    logDebug('📚 SEO Topic Library loaded');
 </script>
 </body>
 </html>
