@@ -8303,13 +8303,213 @@ fullMcqsHtml += '<div style="display:flex; align-items:flex-start; gap:6px; ' + 
     
     var metaDescription = 'Practice ' + topicName + ' from ' + bookTitle + ' - ' + chapterDisplay + chapterName + '. ' + totalQs + ' MCQs with ' + easyCount + ' easy, ' + mediumCount + ' medium, and ' + hardCount + ' hard questions. Perfect for exam preparation.';
     
-    // --- Build the complete HTML string with protection ---
-    var finalHtml = '<!DOCTYPE html>\n' +
-    '<html lang="en">\n' +
-    '<head>\n' +
-    '    <meta charset="UTF-8">\n' +
-    '    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">\n' +
+// --- Build the complete HTML string with protection ---
+var finalHtml = '<!DOCTYPE html>\n' +
+'<html lang="en">\n' +
+'<head>\n' +
+'    <meta charset="UTF-8">\n' +
+'    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">\n' +
     getGTMHeadCode() + '\n' +
+'    <title>' + seoTitle + '</title>\n' +
+'    <meta name="description" content="' + metaDescription + '">\n' +
+'    <meta name="keywords" content="' + topicName + ' MCQs, ' + bookTitle + ' ' + topicName + ' questions, ' + topicName + ' practice, ' + bookTitle + ' topics, ' + topicName + ' easy medium hard">\n' +
+'    <meta name="robots" content="index, follow">\n' +
+'    <link rel="canonical" href="https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html">\n' +
+'    <meta property="og:url" content="https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html">\n' +
+'    <meta property="og:title" content="' + topicName + ' - ' + bookTitle + ' MCQs | BookMCQ">\n' +
+'    <meta property="og:description" content="Practice ' + topicName + ' from ' + bookTitle + '. ' + totalQs + ' questions with difficulty breakdown: Easy ' + easyCount + ', Medium ' + mediumCount + ', Hard ' + hardCount + '.">\n' +
+'    <meta property="og:type" content="website">\n' +
+'    <meta name="theme-color" content="#7c3aed">\n' +
+'    <script type="application/ld+json">\n' + JSON.stringify(schemaData) + '\n' +
+'    <\/script>\n' +
+'    <script src="https://cdn.tailwindcss.com"><\/script>\n' +
+'    <script>\n' +
+'        window.MathJax = {\n' +
+'            tex: {\n' +
+'                inlineMath: [\n' +
+'                    [\'$\', \'$\'],\n' +
+'                    [\'\\\\(\', \'\\\\)\']\n' +
+'                ],\n' +
+'                displayMath: [\n' +
+'                    [\'$$\', \'$$\'],\n' +
+'                    [\'\\\\[\', \'\\\\]\']\n' +
+'                ],\n' +
+'                processEscapes: true,\n' +
+'                processEnvironments: true\n' +
+'            },\n' +
+'            svg: {\n' +
+'                fontCache: \'global\'\n' +
+'            },\n' +
+'            options: {\n' +
+'                skipHtmlTypes: \'script\',\n' +
+'                ignoreHtmlClass: \'no-mathjax\',\n' +
+'                processHtmlClass: \'math\'\n' +
+'            }\n' +
+'        };\n' +
+'    <\/script>\n' +
+'    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async><\/script>\n' +
+'    <script>\n' +
+'        // Helper function to safely escape HTML while preserving LaTeX delimiters\n' +
+'        function escapeHtmlPreserveMath(text) {\n' +
+'            if (!text) return \'\';\n' +
+'            var escaped = text.replace(/&/g, \'&amp;\')\n' +
+'                              .replace(/</g, \'&lt;\')\n' +
+'                              .replace(/>/g, \'&gt;\')\n' +
+'                              .replace(/"/g, \'&quot;\')\n' +
+'                              .replace(/\'/g, \'&#039;\');\n' +
+'            return escaped;\n' +
+'        }\n' +
+'\n' +
+'        async function renderMathInElement(element) {\n' +
+'            if (window.MathJax && element) {\n' +
+'                try {\n' +
+'                    await MathJax.typesetPromise([element]);\n' +
+'                } catch(e) {\n' +
+'                    console.log(\'MathJax error:\', e);\n' +
+'                }\n' +
+'            }\n' +
+'        }\n' +
+'\n' +
+'        async function renderAllMath() {\n' +
+'            if (window.MathJax) {\n' +
+'                try {\n' +
+'                    await MathJax.typesetPromise();\n' +
+'                } catch(e) {\n' +
+'                    console.log(\'MathJax error:\', e);\n' +
+'                }\n' +
+'            }\n' +
+'        }\n' +
+'\n' +
+'        function processMathContent(text) {\n' +
+'            if (!text) return \'\';\n' +
+'            return text;\n' +
+'        }\n' +
+'\n' +
+'        document.addEventListener(\'DOMContentLoaded\', function() {\n' +
+'            renderAllMath();\n' +
+'        });\n' +
+'\n' +
+'        if (window.MathJax) {\n' +
+'            MathJax.typesetPromise = MathJax.typesetPromise || function() { return Promise.resolve(); };\n' +
+'        }\n' +
+'    <\/script>\n' +
+'    <style>\n' +
+'        body {\n' +
+'            font-family: Arial, sans-serif;\n' +
+'            background: linear-gradient(135deg, #667eea, #764ba2);\n' +
+'            margin: 0;\n' +
+'            padding: 0;\n' +
+'            min-height: 100vh;\n' +
+'        }\n' +
+'        .container {\n' +
+'            max-width: 900px;\n' +
+'            margin: auto;\n' +
+'            padding: 20px;\n' +
+'        }\n' +
+'        .card {\n' +
+'            background: white;\n' +
+'            border-radius: 16px;\n' +
+'            padding: 20px;\n' +
+'            margin-top: 20px;\n' +
+'            box-shadow: 0 10px 25px rgba(0,0,0,0.1);\n' +
+'        }\n' +
+'        .btn-primary {\n' +
+'            display: inline-block;\n' +
+'            background: linear-gradient(135deg, #667eea, #764ba2);\n' +
+'            color: white;\n' +
+'            padding: 14px 32px;\n' +
+'            border-radius: 12px;\n' +
+'            text-decoration: none;\n' +
+'            font-weight: bold;\n' +
+'            margin-top: 10px;\n' +
+'            transition: 0.2s;\n' +
+'        }\n' +
+'        .btn-primary:hover {\n' +
+'            transform: translateY(-2px);\n' +
+'            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);\n' +
+'        }\n' +
+'        .btn-secondary {\n' +
+'            display: inline-block;\n' +
+'            background: #f3f4f6;\n' +
+'            color: #1e293b;\n' +
+'            padding: 10px 24px;\n' +
+'            border-radius: 10px;\n' +
+'            text-decoration: none;\n' +
+'            font-weight: 500;\n' +
+'            margin-top: 10px;\n' +
+'            transition: 0.2s;\n' +
+'            border: 1px solid #e5e7eb;\n' +
+'        }\n' +
+'        .btn-secondary:hover {\n' +
+'            background: #e5e7eb;\n' +
+'        }\n' +
+'        .back-link {\n' +
+'            display: inline-block;\n' +
+'            margin-bottom: 15px;\n' +
+'            color: #7c3aed;\n' +
+'            text-decoration: none;\n' +
+'        }\n' +
+'        .back-link:hover {\n' +
+'            text-decoration: underline;\n' +
+'        }\n' +
+'        .topic-info {\n' +
+'            font-size: 14px;\n' +
+'            color: #64748b;\n' +
+'            margin: 8px 0;\n' +
+'        }\n' +
+'        .breadcrumb {\n' +
+'            font-size: 13px;\n' +
+'            color: #94a3b8;\n' +
+'            margin-bottom: 12px;\n' +
+'        }\n' +
+'        .breadcrumb a {\n' +
+'            color: #7c3aed;\n' +
+'            text-decoration: none;\n' +
+'        }\n' +
+'        .breadcrumb a:hover {\n' +
+'            text-decoration: underline;\n' +
+'        }\n' +
+'        .math-rendered {\n' +
+'            display: inline;\n' +
+'            line-height: 1.6;\n' +
+'        }\n' +
+'        .math-rendered mjx-container {\n' +
+'            display: inline-block;\n' +
+'            margin: 0 2px;\n' +
+'        }\n' +
+'        .question-text {\n' +
+'            font-size: 1rem;\n' +
+'            line-height: 1.6;\n' +
+'        }\n' +
+'        .justify-text {\n' +
+'            text-align: justify;\n' +
+'            text-justify: inter-word;\n' +
+'        }\n' +     
+'        .definition-text {\n' +
+'            text-align: justify;\n' +
+'            text-justify: inter-word;\n' +
+'            line-height: 1.8;\n' +
+'        }\n' +         
+'        .option-text {\n' +
+'            text-align: justify;\n' +
+'            text-justify: inter-word;\n' +
+'        }\n' +    
+'        .explanation-text {\n' +
+'            text-align: justify;\n' +
+'            text-justify: inter-word;\n' +
+'            line-height: 1.6;\n' +
+'        }\n' +        
+'        .option-text {\n' +
+'            display: inline;\n' +
+'        }\n' +
+'        .explanation-text {\n' +
+'            font-size: 0.875rem;\n' +
+'            line-height: 1.5;\n' +
+'        }\n' +
+'    </style>\n' +
+'</head>\n' +
+'<body>\n' +
+    getGTMBodyCode() + '\n' +
 '<!-- Website Header -->\n' +
 '<div style="text-align:center; padding:10px 0 5px 0;">\n' +
 '    <a href="/" style="text-decoration:none;">\n' +
@@ -8319,231 +8519,26 @@ fullMcqsHtml += '<div style="display:flex; align-items:flex-start; gap:6px; ' + 
 '    </a>\n' +
 '</div>\n' +
 '<div class="container">\n' +
-    '    <title>' + seoTitle + '</title>\n' +
-    '    <meta name="description" content="' + metaDescription + '">\n' +
-    '    <meta name="keywords" content="' + topicName + ' MCQs, ' + bookTitle + ' ' + topicName + ' questions, ' + topicName + ' practice, ' + bookTitle + ' topics, ' + topicName + ' easy medium hard">\n' +
-    '    <meta name="robots" content="index, follow">\n' +
-    '    <link rel="canonical" href="https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html">\n' +
-    '    <meta property="og:url" content="https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html">\n' +
-    '    <meta property="og:title" content="' + topicName + ' - ' + bookTitle + ' MCQs | BookMCQ">\n' +
-    '    <meta property="og:description" content="Practice ' + topicName + ' from ' + bookTitle + '. ' + totalQs + ' questions with difficulty breakdown: Easy ' + easyCount + ', Medium ' + mediumCount + ', Hard ' + hardCount + '.">\n' +
-    '    <meta property="og:type" content="website">\n' +
-    '    <meta name="theme-color" content="#7c3aed">\n' +
-    '    <script type="application/ld+json">\n' + JSON.stringify(schemaData) + '\n' +
-    '    <\/script>\n' +
-    '    <script src="https://cdn.tailwindcss.com"><\/script>\n' +
-    '    <script>\n' +
-    '        window.MathJax = {\n' +
-    '            tex: {\n' +
-    '                inlineMath: [\n' +
-    '                    [\'$\', \'$\'],\n' +
-    '                    [\'\\\\(\', \'\\\\)\']\n' +
-    '                ],\n' +
-    '                displayMath: [\n' +
-    '                    [\'$$\', \'$$\'],\n' +
-    '                    [\'\\\\[\', \'\\\\]\']\n' +
-    '                ],\n' +
-    '                processEscapes: true,\n' +
-    '                processEnvironments: true\n' +
-    '            },\n' +
-    '            svg: {\n' +
-    '                fontCache: \'global\'\n' +
-    '            },\n' +
-    '            options: {\n' +
-    '                skipHtmlTypes: \'script\',\n' +
-    '                ignoreHtmlClass: \'no-mathjax\',\n' +
-    '                processHtmlClass: \'math\'\n' +
-    '            }\n' +
-    '        };\n' +
-    '    <\/script>\n' +
-    '    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async><\/script>\n' +
-    '    <script>\n' +
-    '        // Helper function to safely escape HTML while preserving LaTeX delimiters\n' +
-    '        function escapeHtmlPreserveMath(text) {\n' +
-    '            if (!text) return \'\';\n' +
-    '            var escaped = text.replace(/&/g, \'&amp;\')\n' +
-    '                              .replace(/</g, \'&lt;\')\n' +
-    '                              .replace(/>/g, \'&gt;\')\n' +
-    '                              .replace(/"/g, \'&quot;\')\n' +
-    '                              .replace(/\'/g, \'&#039;\');\n' +
-    '            return escaped;\n' +
-    '        }\n' +
-    '\n' +
-    '        async function renderMathInElement(element) {\n' +
-    '            if (window.MathJax && element) {\n' +
-    '                try {\n' +
-    '                    await MathJax.typesetPromise([element]);\n' +
-    '                } catch(e) {\n' +
-    '                    console.log(\'MathJax error:\', e);\n' +
-    '                }\n' +
-    '            }\n' +
-    '        }\n' +
-    '\n' +
-    '        async function renderAllMath() {\n' +
-    '            if (window.MathJax) {\n' +
-    '                try {\n' +
-    '                    await MathJax.typesetPromise();\n' +
-    '                } catch(e) {\n' +
-    '                    console.log(\'MathJax error:\', e);\n' +
-    '                }\n' +
-    '            }\n' +
-    '        }\n' +
-    '\n' +
-    '        function processMathContent(text) {\n' +
-    '            if (!text) return \'\';\n' +
-    '            return text;\n' +
-    '        }\n' +
-    '\n' +
-    '        document.addEventListener(\'DOMContentLoaded\', function() {\n' +
-    '            renderAllMath();\n' +
-    '        });\n' +
-    '\n' +
-    '        if (window.MathJax) {\n' +
-    '            MathJax.typesetPromise = MathJax.typesetPromise || function() { return Promise.resolve(); };\n' +
-    '        }\n' +
-    '    <\/script>\n' +
-    '    <style>\n' +
-    '        body {\n' +
-    '            font-family: Arial, sans-serif;\n' +
-    '            background: linear-gradient(135deg, #667eea, #764ba2);\n' +
-    '            margin: 0;\n' +
-    '            padding: 0;\n' +
-    '            min-height: 100vh;\n' +
-    '        }\n' +
-    '        .container {\n' +
-    '            max-width: 900px;\n' +
-    '            margin: auto;\n' +
-    '            padding: 20px;\n' +
-    '        }\n' +
-    '        .card {\n' +
-    '            background: white;\n' +
-    '            border-radius: 16px;\n' +
-    '            padding: 20px;\n' +
-    '            margin-top: 20px;\n' +
-    '            box-shadow: 0 10px 25px rgba(0,0,0,0.1);\n' +
-    '        }\n' +
-    '        .btn-primary {\n' +
-    '            display: inline-block;\n' +
-    '            background: linear-gradient(135deg, #667eea, #764ba2);\n' +
-    '            color: white;\n' +
-    '            padding: 14px 32px;\n' +
-    '            border-radius: 12px;\n' +
-    '            text-decoration: none;\n' +
-    '            font-weight: bold;\n' +
-    '            margin-top: 10px;\n' +
-    '            transition: 0.2s;\n' +
-    '        }\n' +
-    '        .btn-primary:hover {\n' +
-    '            transform: translateY(-2px);\n' +
-    '            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);\n' +
-    '        }\n' +
-    '        .btn-secondary {\n' +
-    '            display: inline-block;\n' +
-    '            background: #f3f4f6;\n' +
-    '            color: #1e293b;\n' +
-    '            padding: 10px 24px;\n' +
-    '            border-radius: 10px;\n' +
-    '            text-decoration: none;\n' +
-    '            font-weight: 500;\n' +
-    '            margin-top: 10px;\n' +
-    '            transition: 0.2s;\n' +
-    '            border: 1px solid #e5e7eb;\n' +
-    '        }\n' +
-    '        .btn-secondary:hover {\n' +
-    '            background: #e5e7eb;\n' +
-    '        }\n' +
-    '        .back-link {\n' +
-    '            display: inline-block;\n' +
-    '            margin-bottom: 15px;\n' +
-    '            color: #7c3aed;\n' +
-    '            text-decoration: none;\n' +
-    '        }\n' +
-    '        .back-link:hover {\n' +
-    '            text-decoration: underline;\n' +
-    '        }\n' +
-    '        .topic-info {\n' +
-    '            font-size: 14px;\n' +
-    '            color: #64748b;\n' +
-    '            margin: 8px 0;\n' +
-    '        }\n' +
-    '        .breadcrumb {\n' +
-    '            font-size: 13px;\n' +
-    '            color: #94a3b8;\n' +
-    '            margin-bottom: 12px;\n' +
-    '        }\n' +
-    '        .breadcrumb a {\n' +
-    '            color: #7c3aed;\n' +
-    '            text-decoration: none;\n' +
-    '        }\n' +
-    '        .breadcrumb a:hover {\n' +
-    '            text-decoration: underline;\n' +
-    '        }\n' +
-    '        .math-rendered {\n' +
-    '            display: inline;\n' +
-    '            line-height: 1.6;\n' +
-    '        }\n' +
-    '        .math-rendered mjx-container {\n' +
-    '            display: inline-block;\n' +
-    '            margin: 0 2px;\n' +
-    '        }\n' +
-    '        .question-text {\n' +
-    '            font-size: 1rem;\n' +
-    '            line-height: 1.6;\n' +
-    '        }\n' +
-    '        .justify-text {\n' +
-    '            text-align: justify;\n' +
-    '            text-justify: inter-word;\n' +
-    '        }\n' +     
-    '        .definition-text {\n' +
-    '            text-align: justify;\n' +
-    '            text-justify: inter-word;\n' +
-    '            line-height: 1.8;\n' +
-    '        }\n' +         
-    '        .option-text {\n' +
-    '            text-align: justify;\n' +
-    '            text-justify: inter-word;\n' +
-    '        }\n' +    
-    '        .explanation-text {\n' +
-    '            text-align: justify;\n' +
-    '            text-justify: inter-word;\n' +
-    '            line-height: 1.6;\n' +
-     '        }\n' +        
-
-
-     
-    '        .option-text {\n' +
-    '            display: inline;\n' +
-    '        }\n' +
-    '        .explanation-text {\n' +
-    '            font-size: 0.875rem;\n' +
-    '            line-height: 1.5;\n' +
-    '        }\n' +
-    '    </style>\n' +
-    '</head>\n' +
-    '<body>\n' +
-    getGTMBodyCode() + '\n' +
-    '<div class="container">\n' +
-    '    <div class="card">\n' +
-    '        <div class="breadcrumb">\n' +
-    '            <a href="/">🏠 Home</a> &gt; <a href="/books/' + bookSlug + '/">' + bookTitle + '</a> &gt; <a href="/books/' + bookSlug + '/' + chapterSlug + '.html">' + chapterDisplay + chapterName + '</a> &gt; ' + topicName + '\n' +
-    '        </div>\n' +
-    '        <a href="/books/' + bookSlug + '/' + chapterSlug + '.html" class="back-link">← Back to ' + chapterDisplay + chapterName + '</a>\n' +
-    '        <h1>📝 ' + topicName + '</h1>\n' +
-    '        <p class="topic-info">📖 From <strong>' + bookTitle + '</strong> • ' + chapterDisplay + chapterName + ' • ' + totalQs + ' questions available</p>\n' +
+'    <div class="card">\n' +
+'        <div class="breadcrumb">\n' +
+'            <a href="/">🏠 Home</a> &gt; <a href="/books/' + bookSlug + '/">' + bookTitle + '</a> &gt; <a href="/books/' + bookSlug + '/' + chapterSlug + '.html">' + chapterDisplay + chapterName + '</a> &gt; ' + topicName + '\n' +
+'        </div>\n' +
+'        <a href="/books/' + bookSlug + '/' + chapterSlug + '.html" class="back-link">← Back to ' + chapterDisplay + chapterName + '</a>\n' +
+'        <h1>📝 ' + topicName + '</h1>\n' +
+'        <p class="topic-info">📖 From <strong>' + bookTitle + '</strong> • ' + chapterDisplay + chapterName + ' • ' + totalQs + ' questions available</p>\n' +
     definitionHtml +
-    '        <p style="font-size:13px; color:#64748b; margin-top:4px;">🔄 Last updated: ' + lastUpdated + '</p>\n' +
+'        <p style="font-size:13px; color:#64748b; margin-top:4px;">🔄 Last updated: ' + lastUpdated + '</p>\n' +
     difficultyHtml +
     fullMcqsHtml +
     relatedTopicsHtml +
-    '        <div style="text-align: center; margin-top: 20px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">\n' +
-    '            <a href="/quiz" class="btn-primary">🚀 Start Quiz</a>\n' +
-    '            <a href="/practice" class="btn-secondary">📝 Practice Mode</a>\n' +
-    '        </div>\n' +
-    '    </div>\n' +
-    '</div>\n' +
-    '</body>\n' +
-    '</html>';
-
+'        <div style="text-align: center; margin-top: 20px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">\n' +
+'            <a href="/quiz" class="btn-primary">🚀 Start Quiz</a>\n' +
+'            <a href="/practice" class="btn-secondary">📝 Practice Mode</a>\n' +
+'        </div>\n' +
+'    </div>\n' +
+'</div>\n' +
+'</body>\n' +
+'</html>';
     // ✅ Return the final built string, NOT undefined!
     return finalHtml;
 }
