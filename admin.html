@@ -8137,44 +8137,105 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     var mediumCount = topicDifficultyStats?.medium || 0;
     var hardCount = topicDifficultyStats?.hard || 0;
     
-    // --- DYNAMIC DEFINITION FROM DATABASE ---
-// --- DYNAMIC DEFINITION FROM DATABASE ---
-var definitionHtml = '';
-var topicDefinition = topic.definition || ''; // Get the definition from the topic object
-
-if (topicDefinition) {
-    // Split by double newlines to get paragraphs
-    var paragraphs = topicDefinition
-        .split(/\n\s*\n/)  // Split by blank lines
-        .filter(function(p) { return p.trim() !== ''; });
+    // ===== NAVIGATION: Find Previous and Next Topics (Database Order) =====
+    // Sort topics by ID (database order - oldest first)
+    var sortedTopics = allBookTopics.sort(function(a, b) {
+        return a.id - b.id;
+    });
     
-    var formattedDefinition = paragraphs
-        .map(function(p) {
-            return '<p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">' + p.replace(/\n/g, ' ') + '</p>';
-        })
-        .join('');
+    // Find current topic index
+    var currentIndex = -1;
+    for (var i = 0; i < sortedTopics.length; i++) {
+        if (sortedTopics[i].id === topic.id) {
+            currentIndex = i;
+            break;
+        }
+    }
     
-    definitionHtml = `
-        <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">What is ${topicName}?</h2>
-        ${formattedDefinition}
-        <p style="font-size: 14px; color: #475569; margin-bottom: 12px; text-align: justify; text-justify: inter-word;">
-            Test your knowledge of ${topicName} with the carefully crafted MCQs below, categorized by easy, medium, and hard difficulty levels.
-        </p>
-        <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
-    `;
-} else {
-    definitionHtml = `
-        <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">What is ${topicName}?</h2>
-        <p style="font-size: 15px; line-height: 1.6; color: #64748b; margin-bottom: 16px; font-style: italic; text-align: justify; text-justify: inter-word;">
-            No definition available for this topic yet. Check back later for a detailed explanation of ${topicName}.
-        </p>
-        <p style="font-size: 14px; color: #475569; margin-bottom: 12px; text-align: justify; text-justify: inter-word;">
-            Test your knowledge of ${topicName} with the carefully crafted MCQs below, categorized by easy, medium, and hard difficulty levels.
-        </p>
-        <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
-    `;
-}
-    // --- SEO FIX #2: Build ALL questions AND explanations ---
+    // Get previous and next topics
+    var prevTopic = (currentIndex > 0) ? sortedTopics[currentIndex - 1] : null;
+    var nextTopic = (currentIndex < sortedTopics.length - 1) ? sortedTopics[currentIndex + 1] : null;
+    
+    // ===== Generate Navigation HTML with Highlighted Text =====
+    function generateNavHtml(prev, current, next, bookSlug, chapterSlug) {
+        var html = '<div style="display:flex; justify-content:space-between; align-items:center; background:linear-gradient(135deg, #f8fafc, #f1f5f9); padding:14px 24px; border-radius:12px; margin:12px 0; border:2px solid #e5e7eb; box-shadow:0 2px 8px rgba(0,0,0,0.04);">';
+        
+        // Previous link with highlighted text
+        if (prev) {
+            var prevSlug = prev.slug || createSlug(prev.name);
+            var prevName = escapeHtml(prev.name);
+            html += '<a href="/books/' + bookSlug + '/' + chapterSlug + '/topics/' + prevSlug + '.html" style="color:#7c3aed; text-decoration:none; font-weight:600; font-size:14px; padding:8px 16px; border-radius:8px; transition:all 0.3s ease; display:flex; align-items:center; gap:6px; background:white; border:1px solid #e5e7eb; box-shadow:0 1px 3px rgba(0,0,0,0.04);">';
+            html += '<span style="font-size:18px; color:#7c3aed;">←</span>';
+            html += '<span style="font-size:13px; color:#64748b; font-weight:500;">Previous Topic:</span>';
+            html += '<span style="font-weight:700; color:#7c3aed; font-size:14px; text-decoration:underline; text-underline-offset:3px; text-decoration-color:#7c3aed; text-decoration-thickness:2px;">' + prevName + '</span>';
+            html += '</a>';
+        } else {
+            html += '<span style="color:#94a3b8; font-weight:500; font-size:13px; opacity:0.6; padding:8px 16px; background:#f1f5f9; border-radius:8px; border:1px solid #e5e7eb;">';
+            html += '<span style="font-size:18px;">←</span> Previous</span>';
+        }
+        
+        // Current topic (bold and highlighted)
+        html += '<span style="font-weight:700; color:#1e293b; font-size:15px; text-align:center; padding:6px 16px; background:#ede9fe; border-radius:8px; border:2px solid #7c3aed; box-shadow:0 2px 4px rgba(124,58,237,0.1);">';
+        html += '📝 <span style="font-weight:800; color:#5b21b6;">' + escapeHtml(current.name) + '</span>';
+        html += '</span>';
+        
+        // Next link with highlighted text
+        if (next) {
+            var nextSlug = next.slug || createSlug(next.name);
+            var nextName = escapeHtml(next.name);
+            html += '<a href="/books/' + bookSlug + '/' + chapterSlug + '/topics/' + nextSlug + '.html" style="color:#7c3aed; text-decoration:none; font-weight:600; font-size:14px; padding:8px 16px; border-radius:8px; transition:all 0.3s ease; display:flex; align-items:center; gap:6px; background:white; border:1px solid #e5e7eb; box-shadow:0 1px 3px rgba(0,0,0,0.04);">';
+            html += '<span style="font-weight:700; color:#7c3aed; font-size:14px; text-decoration:underline; text-underline-offset:3px; text-decoration-color:#7c3aed; text-decoration-thickness:2px;">' + nextName + '</span>';
+            html += '<span style="font-size:13px; color:#64748b; font-weight:500;">:Next Topic</span>';
+            html += '<span style="font-size:18px; color:#7c3aed;">→</span>';
+            html += '</a>';
+        } else {
+            html += '<span style="color:#94a3b8; font-weight:500; font-size:13px; opacity:0.6; padding:8px 16px; background:#f1f5f9; border-radius:8px; border:1px solid #e5e7eb;">';
+            html += 'Next <span style="font-size:18px;">→</span></span>';
+        }
+        
+        html += '</div>';
+        return html;
+    }
+    
+    var navHtml = generateNavHtml(prevTopic, topic, nextTopic, bookSlug, chapterSlug);
+    
+    // ===== Definition HTML =====
+    var definitionHtml = '';
+    var topicDefinition = topic.definition || '';
+    
+    if (topicDefinition) {
+        var paragraphs = topicDefinition
+            .split(/\n\s*\n/)
+            .filter(function(p) { return p.trim() !== ''; });
+        
+        var formattedDefinition = paragraphs
+            .map(function(p) {
+                return '<p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">' + p.replace(/\n/g, ' ') + '</p>';
+            })
+            .join('');
+        
+        definitionHtml = `
+            <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">What is ${topicName}?</h2>
+            ${formattedDefinition}
+            <p style="font-size: 14px; color: #475569; margin-bottom: 12px; text-align: justify; text-justify: inter-word;">
+                Test your knowledge of ${topicName} with the carefully crafted MCQs below, categorized by easy, medium, and hard difficulty levels.
+            </p>
+            <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
+        `;
+    } else {
+        definitionHtml = `
+            <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">What is ${topicName}?</h2>
+            <p style="font-size: 15px; line-height: 1.6; color: #64748b; margin-bottom: 16px; font-style: italic; text-align: justify; text-justify: inter-word;">
+                No definition available for this topic yet. Check back later for a detailed explanation of ${topicName}.
+            </p>
+            <p style="font-size: 14px; color: #475569; margin-bottom: 12px; text-align: justify; text-justify: inter-word;">
+                Test your knowledge of ${topicName} with the carefully crafted MCQs below, categorized by easy, medium, and hard difficulty levels.
+            </p>
+            <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
+        `;
+    }
+    
+    // ===== MCQs HTML =====
     var fullMcqsHtml = '';
     if (topicQuestions.length > 0) {
         fullMcqsHtml = '<div style="margin:16px 0; background:#f8fafc; padding:16px; border-radius:12px;">';
@@ -8191,38 +8252,37 @@ if (topicDefinition) {
             var opt2 = escapeHtmlPreserveMath(opts[2] || '');
             var opt3 = escapeHtmlPreserveMath(opts[3] || '');
             
-            // Safely render the explanation text with MathJax support
             var explanationText = q.explanation ? escapeHtmlPreserveMath(q.explanation) : null;
             
             fullMcqsHtml += '<div style="background:white; padding:14px; border-radius:8px; margin-bottom:16px; border:1px solid #e5e7eb;">';
             fullMcqsHtml += '<p class="math" style="font-weight:600; margin:0 0 8px 0; text-align: justify; text-justify: inter-word; line-height: 1.6;">Q' + (idx + 1) + '. ' + questionText + '</p>';
-// Options grid with correct answer highlight
-fullMcqsHtml += '<div style="display:grid; grid-template-columns:1fr 1fr; gap:6px 16px; font-size:14px; color:#334155;">';
-
-var isCorrect0 = (0 === correctIndex);
-var bgColor0 = isCorrect0 ? 'background-color: #dcfce7; border-radius: 6px; padding: 4px 8px;' : '';
-var icon0 = isCorrect0 ? ' ✅' : '';
-fullMcqsHtml += '<div style="display:flex; align-items:flex-start; gap:6px; ' + bgColor0 + '"><span style="font-weight:600; color:#8b5cf6; min-width:18px;">A.</span> <span style="text-align:justify;">' + opt0 + icon0 + '</span></div>';
-
-var isCorrect1 = (1 === correctIndex);
-var bgColor1 = isCorrect1 ? 'background-color: #dcfce7; border-radius: 6px; padding: 4px 8px;' : '';
-var icon1 = isCorrect1 ? ' ✅' : '';
-fullMcqsHtml += '<div style="display:flex; align-items:flex-start; gap:6px; ' + bgColor1 + '"><span style="font-weight:600; color:#8b5cf6; min-width:18px;">B.</span> <span style="text-align:justify;">' + opt1 + icon1 + '</span></div>';
-
-var isCorrect2 = (2 === correctIndex);
-var bgColor2 = isCorrect2 ? 'background-color: #dcfce7; border-radius: 6px; padding: 4px 8px;' : '';
-var icon2 = isCorrect2 ? ' ✅' : '';
-fullMcqsHtml += '<div style="display:flex; align-items:flex-start; gap:6px; ' + bgColor2 + '"><span style="font-weight:600; color:#8b5cf6; min-width:18px;">C.</span> <span style="text-align:justify;">' + opt2 + icon2 + '</span></div>';
-
-var isCorrect3 = (3 === correctIndex);
-var bgColor3 = isCorrect3 ? 'background-color: #dcfce7; border-radius: 6px; padding: 4px 8px;' : '';
-var icon3 = isCorrect3 ? ' ✅' : '';
-fullMcqsHtml += '<div style="display:flex; align-items:flex-start; gap:6px; ' + bgColor3 + '"><span style="font-weight:600; color:#8b5cf6; min-width:18px;">D.</span> <span style="text-align:justify;">' + opt3 + icon3 + '</span></div>';
-
+            
+            // Options grid with correct answer highlight
+            fullMcqsHtml += '<div style="display:grid; grid-template-columns:1fr 1fr; gap:6px 16px; font-size:14px; color:#334155;">';
+            
+            var isCorrect0 = (0 === correctIndex);
+            var bgColor0 = isCorrect0 ? 'background-color: #dcfce7; border-radius: 6px; padding: 4px 8px;' : '';
+            var icon0 = isCorrect0 ? ' ✅' : '';
+            fullMcqsHtml += '<div style="display:flex; align-items:flex-start; gap:6px; ' + bgColor0 + '"><span style="font-weight:600; color:#8b5cf6; min-width:18px;">A.</span> <span style="text-align:justify;">' + opt0 + icon0 + '</span></div>';
+            
+            var isCorrect1 = (1 === correctIndex);
+            var bgColor1 = isCorrect1 ? 'background-color: #dcfce7; border-radius: 6px; padding: 4px 8px;' : '';
+            var icon1 = isCorrect1 ? ' ✅' : '';
+            fullMcqsHtml += '<div style="display:flex; align-items:flex-start; gap:6px; ' + bgColor1 + '"><span style="font-weight:600; color:#8b5cf6; min-width:18px;">B.</span> <span style="text-align:justify;">' + opt1 + icon1 + '</span></div>';
+            
+            var isCorrect2 = (2 === correctIndex);
+            var bgColor2 = isCorrect2 ? 'background-color: #dcfce7; border-radius: 6px; padding: 4px 8px;' : '';
+            var icon2 = isCorrect2 ? ' ✅' : '';
+            fullMcqsHtml += '<div style="display:flex; align-items:flex-start; gap:6px; ' + bgColor2 + '"><span style="font-weight:600; color:#8b5cf6; min-width:18px;">C.</span> <span style="text-align:justify;">' + opt2 + icon2 + '</span></div>';
+            
+            var isCorrect3 = (3 === correctIndex);
+            var bgColor3 = isCorrect3 ? 'background-color: #dcfce7; border-radius: 6px; padding: 4px 8px;' : '';
+            var icon3 = isCorrect3 ? ' ✅' : '';
+            fullMcqsHtml += '<div style="display:flex; align-items:flex-start; gap:6px; ' + bgColor3 + '"><span style="font-weight:600; color:#8b5cf6; min-width:18px;">D.</span> <span style="text-align:justify;">' + opt3 + icon3 + '</span></div>';
+            
             fullMcqsHtml += '</div>';
             fullMcqsHtml += '<p style="font-size:12px; color:#8b5cf6; margin-top:8px;">💡 Difficulty: ' + (q.difficulty || 'Medium') + (q.correct_answer !== undefined ? ' | ✅ Correct: ' + optionLabels[correctIndex] : '') + '</p>';
             
-            // ✅ SHOW EXPLANATION BLOCK
             if (explanationText) {
                 fullMcqsHtml += `
                     <div style="margin-top: 10px; padding: 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
@@ -8238,7 +8298,7 @@ fullMcqsHtml += '<div style="display:flex; align-items:flex-start; gap:6px; ' + 
         fullMcqsHtml += '</div>';
     }
     
-    // --- SEO FIX #3: Better related topics ---
+    // ===== Related Topics =====
     var relatedTopicsHtml = '';
     if (allBookTopics && allBookTopics.length > 1) {
         var otherTopics = allBookTopics.filter(function(t) { return t.id !== topic.id; }).slice(0, 5);
@@ -8254,6 +8314,7 @@ fullMcqsHtml += '<div style="display:flex; align-items:flex-start; gap:6px; ' + 
         }
     }
     
+    // ===== Difficulty Stats =====
     var difficultyHtml = '';
     if (easyCount > 0 || mediumCount > 0 || hardCount > 0) {
         difficultyHtml = '<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:16px 0;">';
@@ -8272,7 +8333,6 @@ fullMcqsHtml += '<div style="display:flex; align-items:flex-start; gap:6px; ' + 
         }
     }
     
-    // --- SEO FIX #4: Clean Title Tag ---
     var seoTitle = topicName + ' MCQs - ' + bookTitle + ' | BookMCQ';
     
     var schemaData = {
@@ -8288,8 +8348,8 @@ fullMcqsHtml += '<div style="display:flex; align-items:flex-start; gap:6px; ' + 
     
     var metaDescription = 'Practice ' + topicName + ' from ' + bookTitle + ' - ' + chapterDisplay + chapterName + '. ' + totalQs + ' MCQs with ' + easyCount + ' easy, ' + mediumCount + ' medium, and ' + hardCount + ' hard questions. Perfect for exam preparation.';
     
-// --- Build the complete HTML string with protection ---
-var finalHtml = '<!DOCTYPE html>\n' +
+    // ===== BUILD COMPLETE HTML =====
+    var finalHtml = '<!DOCTYPE html>\n' +
 '<html lang="en">\n' +
 '<head>\n' +
 '    <meta charset="UTF-8">\n' +
@@ -8334,7 +8394,6 @@ var finalHtml = '<!DOCTYPE html>\n' +
 '    <\/script>\n' +
 '    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async><\/script>\n' +
 '    <script>\n' +
-'        // Helper function to safely escape HTML while preserving LaTeX delimiters\n' +
 '        function escapeHtmlPreserveMath(text) {\n' +
 '            if (!text) return \'\';\n' +
 '            var escaped = text.replace(/&/g, \'&amp;\')\n' +
@@ -8471,27 +8530,103 @@ var finalHtml = '<!DOCTYPE html>\n' +
 '        .justify-text {\n' +
 '            text-align: justify;\n' +
 '            text-justify: inter-word;\n' +
-'        }\n' +     
+'        }\n' +
 '        .definition-text {\n' +
 '            text-align: justify;\n' +
 '            text-justify: inter-word;\n' +
 '            line-height: 1.8;\n' +
-'        }\n' +         
+'        }\n' +
 '        .option-text {\n' +
 '            text-align: justify;\n' +
 '            text-justify: inter-word;\n' +
-'        }\n' +    
+'        }\n' +
 '        .explanation-text {\n' +
 '            text-align: justify;\n' +
 '            text-justify: inter-word;\n' +
 '            line-height: 1.6;\n' +
-'        }\n' +        
+'        }\n' +
 '        .option-text {\n' +
 '            display: inline;\n' +
 '        }\n' +
 '        .explanation-text {\n' +
 '            font-size: 0.875rem;\n' +
 '            line-height: 1.5;\n' +
+'        }\n' +
+'        /* ===== NAVIGATION STYLES ===== */\n' +
+'        .nav-container {\n' +
+'            display: flex;\n' +
+'            justify-content: space-between;\n' +
+'            align-items: center;\n' +
+'            background: linear-gradient(135deg, #f8fafc, #f1f5f9);\n' +
+'            padding: 14px 24px;\n' +
+'            border-radius: 12px;\n' +
+'            margin: 12px 0;\n' +
+'            border: 2px solid #e5e7eb;\n' +
+'            box-shadow: 0 2px 8px rgba(0,0,0,0.04);\n' +
+'        }\n' +
+'        .nav-link {\n' +
+'            color: #7c3aed;\n' +
+'            text-decoration: none;\n' +
+'            font-weight: 600;\n' +
+'            font-size: 14px;\n' +
+'            padding: 8px 16px;\n' +
+'            border-radius: 8px;\n' +
+'            transition: all 0.3s ease;\n' +
+'            display: flex;\n' +
+'            align-items: center;\n' +
+'            gap: 6px;\n' +
+'            background: white;\n' +
+'            border: 1px solid #e5e7eb;\n' +
+'            box-shadow: 0 1px 3px rgba(0,0,0,0.04);\n' +
+'        }\n' +
+'        .nav-link:hover {\n' +
+'            background: #f3e8ff;\n' +
+'            border-color: #7c3aed;\n' +
+'            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.15);\n' +
+'            transform: translateY(-1px);\n' +
+'        }\n' +
+'        .nav-link .topic-name {\n' +
+'            font-weight: 700;\n' +
+'            color: #7c3aed;\n' +
+'            font-size: 14px;\n' +
+'            text-decoration: underline;\n' +
+'            text-underline-offset: 3px;\n' +
+'            text-decoration-color: #7c3aed;\n' +
+'            text-decoration-thickness: 2px;\n' +
+'        }\n' +
+'        .nav-link .arrow {\n' +
+'            font-size: 18px;\n' +
+'            color: #7c3aed;\n' +
+'        }\n' +
+'        .nav-link .label {\n' +
+'            font-size: 13px;\n' +
+'            color: #64748b;\n' +
+'            font-weight: 500;\n' +
+'        }\n' +
+'        .nav-disabled {\n' +
+'            color: #94a3b8;\n' +
+'            font-weight: 500;\n' +
+'            font-size: 13px;\n' +
+'            opacity: 0.6;\n' +
+'            padding: 8px 16px;\n' +
+'            background: #f1f5f9;\n' +
+'            border-radius: 8px;\n' +
+'            border: 1px solid #e5e7eb;\n' +
+'        }\n' +
+'        .nav-current {\n' +
+'            font-weight: 700;\n' +
+'            color: #1e293b;\n' +
+'            font-size: 15px;\n' +
+'            text-align: center;\n' +
+'            padding: 6px 16px;\n' +
+'            background: #ede9fe;\n' +
+'            border-radius: 8px;\n' +
+'            border: 2px solid #7c3aed;\n' +
+'            box-shadow: 0 2px 4px rgba(124,58,237,0.1);\n' +
+'        }\n' +
+'        .nav-current .current-name {\n' +
+'            font-weight: 800;\n' +
+'            color: #5b21b6;\n' +
 '        }\n' +
 '    </style>\n' +
 '</head>\n' +
@@ -8513,11 +8648,15 @@ var finalHtml = '<!DOCTYPE html>\n' +
 '        <a href="/books/' + bookSlug + '/' + chapterSlug + '.html" class="back-link">← Back to ' + chapterDisplay + chapterName + '</a>\n' +
 '        <h1>📝 ' + topicName + '</h1>\n' +
 '        <p class="topic-info">📖 From <strong>' + bookTitle + '</strong> • ' + chapterDisplay + chapterName + ' • ' + totalQs + ' questions available</p>\n' +
-    definitionHtml +
+        // ===== TOP NAVIGATION BAR =====
+        navHtml + '\n' +
+        definitionHtml + '\n' +
 '        <p style="font-size:13px; color:#64748b; margin-top:4px;">🔄 Last updated: ' + lastUpdated + '</p>\n' +
-    difficultyHtml +
-    fullMcqsHtml +
-    relatedTopicsHtml +
+        difficultyHtml + '\n' +
+        fullMcqsHtml + '\n' +
+        relatedTopicsHtml + '\n' +
+        // ===== BOTTOM NAVIGATION BAR =====
+        navHtml + '\n' +
 '        <div style="text-align: center; margin-top: 20px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">\n' +
 '            <a href="/quiz" class="btn-primary">🚀 Start Quiz</a>\n' +
 '            <a href="/practice" class="btn-secondary">📝 Practice Mode</a>\n' +
@@ -8526,6 +8665,8 @@ var finalHtml = '<!DOCTYPE html>\n' +
 '</div>\n' +
 '</body>\n' +
 '</html>';
+    
+ 
  
     // ✅ Return the final built string, NOT undefined!
     return finalHtml;
