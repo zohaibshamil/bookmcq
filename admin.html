@@ -8153,7 +8153,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     var prevTopic = (currentIndex > 0) ? sortedTopics[currentIndex - 1] : null;
     var nextTopic = (currentIndex < sortedTopics.length - 1) ? sortedTopics[currentIndex + 1] : null;
     
-    // ===== Generate Navigation HTML (EXACT deepseek style) =====
+    // ===== Generate Navigation HTML (EXACT deepseek style with full labels) =====
     function generateNavHtml(prev, current, next, bookSlug, chapterSlug) {
         var html = '<div class="nav-container">';
         
@@ -8163,11 +8163,11 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
             var prevName = escapeHtml(prev.name);
             html += '<a href="/books/' + bookSlug + '/' + chapterSlug + '/topics/' + prevSlug + '.html" class="nav-link">';
             html += '<span class="arrow">←</span>';
-            html += '<span class="label">Prev:</span>';
+            html += '<span class="label">Previous Topic:</span>';
             html += '<span class="topic-name">' + prevName + '</span>';
             html += '</a>';
         } else {
-            html += '<span class="nav-disabled"><span class="arrow">←</span> <span class="label">Previous</span></span>';
+            html += '<span class="nav-disabled"><span class="arrow">←</span> <span class="label">Previous Topic</span></span>';
         }
         
         // Current topic
@@ -8179,11 +8179,11 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
             var nextName = escapeHtml(next.name);
             html += '<a href="/books/' + bookSlug + '/' + chapterSlug + '/topics/' + nextSlug + '.html" class="nav-link">';
             html += '<span class="topic-name">' + nextName + '</span>';
-            html += '<span class="label">:Next</span>';
+            html += '<span class="label">:Next Topic</span>';
             html += '<span class="arrow">→</span>';
             html += '</a>';
         } else {
-            html += '<span class="nav-disabled"><span class="label">Next</span> <span class="arrow">→</span></span>';
+            html += '<span class="nav-disabled"><span class="label">Next Topic</span> <span class="arrow">→</span></span>';
         }
         
         html += '</div>';
@@ -8322,7 +8322,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     
     var metaDescription = 'Practice ' + topicName + ' from ' + bookTitle + ' - ' + chapterDisplay + chapterName + '. ' + totalQs + ' MCQs with ' + easyCount + ' easy, ' + mediumCount + ' medium, and ' + hardCount + ' hard questions. Perfect for exam preparation.';
     
-    // ===== BUILD COMPLETE HTML - EXACT deepseek style =====
+    // ===== BUILD COMPLETE HTML =====
     var finalHtml = '<!DOCTYPE html>\n' +
 '<html lang="en">\n' +
 '<head>\n' +
@@ -8381,7 +8381,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
 '\n' +
 '    .topic-info { font-size: 0.9rem; color: #475569; margin: 6px 0 10px; }\n' +
 '\n' +
-'    /* ---- NAVIGATION (mobile-first, flex-wrap) ---- */\n' +
+'    /* ---- NAVIGATION (fully responsive with full labels) ---- */\n' +
 '    .nav-container {\n' +
 '      display: flex;\n' +
 '      flex-wrap: wrap;\n' +
@@ -8413,10 +8413,11 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
 '      word-break: break-word;\n' +
 '      line-height: 1.3;\n' +
 '    }\n' +
-'    .nav-link .topic-name { font-weight: 700; color: #7c3aed; text-decoration: underline; text-underline-offset: 2px; }\n' +
-'    .nav-link .label { font-size: 0.7rem; color: #64748b; font-weight: 500; }\n' +
-'    .nav-link .arrow { font-size: 1.1rem; line-height: 1; }\n' +
-'    .nav-disabled { color: #94a3b8; font-weight: 500; font-size: 0.75rem; opacity: 0.6; padding: 6px 10px; background: #f1f5f9; border-radius: 10px; border: 1px solid #e5e7eb; }\n' +
+'    .nav-link:hover { background: #f3e8ff; border-color: #7c3aed; }\n' +
+'    .nav-link .topic-name { font-weight: 700; color: #7c3aed; text-decoration: underline; text-underline-offset: 2px; word-break: break-word; }\n' +
+'    .nav-link .label { font-size: 0.7rem; color: #64748b; font-weight: 500; white-space: nowrap; }\n' +
+'    .nav-link .arrow { font-size: 1.1rem; line-height: 1; flex-shrink: 0; }\n' +
+'    .nav-disabled { color: #94a3b8; font-weight: 500; font-size: 0.75rem; opacity: 0.6; padding: 6px 10px; background: #f1f5f9; border-radius: 10px; border: 1px solid #e5e7eb; white-space: nowrap; }\n' +
 '    .nav-current {\n' +
 '      font-weight: 700;\n' +
 '      color: #1e293b;\n' +
@@ -8426,22 +8427,65 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
 '      border-radius: 10px;\n' +
 '      border: 2px solid #7c3aed;\n' +
 '      white-space: nowrap;\n' +
+'      flex-shrink: 0;\n' +
 '    }\n' +
 '    .nav-current .current-name { font-weight: 800; color: #5b21b6; }\n' +
 '\n' +
-'    /* on very small screens, make nav items stack more gracefully */\n' +
-'    @media (max-width: 550px) {\n' +
-'      .nav-container { flex-wrap: wrap; justify-content: center; gap: 6px; }\n' +
-'      .nav-link, .nav-disabled, .nav-current { font-size: 0.7rem; padding: 4px 8px; flex: 0 1 auto; }\n' +
-'      .nav-link .label { display: none; }\n' +
-'      .nav-link .topic-name { font-size: 0.75rem; }\n' +
-'      .nav-current { font-size: 0.75rem; padding: 4px 8px; }\n' +
+'    /* responsive adjustments for better viewing */\n' +
+'    @media (max-width: 650px) {\n' +
+'      .nav-container { \n' +
+'        flex-wrap: wrap; \n' +
+'        justify-content: center; \n' +
+'        gap: 6px; \n' +
+'        padding: 8px 10px; \n' +
+'      }\n' +
+'      .nav-link { \n' +
+'        font-size: 0.7rem; \n' +
+'        padding: 4px 8px; \n' +
+'        flex: 0 1 auto; \n' +
+'      }\n' +
+'      .nav-link .label { \n' +
+'        font-size: 0.6rem; \n' +
+'      }\n' +
+'      .nav-link .topic-name { \n' +
+'        font-size: 0.7rem; \n' +
+'      }\n' +
+'      .nav-current { \n' +
+'        font-size: 0.7rem; \n' +
+'        padding: 3px 8px; \n' +
+'      }\n' +
+'      .nav-disabled { \n' +
+'        font-size: 0.65rem; \n' +
+'        padding: 4px 8px; \n' +
+'      }\n' +
 '    }\n' +
-'    @media (max-width: 400px) {\n' +
-'      .nav-container { padding: 6px 6px; }\n' +
-'      .nav-link { padding: 4px 6px; font-size: 0.65rem; }\n' +
-'      .nav-current { font-size: 0.7rem; padding: 3px 6px; }\n' +
-'      .nav-link .arrow { font-size: 0.9rem; }\n' +
+'\n' +
+'    @media (max-width: 480px) {\n' +
+'      .nav-container { \n' +
+'        gap: 4px; \n' +
+'        padding: 6px 6px; \n' +
+'      }\n' +
+'      .nav-link { \n' +
+'        font-size: 0.6rem; \n' +
+'        padding: 3px 6px; \n' +
+'      }\n' +
+'      .nav-link .label { \n' +
+'        font-size: 0.55rem; \n' +
+'      }\n' +
+'      .nav-link .topic-name { \n' +
+'        font-size: 0.6rem; \n' +
+'      }\n' +
+'      .nav-current { \n' +
+'        font-size: 0.6rem; \n' +
+'        padding: 2px 6px; \n' +
+'      }\n' +
+'      .nav-disabled { \n' +
+'        font-size: 0.55rem; \n' +
+'        padding: 3px 6px; \n' +
+'      }\n' +
+'      .nav-link .arrow { \n' +
+'        font-size: 0.8rem; \n' +
+'      }\n' +
 '    }\n' +
 '\n' +
 '    /* difficulty badges */\n' +
