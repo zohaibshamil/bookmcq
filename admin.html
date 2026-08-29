@@ -8157,7 +8157,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     function generateNavHtml(prev, current, next, bookSlug, chapterSlug) {
         var html = '<div class="nav-container">';
         
-        // Previous link
+        // Previous link - EXACT deepseek style
         if (prev) {
             var prevSlug = prev.slug || createSlug(prev.name);
             var prevName = escapeHtml(prev.name);
@@ -8170,10 +8170,10 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
             html += '<span class="nav-disabled"><span class="arrow">←</span> <span class="label">Previous</span></span>';
         }
         
-        // Current topic
+        // Current topic - EXACT deepseek style
         html += '<span class="nav-current">📝 <span class="current-name">' + escapeHtml(current.name) + '</span></span>';
         
-        // Next link
+        // Next link - EXACT deepseek style
         if (next) {
             var nextSlug = next.slug || createSlug(next.name);
             var nextName = escapeHtml(next.name);
@@ -8471,7 +8471,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
 '        .no-definition { font-size: 0.95rem; line-height: 1.6; color: #64748b; margin-bottom: 12px; font-style: italic; text-align: justify; }\n' +
 '        .divider { border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0; }\n' +
 '\n' +
-'        /* ===== NAVIGATION - EXACT deepseek style ===== */\n' +
+'        /* ===== NAVIGATION - EXACT deepseek style with FULL NAMES ===== */\n' +
 '        .nav-container {\n' +
 '            display: flex;\n' +
 '            flex-wrap: wrap;\n' +
@@ -8504,10 +8504,34 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
 '            line-height: 1.3;\n' +
 '        }\n' +
 '        .nav-link:hover { background: #f3e8ff; border-color: #7c3aed; }\n' +
-'        .nav-link .topic-name { font-weight: 700; color: #7c3aed; text-decoration: underline; text-underline-offset: 2px; }\n' +
-'        .nav-link .label { font-size: 0.7rem; color: #64748b; font-weight: 500; }\n' +
-'        .nav-link .arrow { font-size: 1.1rem; line-height: 1; flex-shrink: 0; }\n' +
-'        .nav-disabled { color: #94a3b8; font-weight: 500; font-size: 0.75rem; opacity: 0.6; padding: 6px 10px; background: #f1f5f9; border-radius: 10px; border: 1px solid #e5e7eb; }\n' +
+'        .nav-link .topic-name { \n' +
+'            font-weight: 700; \n' +
+'            color: #7c3aed; \n' +
+'            text-decoration: underline; \n' +
+'            text-underline-offset: 2px;\n' +
+'            word-break: break-word;\n' +
+'        }\n' +
+'        .nav-link .label { \n' +
+'            font-size: 0.7rem; \n' +
+'            color: #64748b; \n' +
+'            font-weight: 500; \n' +
+'            display: inline;\n' +
+'        }\n' +
+'        .nav-link .arrow { \n' +
+'            font-size: 1.1rem; \n' +
+'            line-height: 1; \n' +
+'            flex-shrink: 0; \n' +
+'        }\n' +
+'        .nav-disabled { \n' +
+'            color: #94a3b8; \n' +
+'            font-weight: 500; \n' +
+'            font-size: 0.75rem; \n' +
+'            opacity: 0.6; \n' +
+'            padding: 6px 10px; \n' +
+'            background: #f1f5f9; \n' +
+'            border-radius: 10px; \n' +
+'            border: 1px solid #e5e7eb; \n' +
+'        }\n' +
 '        .nav-current {\n' +
 '            font-weight: 700;\n' +
 '            color: #1e293b;\n' +
@@ -8522,8 +8546,17 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
 '\n' +
 '        /* ===== NAVIGATION RESPONSIVE - EXACT deepseek style ===== */\n' +
 '        @media (max-width: 550px) {\n' +
-'            .nav-container { flex-wrap: wrap; justify-content: center; gap: 6px; padding: 8px 8px; }\n' +
-'            .nav-link { font-size: 0.7rem; padding: 4px 8px; flex: 0 1 auto; }\n' +
+'            .nav-container { \n' +
+'                flex-wrap: wrap; \n' +
+'                justify-content: center; \n' +
+'                gap: 6px; \n' +
+'                padding: 8px 8px; \n' +
+'            }\n' +
+'            .nav-link { \n' +
+'                font-size: 0.7rem; \n' +
+'                padding: 4px 8px; \n' +
+'                flex: 0 1 auto; \n' +
+'            }\n' +
 '            .nav-link .label { display: none; }\n' +
 '            .nav-link .topic-name { font-size: 0.75rem; }\n' +
 '            .nav-current { font-size: 0.75rem; padding: 4px 8px; }\n' +
@@ -8623,6 +8656,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
 '</div>\n' +
 '</body>\n' +
 '</html>';
+ 
  
      
     // ✅ Return the final built string, NOT undefined!
