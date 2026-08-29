@@ -8137,7 +8137,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     var mediumCount = topicDifficultyStats?.medium || 0;
     var hardCount = topicDifficultyStats?.hard || 0;
     
-    // ===== NAVIGATION: Find Previous and Next Topics (Database Order) =====
+    // ===== NAVIGATION: Find Previous and Next Topics =====
     var sortedTopics = allBookTopics.sort(function(a, b) {
         return a.id - b.id;
     });
@@ -8153,11 +8153,11 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     var prevTopic = (currentIndex > 0) ? sortedTopics[currentIndex - 1] : null;
     var nextTopic = (currentIndex < sortedTopics.length - 1) ? sortedTopics[currentIndex + 1] : null;
     
-    // ===== Generate Responsive Navigation HTML (EXACT deepseek style) =====
+    // ===== Generate Navigation HTML (EXACT deepseek style) =====
     function generateNavHtml(prev, current, next, bookSlug, chapterSlug) {
         var html = '<div class="nav-container">';
         
-        // Previous link - EXACT deepseek style
+        // Previous link
         if (prev) {
             var prevSlug = prev.slug || createSlug(prev.name);
             var prevName = escapeHtml(prev.name);
@@ -8170,10 +8170,10 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
             html += '<span class="nav-disabled"><span class="arrow">←</span> <span class="label">Previous</span></span>';
         }
         
-        // Current topic - EXACT deepseek style
+        // Current topic
         html += '<span class="nav-current">📝 <span class="current-name">' + escapeHtml(current.name) + '</span></span>';
         
-        // Next link - EXACT deepseek style
+        // Next link
         if (next) {
             var nextSlug = next.slug || createSlug(next.name);
             var nextName = escapeHtml(next.name);
@@ -8197,42 +8197,26 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     var topicDefinition = topic.definition || '';
     
     if (topicDefinition) {
-        var paragraphs = topicDefinition
-            .split(/\n\s*\n/)
-            .filter(function(p) { return p.trim() !== ''; });
-        
-        var formattedDefinition = paragraphs
-            .map(function(p) {
-                return '<p class="definition-text">' + p.replace(/\n/g, ' ') + '</p>';
-            })
-            .join('');
-        
         definitionHtml = `
-            <h2 class="section-title">What is ${topicName}?</h2>
-            ${formattedDefinition}
-            <p class="intro-text">
-                Test your knowledge of ${topicName} with the carefully crafted MCQs below, categorized by easy, medium, and hard difficulty levels.
-            </p>
-            <hr class="divider">
+            <div style="margin: 8px 0 12px;">
+                <h2 style="font-size:1.2rem; font-weight:700; color:#1e293b; margin-top:8px;">What is ${topicName}?</h2>
+                <p style="text-align:justify; line-height:1.7; color:#334155; font-size:0.95rem; word-break:break-word;">${topicDefinition.replace(/\n/g, '<br>')}</p>
+            </div>
         `;
     } else {
         definitionHtml = `
-            <h2 class="section-title">What is ${topicName}?</h2>
-            <p class="no-definition">
-                No definition available for this topic yet. Check back later for a detailed explanation of ${topicName}.
-            </p>
-            <p class="intro-text">
-                Test your knowledge of ${topicName} with the carefully crafted MCQs below, categorized by easy, medium, and hard difficulty levels.
-            </p>
-            <hr class="divider">
+            <div style="margin: 8px 0 12px;">
+                <h2 style="font-size:1.2rem; font-weight:700; color:#1e293b; margin-top:8px;">What is ${topicName}?</h2>
+                <p style="text-align:justify; line-height:1.7; color:#334155; font-size:0.95rem; word-break:break-word;">No definition available for this topic yet.</p>
+            </div>
         `;
     }
     
     // ===== MCQs HTML =====
     var fullMcqsHtml = '';
     if (topicQuestions.length > 0) {
-        fullMcqsHtml = '<div class="mcq-container">';
-        fullMcqsHtml += `<h3 class="mcq-title">📝 All ${topicName} MCQs</h3>`;
+        fullMcqsHtml = '<div style="margin:12px 0;">';
+        fullMcqsHtml += `<h3 style="font-size:1.1rem; color:#1e293b; margin-bottom:10px;">📝 All ${topicName} MCQs</h3>`;
         
         topicQuestions.forEach(function(q, idx) {
             var opts = optionsMap[q.id] || ['', '', '', ''];
@@ -8263,14 +8247,13 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
                 var bgClass = opt.isCorrect ? 'opt-correct' : '';
                 var icon = opt.isCorrect ? ' ✅' : '';
                 fullMcqsHtml += '<div class="opt-item ' + bgClass + '">';
-                fullMcqsHtml += '<span class="opt-label">' + opt.label + '.</span>';
-                fullMcqsHtml += '<span class="opt-text">' + opt.text + icon + '</span>';
+                fullMcqsHtml += '<span class="label">' + opt.label + '.</span>';
+                fullMcqsHtml += '<span class="text">' + opt.text + icon + '</span>';
                 fullMcqsHtml += '</div>';
             });
             
             fullMcqsHtml += '</div>';
             
-            // Difficulty tag with correct answer - deepseek style
             var difficultyLabel = q.difficulty || 'Medium';
             fullMcqsHtml += '<div class="diff-tag">💡 Difficulty: ' + difficultyLabel + ' | ✅ Correct: ' + optionLabels[correctIndex] + '</div>';
             
@@ -8293,12 +8276,13 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     if (allBookTopics && allBookTopics.length > 1) {
         var otherTopics = allBookTopics.filter(function(t) { return t.id !== topic.id; }).slice(0, 5);
         if (otherTopics.length > 0) {
-            relatedTopicsHtml = '<div class="related-section">';
-            relatedTopicsHtml += '<h3 class="related-title">🔗 Related Topics (MCQs)</h3><div class="topic-pills">';
+            relatedTopicsHtml = '<div style="margin:12px 0;">';
+            relatedTopicsHtml += '<h3 style="font-size:1rem; color:#1e293b;">🔗 Related Topics (MCQs)</h3>';
+            relatedTopicsHtml += '<div class="topic-pills">';
             otherTopics.forEach(function(t) {
                 var tSlug = t.slug || createSlug(t.name);
                 var tName = escapeHtml(t.name);
-                relatedTopicsHtml += '<a href="/books/' + bookSlug + '/' + chapterSlug + '/topics/' + tSlug + '.html" class="topic-pill">📝 ' + tName + ' MCQs</a>';
+                relatedTopicsHtml += '<a href="/books/' + bookSlug + '/' + chapterSlug + '/topics/' + tSlug + '.html">📝 ' + tName + ' MCQs</a>';
             });
             relatedTopicsHtml += '</div></div>';
         }
@@ -8308,9 +8292,9 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     var difficultyHtml = '';
     if (easyCount > 0 || mediumCount > 0 || hardCount > 0) {
         difficultyHtml = '<div class="badge-grid">';
-        difficultyHtml += '<div class="badge-item easy"><div class="num">' + easyCount + '</div><div class="lbl">Easy</div></div>';
-        difficultyHtml += '<div class="badge-item medium"><div class="num">' + mediumCount + '</div><div class="lbl">Medium</div></div>';
-        difficultyHtml += '<div class="badge-item hard"><div class="num">' + hardCount + '</div><div class="lbl">Hard</div></div>';
+        difficultyHtml += '<div class="badge-item" style="background:#dcfce7; border-color:#86efac;"><div class="num" style="color:#166534;">' + easyCount + '</div><div class="lbl">Easy</div></div>';
+        difficultyHtml += '<div class="badge-item" style="background:#fef9c3; border-color:#fde047;"><div class="num" style="color:#854d0e;">' + mediumCount + '</div><div class="lbl">Medium</div></div>';
+        difficultyHtml += '<div class="badge-item" style="background:#fee2e2; border-color:#fca5a5;"><div class="num" style="color:#991b1b;">' + hardCount + '</div><div class="lbl">Hard</div></div>';
         difficultyHtml += '</div>';
     }
     
@@ -8342,322 +8326,209 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     var finalHtml = '<!DOCTYPE html>\n' +
 '<html lang="en">\n' +
 '<head>\n' +
-'    <meta charset="UTF-8">\n' +
-'    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">\n' +
+'  <meta charset="UTF-8">\n' +
+'  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">\n' +
     getGTMHeadCode() + '\n' +
-'    <title>' + seoTitle + '</title>\n' +
-'    <meta name="description" content="' + metaDescription + '">\n' +
-'    <meta name="keywords" content="' + topicName + ' MCQs, ' + bookTitle + ' ' + topicName + ' questions, ' + topicName + ' practice, ' + bookTitle + ' topics, ' + topicName + ' easy medium hard">\n' +
-'    <meta name="robots" content="index, follow">\n' +
-'    <link rel="canonical" href="https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html">\n' +
-'    <meta property="og:url" content="https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html">\n' +
-'    <meta property="og:title" content="' + topicName + ' - ' + bookTitle + ' MCQs | BookMCQ">\n' +
-'    <meta property="og:description" content="Practice ' + topicName + ' from ' + bookTitle + '. ' + totalQs + ' questions with difficulty breakdown: Easy ' + easyCount + ', Medium ' + mediumCount + ', Hard ' + hardCount + '.">\n' +
-'    <meta property="og:type" content="website">\n' +
-'    <meta name="theme-color" content="#7c3aed">\n' +
-'    <script type="application/ld+json">\n' + JSON.stringify(schemaData) + '\n' +
-'    <\/script>\n' +
-'    <script src="https://cdn.tailwindcss.com"><\/script>\n' +
-'    <script>\n' +
-'        window.MathJax = {\n' +
-'            tex: {\n' +
-'                inlineMath: [\n' +
-'                    [\'$\', \'$\'],\n' +
-'                    [\'\\\\(\', \'\\\\)\']\n' +
-'                ],\n' +
-'                displayMath: [\n' +
-'                    [\'$$\', \'$$\'],\n' +
-'                    [\'\\\\[\', \'\\\\]\']\n' +
-'                ],\n' +
-'                processEscapes: true,\n' +
-'                processEnvironments: true\n' +
-'            },\n' +
-'            svg: {\n' +
-'                fontCache: \'global\'\n' +
-'            },\n' +
-'            options: {\n' +
-'                skipHtmlTypes: \'script\',\n' +
-'                ignoreHtmlClass: \'no-mathjax\',\n' +
-'                processHtmlClass: \'math\'\n' +
-'            }\n' +
-'        };\n' +
-'    <\/script>\n' +
-'    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async><\/script>\n' +
-'    <script>\n' +
-'        function escapeHtmlPreserveMath(text) {\n' +
-'            if (!text) return \'\';\n' +
-'            var escaped = text.replace(/&/g, \'&amp;\')\n' +
-'                              .replace(/</g, \'&lt;\')\n' +
-'                              .replace(/>/g, \'&gt;\')\n' +
-'                              .replace(/"/g, \'&quot;\')\n' +
-'                              .replace(/\'/g, \'&#039;\');\n' +
-'            return escaped;\n' +
-'        }\n' +
+'  <title>' + seoTitle + '</title>\n' +
+'  <meta name="description" content="' + metaDescription + '">\n' +
+'  <meta name="keywords" content="' + topicName + ' MCQs, ' + bookTitle + ' ' + topicName + ' questions, ' + topicName + ' practice, ' + bookTitle + ' topics, ' + topicName + ' easy medium hard">\n' +
+'  <meta name="robots" content="index, follow">\n' +
+'  <link rel="canonical" href="https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html">\n' +
+'  <meta property="og:url" content="https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html">\n' +
+'  <meta property="og:title" content="' + topicName + ' - ' + bookTitle + ' MCQs | BookMCQ">\n' +
+'  <meta property="og:description" content="Practice ' + topicName + ' from ' + bookTitle + '. ' + totalQs + ' questions with difficulty breakdown: Easy ' + easyCount + ', Medium ' + mediumCount + ', Hard ' + hardCount + '.">\n' +
+'  <meta property="og:type" content="website">\n' +
+'  <meta name="theme-color" content="#7c3aed">\n' +
+'  <script type="application/ld+json">\n' + JSON.stringify(schemaData) + '\n' +
+'  <\/script>\n' +
+'  <script src="https://cdn.tailwindcss.com"><\/script>\n' +
+'  <style>\n' +
+'    * { box-sizing: border-box; margin: 0; padding: 0; }\n' +
+'    body {\n' +
+'      font-family: system-ui, -apple-system, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif;\n' +
+'      background: linear-gradient(135deg, #667eea, #764ba2);\n' +
+'      min-height: 100vh;\n' +
+'      padding: 12px;\n' +
+'      display: flex;\n' +
+'      flex-direction: column;\n' +
+'      align-items: center;\n' +
+'    }\n' +
+'    .container {\n' +
+'      max-width: 900px;\n' +
+'      width: 100%;\n' +
+'      margin: 0 auto;\n' +
+'      padding: 0 8px;\n' +
+'    }\n' +
+'    .card {\n' +
+'      background: white;\n' +
+'      border-radius: 20px;\n' +
+'      padding: 18px 16px 24px;\n' +
+'      box-shadow: 0 12px 30px rgba(0,0,0,0.15);\n' +
+'      width: 100%;\n' +
+'    }\n' +
+'    /* responsive padding */\n' +
+'    @media (min-width: 640px) { .card { padding: 28px 32px; } }\n' +
+'    @media (max-width: 480px) { .card { padding: 14px 12px; } }\n' +
 '\n' +
-'        async function renderMathInElement(element) {\n' +
-'            if (window.MathJax && element) {\n' +
-'                try {\n' +
-'                    await MathJax.typesetPromise([element]);\n' +
-'                } catch(e) {\n' +
-'                    console.log(\'MathJax error:\', e);\n' +
-'                }\n' +
-'            }\n' +
-'        }\n' +
+'    .back-link { display: inline-block; margin-bottom: 12px; color: #7c3aed; text-decoration: none; font-weight: 500; }\n' +
+'    .back-link:hover { text-decoration: underline; }\n' +
+'    .breadcrumb { font-size: 13px; color: #64748b; margin-bottom: 10px; word-break: break-word; }\n' +
+'    .breadcrumb a { color: #7c3aed; text-decoration: none; }\n' +
+'    .breadcrumb a:hover { text-decoration: underline; }\n' +
 '\n' +
-'        async function renderAllMath() {\n' +
-'            if (window.MathJax) {\n' +
-'                try {\n' +
-'                    await MathJax.typesetPromise();\n' +
-'                } catch(e) {\n' +
-'                    console.log(\'MathJax error:\', e);\n' +
-'                }\n' +
-'            }\n' +
-'        }\n' +
+'    h1 { font-size: 1.6rem; line-height: 1.2; margin: 6px 0 4px; word-break: break-word; }\n' +
+'    @media (max-width: 480px) { h1 { font-size: 1.4rem; } }\n' +
 '\n' +
-'        function processMathContent(text) {\n' +
-'            if (!text) return \'\';\n' +
-'            return text;\n' +
-'        }\n' +
+'    .topic-info { font-size: 0.9rem; color: #475569; margin: 6px 0 10px; }\n' +
 '\n' +
-'        document.addEventListener(\'DOMContentLoaded\', function() {\n' +
-'            renderAllMath();\n' +
-'        });\n' +
+'    /* ---- NAVIGATION (mobile-first, flex-wrap) ---- */\n' +
+'    .nav-container {\n' +
+'      display: flex;\n' +
+'      flex-wrap: wrap;\n' +
+'      align-items: center;\n' +
+'      justify-content: space-between;\n' +
+'      gap: 8px 6px;\n' +
+'      background: #f8fafc;\n' +
+'      padding: 10px 12px;\n' +
+'      border-radius: 14px;\n' +
+'      margin: 16px 0 12px;\n' +
+'      border: 2px solid #e5e7eb;\n' +
+'      box-shadow: 0 2px 6px rgba(0,0,0,0.03);\n' +
+'      width: 100%;\n' +
+'    }\n' +
+'    .nav-link {\n' +
+'      color: #7c3aed;\n' +
+'      text-decoration: none;\n' +
+'      font-weight: 600;\n' +
+'      font-size: 0.8rem;\n' +
+'      padding: 6px 10px;\n' +
+'      border-radius: 10px;\n' +
+'      background: white;\n' +
+'      border: 1px solid #e5e7eb;\n' +
+'      display: inline-flex;\n' +
+'      align-items: center;\n' +
+'      gap: 4px;\n' +
+'      flex: 0 1 auto;\n' +
+'      min-width: 0;\n' +
+'      word-break: break-word;\n' +
+'      line-height: 1.3;\n' +
+'    }\n' +
+'    .nav-link .topic-name { font-weight: 700; color: #7c3aed; text-decoration: underline; text-underline-offset: 2px; }\n' +
+'    .nav-link .label { font-size: 0.7rem; color: #64748b; font-weight: 500; }\n' +
+'    .nav-link .arrow { font-size: 1.1rem; line-height: 1; }\n' +
+'    .nav-disabled { color: #94a3b8; font-weight: 500; font-size: 0.75rem; opacity: 0.6; padding: 6px 10px; background: #f1f5f9; border-radius: 10px; border: 1px solid #e5e7eb; }\n' +
+'    .nav-current {\n' +
+'      font-weight: 700;\n' +
+'      color: #1e293b;\n' +
+'      font-size: 0.85rem;\n' +
+'      padding: 4px 12px;\n' +
+'      background: #ede9fe;\n' +
+'      border-radius: 10px;\n' +
+'      border: 2px solid #7c3aed;\n' +
+'      white-space: nowrap;\n' +
+'    }\n' +
+'    .nav-current .current-name { font-weight: 800; color: #5b21b6; }\n' +
 '\n' +
-'        if (window.MathJax) {\n' +
-'            MathJax.typesetPromise = MathJax.typesetPromise || function() { return Promise.resolve(); };\n' +
-'        }\n' +
-'    <\/script>\n' +
-'    <style>\n' +
-'        /* ===== RESET & BASE - EXACT deepseek style ===== */\n' +
-'        * { box-sizing: border-box; margin: 0; padding: 0; }\n' +
-'        body {\n' +
-'            font-family: system-ui, -apple-system, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif;\n' +
-'            background: linear-gradient(135deg, #667eea, #764ba2);\n' +
-'            min-height: 100vh;\n' +
-'            padding: 12px;\n' +
-'            display: flex;\n' +
-'            flex-direction: column;\n' +
-'            align-items: center;\n' +
-'        }\n' +
-'        .container {\n' +
-'            max-width: 900px;\n' +
-'            width: 100%;\n' +
-'            margin: 0 auto;\n' +
-'            padding: 0 8px;\n' +
-'        }\n' +
-'        .card {\n' +
-'            background: white;\n' +
-'            border-radius: 20px;\n' +
-'            padding: 18px 16px 24px;\n' +
-'            box-shadow: 0 12px 30px rgba(0,0,0,0.15);\n' +
-'            width: 100%;\n' +
-'        }\n' +
-'        @media (min-width: 640px) { .card { padding: 28px 32px; } }\n' +
-'        @media (max-width: 480px) { .card { padding: 14px 12px; } }\n' +
+'    /* on very small screens, make nav items stack more gracefully */\n' +
+'    @media (max-width: 550px) {\n' +
+'      .nav-container { flex-wrap: wrap; justify-content: center; gap: 6px; }\n' +
+'      .nav-link, .nav-disabled, .nav-current { font-size: 0.7rem; padding: 4px 8px; flex: 0 1 auto; }\n' +
+'      .nav-link .label { display: none; }\n' +
+'      .nav-link .topic-name { font-size: 0.75rem; }\n' +
+'      .nav-current { font-size: 0.75rem; padding: 4px 8px; }\n' +
+'    }\n' +
+'    @media (max-width: 400px) {\n' +
+'      .nav-container { padding: 6px 6px; }\n' +
+'      .nav-link { padding: 4px 6px; font-size: 0.65rem; }\n' +
+'      .nav-current { font-size: 0.7rem; padding: 3px 6px; }\n' +
+'      .nav-link .arrow { font-size: 0.9rem; }\n' +
+'    }\n' +
 '\n' +
-'        /* ===== TYPOGRAPHY ===== */\n' +
-'        .back-link { display: inline-block; margin-bottom: 12px; color: #7c3aed; text-decoration: none; font-weight: 500; }\n' +
-'        .back-link:hover { text-decoration: underline; }\n' +
-'        .breadcrumb { font-size: 13px; color: #64748b; margin-bottom: 10px; word-break: break-word; }\n' +
-'        .breadcrumb a { color: #7c3aed; text-decoration: none; }\n' +
-'        .breadcrumb a:hover { text-decoration: underline; }\n' +
-'        h1 { font-size: 1.6rem; line-height: 1.2; margin: 6px 0 4px; word-break: break-word; }\n' +
-'        @media (max-width: 480px) { h1 { font-size: 1.4rem; } }\n' +
-'        .topic-info { font-size: 0.9rem; color: #475569; margin: 6px 0 10px; }\n' +
-'        .section-title { font-size: 1.2rem; font-weight: 700; color: #1e293b; margin-top: 8px; }\n' +
-'        .definition-text { text-align: justify; line-height: 1.7; color: #334155; font-size: 0.95rem; word-break: break-word; }\n' +
-'        .definition-text b, .definition-text strong { color: #5b21b6; }\n' +
-'        .intro-text { font-size: 0.9rem; color: #475569; margin: 8px 0 12px; text-align: justify; }\n' +
-'        .no-definition { font-size: 0.95rem; line-height: 1.6; color: #64748b; margin-bottom: 12px; font-style: italic; text-align: justify; }\n' +
-'        .divider { border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0; }\n' +
+'    /* difficulty badges */\n' +
+'    .badge-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 14px 0; }\n' +
+'    .badge-item { padding: 10px 4px; border-radius: 12px; text-align: center; border: 1px solid #e5e7eb; }\n' +
+'    .badge-item .num { font-size: 1.8rem; font-weight: 700; }\n' +
+'    .badge-item .lbl { font-size: 0.7rem; color: #64748b; }\n' +
+'    @media (max-width: 480px) { .badge-item .num { font-size: 1.4rem; } }\n' +
 '\n' +
-'        /* ===== NAVIGATION - EXACT deepseek style with FULL NAMES ===== */\n' +
-'        .nav-container {\n' +
-'            display: flex;\n' +
-'            flex-wrap: wrap;\n' +
-'            align-items: center;\n' +
-'            justify-content: space-between;\n' +
-'            gap: 8px 6px;\n' +
-'            background: #f8fafc;\n' +
-'            padding: 10px 12px;\n' +
-'            border-radius: 14px;\n' +
-'            margin: 16px 0 12px;\n' +
-'            border: 2px solid #e5e7eb;\n' +
-'            box-shadow: 0 2px 6px rgba(0,0,0,0.03);\n' +
-'            width: 100%;\n' +
-'        }\n' +
-'        .nav-link {\n' +
-'            color: #7c3aed;\n' +
-'            text-decoration: none;\n' +
-'            font-weight: 600;\n' +
-'            font-size: 0.8rem;\n' +
-'            padding: 6px 10px;\n' +
-'            border-radius: 10px;\n' +
-'            background: white;\n' +
-'            border: 1px solid #e5e7eb;\n' +
-'            display: inline-flex;\n' +
-'            align-items: center;\n' +
-'            gap: 4px;\n' +
-'            flex: 0 1 auto;\n' +
-'            min-width: 0;\n' +
-'            word-break: break-word;\n' +
-'            line-height: 1.3;\n' +
-'        }\n' +
-'        .nav-link:hover { background: #f3e8ff; border-color: #7c3aed; }\n' +
-'        .nav-link .topic-name { \n' +
-'            font-weight: 700; \n' +
-'            color: #7c3aed; \n' +
-'            text-decoration: underline; \n' +
-'            text-underline-offset: 2px;\n' +
-'            word-break: break-word;\n' +
-'        }\n' +
-'        .nav-link .label { \n' +
-'            font-size: 0.7rem; \n' +
-'            color: #64748b; \n' +
-'            font-weight: 500; \n' +
-'            display: inline;\n' +
-'        }\n' +
-'        .nav-link .arrow { \n' +
-'            font-size: 1.1rem; \n' +
-'            line-height: 1; \n' +
-'            flex-shrink: 0; \n' +
-'        }\n' +
-'        .nav-disabled { \n' +
-'            color: #94a3b8; \n' +
-'            font-weight: 500; \n' +
-'            font-size: 0.75rem; \n' +
-'            opacity: 0.6; \n' +
-'            padding: 6px 10px; \n' +
-'            background: #f1f5f9; \n' +
-'            border-radius: 10px; \n' +
-'            border: 1px solid #e5e7eb; \n' +
-'        }\n' +
-'        .nav-current {\n' +
-'            font-weight: 700;\n' +
-'            color: #1e293b;\n' +
-'            font-size: 0.85rem;\n' +
-'            padding: 4px 12px;\n' +
-'            background: #ede9fe;\n' +
-'            border-radius: 10px;\n' +
-'            border: 2px solid #7c3aed;\n' +
-'            white-space: nowrap;\n' +
-'        }\n' +
-'        .nav-current .current-name { font-weight: 800; color: #5b21b6; }\n' +
+'    /* question blocks */\n' +
+'    .q-block { background: white; padding: 14px 12px; border-radius: 12px; margin-bottom: 16px; border: 1px solid #e5e7eb; }\n' +
+'    .q-text { font-weight: 600; margin: 0 0 10px; line-height: 1.5; text-align: justify; }\n' +
+'    .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; font-size: 0.9rem; color: #334155; }\n' +
+'    .opt-item { display: flex; align-items: flex-start; gap: 4px; padding: 2px 0; }\n' +
+'    .opt-item .label { font-weight: 600; color: #8b5cf6; min-width: 18px; }\n' +
+'    .opt-item .text { text-align: justify; word-break: break-word; }\n' +
+'    .opt-correct { background-color: #dcfce7; border-radius: 6px; padding: 4px 6px; }\n' +
+'    .diff-tag { font-size: 0.7rem; color: #8b5cf6; margin-top: 8px; }\n' +
+'    .explanation { margin-top: 10px; padding: 10px 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px; }\n' +
+'    .explanation p { font-size: 0.8rem; color: #1e293b; margin: 0; line-height: 1.5; text-align: justify; }\n' +
 '\n' +
-'        /* ===== NAVIGATION RESPONSIVE - EXACT deepseek style ===== */\n' +
-'        @media (max-width: 550px) {\n' +
-'            .nav-container { \n' +
-'                flex-wrap: wrap; \n' +
-'                justify-content: center; \n' +
-'                gap: 6px; \n' +
-'                padding: 8px 8px; \n' +
-'            }\n' +
-'            .nav-link { \n' +
-'                font-size: 0.7rem; \n' +
-'                padding: 4px 8px; \n' +
-'                flex: 0 1 auto; \n' +
-'            }\n' +
-'            .nav-link .label { display: none; }\n' +
-'            .nav-link .topic-name { font-size: 0.75rem; }\n' +
-'            .nav-current { font-size: 0.75rem; padding: 4px 8px; }\n' +
-'            .nav-disabled { font-size: 0.65rem; padding: 4px 8px; }\n' +
-'            .nav-link .arrow { font-size: 0.9rem; }\n' +
-'        }\n' +
-'        @media (max-width: 400px) {\n' +
-'            .nav-container { gap: 4px; padding: 6px 6px; }\n' +
-'            .nav-link { font-size: 0.6rem; padding: 3px 6px; }\n' +
-'            .nav-link .topic-name { font-size: 0.65rem; }\n' +
-'            .nav-current { font-size: 0.65rem; padding: 3px 6px; }\n' +
-'            .nav-disabled { font-size: 0.55rem; padding: 3px 6px; }\n' +
-'            .nav-link .arrow { font-size: 0.8rem; }\n' +
-'        }\n' +
+'    @media (max-width: 500px) {\n' +
+'      .options-grid { grid-template-columns: 1fr; gap: 2px; }\n' +
+'      .q-block { padding: 12px 10px; }\n' +
+'      .explanation p { font-size: 0.75rem; }\n' +
+'    }\n' +
 '\n' +
-'        /* ===== DIFFICULTY BADGES - EXACT deepseek style ===== */\n' +
-'        .badge-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 14px 0; }\n' +
-'        .badge-item { padding: 10px 4px; border-radius: 12px; text-align: center; border: 1px solid #e5e7eb; }\n' +
-'        .badge-item .num { font-size: 1.8rem; font-weight: 700; }\n' +
-'        .badge-item .lbl { font-size: 0.7rem; color: #64748b; }\n' +
-'        .badge-item.easy { background: #dcfce7; border-color: #86efac; }\n' +
-'        .badge-item.easy .num { color: #166534; }\n' +
-'        .badge-item.medium { background: #fef9c3; border-color: #fde047; }\n' +
-'        .badge-item.medium .num { color: #854d0e; }\n' +
-'        .badge-item.hard { background: #fee2e2; border-color: #fca5a5; }\n' +
-'        .badge-item.hard .num { color: #991b1b; }\n' +
-'        @media (max-width: 480px) { .badge-item .num { font-size: 1.4rem; } .badge-item { padding: 8px 2px; } }\n' +
+'    .btn-primary { display: inline-block; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 12px 28px; border-radius: 40px; text-decoration: none; font-weight: 700; margin-top: 8px; transition: 0.2s; border: none; cursor: pointer; }\n' +
+'    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(102,126,234,0.4); }\n' +
+'    .btn-secondary { display: inline-block; background: #f1f5f9; color: #1e293b; padding: 10px 22px; border-radius: 40px; text-decoration: none; font-weight: 500; border: 1px solid #d1d5db; }\n' +
+'    .btn-secondary:hover { background: #e5e7eb; }\n' +
 '\n' +
-'        /* ===== MCQ BLOCKS - EXACT deepseek style ===== */\n' +
-'        .mcq-container { margin: 16px 0; background: #f8fafc; padding: 12px; border-radius: 12px; }\n' +
-'        @media (min-width: 640px) { .mcq-container { padding: 16px; } }\n' +
-'        .mcq-title { font-size: 1.1rem; color: #1e293b; margin-bottom: 12px; }\n' +
-'        .q-block { background: white; padding: 14px 12px; border-radius: 12px; margin-bottom: 16px; border: 1px solid #e5e7eb; }\n' +
-'        @media (max-width: 480px) { .q-block { padding: 12px 10px; } }\n' +
-'        .q-text { font-weight: 600; margin: 0 0 10px; line-height: 1.5; text-align: justify; word-break: break-word; }\n' +
-'        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; font-size: 0.9rem; color: #334155; }\n' +
-'        @media (max-width: 500px) { .options-grid { grid-template-columns: 1fr; gap: 2px; } }\n' +
-'        .opt-item { display: flex; align-items: flex-start; gap: 4px; padding: 2px 0; }\n' +
-'        .opt-item .opt-label { font-weight: 600; color: #8b5cf6; min-width: 18px; flex-shrink: 0; }\n' +
-'        .opt-item .opt-text { text-align: justify; word-break: break-word; }\n' +
-'        .opt-correct { background-color: #dcfce7; border-radius: 6px; padding: 4px 6px; }\n' +
-'        .diff-tag { font-size: 0.7rem; color: #8b5cf6; margin-top: 8px; }\n' +
-'        .explanation { margin-top: 10px; padding: 10px 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px; }\n' +
-'        .explanation p { font-size: 0.8rem; color: #1e293b; margin: 0; line-height: 1.5; text-align: justify; }\n' +
-'        @media (max-width: 480px) { .explanation p { font-size: 0.75rem; } }\n' +
+'    .footer-links { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 18px; }\n' +
+'    .topic-pills { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }\n' +
+'    .topic-pills a { background: #f3f4f6; padding: 4px 12px; border-radius: 30px; font-size: 0.75rem; color: #1e293b; text-decoration: none; border: 1px solid #e5e7eb; white-space: nowrap; }\n' +
+'    .topic-pills a:hover { background: #e0e7ff; }\n' +
 '\n' +
-'        /* ===== RELATED TOPICS - EXACT deepseek style ===== */\n' +
-'        .related-section { margin: 12px 0; }\n' +
-'        .related-title { font-size: 1rem; color: #1e293b; margin-bottom: 8px; }\n' +
-'        .topic-pills { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }\n' +
-'        .topic-pill { background: #f3f4f6; padding: 4px 12px; border-radius: 30px; font-size: 0.75rem; color: #1e293b; text-decoration: none; border: 1px solid #e5e7eb; white-space: nowrap; }\n' +
-'        .topic-pill:hover { background: #e0e7ff; }\n' +
-'        @media (max-width: 480px) { .topic-pill { font-size: 0.65rem; padding: 3px 8px; } }\n' +
-'\n' +
-'        /* ===== BUTTONS - EXACT deepseek style ===== */\n' +
-'        .btn-primary { display: inline-block; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 12px 28px; border-radius: 40px; text-decoration: none; font-weight: 700; margin-top: 8px; transition: 0.2s; border: none; cursor: pointer; font-size: 0.95rem; text-align: center; }\n' +
-'        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(102,126,234,0.4); }\n' +
-'        .btn-secondary { display: inline-block; background: #f1f5f9; color: #1e293b; padding: 10px 22px; border-radius: 40px; text-decoration: none; font-weight: 500; border: 1px solid #d1d5db; font-size: 0.95rem; text-align: center; }\n' +
-'        .btn-secondary:hover { background: #e5e7eb; }\n' +
-'        @media (max-width: 480px) { .btn-primary, .btn-secondary { font-size: 0.85rem; padding: 10px 18px; } }\n' +
-'\n' +
-'        .footer-links { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 18px; }\n' +
-'        \n' +
-'        /* ===== MATHJAX SUPPORT ===== */\n' +
-'        .math { display: inline; }\n' +
-'        img, svg { max-width: 100%; height: auto; }\n' +
-'    </style>\n' +
+'    img, svg { max-width: 100%; height: auto; }\n' +
+'    .math { display: inline; }\n' +
+'  </style>\n' +
 '</head>\n' +
 '<body>\n' +
     getGTMBodyCode() + '\n' +
-'<!-- Website Header -->\n' +
-'<div style="text-align:center; padding:6px 0 12px;">\n' +
-'    <a href="/" style="text-decoration:none;">\n' +
-'        <span style="font-size:1.2rem; font-weight:700; color:#7c3aed; background:white; padding:6px 18px; border-radius:40px; display:inline-block; box-shadow:0 2px 8px rgba(0,0,0,0.08);">🎓 BookMCQ</span>\n' +
-'    </a>\n' +
-'</div>\n' +
+'\n' +
 '<div class="container">\n' +
-'    <div class="card">\n' +
-'        <div class="breadcrumb">\n' +
-'            <a href="/">🏠 Home</a> &gt; <a href="/books/' + bookSlug + '/">' + bookTitle + '</a> &gt; <a href="/books/' + bookSlug + '/' + chapterSlug + '.html">' + chapterDisplay + chapterName + '</a> &gt; ' + topicName + '\n' +
-'        </div>\n' +
-'        <a href="/books/' + bookSlug + '/' + chapterSlug + '.html" class="back-link">← Back to ' + chapterDisplay + chapterName + '</a>\n' +
-'        <h1>📝 ' + topicName + '</h1>\n' +
-'        <p class="topic-info">📖 From <strong>' + bookTitle + '</strong> • ' + chapterDisplay + chapterName + ' • ' + totalQs + ' questions available</p>\n' +
-        navHtml + '\n' +
-        definitionHtml + '\n' +
-'        <p style="font-size:0.8rem; color:#64748b; margin-top:4px;">🔄 Last updated: ' + lastUpdated + '</p>\n' +
-        difficultyHtml + '\n' +
-        fullMcqsHtml + '\n' +
-        relatedTopicsHtml + '\n' +
-        navHtml + '\n' +
-'        <div class="footer-links">\n' +
-'            <a href="/quiz" class="btn-primary">🚀 Start Quiz</a>\n' +
-'            <a href="/practice" class="btn-secondary">📝 Practice Mode</a>\n' +
-'        </div>\n' +
+'  <!-- header -->\n' +
+'  <div style="text-align:center; padding:6px 0 12px;">\n' +
+'    <a href="/" style="text-decoration:none;">\n' +
+'      <span style="font-size:1.2rem; font-weight:700; color:#7c3aed; background:white; padding:6px 18px; border-radius:40px; display:inline-block; box-shadow:0 2px 8px rgba(0,0,0,0.08);">🎓 BookMCQ</span>\n' +
+'    </a>\n' +
+'  </div>\n' +
+'\n' +
+'  <div class="card">\n' +
+'    <!-- breadcrumb -->\n' +
+'    <div class="breadcrumb">\n' +
+'      <a href="/">🏠 Home</a> &gt; <a href="/books/' + bookSlug + '/">' + bookTitle + '</a> &gt; <a href="/books/' + bookSlug + '/' + chapterSlug + '.html">' + chapterDisplay + chapterName + '</a> &gt; ' + topicName + '\n' +
 '    </div>\n' +
+'    <a href="/books/' + bookSlug + '/' + chapterSlug + '.html" class="back-link">← Back to ' + chapterDisplay + chapterName + '</a>\n' +
+'    \n' +
+'    <h1>📝 ' + topicName + '</h1>\n' +
+'    <p class="topic-info">📖 From <strong>' + bookTitle + '</strong> • ' + chapterDisplay + chapterName + ' • ' + totalQs + ' questions available</p>\n' +
+'\n' +
+'    <!-- ====== NAVIGATION (fully responsive) ====== -->\n' +
+        navHtml + '\n' +
+'\n' +
+        definitionHtml + '\n' +
+'\n' +
+'    <!-- difficulty badges -->\n' +
+        difficultyHtml + '\n' +
+'\n' +
+'    <!-- all MCQs -->\n' +
+        fullMcqsHtml + '\n' +
+'\n' +
+'    <!-- related topics -->\n' +
+        relatedTopicsHtml + '\n' +
+'\n' +
+'    <!-- bottom navigation (same as top, but keep for consistency) -->\n' +
+        '<div class="nav-container" style="margin-top:16px;">' + generateNavHtml(prevTopic, topic, nextTopic, bookSlug, chapterSlug).replace('<div class="nav-container">', '').replace('</div>', '') + '</div>\n' +
+'\n' +
+'    <div class="footer-links">\n' +
+'      <a href="/quiz" class="btn-primary">🚀 Start Quiz</a>\n' +
+'      <a href="/practice" class="btn-secondary">📝 Practice Mode</a>\n' +
+'    </div>\n' +
+'  </div>\n' +
 '</div>\n' +
 '</body>\n' +
 '</html>';
- 
- 
      
     // ✅ Return the final built string, NOT undefined!
     return finalHtml;
