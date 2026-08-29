@@ -8197,10 +8197,12 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     var topicDefinition = topic.definition || '';
     
     if (topicDefinition) {
+        // Process definition for MathJax - wrap math expressions
+        var processedDefinition = topicDefinition.replace(/\n/g, '<br>');
         definitionHtml = `
             <div style="margin: 8px 0 12px;">
                 <h2 style="font-size:1.2rem; font-weight:700; color:#1e293b; margin-top:8px;">What is ${topicName}?</h2>
-                <p style="text-align:justify; line-height:1.7; color:#334155; font-size:0.95rem; word-break:break-word;">${topicDefinition.replace(/\n/g, '<br>')}</p>
+                <p style="text-align:justify; line-height:1.7; color:#334155; font-size:0.95rem; word-break:break-word;" class="math">${processedDefinition}</p>
             </div>
         `;
     } else {
@@ -8232,7 +8234,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
             var explanationText = q.explanation ? escapeHtmlPreserveMath(q.explanation) : null;
             
             fullMcqsHtml += '<div class="q-block">';
-            fullMcqsHtml += '<p class="q-text">Q' + (idx + 1) + '. ' + questionText + '</p>';
+            fullMcqsHtml += '<p class="q-text math">Q' + (idx + 1) + '. ' + questionText + '</p>';
             
             fullMcqsHtml += '<div class="options-grid">';
             
@@ -8248,7 +8250,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
                 var icon = opt.isCorrect ? ' ✅' : '';
                 fullMcqsHtml += '<div class="opt-item ' + bgClass + '">';
                 fullMcqsHtml += '<span class="label">' + opt.label + '.</span>';
-                fullMcqsHtml += '<span class="text">' + opt.text + icon + '</span>';
+                fullMcqsHtml += '<span class="text math">' + opt.text + icon + '</span>';
                 fullMcqsHtml += '</div>';
             });
             
@@ -8260,7 +8262,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
             if (explanationText) {
                 fullMcqsHtml += `
                     <div class="explanation">
-                        <p><strong>📖 Explanation:</strong> ${explanationText}</p>
+                        <p class="math"><strong>📖 Explanation:</strong> ${explanationText}</p>
                     </div>
                 `;
             }
@@ -8322,7 +8324,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     
     var metaDescription = 'Practice ' + topicName + ' from ' + bookTitle + ' - ' + chapterDisplay + chapterName + '. ' + totalQs + ' MCQs with ' + easyCount + ' easy, ' + mediumCount + ' medium, and ' + hardCount + ' hard questions. Perfect for exam preparation.';
     
-    // ===== BUILD COMPLETE HTML =====
+    // ===== BUILD COMPLETE HTML with MathJax =====
     var finalHtml = '<!DOCTYPE html>\n' +
 '<html lang="en">\n' +
 '<head>\n' +
@@ -8342,6 +8344,75 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
 '  <script type="application/ld+json">\n' + JSON.stringify(schemaData) + '\n' +
 '  <\/script>\n' +
 '  <script src="https://cdn.tailwindcss.com"><\/script>\n' +
+'  <script>\n' +
+'    window.MathJax = {\n' +
+'      tex: {\n' +
+'        inlineMath: [\n' +
+'          [\'$\', \'$\'],\n' +
+'          [\'\\\\(\', \'\\\\)\']\n' +
+'        ],\n' +
+'        displayMath: [\n' +
+'          [\'$$\', \'$$\'],\n' +
+'          [\'\\\\[\', \'\\\\]\']\n' +
+'        ],\n' +
+'        processEscapes: true,\n' +
+'        processEnvironments: true\n' +
+'      },\n' +
+'      svg: {\n' +
+'        fontCache: \'global\'\n' +
+'      },\n' +
+'      options: {\n' +
+'        skipHtmlTypes: \'script\',\n' +
+'        ignoreHtmlClass: \'no-mathjax\',\n' +
+'        processHtmlClass: \'math\'\n' +
+'      }\n' +
+'    };\n' +
+'  <\/script>\n' +
+'  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async><\/script>\n' +
+'  <script>\n' +
+'    function escapeHtmlPreserveMath(text) {\n' +
+'      if (!text) return \'\';\n' +
+'      var escaped = text.replace(/&/g, \'&amp;\')\n' +
+'                        .replace(/</g, \'&lt;\')\n' +
+'                        .replace(/>/g, \'&gt;\')\n' +
+'                        .replace(/"/g, \'&quot;\')\n' +
+'                        .replace(/\'/g, \'&#039;\');\n' +
+'      return escaped;\n' +
+'    }\n' +
+'\n' +
+'    async function renderMathInElement(element) {\n' +
+'      if (window.MathJax && element) {\n' +
+'        try {\n' +
+'          await MathJax.typesetPromise([element]);\n' +
+'        } catch(e) {\n' +
+'          console.log(\'MathJax error:\', e);\n' +
+'        }\n' +
+'      }\n' +
+'    }\n' +
+'\n' +
+'    async function renderAllMath() {\n' +
+'      if (window.MathJax) {\n' +
+'        try {\n' +
+'          await MathJax.typesetPromise();\n' +
+'        } catch(e) {\n' +
+'          console.log(\'MathJax error:\', e);\n' +
+'        }\n' +
+'      }\n' +
+'    }\n' +
+'\n' +
+'    function processMathContent(text) {\n' +
+'      if (!text) return \'\';\n' +
+'      return text;\n' +
+'    }\n' +
+'\n' +
+'    document.addEventListener(\'DOMContentLoaded\', function() {\n' +
+'      renderAllMath();\n' +
+'    });\n' +
+'\n' +
+'    if (window.MathJax) {\n' +
+'      MathJax.typesetPromise = MathJax.typesetPromise || function() { return Promise.resolve(); };\n' +
+'    }\n' +
+'  <\/script>\n' +
 '  <style>\n' +
 '    * { box-sizing: border-box; margin: 0; padding: 0; }\n' +
 '    body {\n' +
@@ -8573,6 +8644,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
 '</div>\n' +
 '</body>\n' +
 '</html>';
+ 
      
     // ✅ Return the final built string, NOT undefined!
     return finalHtml;
