@@ -8202,14 +8202,14 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
         definitionHtml = `
             <div style="margin: 8px 0 12px;">
                 <h2 style="font-size:1.2rem; font-weight:700; color:#1e293b; margin-top:8px;">What is ${topicName}?</h2>
-                <p style="text-align:justify !important; line-height:1.7; color:#334155; font-size:0.95rem; word-break:break-word;" class="math">${processedDefinition}</p>
+                <div class="justify-text math" style="line-height:1.7; color:#334155; font-size:0.95rem; word-break:break-word; text-align:justify;">${processedDefinition}</div>
             </div>
         `;
     } else {
         definitionHtml = `
             <div style="margin: 8px 0 12px;">
                 <h2 style="font-size:1.2rem; font-weight:700; color:#1e293b; margin-top:8px;">What is ${topicName}?</h2>
-                <p style="text-align:justify; line-height:1.7; color:#334155; font-size:0.95rem; word-break:break-word;">No definition available for this topic yet.</p>
+                <div class="justify-text math" style="line-height:1.7; color:#334155; font-size:0.95rem; word-break:break-word; text-align:justify;">No definition available for this topic yet.</div>
             </div>
         `;
     }
@@ -8234,7 +8234,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
             var explanationText = q.explanation ? escapeHtmlPreserveMath(q.explanation) : null;
             
             fullMcqsHtml += '<div class="q-block">';
-            fullMcqsHtml += '<p class="q-text math">Q' + (idx + 1) + '. ' + questionText + '</p>';
+            fullMcqsHtml += '<div class="q-text math justify-text">Q' + (idx + 1) + '. ' + questionText + '</div>';
             
             fullMcqsHtml += '<div class="options-grid">';
             
@@ -8250,7 +8250,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
                 var icon = opt.isCorrect ? ' ✅' : '';
                 fullMcqsHtml += '<div class="opt-item ' + bgClass + '">';
                 fullMcqsHtml += '<span class="label">' + opt.label + '.</span>';
-                fullMcqsHtml += '<span class="text math">' + opt.text + icon + '</span>';
+                fullMcqsHtml += '<span class="text math justify-text">' + opt.text + icon + '</span>';
                 fullMcqsHtml += '</div>';
             });
             
@@ -8262,7 +8262,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
             if (explanationText) {
                 fullMcqsHtml += `
                     <div class="explanation">
-                        <p class="math"><strong>📖 Explanation:</strong> ${explanationText}</p>
+                        <div class="math justify-text" style="font-size:0.8rem; color:#1e293b; line-height:1.5; text-align:justify;"><strong>📖 Explanation:</strong> ${explanationText}</div>
                     </div>
                 `;
             }
@@ -8568,20 +8568,21 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
 '\n' +
 '    /* question blocks */\n' +
 '    .q-block { background: white; padding: 14px 12px; border-radius: 12px; margin-bottom: 16px; border: 1px solid #e5e7eb; }\n' +
-'    .q-text { font-weight: 600; margin: 0 0 10px; line-height: 1.5; text-align: justify !important; }\n' +
+'    .q-text { font-weight: 600; margin: 0 0 10px; line-height: 1.5; }\n' +
 '    .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; font-size: 0.9rem; color: #334155; }\n' +
 '    .opt-item { display: flex; align-items: flex-start; gap: 4px; padding: 2px 0; }\n' +
 '    .opt-item .label { font-weight: 600; color: #8b5cf6; min-width: 18px; }\n' +
-'    .opt-item .text { text-align: justify !important; word-break: break-word; }\n' +
+'    .opt-item .text { word-break: break-word; }\n' +
 '    .opt-correct { background-color: #dcfce7; border-radius: 6px; padding: 4px 6px; }\n' +
 '    .diff-tag { font-size: 0.7rem; color: #8b5cf6; margin-top: 8px; }\n' +
 '    .explanation { margin-top: 10px; padding: 10px 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px; }\n' +
-'    .explanation p { font-size: 0.8rem; color: #1e293b; margin: 0; line-height: 1.5; text-align: justify !important; }\n' +
+'\n' +
+'    /* JUSTIFY TEXT - applied to all text content with this class */\n' +
+'    .justify-text { text-align: justify !important; }\n' +
 '\n' +
 '    @media (max-width: 500px) {\n' +
 '      .options-grid { grid-template-columns: 1fr; gap: 2px; }\n' +
 '      .q-block { padding: 12px 10px; }\n' +
-'      .explanation p { font-size: 0.75rem; }\n' +
 '    }\n' +
 '\n' +
 '    .btn-primary { display: inline-block; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 12px 28px; border-radius: 40px; text-decoration: none; font-weight: 700; margin-top: 8px; transition: 0.2s; border: none; cursor: pointer; }\n' +
