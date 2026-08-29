@@ -1099,6 +1099,19 @@
             flex: 1;
             min-width: 120px;
         }
+     /* Deploy Book Preview Styles */
+#deployBookPreview {
+    transition: all 0.3s ease;
+}
+#deployBookPreview .space-y-0\.5 > div {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 0;
+    border-bottom: 1px dashed #f3f4f6;
+}
+#deployBookPreview .space-y-0\.5 > div:last-child {
+    border-bottom: none;
+}
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -2092,16 +2105,40 @@
             <div id="deploySitemapStatus" class="text-xs text-gray-400 mt-2 h-4"></div>
         </div>
 
-        <!-- All -->
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-red-200 hover:border-red-400 transition deploy-card bg-red-50">
-            <div class="text-3xl mb-2">🚀</div>
-            <h3 class="font-bold text-red-700 text-sm">All Pages</h3>
-            <p class="text-xs text-gray-500 mt-1 mb-3">Deploy Everything</p>
-            <button id="deployAllBtn" class="w-full bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2">
-                <i class="fas fa-bolt"></i> Deploy All
-            </button>
-            <div id="deployAllStatus" class="text-xs text-gray-400 mt-2 h-4"></div>
+<!-- Deploy Entire Book -->
+<div class="bg-white p-4 rounded-xl shadow-sm border border-purple-200 hover:border-purple-400 transition deploy-card bg-purple-50">
+    <div class="text-3xl mb-2">📚</div>
+    <h3 class="font-bold text-purple-700 text-sm">Deploy Book</h3>
+    <p class="text-xs text-gray-500 mt-1 mb-3">One book = All pages</p>
+    
+    <!-- Book Selection -->
+    <div class="mb-2">
+        <select id="deployBookSelector" class="w-full p-2 border rounded-lg text-sm bg-white">
+            <option value="">-- Select Book --</option>
+        </select>
+    </div>
+    
+    <!-- Preview -->
+    <div id="deployBookPreview" class="hidden text-xs bg-white rounded-lg p-2 mb-2 border border-purple-200">
+        <div class="flex justify-between items-center">
+            <span class="font-semibold text-purple-700">📊 Preview</span>
+            <span id="deployBookFileCount" class="font-bold text-purple-700">0 files</span>
         </div>
+        <div class="mt-1 text-gray-600 space-y-0.5">
+            <div>📄 Book Index: <span id="previewBookCount">1</span> file</div>
+            <div>📖 Chapters: <span id="previewChapterCount">0</span> files</div>
+            <div>📝 Topics: <span id="previewTopicCount">0</span> files</div>
+        </div>
+        <div class="mt-1 text-gray-400 text-[10px]">⚠️ This will deploy ALL pages for this book in one commit</div>
+    </div>
+    
+    <!-- Deploy Button -->
+    <button id="deployBookBtn" class="w-full bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+        <i class="fas fa-cloud-upload-alt"></i> Deploy Book
+    </button>
+    
+    <div id="deployBookStatus" class="text-xs text-gray-400 mt-2 h-4"></div>
+   </div>
     </div>
 
     <!-- Settings -->
@@ -6097,6 +6134,7 @@ function generateUrlItemHtml(url, type, isIndented = false) {
             loadDeployBooksForDropdown();
             loadDeployChapterBookFilter();
             loadDeployTopicBookFilter();
+            loadDeployBookSelector();
         }
     }
     
@@ -10128,6 +10166,325 @@ async function deployAllPages() {
 
 // ============ END OF DEPLOY FUNCTIONS ============
 
+
+// ============ DEPLOY ENTIRE BOOK ============
+let deployBookPreviewData = null;
+
+// Load books into the deploy book selector
+async function loadDeployBookSelector() {
+    const select = document.getElementById('deployBookSelector');
+    if (!select) return;
+    
+    const { data: books, error } = await _supabase
+        .from('books')
+        .select('id, title, slug')
+        .order('title');
+    
+    if (error) {
+        console.error('Error loading books:', error);
+        select.innerHTML = '<option value="">Error loading books</option>';
+        return;
+    }
+    
+    select.innerHTML = '<option value="">-- Select Book --</option>';
+    books.forEach(book => {
+        select.innerHTML += `<option value="${book.id}" data-slug="${book.slug}" data-title="${escapeHtml(book.title)}">📚 ${escapeHtml(book.title)}</option>`;
+    });
+}
+
+// Show preview when book is selected
+document.getElementById('deployBookSelector')?.addEventListener('change', async function() {
+    const bookId = this.value;
+    const previewDiv = document.getElementById('deployBookPreview');
+    const deployBtn = document.getElementById('deployBookBtn');
+    const statusEl = document.getElementById('deployBookStatus');
+    
+    if (!bookId) {
+        previewDiv.classList.add('hidden');
+        deployBtn.disabled = true;
+        statusEl.textContent = '';
+        return;
+    }
+    
+    // Show loading preview
+    previewDiv.classList.remove('hidden');
+    document.getElementById('previewChapterCount').textContent = '...';
+    document.getElementById('previewTopicCount').textContent = '...';
+    document.getElementById('deployBookFileCount').textContent = 'Loading...';
+    statusEl.textContent = '⏳ Counting files...';
+    
+    try {
+        // Get book details
+        const { data: book, error: bookError } = await _supabase
+            .from('books')
+            .select('*')
+            .eq('id', parseInt(bookId))
+            .single();
+        
+        if (bookError) throw bookError;
+        
+        // Get chapters
+        const { data: chapters, error: chaptersError } = await _supabase
+            .from('chapters')
+            .select('id')
+            .eq('book_id', parseInt(bookId));
+        
+        if (chaptersError) throw chaptersError;
+        
+        // Get topics
+        let topics = [];
+        if (chapters && chapters.length > 0) {
+            const chapterIds = chapters.map(c => c.id);
+            const { data: topicsData, error: topicsError } = await _supabase
+                .from('subtopics')
+                .select('id')
+                .in('chapter_id', chapterIds);
+            
+            if (!topicsError) topics = topicsData || [];
+        }
+        
+        const chapterCount = chapters?.length || 0;
+        const topicCount = topics?.length || 0;
+        const totalFiles = 1 + chapterCount + topicCount; // index + chapters + topics
+        
+        // Update preview
+        document.getElementById('previewBookCount').textContent = '1';
+        document.getElementById('previewChapterCount').textContent = chapterCount;
+        document.getElementById('previewTopicCount').textContent = topicCount;
+        document.getElementById('deployBookFileCount').textContent = `${totalFiles} files`;
+        
+        // Store for later use
+        deployBookPreviewData = {
+            bookId: parseInt(bookId),
+            bookSlug: book.slug,
+            bookTitle: book.title,
+            chapterCount: chapterCount,
+            topicCount: topicCount,
+            totalFiles: totalFiles
+        };
+        
+        deployBtn.disabled = false;
+        statusEl.textContent = `✅ ${totalFiles} files ready`;
+        statusEl.style.color = '#16a34a';
+        
+    } catch (error) {
+        console.error('Preview error:', error);
+        document.getElementById('deployBookFileCount').textContent = 'Error';
+        statusEl.textContent = '❌ Error loading preview';
+        statusEl.style.color = '#dc2626';
+        deployBtn.disabled = true;
+    }
+});
+
+// Deploy entire book
+async function deployEntireBook() {
+    const select = document.getElementById('deployBookSelector');
+    const bookId = select.value;
+    const deployBtn = document.getElementById('deployBookBtn');
+    const statusEl = document.getElementById('deployBookStatus');
+    
+    if (!bookId) {
+        showToast('Please select a book', true);
+        return;
+    }
+    
+    const config = getGitHubConfig();
+    if (!config) return;
+    
+    // Get book details from preview data
+    if (!deployBookPreviewData || deployBookPreviewData.bookId !== parseInt(bookId)) {
+        showToast('Please wait for preview to load', true);
+        return;
+    }
+    
+    const bookTitle = deployBookPreviewData.bookTitle;
+    const totalFiles = deployBookPreviewData.totalFiles;
+    
+    // Confirmation
+    if (!confirm(`📚 Deploy Entire Book: "${bookTitle}"\n\nThis will deploy:\n• 1 book index page\n• ${deployBookPreviewData.chapterCount} chapter pages\n• ${deployBookPreviewData.topicCount} topic pages\n\nTotal: ${totalFiles} files\n\nThis will create ONE commit with all files.\n\nContinue?`)) {
+        return;
+    }
+    
+    // Disable button and show status
+    deployBtn.disabled = true;
+    deployBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+    statusEl.textContent = '⏳ Generating pages...';
+    statusEl.style.color = '#6b7280';
+    addDeployLog(`📚 Starting deployment for "${bookTitle}"...`, 'info');
+    
+    try {
+        // 1. Fetch book data
+        const { data: book, error: bookError } = await _supabase
+            .from('books')
+            .select('*')
+            .eq('id', parseInt(bookId))
+            .single();
+        
+        if (bookError) throw bookError;
+        
+        // 2. Fetch chapters
+        const { data: chapters, error: chaptersError } = await _supabase
+            .from('chapters')
+            .select('*')
+            .eq('book_id', parseInt(bookId))
+            .order('chapter_number', { ascending: true });
+        
+        if (chaptersError) throw chaptersError;
+        
+        addDeployLog(`📖 Found ${chapters.length} chapters`, 'info');
+        statusEl.textContent = `⏳ Found ${chapters.length} chapters...`;
+        
+        // 3. Fetch topics
+        let topics = [];
+        if (chapters && chapters.length > 0) {
+            const chapterIds = chapters.map(c => c.id);
+            const { data: topicsData, error: topicsError } = await _supabase
+                .from('subtopics')
+                .select('*')
+                .in('chapter_id', chapterIds)
+                .order('chapter_id')
+                .order('name');
+            
+            if (!topicsError) topics = topicsData || [];
+        }
+        
+        addDeployLog(`📝 Found ${topics.length} topics`, 'info');
+        statusEl.textContent = `⏳ Found ${topics.length} topics...`;
+        
+        // 4. Fetch all questions for this book
+        statusEl.textContent = '⏳ Fetching questions...';
+        addDeployLog('🔄 Fetching questions...', 'info');
+        
+        const allQuestions = await fetchQuestionsForBook(book.id);
+        addDeployLog(`✅ Found ${allQuestions.length} questions`, 'info');
+        
+        // 5. Build options map
+        const optionsMap = {};
+        allQuestions.forEach(q => {
+            optionsMap[q.id] = q.options_array || ['', '', '', ''];
+        });
+        
+        // 6. Generate all files
+        statusEl.textContent = '⏳ Generating pages...';
+        deployBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+        
+        const files = [];
+        const bookSlug = book.slug || createSlug(book.title);
+        let fileCount = 0;
+        
+        // 6a. Generate book index
+        addDeployLog(`📄 Generating book index...`, 'info');
+        const chapterQCounts = {};
+        chapters.forEach(ch => {
+            chapterQCounts[ch.id] = allQuestions.filter(q => q.chapter_id === ch.id).length;
+        });
+        
+        const bookStats = { easy: 0, medium: 0, hard: 0 };
+        allQuestions.forEach(q => {
+            const diff = (q.difficulty || '').toLowerCase();
+            if (diff === 'easy') bookStats.easy++;
+            else if (diff === 'medium') bookStats.medium++;
+            else if (diff === 'hard') bookStats.hard++;
+        });
+        
+        const bookIndexHtml = generateBookIndexPage(book, chapters, topics, {}, allQuestions.length, chapterQCounts, bookStats);
+        files.push({ path: `books/${bookSlug}/index.html`, content: bookIndexHtml });
+        fileCount++;
+        
+        // 6b. Generate chapter pages
+        for (const chapter of chapters) {
+            const chapterSlug = chapter.slug || createSlug(chapter.name);
+            const chapterQuestions = allQuestions.filter(q => q.chapter_id === chapter.id);
+            const chapterTopics = topics.filter(t => t.chapter_id === chapter.id);
+            
+            const chapterStats = { easy: 0, medium: 0, hard: 0 };
+            chapterQuestions.forEach(q => {
+                const diff = (q.difficulty || '').toLowerCase();
+                if (diff === 'easy') chapterStats.easy++;
+                else if (diff === 'medium') chapterStats.medium++;
+                else if (diff === 'hard') chapterStats.hard++;
+            });
+            
+            const chapterHtml = generateChapterPage(book, chapter, chapterTopics, chapterQuestions, chapterStats, optionsMap);
+            files.push({ path: `books/${bookSlug}/${chapterSlug}.html`, content: chapterHtml });
+            fileCount++;
+            
+            if (fileCount % 10 === 0) {
+                statusEl.textContent = `⏳ Generated ${fileCount} files...`;
+            }
+        }
+        addDeployLog(`📄 Generated ${fileCount} files so far...`, 'info');
+        
+        // 6c. Generate topic pages
+        for (const topic of topics) {
+            const chapter = chapters.find(c => c.id === topic.chapter_id);
+            if (!chapter) continue;
+            
+            const chapterSlug = chapter.slug || createSlug(chapter.name);
+            const topicSlug = topic.slug || createSlug(topic.name);
+            const topicQuestions = allQuestions.filter(q => q.topic_id === topic.id);
+            const allBookTopics = topics.filter(t => t.chapter_id === chapter.id);
+            
+            const topicStats = { easy: 0, medium: 0, hard: 0 };
+            topicQuestions.forEach(q => {
+                const diff = (q.difficulty || '').toLowerCase();
+                if (diff === 'easy') topicStats.easy++;
+                else if (diff === 'medium') topicStats.medium++;
+                else if (diff === 'hard') topicStats.hard++;
+            });
+            
+            const topicHtml = generateTopicPage(book, chapter, topic, topicQuestions, topicStats, allBookTopics, optionsMap);
+            files.push({ path: `books/${bookSlug}/${chapterSlug}/topics/${topicSlug}.html`, content: topicHtml });
+            fileCount++;
+            
+            if (fileCount % 10 === 0) {
+                statusEl.textContent = `⏳ Generated ${fileCount} files...`;
+            }
+        }
+        
+        addDeployLog(`✅ Generated ${fileCount} files total`, 'success');
+        statusEl.textContent = `⏳ Committing ${fileCount} files...`;
+        deployBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Committing...';
+        
+        // 7. Commit to GitHub
+        const result = await commitToGitHub(files, config);
+        
+        if (result.success) {
+            addDeployLog(`✅ Successfully deployed "${bookTitle}" (${fileCount} files)`, 'success');
+            statusEl.textContent = `✅ Done! ${fileCount} files deployed`;
+            statusEl.style.color = '#16a34a';
+            showToast(`✅ "${bookTitle}" deployed successfully! (${fileCount} files)`);
+            deployBtn.innerHTML = '<i class="fas fa-check-circle"></i> Done!';
+            
+            // Reset after 3 seconds
+            setTimeout(() => {
+                deployBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Deploy Book';
+                deployBtn.disabled = false;
+            }, 3000);
+            
+        } else {
+            throw new Error(result.message || 'Commit failed');
+        }
+        
+    } catch (error) {
+        console.error('Deploy book error:', error);
+        addDeployLog(`❌ Error: ${error.message}`, 'error');
+        statusEl.textContent = `❌ Failed: ${error.message}`;
+        statusEl.style.color = '#dc2626';
+        showToast(`❌ Deployment failed: ${error.message}`, true);
+        deployBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Deploy Book';
+        deployBtn.disabled = false;
+    }
+}
+
+// Event listener for Deploy Book button
+document.getElementById('deployBookBtn')?.addEventListener('click', deployEntireBook);
+
+// Load the book selector when GitHub tab opens
+// Add this to your existing showTab function for 'github'
+// Find the showTab function and add this line inside the 'github' case:
+// loadDeployBookSelector();
+ 
     
     // ============ EVENT LISTENERS ============
     function setupEventListeners() {
@@ -10346,7 +10703,8 @@ document.getElementById('deployAllChaptersBtn').addEventListener('click', deploy
 document.getElementById('deployTopicsBtn').addEventListener('click', deploySelectedTopics);
 document.getElementById('deployAllTopicsBtn').addEventListener('click', deployAllTopics);
 document.getElementById('deploySitemapBtn').addEventListener('click', deploySitemap);
-document.getElementById('deployAllBtn').addEventListener('click', deployAllPages);
+document.getElementById('deployBookBtn').addEventListener('click', deployEntireBook);
+     
 
 
          // ===== NEW: Fix for Edit Topic Chapter Dropdown =====
