@@ -23,7 +23,12 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"CollectionPage","name":"Antiderivative method for area - Calculus","description":"Practice Antiderivative method for area from Calculus - 6. Integration. 27 MCQs with answers, plus 9 easy, 10 medium, and 8 hard questions.","url":"https://www.bookmcq.com/books/calculus/integration/topics/antiderivative-method-for-area.html","isPartOf":{"@type":"Book","name":"Calculus"},"about":{"@type":"Thing","name":"Antiderivative method for area"},"dateModified":"2026-08-07"}
   </script>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Performance Optimizations -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+  <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+  <link rel="preload" as="script" href="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
   <script>
     window.MathJax = {
       tex: {
@@ -45,10 +50,15 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         skipHtmlTypes: 'script',
         ignoreHtmlClass: 'no-mathjax',
         processHtmlClass: 'math'
+      },
+      startup: {
+        ready: function() {
+          console.log('MathJax loaded, waiting for render trigger');
+        }
       }
     };
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" defer></script>
   <script>
     function escapeHtmlPreserveMath(text) {
       if (!text) return '';
@@ -60,23 +70,78 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       return escaped;
     }
 
-    async function renderMathInElement(element) {
-      if (window.MathJax && element) {
-        try {
-          await MathJax.typesetPromise([element]);
-        } catch(e) {
-          console.log('MathJax error:', e);
-        }
+    var mathElements = [];
+    var isRendering = false;
+    var renderQueue = [];
+
+    function renderMathInElement(element) {
+      if (!element) return Promise.resolve();
+      if (!window.MathJax) {
+        // Store element for later rendering
+        mathElements.push(element);
+        return Promise.resolve();
+      }
+      try {
+        return MathJax.typesetPromise([element]);
+      } catch(e) {
+        console.log('MathJax error:', e);
+        return Promise.resolve();
       }
     }
 
-    async function renderAllMath() {
-      if (window.MathJax) {
-        try {
-          await MathJax.typesetPromise();
-        } catch(e) {
-          console.log('MathJax error:', e);
+    function processNextBatch() {
+      if (renderQueue.length === 0) {
+        isRendering = false;
+        return;
+      }
+      var batch = renderQueue.splice(0, 3); // Process 3 elements at a time
+      var promises = batch.map(function(el) {
+        return renderMathInElement(el).catch(function(e) {
+          console.log('Render error:', e);
+        });
+      });
+      Promise.all(promises).then(function() {
+        // Schedule next batch
+        if (renderQueue.length > 0) {
+          requestIdleCallback(processNextBatch, { timeout: 100 });
+        } else {
+          isRendering = false;
         }
+      });
+    }
+
+    function renderAllMath() {
+      if (!window.MathJax) {
+        // MathJax not loaded yet, try again later
+        setTimeout(renderAllMath, 200);
+        return;
+      }
+      
+      if (isRendering) return;
+      isRendering = true;
+
+      // Collect all math elements
+      var elements = document.querySelectorAll('.math');
+      if (elements.length === 0) {
+        isRendering = false;
+        return;
+      }
+
+      // Add any pending elements from before MathJax loaded
+      while (mathElements.length > 0) {
+        renderQueue.push(mathElements.pop());
+      }
+
+      // Add all current elements to queue
+      for (var i = 0; i < elements.length; i++) {
+        renderQueue.push(elements[i]);
+      }
+
+      // Start processing
+      if (renderQueue.length > 0) {
+        requestIdleCallback(processNextBatch, { timeout: 50 });
+      } else {
+        isRendering = false;
       }
     }
 
@@ -85,8 +150,41 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       return text;
     }
 
+    function setupLazyMathRendering() {
+      if (!window.MathJax) {
+        setTimeout(setupLazyMathRendering, 500);
+        return;
+      }
+
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            var element = entry.target;
+            // Only render if not already rendered
+            if (!element.dataset.rendered) {
+              element.dataset.rendered = 'true';
+              renderMathInElement(element);
+            }
+            observer.unobserve(element);
+          }
+        });
+      }, {
+        rootMargin: '200px',
+        threshold: 0.1
+      });
+
+      // Observe all math elements
+      var elements = document.querySelectorAll('.math');
+      for (var i = 0; i < elements.length; i++) {
+        observer.observe(elements[i]);
+      }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
-      renderAllMath();
+      // Initial render - only visible content
+      setTimeout(renderAllMath, 100);
+      // Setup lazy loading for rest
+      setTimeout(setupLazyMathRendering, 300);
     });
 
     if (window.MathJax) {
@@ -249,6 +347,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
     /* question blocks */
     .q-block { background: white; padding: 14px 12px; border-radius: 12px; margin-bottom: 16px; border: 1px solid #e5e7eb; text-align: justify; }
+    .q-block { contain: layout style paint; }
     .q-text { font-weight: 600; margin: 0 0 10px; line-height: 1.5; text-align: justify; }
     .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; font-size: 0.9rem; color: #334155; text-align: justify; }
     .opt-item { display: flex; align-items: flex-start; gap: 4px; padding: 2px 0; text-align: justify; }
@@ -293,7 +392,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </a>
   </div>
 
-  <div class="card">
+  <main class="card">
     <!-- breadcrumb -->
     <div class="breadcrumb">
       <a href="/">🏠 Home</a> &gt; <a href="/books/calculus/">Calculus</a> &gt; <a href="/books/calculus/integration.html">6. Integration</a> &gt; Antiderivative method for area
@@ -437,7 +536,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <a href="/quiz" class="btn-primary">🚀 Start Quiz</a>
       <a href="/practice" class="btn-secondary">📝 Practice Mode</a>
     </div>
-  </div>
+  </main>
 </div>
 </body>
 </html>
