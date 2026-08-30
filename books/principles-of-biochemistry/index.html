@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
 <!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -47,80 +47,275 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     </script>
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async></script>
     <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
         body {
-            font-family: Arial, sans-serif;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background: linear-gradient(135deg, #667eea, #764ba2);
-            margin: 0;
-            padding: 0;
             min-height: 100vh;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
+        
         .container {
             max-width: 1000px;
-            margin: auto;
-            padding: 20px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 0 8px;
         }
+        
         .card {
             background: white;
-            border-radius: 16px;
-            padding: 20px;
-            margin-top: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-radius: 20px;
+            padding: 18px 16px 24px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+            width: 100%;
         }
-        .chapter {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 12px;
-            background: #f3f4f6;
-            cursor: pointer;
-            transition: 0.2s;
+        
+        @media (min-width: 640px) { 
+            .card { padding: 28px 32px; } 
         }
-        .justify-text {
-            text-align: justify;
-            text-justify: inter-word;
+        @media (max-width: 480px) { 
+            .card { padding: 14px 12px; } 
         }
-        .definition-text {
-            text-align: justify;
-            text-justify: inter-word;
-            line-height: 1.8;
+
+        .back-link { 
+            display: inline-block; 
+            margin-bottom: 12px; 
+            color: #7c3aed; 
+            text-decoration: none; 
+            font-weight: 500; 
         }
-        .option-text {
-            text-align: justify;
-            text-justify: inter-word;
+        .back-link:hover { text-decoration: underline; }
+        
+        .breadcrumb { 
+            font-size: 13px; 
+            color: #64748b; 
+            margin-bottom: 10px; 
+            word-break: break-word; 
         }
-        .explanation-text {
-            text-align: justify;
-            text-justify: inter-word;
-            line-height: 1.6;
+        .breadcrumb a { color: #7c3aed; text-decoration: none; }
+        .breadcrumb a:hover { text-decoration: underline; }
+
+        h1 { 
+            font-size: 1.6rem; 
+            line-height: 1.2; 
+            margin: 6px 0 4px; 
+            word-break: break-word; 
         }
-        .chapter:hover {
-            background: #e0e7ff;
-            transform: translateX(5px);
-        }
-        .title {
-            font-weight: bold;
-        }
-        .back-link {
-            display: inline-block;
-            margin-bottom: 15px;
-            color: #7c3aed;
-            text-decoration: none;
-        }
-        .back-link:hover {
-            text-decoration: underline;
-        }
+        @media (max-width: 480px) { h1 { font-size: 1.4rem; } }
+
         .book-meta {
             display: flex;
-            gap: 20px;
             flex-wrap: wrap;
-            margin: 10px 0;
+            gap: 16px 24px;
+            margin: 8px 0 6px;
             font-size: 14px;
-            color: #64748b;
+            color: #475569;
         }
         .book-meta strong {
             color: #1e293b;
+        }
+
+        /* ---- BADGE GRID ---- */
+        .badge-grid { 
+            display: grid; 
+            grid-template-columns: repeat(3,1fr); 
+            gap: 8px; 
+            margin: 14px 0; 
+        }
+        .badge-item { 
+            padding: 10px 4px; 
+            border-radius: 12px; 
+            text-align: center; 
+            border: 1px solid #e5e7eb; 
+        }
+        .badge-item .num { font-size: 1.8rem; font-weight: 700; }
+        .badge-item .lbl { font-size: 0.7rem; color: #64748b; }
+        @media (max-width: 480px) { .badge-item .num { font-size: 1.4rem; } }
+
+        /* ---- CHAPTER ITEMS ---- */
+        .chapter-item {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 18px;
+            margin: 10px 0;
+            background: #f8fafc;
+            border-radius: 12px;
+            border-left: 4px solid #8b5cf6;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            gap: 12px;
+            min-height: 56px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .chapter-item:hover {
+            background: #f1f5f9;
+            transform: translateX(4px);
+        }
+        .chapter-item:active {
+            transform: scale(0.98);
+            background: #e8edf5;
+        }
+
+        .chapter-item .chapter-content {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            min-width: 140px;
+            gap: 4px;
+        }
+        .chapter-item .chapter-title {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 0.95rem;
+            word-break: break-word;
+            line-height: 1.4;
+        }
+        .chapter-item .chapter-actions {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+        .chapter-item .chapter-count {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: white;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            min-width: 50px;
+            text-align: center;
+            white-space: nowrap;
+            letter-spacing: 0.3px;
+        }
+        .chapter-item .chapter-arrow {
+            color: #8b5cf6;
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: transform 0.2s ease;
+        }
+        .chapter-item:hover .chapter-arrow {
+            transform: translateX(3px);
+        }
+
+        /* Mobile responsiveness for chapter items */
+        @media (max-width: 550px) {
+            .chapter-item {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 14px 16px;
+                gap: 8px;
+                min-height: 70px;
+            }
+            .chapter-item .chapter-content {
+                width: 100%;
+                min-width: unset;
+            }
+            .chapter-item .chapter-title {
+                font-size: 0.92rem;
+            }
+            .chapter-item .chapter-actions {
+                width: 100%;
+                justify-content: space-between;
+                padding-top: 4px;
+                border-top: 1px dashed #e5e7eb;
+            }
+            .chapter-item .chapter-count {
+                font-size: 11px;
+                padding: 3px 12px;
+                min-width: 45px;
+            }
+            .chapter-item .chapter-arrow {
+                font-size: 12px;
+            }
+            .chapter-item:active {
+                transform: scale(0.97);
+            }
+        }
+
+        @media (max-width: 380px) {
+            .chapter-item {
+                padding: 12px 12px;
+                gap: 6px;
+            }
+            .chapter-item .chapter-title {
+                font-size: 0.85rem;
+            }
+            .chapter-item .chapter-actions {
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+            .chapter-item .chapter-count {
+                font-size: 10px;
+                padding: 2px 10px;
+            }
+        }
+
+        /* ---- BUTTONS ---- */
+        .btn-primary {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 12px 28px;
+            border-radius: 40px;
+            text-decoration: none;
+            font-weight: 700;
+            margin-top: 8px;
+            transition: 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-primary:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 8px 20px rgba(102,126,234,0.4); 
+        }
+
+        .btn-secondary {
+            display: inline-block;
+            background: #f1f5f9;
+            color: #1e293b;
+            padding: 10px 22px;
+            border-radius: 40px;
+            text-decoration: none;
+            font-weight: 500;
+            border: 1px solid #d1d5db;
+        }
+        .btn-secondary:hover { background: #e5e7eb; }
+
+        .footer-links { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 10px; 
+            justify-content: center; 
+            margin-top: 18px; 
+        }
+
+        img, svg { max-width: 100%; height: auto; }
+        .math { display: inline; }
+        
+        /* ---- RESPONSIVE TEXT ADJUSTMENTS ---- */
+        @media (max-width: 480px) {
+            .breadcrumb { font-size: 11px; }
+            .book-meta { font-size: 12px; gap: 10px 16px; }
+            .btn-primary, .btn-secondary { 
+                padding: 10px 20px; 
+                font-size: 0.9rem;
+                width: 100%;
+                text-align: center;
+            }
+            .footer-links { 
+                flex-direction: column; 
+                align-items: stretch; 
+                gap: 8px; 
+            }
         }
     </style>
 </head>
@@ -129,30 +324,40 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PT363CT7"
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
-<!-- Website Header -->
-<div style="text-align:center; padding:10px 0 5px 0;">
-    <a href="/" style="text-decoration:none;">
-        <span style="font-size:18px; font-weight:700; color:#7c3aed; background:white; padding:6px 20px; border-radius:30px; display:inline-block; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
-            🎓 BookMCQ
-        </span>
-    </a>
-</div>
+
 <div class="container">
+    <!-- header -->
+    <div style="text-align:center; padding:6px 0 12px;">
+        <a href="/" style="text-decoration:none;">
+            <span style="font-size:1.2rem; font-weight:700; color:#7c3aed; background:white; padding:6px 18px; border-radius:40px; display:inline-block; box-shadow:0 2px 8px rgba(0,0,0,0.08);">🎓 BookMCQ</span>
+        </a>
+    </div>
+
     <div class="card">
+        <!-- breadcrumb -->
+        <div class="breadcrumb">
+            <a href="/">🏠 Home</a> &gt; Principles of Biochemistry
+        </div>
         <a href="/" class="back-link">← Back to Home</a>
-        <h1>Principles of Biochemistry MCQs</h1>
+        <h1>📚 Principles of Biochemistry MCQs</h1>
         <div class="book-meta">
             <span><strong>Category:</strong> Biology</span>
             <span><strong>Total Questions:</strong> 223</span>
             <span><strong>Chapters:</strong> 1</span>
         </div>
 
-        <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">About Principles of Biochemistry</h2>
-        <p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">Biochemistry is the science that explains life at the molecular level, and this book takes you on a complete journey through that molecular world. It is organized into a logical sequence, beginning with the simplest chemical principles and building upward to the most complex cellular systems. The foundational chapters establish the essential chemistry of life, covering the properties of <b>water</b>, the concept of <b>pH and buffers</b>, and the principles of <b>thermodynamics</b> that govern all biological reactions. This groundwork is crucial because it provides the chemical rules that every living cell must follow, from bacteria to humans.</p><p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">The next group of chapters introduces the four major classes of biomolecules that make up all living matter. You will explore <b>amino acids and proteins</b>, learning how their unique sequences determine their three-dimensional structures and specific functions, including how enzymes work as biological catalysts. You will then study <b>carbohydrates</b>, from simple sugars to complex storage and structural polysaccharides, followed by <b>lipids</b>, which include fats, phospholipids, and steroids that form membranes and store energy. Finally, you will examine <b>nucleotides and nucleic acids</b>, the molecules responsible for storing and transmitting genetic information. These chapters emphasize the critical relationship between structure and function – showing how the shape of a molecule determines its role in the cell.</p><p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">A major portion of the book is dedicated to <b>metabolism</b>, the network of chemical reactions that extract and transform energy to sustain life. You will work through the central pathways of energy metabolism step by step, starting with <b>glycolysis</b>, which breaks down glucose to release energy. You will then progress to the <b>citric acid cycle</b>, which processes carbon fuels, and finally to <b>oxidative phosphorylation</b>, where the majority of cellular energy in the form of ATP is produced. The book also covers <b>photosynthesis</b>, showing how plants convert light into chemical energy, as well as the metabolism of lipids, amino acids, and nucleotides. Each pathway is presented with clear diagrams and a focus on how these processes are regulated and interconnected.</p><p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">The final chapters explore the flow of genetic information and cellular communication. You will study <b>DNA replication</b>, understanding how genetic material is faithfully copied before cell division, followed by <b>transcription</b>, the synthesis of RNA from DNA templates, and <b>translation</b>, where the genetic code is read to build proteins. These chapters also cover the regulation of gene expression, explaining how cells control which genes are active at any given time. The book concludes with <b>cell signaling and hormonal communication</b>, detailing how cells receive, process, and respond to chemical signals from their environment. Through this comprehensive structure, the book transforms biochemistry from a collection of isolated facts into a unified, coherent story about the molecular machinery that powers all life.</p>
-        <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
-            <p>Practice chapter-wise MCQs for <strong>Principles of Biochemistry</strong>. This book contains <strong>1 chapters</strong> and <strong>223 questions</strong> across easy, medium, and hard difficulty levels.</p>
-<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:16px 0;"><div style="background:#dcfce7; padding:12px; border-radius:10px; text-align:center; border:1px solid #86efac;"><div style="font-size:24px; font-weight:700; color:#166534;">67</div><div style="font-size:12px; color:#64748b;">Easy Questions</div></div><div style="background:#fef9c3; padding:12px; border-radius:10px; text-align:center; border:1px solid #fde047;"><div style="font-size:24px; font-weight:700; color:#854d0e;">85</div><div style="font-size:12px; color:#64748b;">Medium Questions</div></div><div style="background:#fee2e2; padding:12px; border-radius:10px; text-align:center; border:1px solid #fca5a5;"><div style="font-size:24px; font-weight:700; color:#991b1b;">71</div><div style="font-size:12px; color:#64748b;">Hard Questions</div></div></div>        <h2 style="margin-top:20px;">📚 Chapters</h2>
-<div class="chapter" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry.html'" style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; margin:10px 0; border-radius:12px; background:#f3f4f6; cursor:pointer; transition:0.2s;"><div><div class="title">1. The Foundations of Biochemistry</div><div style="margin-left: 20px; margin-top: 8px;"><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/archaea-archaebacteria.html'">📝 Archaea (archaebacteria)</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/autotrophs-vs-heterotrophs-carbon-sources.html'">📝 Autotrophs vs Heterotrophs carbon sources</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/bacteria-eubacteria.html'">📝 Bacteria (eubacteria)</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/biological-molecular-complexes.html'">📝 Biological Molecular Complexes</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/cell-dimensions-and-oxygen-diffusion.html'">📝 Cell dimensions and oxygen diffusion</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/cell-fractionation-method.html'">📝 Cell fractionation method</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/cell-structure-and-functional-units.html'">📝 Cell structure and functional units</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/cellular-foundations.html'">📝 Cellular Foundations</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/chloroplast-structure-photosynthesis.html'">📝 Chloroplast structure photosynthesis</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/differential-centrifugation-and-cell-fractionation.html'">📝 Differential Centrifugation and Cell Fractionation</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/endoplasmic-reticulum-structure-and-functions.html'">📝 Endoplasmic Reticulum Structure and Functions</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/escherichia-coli-as-a-model-prokaryote.html'">📝 Escherichia coli as a model prokaryote</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/eukarya-eukaryotes.html'">📝 Eukarya (eukaryotes)</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/eukaryotic-cell-organelles.html'">📝 Eukaryotic cell organelles</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/lithotrophs-vs-organotrophs-electron-sources.html'">📝 Lithotrophs vs Organotrophs electron sources</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/lysosomal-function-and-intracellular-digestion.html'">📝 Lysosomal Function and Intracellular Digestion</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/mitochondrial-structure-and-function.html'">📝 Mitochondrial Structure and Function</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/nucleus-structure-and-function.html'">📝 Nucleus structure and function</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/phototrophs-vs-chemotrophs-energy-sources.html'">📝 Phototrophs vs Chemotrophs energy sources</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/vacuoles-function-in-plant-cells.html'">📝 Vacuoles function in plant cells</div></div></div><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#7c3aed; color:white; padding:4px 14px; border-radius:20px; font-size:14px; font-weight:700; min-width:60px; text-align:center;">223 MCQs</span><span style="color:#7c3aed; font-size:14px; font-weight:600;">View Chapter →</span></div></div>    </div>
+            <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">About Principles of Biochemistry</h2>
+            <p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">Biochemistry is the science that explains life at the molecular level, and this book takes you on a complete journey through that molecular world. It is organized into a logical sequence, beginning with the simplest chemical principles and building upward to the most complex cellular systems. The foundational chapters establish the essential chemistry of life, covering the properties of <b>water</b>, the concept of <b>pH and buffers</b>, and the principles of <b>thermodynamics</b> that govern all biological reactions. This groundwork is crucial because it provides the chemical rules that every living cell must follow, from bacteria to humans.</p><p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">The next group of chapters introduces the four major classes of biomolecules that make up all living matter. You will explore <b>amino acids and proteins</b>, learning how their unique sequences determine their three-dimensional structures and specific functions, including how enzymes work as biological catalysts. You will then study <b>carbohydrates</b>, from simple sugars to complex storage and structural polysaccharides, followed by <b>lipids</b>, which include fats, phospholipids, and steroids that form membranes and store energy. Finally, you will examine <b>nucleotides and nucleic acids</b>, the molecules responsible for storing and transmitting genetic information. These chapters emphasize the critical relationship between structure and function – showing how the shape of a molecule determines its role in the cell.</p><p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">A major portion of the book is dedicated to <b>metabolism</b>, the network of chemical reactions that extract and transform energy to sustain life. You will work through the central pathways of energy metabolism step by step, starting with <b>glycolysis</b>, which breaks down glucose to release energy. You will then progress to the <b>citric acid cycle</b>, which processes carbon fuels, and finally to <b>oxidative phosphorylation</b>, where the majority of cellular energy in the form of ATP is produced. The book also covers <b>photosynthesis</b>, showing how plants convert light into chemical energy, as well as the metabolism of lipids, amino acids, and nucleotides. Each pathway is presented with clear diagrams and a focus on how these processes are regulated and interconnected.</p><p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">The final chapters explore the flow of genetic information and cellular communication. You will study <b>DNA replication</b>, understanding how genetic material is faithfully copied before cell division, followed by <b>transcription</b>, the synthesis of RNA from DNA templates, and <b>translation</b>, where the genetic code is read to build proteins. These chapters also cover the regulation of gene expression, explaining how cells control which genes are active at any given time. The book concludes with <b>cell signaling and hormonal communication</b>, detailing how cells receive, process, and respond to chemical signals from their environment. Through this comprehensive structure, the book transforms biochemistry from a collection of isolated facts into a unified, coherent story about the molecular machinery that powers all life.</p>
+            <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
+                <p style="text-align:justify; line-height:1.7; color:#334155; font-size:0.95rem;">Practice chapter-wise MCQs for <strong>Principles of Biochemistry</strong>. This book contains <strong>1 chapters</strong> and <strong>223 questions</strong> across easy, medium, and hard difficulty levels.</p>
+<div class="badge-grid"><div class="badge-item" style="background:#dcfce7; border-color:#86efac;"><div class="num" style="color:#166534;">67</div><div class="lbl">Easy</div></div><div class="badge-item" style="background:#fef9c3; border-color:#fde047;"><div class="num" style="color:#854d0e;">85</div><div class="lbl">Medium</div></div><div class="badge-item" style="background:#fee2e2; border-color:#fca5a5;"><div class="num" style="color:#991b1b;">71</div><div class="lbl">Hard</div></div></div>        <h2 style="font-size:17px; font-weight:700; color:#1e293b; margin-top:20px; margin-bottom:14px;">📚 Chapters</h2>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+<div class="chapter-item" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry.html'"><div class="chapter-content"><div class="chapter-title">1. The Foundations of Biochemistry</div><div style="margin-left: 20px; margin-top: 8px;"><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/cellular-foundations.html'">📝 Cellular Foundations</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/cell-structure-and-functional-units.html'">📝 Cell structure and functional units</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/phototrophs-vs-chemotrophs-energy-sources.html'">📝 Phototrophs vs Chemotrophs energy sources</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/cell-dimensions-and-oxygen-diffusion.html'">📝 Cell dimensions and oxygen diffusion</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/archaea-archaebacteria.html'">📝 Archaea (archaebacteria)</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/bacteria-eubacteria.html'">📝 Bacteria (eubacteria)</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/eukarya-eukaryotes.html'">📝 Eukarya (eukaryotes)</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/autotrophs-vs-heterotrophs-carbon-sources.html'">📝 Autotrophs vs Heterotrophs carbon sources</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/lithotrophs-vs-organotrophs-electron-sources.html'">📝 Lithotrophs vs Organotrophs electron sources</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/escherichia-coli-as-a-model-prokaryote.html'">📝 Escherichia coli as a model prokaryote</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/nucleus-structure-and-function.html'">📝 Nucleus structure and function</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/mitochondrial-structure-and-function.html'">📝 Mitochondrial Structure and Function</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/endoplasmic-reticulum-structure-and-functions.html'">📝 Endoplasmic Reticulum Structure and Functions</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/biological-molecular-complexes.html'">📝 Biological Molecular Complexes</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/lysosomal-function-and-intracellular-digestion.html'">📝 Lysosomal Function and Intracellular Digestion</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/chloroplast-structure-photosynthesis.html'">📝 Chloroplast structure photosynthesis</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/vacuoles-function-in-plant-cells.html'">📝 Vacuoles function in plant cells</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/eukaryotic-cell-organelles.html'">📝 Eukaryotic cell organelles</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/cell-fractionation-method.html'">📝 Cell fractionation method</div><div style="padding: 4px 8px; font-size: 13px; color: #6b7280; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/differential-centrifugation-and-cell-fractionation.html'">📝 Differential Centrifugation and Cell Fractionation</div></div></div><div class="chapter-actions"><span class="chapter-count">223 MCQs</span><span class="chapter-arrow">View Chapter →</span></div></div>        </div>
+        <div class="footer-links">
+            <a href="/quiz" class="btn-primary">🚀 Start Quiz</a>
+            <a href="/practice" class="btn-secondary">📝 Practice Mode</a>
+        </div>
+    </div>
 </div>
 </body>
 </html>
