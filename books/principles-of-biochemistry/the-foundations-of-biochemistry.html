@@ -90,6 +90,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     </script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
+        
         body {
             font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background: linear-gradient(135deg, #667eea, #764ba2);
@@ -99,12 +100,14 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             flex-direction: column;
             align-items: center;
         }
+        
         .container {
             max-width: 900px;
             width: 100%;
             margin: 0 auto;
             padding: 0 8px;
         }
+        
         .card {
             background: white;
             border-radius: 20px;
@@ -112,104 +115,190 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             box-shadow: 0 12px 30px rgba(0,0,0,0.15);
             width: 100%;
         }
-        @media (min-width: 640px) { .card { padding: 28px 32px; } }
-        @media (max-width: 480px) { .card { padding: 14px 12px; } }
+        
+        @media (min-width: 640px) { 
+            .card { padding: 28px 32px; } 
+        }
+        @media (max-width: 480px) { 
+            .card { padding: 14px 12px; } 
+        }
 
-        .back-link { display: inline-block; margin-bottom: 12px; color: #7c3aed; text-decoration: none; font-weight: 500; }
+        .back-link { 
+            display: inline-block; 
+            margin-bottom: 12px; 
+            color: #7c3aed; 
+            text-decoration: none; 
+            font-weight: 500; 
+        }
         .back-link:hover { text-decoration: underline; }
-        .breadcrumb { font-size: 13px; color: #64748b; margin-bottom: 10px; word-break: break-word; }
+        
+        .breadcrumb { 
+            font-size: 13px; 
+            color: #64748b; 
+            margin-bottom: 10px; 
+            word-break: break-word; 
+        }
         .breadcrumb a { color: #7c3aed; text-decoration: none; }
         .breadcrumb a:hover { text-decoration: underline; }
 
-        h1 { font-size: 1.6rem; line-height: 1.2; margin: 6px 0 4px; word-break: break-word; }
+        h1 { 
+            font-size: 1.6rem; 
+            line-height: 1.2; 
+            margin: 6px 0 4px; 
+            word-break: break-word; 
+        }
         @media (max-width: 480px) { h1 { font-size: 1.4rem; } }
 
-        .chapter-info { font-size: 0.9rem; color: #475569; margin: 6px 0 10px; }
+        .chapter-info { 
+            font-size: 0.9rem; 
+            color: #475569; 
+            margin: 6px 0 10px; 
+        }
 
-        /* ---- BADGE GRID (matching topic page) ---- */
-        .badge-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 14px 0; }
-        .badge-item { padding: 10px 4px; border-radius: 12px; text-align: center; border: 1px solid #e5e7eb; }
+        /* ---- BADGE GRID ---- */
+        .badge-grid { 
+            display: grid; 
+            grid-template-columns: repeat(3,1fr); 
+            gap: 8px; 
+            margin: 14px 0; 
+        }
+        .badge-item { 
+            padding: 10px 4px; 
+            border-radius: 12px; 
+            text-align: center; 
+            border: 1px solid #e5e7eb; 
+        }
         .badge-item .num { font-size: 1.8rem; font-weight: 700; }
         .badge-item .lbl { font-size: 0.7rem; color: #64748b; }
         @media (max-width: 480px) { .badge-item .num { font-size: 1.4rem; } }
 
-        /* ---- TOPIC ITEMS (FIXED FOR MOBILE) ---- */
+        /* ---- TOPIC ITEMS (ENHANCED FOR MOBILE) ---- */
         .topic-item {
             display: flex;
             flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 16px;
+            padding: 14px 18px;
             background: #f8fafc;
-            border-radius: 10px;
+            border-radius: 12px;
             border-left: 4px solid #8b5cf6;
             cursor: pointer;
-            transition: 0.2s;
-            gap: 8px;
+            transition: all 0.25s ease;
+            gap: 10px;
+            min-height: 56px;
+            -webkit-tap-highlight-color: transparent;
         }
-        .topic-item:hover { background: #f1f5f9; }
+        .topic-item:hover {
+            background: #f1f5f9;
+            transform: translateX(4px);
+        }
+        .topic-item:active {
+            transform: scale(0.98);
+            background: #e8edf5;
+        }
+
+        .topic-item .topic-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1 1 auto;
+            min-width: 140px;
+        }
+        .topic-item .topic-icon {
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
         .topic-item .topic-name {
             font-weight: 500;
             color: #1e293b;
-            flex: 1 1 auto;
-            min-width: 120px;
+            font-size: 0.95rem;
             word-break: break-word;
+            line-height: 1.4;
         }
-        .topic-item .topic-meta {
+        .topic-item .topic-actions {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 14px;
             flex-shrink: 0;
             flex-wrap: wrap;
         }
         .topic-item .topic-count {
-            background: #8b5cf6;
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
             color: white;
-            padding: 2px 12px;
-            border-radius: 16px;
-            font-size: 13px;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 12px;
             font-weight: 600;
-            min-width: 45px;
+            min-width: 50px;
             text-align: center;
             white-space: nowrap;
+            letter-spacing: 0.3px;
         }
         .topic-item .topic-arrow {
             color: #8b5cf6;
             font-size: 13px;
-            font-weight: 500;
+            font-weight: 600;
             white-space: nowrap;
+            transition: transform 0.2s ease;
         }
-        @media (max-width: 500px) {
+        .topic-item:hover .topic-arrow {
+            transform: translateX(3px);
+        }
+
+        /* Mobile responsiveness for topics */
+        @media (max-width: 550px) {
             .topic-item {
                 flex-direction: column;
-                align-items: flex-start;
-                padding: 14px 14px;
+                align-items: stretch;
+                padding: 14px 16px;
                 gap: 8px;
+                min-height: 70px;
+            }
+            .topic-item .topic-content {
+                width: 100%;
+                min-width: unset;
             }
             .topic-item .topic-name {
-                font-size: 0.9rem;
-                width: 100%;
+                font-size: 0.92rem;
             }
-            .topic-item .topic-meta {
+            .topic-item .topic-actions {
                 width: 100%;
                 justify-content: space-between;
+                padding-top: 4px;
+                border-top: 1px dashed #e5e7eb;
             }
             .topic-item .topic-count {
-                font-size: 12px;
-                padding: 2px 10px;
+                font-size: 11px;
+                padding: 3px 12px;
+                min-width: 45px;
             }
             .topic-item .topic-arrow {
                 font-size: 12px;
             }
-        }
-        @media (max-width: 380px) {
-            .topic-item .topic-meta {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 6px;
+            .topic-item:active {
+                transform: scale(0.97);
             }
         }
 
+        @media (max-width: 380px) {
+            .topic-item {
+                padding: 12px 12px;
+                gap: 6px;
+            }
+            .topic-item .topic-name {
+                font-size: 0.85rem;
+            }
+            .topic-item .topic-actions {
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+            .topic-item .topic-count {
+                font-size: 10px;
+                padding: 2px 10px;
+            }
+        }
+
+        /* ---- BUTTONS ---- */
         .btn-primary {
             display: inline-block;
             background: linear-gradient(135deg, #667eea, #764ba2);
@@ -223,7 +312,10 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             border: none;
             cursor: pointer;
         }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(102,126,234,0.4); }
+        .btn-primary:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 8px 20px rgba(102,126,234,0.4); 
+        }
 
         .btn-secondary {
             display: inline-block;
@@ -237,10 +329,33 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         }
         .btn-secondary:hover { background: #e5e7eb; }
 
-        .footer-links { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 18px; }
+        .footer-links { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 10px; 
+            justify-content: center; 
+            margin-top: 18px; 
+        }
 
         img, svg { max-width: 100%; height: auto; }
         .math { display: inline; }
+        
+        /* ---- RESPONSIVE TEXT ADJUSTMENTS ---- */
+        @media (max-width: 480px) {
+            .breadcrumb { font-size: 11px; }
+            .chapter-info { font-size: 0.8rem; }
+            .btn-primary, .btn-secondary { 
+                padding: 10px 20px; 
+                font-size: 0.9rem;
+                width: 100%;
+                text-align: center;
+            }
+            .footer-links { 
+                flex-direction: column; 
+                align-items: stretch; 
+                gap: 8px; 
+            }
+        }
     </style>
 </head>
 <body>
@@ -266,12 +381,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <h1>📖 1. The Foundations of Biochemistry</h1>
         <p class="chapter-info">📖 From <strong>Principles of Biochemistry</strong> • 223 questions available</p>
 
-        <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">About 1. The Foundations of Biochemistry</h2>
-        <p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;"><b>Foundations of Biochemistry</b> is the opening chapter that establishes the core chemical and biological principles needed to understand life at a molecular level. It begins by defining the key classes of biomolecules—<b>carbohydrates, lipids, proteins, and nucleic acids</b>—and explains how their unique structures determine their functions in cells. The chapter then introduces the concept of <b>cellular organization</b>, comparing prokaryotic and eukaryotic cells, and highlights the importance of <b>water</b> as the solvent for all biochemical reactions, focusing on its polarity, hydrogen bonding, and role in maintaining pH through buffers.</p><p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">Moving from structure to energy, the chapter covers <b>thermodynamics in living systems</b>, explaining how cells obtain, store, and use energy via ATP and coupled reactions. It introduces <b>enzymes</b> as biological catalysts that speed up reactions without being consumed, and discusses factors like activation energy and specificity. Finally, the foundations touch on <b>metabolic pathways</b>—the organized sequences of chemical reactions—and the principle of <b>dynamic steady state</b>, where cells maintain internal balance while constantly exchanging matter and energy with their surroundings. These ideas form the essential toolkit for exploring all subsequent topics in biochemistry.</p>
-        <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
-            <p style="text-align:justify; line-height:1.7; color:#334155; font-size:0.95rem;">Practice MCQs for 1. The Foundations of Biochemistry. Test your knowledge with carefully crafted questions across easy, medium, and hard difficulty levels.</p>
+            <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">About 1. The Foundations of Biochemistry</h2>
+            <p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;"><b>Foundations of Biochemistry</b> is the opening chapter that establishes the core chemical and biological principles needed to understand life at a molecular level. It begins by defining the key classes of biomolecules—<b>carbohydrates, lipids, proteins, and nucleic acids</b>—and explains how their unique structures determine their functions in cells. The chapter then introduces the concept of <b>cellular organization</b>, comparing prokaryotic and eukaryotic cells, and highlights the importance of <b>water</b> as the solvent for all biochemical reactions, focusing on its polarity, hydrogen bonding, and role in maintaining pH through buffers.</p><p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">Moving from structure to energy, the chapter covers <b>thermodynamics in living systems</b>, explaining how cells obtain, store, and use energy via ATP and coupled reactions. It introduces <b>enzymes</b> as biological catalysts that speed up reactions without being consumed, and discusses factors like activation energy and specificity. Finally, the foundations touch on <b>metabolic pathways</b>—the organized sequences of chemical reactions—and the principle of <b>dynamic steady state</b>, where cells maintain internal balance while constantly exchanging matter and energy with their surroundings. These ideas form the essential toolkit for exploring all subsequent topics in biochemistry.</p>
+            <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
+                <p style="text-align:justify; line-height:1.7; color:#334155; font-size:0.95rem;">Practice MCQs for 1. The Foundations of Biochemistry. Test your knowledge with carefully crafted questions across easy, medium, and hard difficulty levels.</p>
         <p style="font-size:13px; color:#94a3b8; margin-top:6px;">🔄 Last updated: 2026-08-30</p>
-<div class="badge-grid"><div class="badge-item" style="background:#dcfce7; border-color:#86efac;"><div class="num" style="color:#166534;">67</div><div class="lbl">Easy</div></div><div class="badge-item" style="background:#fef9c3; border-color:#fde047;"><div class="num" style="color:#854d0e;">85</div><div class="lbl">Medium</div></div><div class="badge-item" style="background:#fee2e2; border-color:#fca5a5;"><div class="num" style="color:#991b1b;">71</div><div class="lbl">Hard</div></div></div><div style="margin:16px 0;"><h3 style="font-size:16px; color:#1e293b; margin-bottom:12px;">📌 Topics in this Chapter</h3><div style="display:flex; flex-direction:column; gap:8px;"><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/cellular-foundations.html'" class="topic-item"><span class="topic-name">📝 Cellular Foundations</span><div class="topic-meta"><span class="topic-count">13 MCQs</span><span class="topic-arrow">View Topic →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/cell-structure-and-functional-units.html'" class="topic-item"><span class="topic-name">📝 Cell structure and functional units</span><div class="topic-meta"><span class="topic-count">15 MCQs</span><span class="topic-arrow">View Topic →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/phototrophs-vs-chemotrophs-energy-sources.html'" class="topic-item"><span class="topic-name">📝 Phototrophs vs Chemotrophs energy sources</span><div class="topic-meta"><span class="topic-count">13 MCQs</span><span class="topic-arrow">View Topic →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/cell-dimensions-and-oxygen-diffusion.html'" class="topic-item"><span class="topic-name">📝 Cell dimensions and oxygen diffusion</span><div class="topic-meta"><span class="topic-count">15 MCQs</span><span class="topic-arrow">View Topic →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/archaea-archaebacteria.html'" class="topic-item"><span class="topic-name">📝 Archaea (archaebacteria)</span><div class="topic-meta"><span class="topic-count">13 MCQs</span><span class="topic-arrow">View Topic →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/bacteria-eubacteria.html'" class="topic-item"><span class="topic-name">📝 Bacteria (eubacteria)</span><div class="topic-meta"><span class="topic-count">15 MCQs</span><span class="topic-arrow">View Topic →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/eukarya-eukaryotes.html'" class="topic-item"><span class="topic-name">📝 Eukarya (eukaryotes)</span><div class="topic-meta"><span class="topic-count">16 MCQs</span><span class="topic-arrow">View Topic →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/autotrophs-vs-heterotrophs-carbon-sources.html'" class="topic-item"><span class="topic-name">📝 Autotrophs vs Heterotrophs carbon sources</span><div class="topic-meta"><span class="topic-count">15 MCQs</span><span class="topic-arrow">View Topic →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/lithotrophs-vs-organotrophs-electron-sources.html'" class="topic-item"><span class="topic-name">📝 Lithotrophs vs Organotrophs electron sources</span><div class="topic-meta"><span class="topic-count">15 MCQs</span><span class="topic-arrow">View Topic →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/escherichia-coli-as-a-model-prokaryote.html'" class="topic-item"><span class="topic-name">📝 Escherichia coli as a model prokaryote</span><div class="topic-meta"><span class="topic-count">13 MCQs</span><span class="topic-arrow">View Topic →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/nucleus-structure-and-function.html'" class="topic-item"><span class="topic-name">📝 Nucleus structure and function</span><div class="topic-meta"><span class="topic-count">8 MCQs</span><span class="topic-arrow">View Topic →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/mitochondrial-structure-and-function.html'" class="topic-item"><span class="topic-name">📝 Mitochondrial Structure and Function</span><div class="topic-meta"><span class="topic-count">8 MCQs</span><span class="topic-arrow">View Topic →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/endoplasmic-reticulum-structure-and-functions.html'" class="topic-item"><span class="topic-name">📝 Endoplasmic Reticulum Structure and Functions</span><div class="topic-meta"><span class="topic-count">8 MCQs</span><span class="topic-arrow">View Topic →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/biological-molecular-complexes.html'" class="topic-item"><span class="topic-name">📝 Biological Molecular Complexes</span><div class="topic-meta"><span class="topic-count">8 MCQs</span><span class="topic-arrow">View Topic →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/lysosomal-function-and-intracellular-digestion.html'" class="topic-item"><span class="topic-name">📝 Lysosomal Function and Intracellular Digestion</span><div class="topic-meta"><span class="topic-count">8 MCQs</span><span class="topic-arrow">View Topic →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/chloroplast-structure-photosynthesis.html'" class="topic-item"><span class="topic-name">📝 Chloroplast structure photosynthesis</span><div class="topic-meta"><span class="topic-count">8 MCQs</span><span class="topic-arrow">View Topic →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/vacuoles-function-in-plant-cells.html'" class="topic-item"><span class="topic-name">📝 Vacuoles function in plant cells</span><div class="topic-meta"><span class="topic-count">8 MCQs</span><span class="topic-arrow">View Topic →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/eukaryotic-cell-organelles.html'" class="topic-item"><span class="topic-name">📝 Eukaryotic cell organelles</span><div class="topic-meta"><span class="topic-count">8 MCQs</span><span class="topic-arrow">View Topic →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/cell-fractionation-method.html'" class="topic-item"><span class="topic-name">📝 Cell fractionation method</span><div class="topic-meta"><span class="topic-count">8 MCQs</span><span class="topic-arrow">View Topic →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/differential-centrifugation-and-cell-fractionation.html'" class="topic-item"><span class="topic-name">📝 Differential Centrifugation and Cell Fractionation</span><div class="topic-meta"><span class="topic-count">8 MCQs</span><span class="topic-arrow">View Topic →</span></div></div></div></div>        <div class="footer-links">
+<div class="badge-grid"><div class="badge-item" style="background:#dcfce7; border-color:#86efac;"><div class="num" style="color:#166534;">67</div><div class="lbl">Easy</div></div><div class="badge-item" style="background:#fef9c3; border-color:#fde047;"><div class="num" style="color:#854d0e;">85</div><div class="lbl">Medium</div></div><div class="badge-item" style="background:#fee2e2; border-color:#fca5a5;"><div class="num" style="color:#991b1b;">71</div><div class="lbl">Hard</div></div></div><div style="margin:20px 0;"><h3 style="font-size:17px; font-weight:700; color:#1e293b; margin-bottom:14px;">📌 Topics in this Chapter</h3><div style="display:flex; flex-direction:column; gap:10px;"><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/cellular-foundations.html'" class="topic-item"><div class="topic-content"><span class="topic-icon">🔵</span><span class="topic-name">Cellular Foundations</span></div><div class="topic-actions"><span class="topic-count">13 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/cell-structure-and-functional-units.html'" class="topic-item"><div class="topic-content"><span class="topic-icon">🟢</span><span class="topic-name">Cell structure and functional units</span></div><div class="topic-actions"><span class="topic-count">15 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/phototrophs-vs-chemotrophs-energy-sources.html'" class="topic-item"><div class="topic-content"><span class="topic-icon">🟠</span><span class="topic-name">Phototrophs vs Chemotrophs energy sources</span></div><div class="topic-actions"><span class="topic-count">13 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/cell-dimensions-and-oxygen-diffusion.html'" class="topic-item"><div class="topic-content"><span class="topic-icon">🔴</span><span class="topic-name">Cell dimensions and oxygen diffusion</span></div><div class="topic-actions"><span class="topic-count">15 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/archaea-archaebacteria.html'" class="topic-item"><div class="topic-content"><span class="topic-icon">🟣</span><span class="topic-name">Archaea (archaebacteria)</span></div><div class="topic-actions"><span class="topic-count">13 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/bacteria-eubacteria.html'" class="topic-item"><div class="topic-content"><span class="topic-icon">🟡</span><span class="topic-name">Bacteria (eubacteria)</span></div><div class="topic-actions"><span class="topic-count">15 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/eukarya-eukaryotes.html'" class="topic-item"><div class="topic-content"><span class="topic-icon">🔷</span><span class="topic-name">Eukarya (eukaryotes)</span></div><div class="topic-actions"><span class="topic-count">16 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/autotrophs-vs-heterotrophs-carbon-sources.html'" class="topic-item"><div class="topic-content"><span class="topic-icon">🟥</span><span class="topic-name">Autotrophs vs Heterotrophs carbon sources</span></div><div class="topic-actions"><span class="topic-count">15 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/lithotrophs-vs-organotrophs-electron-sources.html'" class="topic-item"><div class="topic-content"><span class="topic-icon">🟩</span><span class="topic-name">Lithotrophs vs Organotrophs electron sources</span></div><div class="topic-actions"><span class="topic-count">15 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/escherichia-coli-as-a-model-prokaryote.html'" class="topic-item"><div class="topic-content"><span class="topic-icon">🟧</span><span class="topic-name">Escherichia coli as a model prokaryote</span></div><div class="topic-actions"><span class="topic-count">13 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/nucleus-structure-and-function.html'" class="topic-item"><div class="topic-content"><span class="topic-icon">🔵</span><span class="topic-name">Nucleus structure and function</span></div><div class="topic-actions"><span class="topic-count">8 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/mitochondrial-structure-and-function.html'" class="topic-item"><div class="topic-content"><span class="topic-icon">🟢</span><span class="topic-name">Mitochondrial Structure and Function</span></div><div class="topic-actions"><span class="topic-count">8 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/endoplasmic-reticulum-structure-and-functions.html'" class="topic-item"><div class="topic-content"><span class="topic-icon">🟠</span><span class="topic-name">Endoplasmic Reticulum Structure and Functions</span></div><div class="topic-actions"><span class="topic-count">8 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/biological-molecular-complexes.html'" class="topic-item"><div class="topic-content"><span class="topic-icon">🔴</span><span class="topic-name">Biological Molecular Complexes</span></div><div class="topic-actions"><span class="topic-count">8 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/lysosomal-function-and-intracellular-digestion.html'" class="topic-item"><div class="topic-content"><span class="topic-icon">🟣</span><span class="topic-name">Lysosomal Function and Intracellular Digestion</span></div><div class="topic-actions"><span class="topic-count">8 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/chloroplast-structure-photosynthesis.html'" class="topic-item"><div class="topic-content"><span class="topic-icon">🟡</span><span class="topic-name">Chloroplast structure photosynthesis</span></div><div class="topic-actions"><span class="topic-count">8 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/vacuoles-function-in-plant-cells.html'" class="topic-item"><div class="topic-content"><span class="topic-icon">🔷</span><span class="topic-name">Vacuoles function in plant cells</span></div><div class="topic-actions"><span class="topic-count">8 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/eukaryotic-cell-organelles.html'" class="topic-item"><div class="topic-content"><span class="topic-icon">🟥</span><span class="topic-name">Eukaryotic cell organelles</span></div><div class="topic-actions"><span class="topic-count">8 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/cell-fractionation-method.html'" class="topic-item"><div class="topic-content"><span class="topic-icon">🟩</span><span class="topic-name">Cell fractionation method</span></div><div class="topic-actions"><span class="topic-count">8 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/principles-of-biochemistry/the-foundations-of-biochemistry/topics/differential-centrifugation-and-cell-fractionation.html'" class="topic-item"><div class="topic-content"><span class="topic-icon">🟧</span><span class="topic-name">Differential Centrifugation and Cell Fractionation</span></div><div class="topic-actions"><span class="topic-count">8 MCQs</span><span class="topic-arrow">View →</span></div></div></div></div>        <div class="footer-links">
             <a href="/quiz" class="btn-primary">🚀 Start Quiz</a>
             <a href="/practice" class="btn-secondary">📝 Practice Mode</a>
         </div>
