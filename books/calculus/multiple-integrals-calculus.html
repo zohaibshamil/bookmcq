@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
 <!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -89,117 +89,272 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         }
     </script>
     <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
         body {
-            font-family: Arial, sans-serif;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background: linear-gradient(135deg, #667eea, #764ba2);
-            margin: 0;
-            padding: 0;
             min-height: 100vh;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
+        
         .container {
             max-width: 900px;
-            margin: auto;
-            padding: 20px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 0 8px;
         }
+        
         .card {
             background: white;
-            border-radius: 16px;
-            padding: 20px;
-            margin-top: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-radius: 20px;
+            padding: 18px 16px 24px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+            width: 100%;
         }
+        
+        @media (min-width: 640px) { 
+            .card { padding: 28px 32px; } 
+        }
+        @media (max-width: 480px) { 
+            .card { padding: 14px 12px; } 
+        }
+
+        .back-link { 
+            display: inline-block; 
+            margin-bottom: 12px; 
+            color: #7c3aed; 
+            text-decoration: none; 
+            font-weight: 500; 
+        }
+        .back-link:hover { text-decoration: underline; }
+        
+        .breadcrumb { 
+            font-size: 13px; 
+            color: #64748b; 
+            margin-bottom: 10px; 
+            word-break: break-word; 
+        }
+        .breadcrumb a { color: #7c3aed; text-decoration: none; }
+        .breadcrumb a:hover { text-decoration: underline; }
+
+        h1 { 
+            font-size: 1.6rem; 
+            line-height: 1.2; 
+            margin: 6px 0 4px; 
+            word-break: break-word; 
+        }
+        @media (max-width: 480px) { h1 { font-size: 1.4rem; } }
+
+        .chapter-info { 
+            font-size: 0.9rem; 
+            color: #475569; 
+            margin: 6px 0 10px; 
+        }
+
+        /* ---- BADGE GRID ---- */
+        .badge-grid { 
+            display: grid; 
+            grid-template-columns: repeat(3,1fr); 
+            gap: 8px; 
+            margin: 14px 0; 
+        }
+        .badge-item { 
+            padding: 10px 4px; 
+            border-radius: 12px; 
+            text-align: center; 
+            border: 1px solid #e5e7eb; 
+        }
+        .badge-item .num { font-size: 1.8rem; font-weight: 700; }
+        .badge-item .lbl { font-size: 0.7rem; color: #64748b; }
+        @media (max-width: 480px) { .badge-item .num { font-size: 1.4rem; } }
+
+        /* ---- TOPIC ITEMS (ENHANCED FOR MOBILE) ---- */
+        .topic-item {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 18px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border-left: 4px solid #8b5cf6;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            gap: 10px;
+            min-height: 56px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .topic-item:hover {
+            background: #f1f5f9;
+            transform: translateX(4px);
+        }
+        .topic-item:active {
+            transform: scale(0.98);
+            background: #e8edf5;
+        }
+
+        .topic-item .topic-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1 1 auto;
+            min-width: 140px;
+        }
+        .topic-item .topic-icon {
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+        .topic-item .topic-name {
+            font-weight: 500;
+            color: #1e293b;
+            font-size: 0.95rem;
+            word-break: break-word;
+            line-height: 1.4;
+        }
+        .topic-item .topic-actions {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+        .topic-item .topic-count {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: white;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            min-width: 50px;
+            text-align: center;
+            white-space: nowrap;
+            letter-spacing: 0.3px;
+        }
+        .topic-item .topic-arrow {
+            color: #8b5cf6;
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: transform 0.2s ease;
+        }
+        .topic-item:hover .topic-arrow {
+            transform: translateX(3px);
+        }
+
+        /* Mobile responsiveness for topics */
+        @media (max-width: 550px) {
+            .topic-item {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 14px 16px;
+                gap: 8px;
+                min-height: 70px;
+            }
+            .topic-item .topic-content {
+                width: 100%;
+                min-width: unset;
+            }
+            .topic-item .topic-name {
+                font-size: 0.92rem;
+            }
+            .topic-item .topic-actions {
+                width: 100%;
+                justify-content: space-between;
+                padding-top: 4px;
+                border-top: 1px dashed #e5e7eb;
+            }
+            .topic-item .topic-count {
+                font-size: 11px;
+                padding: 3px 12px;
+                min-width: 45px;
+            }
+            .topic-item .topic-arrow {
+                font-size: 12px;
+            }
+            .topic-item:active {
+                transform: scale(0.97);
+            }
+        }
+
+        @media (max-width: 380px) {
+            .topic-item {
+                padding: 12px 12px;
+                gap: 6px;
+            }
+            .topic-item .topic-name {
+                font-size: 0.85rem;
+            }
+            .topic-item .topic-actions {
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+            .topic-item .topic-count {
+                font-size: 10px;
+                padding: 2px 10px;
+            }
+        }
+
+        /* ---- BUTTONS ---- */
         .btn-primary {
             display: inline-block;
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
-            padding: 14px 32px;
-            border-radius: 12px;
+            padding: 12px 28px;
+            border-radius: 40px;
             text-decoration: none;
-            font-weight: bold;
-            margin-top: 10px;
+            font-weight: 700;
+            margin-top: 8px;
             transition: 0.2s;
+            border: none;
+            cursor: pointer;
         }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        .btn-primary:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 8px 20px rgba(102,126,234,0.4); 
         }
+
         .btn-secondary {
             display: inline-block;
-            background: #f3f4f6;
+            background: #f1f5f9;
             color: #1e293b;
-            padding: 10px 24px;
-            border-radius: 10px;
+            padding: 10px 22px;
+            border-radius: 40px;
             text-decoration: none;
             font-weight: 500;
-            margin-top: 10px;
-            transition: 0.2s;
-            border: 1px solid #e5e7eb;
+            border: 1px solid #d1d5db;
         }
-        .btn-secondary:hover {
-            background: #e5e7eb;
+        .btn-secondary:hover { background: #e5e7eb; }
+
+        .footer-links { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 10px; 
+            justify-content: center; 
+            margin-top: 18px; 
         }
-        .back-link {
-            display: inline-block;
-            margin-bottom: 15px;
-            color: #7c3aed;
-            text-decoration: none;
-        }
-        .back-link:hover {
-            text-decoration: underline;
-        }
-        .chapter-info {
-            font-size: 14px;
-            color: #64748b;
-            margin: 8px 0;
-        }
-        .breadcrumb {
-            font-size: 13px;
-            color: #94a3b8;
-            margin-bottom: 12px;
-        }
-        .breadcrumb a {
-            color: #7c3aed;
-            text-decoration: none;
-        }
-        .breadcrumb a:hover {
-            text-decoration: underline;
-        }
-        .math-rendered {
-            display: inline;
-            line-height: 1.6;
-        }
-        .math-rendered mjx-container {
-            display: inline-block;
-            margin: 0 2px;
-        }
-        .justify-text {
-            text-align: justify;
-            text-justify: inter-word;
-        }
-        .definition-text {
-            text-align: justify;
-            text-justify: inter-word;
-            line-height: 1.8;
-        }
-        .option-text {
-            text-align: justify;
-            text-justify: inter-word;
-        }
-        .explanation-text {
-            text-align: justify;
-            text-justify: inter-word;
-            line-height: 1.6;
-        }
-        .question-text {
-            font-size: 1rem;
-            line-height: 1.6;
-        }
-        .option-text {
-            display: inline;
-        }
-        .explanation-text {
-            font-size: 0.875rem;
-            line-height: 1.5;
+
+        img, svg { max-width: 100%; height: auto; }
+        .math { display: inline; }
+        
+        /* ---- RESPONSIVE TEXT ADJUSTMENTS ---- */
+        @media (max-width: 480px) {
+            .breadcrumb { font-size: 11px; }
+            .chapter-info { font-size: 0.8rem; }
+            .btn-primary, .btn-secondary { 
+                padding: 10px 20px; 
+                font-size: 0.9rem;
+                width: 100%;
+                text-align: center;
+            }
+            .footer-links { 
+                flex-direction: column; 
+                align-items: stretch; 
+                gap: 8px; 
+            }
         }
     </style>
 </head>
@@ -208,29 +363,30 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PT363CT7"
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
-<!-- Website Header -->
-<div style="text-align:center; padding:10px 0 5px 0;">
-    <a href="/" style="text-decoration:none;">
-        <span style="font-size:18px; font-weight:700; color:#7c3aed; background:white; padding:6px 20px; border-radius:30px; display:inline-block; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
-            🎓 BookMCQ
-        </span>
-    </a>
-</div>
+
 <div class="container">
+    <!-- header -->
+    <div style="text-align:center; padding:6px 0 12px;">
+        <a href="/" style="text-decoration:none;">
+            <span style="font-size:1.2rem; font-weight:700; color:#7c3aed; background:white; padding:6px 18px; border-radius:40px; display:inline-block; box-shadow:0 2px 8px rgba(0,0,0,0.08);">🎓 BookMCQ</span>
+        </a>
+    </div>
+
     <div class="card">
+        <!-- breadcrumb -->
         <div class="breadcrumb">
             <a href="/">🏠 Home</a> &gt; <a href="/books/calculus/">Calculus</a> &gt; 15. Multiple Integrals Calculus
         </div>
         <a href="/books/calculus/" class="back-link">← Back to Calculus</a>
-        <h1>15. Multiple Integrals Calculus - Calculus</h1>
+        <h1>📖 15. Multiple Integrals Calculus</h1>
         <p class="chapter-info">📖 From <strong>Calculus</strong> • 636 questions available</p>
 
-        <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">About 15. Multiple Integrals Calculus</h2>
-        <p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;"><b>Definition:</b> <br>Multiple integrals extend the concept of a single integral to functions of several variables, allowing us to integrate over regions in two or more dimensions, such as areas, volumes, or higher-dimensional spaces. For a function \( f(x,y) \), the double integral over a region \( R \) is written as \( \iint_R f(x,y) \, dA \), and for three variables, the triple integral is \( \iiint_V f(x,y,z) \, dV \). <br><br><b>Example:</b> <br>Compute the volume under the surface \( f(x,y) = 4 - x^2 - y^2 \) over the circular region \( R: x^2 + y^2 \leq 4 \). In polar coordinates, this becomes \( \int_0^{2\pi} \int_0^2 (4 - r^2) \, r \, dr \, d\theta = \int_0^{2\pi} \left[ 2r^2 - \frac{r^4}{4} \right]_0^2 d\theta = \int_0^{2\pi} (8 - 4) \, d\theta = 8\pi \). <br><br><b>Reason:</b><br>Multiple integrals are essential for computing physical quantities like area, volume, mass, center of mass, and total charge over non-rectangular domains, where single-variable integration is insufficient. They also enable change of variables (e.g., polar, cylindrical, spherical) to simplify complex regions, making them foundational in physics, engineering, and probability.</p>
-        <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
-            <p>Practice MCQs for 15. Multiple Integrals Calculus. Test your knowledge with carefully crafted questions across easy, medium, and hard difficulty levels.</p>
-        <p style="font-size:13px; color:#64748b; margin-top:4px;">🔄 Last updated: 2026-08-19</p>
-<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:16px 0;"><div style="background:#dcfce7; padding:12px; border-radius:10px; text-align:center; border:1px solid #86efac;"><div style="font-size:24px; font-weight:700; color:#166534;">120</div><div style="font-size:12px; color:#64748b;">Easy Questions</div></div><div style="background:#fef9c3; padding:12px; border-radius:10px; text-align:center; border:1px solid #fde047;"><div style="font-size:24px; font-weight:700; color:#854d0e;">282</div><div style="font-size:12px; color:#64748b;">Medium Questions</div></div><div style="background:#fee2e2; padding:12px; border-radius:10px; text-align:center; border:1px solid #fca5a5;"><div style="font-size:24px; font-weight:700; color:#991b1b;">234</div><div style="font-size:12px; color:#64748b;">Hard Questions</div></div></div><div style="margin:16px 0;"><h3 style="font-size:16px; color:#1e293b; margin-bottom:12px;">📝 Topics in this Chapter</h3><div style="display:flex; flex-direction:column; gap:8px;"><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/area-calculation-as-a-double-integral.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Area Calculation as a Double Integral</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">13 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/area-in-polar-coordinates-double-integral.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Area in polar coordinates double integral</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">13 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/center-of-gravity-and-centroid-of-a-solid.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Center of Gravity and Centroid of a Solid</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">15 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/center-of-gravity-of-an-inhomogeneous-lamina.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Center of Gravity of an Inhomogeneous Lamina</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">15 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/centers-of-gravity-using-multiple-integrals.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Centers of Gravity Using Multiple Integrals</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">14 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/change-of-variables-formula-for-double-integrals.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Change of Variables Formula for Double Integrals</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">15 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/change-of-variables-in-multiple-integrals-jacobians.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Change of Variables in Multiple Integrals: Jacobians</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">14 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/change-of-variables-in-triple-integrals.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Change of Variables in Triple Integrals</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">14 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/changing-order-of-integration-triple-integrals.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Changing order of integration triple integrals</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">14 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/convert-double-integral-to-polar-coordinates.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Convert double integral to polar coordinates</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">14 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/density-and-mass-of-an-inhomogeneous-lamina.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Density and Mass of an Inhomogeneous Lamina</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">14 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/double-integral-definition-riemann-sums.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Double integral definition Riemann sums</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">13 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/double-integrals-in-calculus.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Double Integrals in Calculus</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">12 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/double-integrals-in-polar-coordinates.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Double Integrals in Polar Coordinates</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">14 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/double-integrals-in-simple-polar-regions.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Double integrals in Simple Polar Regions</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">13 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/double-integrals-over-nonrectangular-regions.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Double Integrals over Nonrectangular Regions</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">15 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/evaluating-double-integrals-in-polar-coordinates.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Evaluating Double integrals in polar coordinates</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">10 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/evaluation-of-triple-integrals-over-rectangular-boxes.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Evaluation of Triple Integrals over Rectangular Boxes</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">11 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/fubinis-theorem-for-double-integrals.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Fubini&#039;s theorem for double integrals</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">14 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/how-to-evaluate-double-integrals.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 How to evaluate double integrals</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">12 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/iterated-integrals-with-variable-limits.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Iterated integrals with variable limits</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">14 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/jacobian-determinant-in-two-variables.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Jacobian determinant in two variables</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">15 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/parametric-representation-of-surfaces-of-revolution.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Parametric representation of surfaces of revolution</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">13 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/parametric-surfaces-representation.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Parametric surfaces representation</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">14 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/partial-derivatives-of-vector-functions.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Partial derivatives of vector functions</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">15 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/properties-of-double-integrals.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Properties of Double Integrals</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">14 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/properties-of-triple-integrals.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Properties of Triple Integrals</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">13 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/reversing-order-of-integration.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Reversing order of integration</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">15 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/set-up-limits-of-integration.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Set up limits of integration</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">13 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/surface-area-formula-double-integral.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Surface area formula double integral</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">14 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/surface-area-of-parametric-surfaces.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Surface area of parametric surfaces</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">14 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/surface-area-parametric-surfaces.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Surface Area: Parametric Surfaces</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">14 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/tangent-plane-to-parametric-surface.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Tangent plane to parametric surface</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">12 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/transformations-in-the-plane.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Transformations in the plane</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">14 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/triple-integral-definition.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Triple integral definition</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">12 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/triple-integral-evaluation-over-general-regions.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Triple Integral Evaluation over General Regions</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">16 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/triple-integrals-conversion-from-rectangular-to-cylindrical-coordinates.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Triple Integrals Conversion from Rectangular to Cylindrical Coordinates</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">15 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/triple-integrals-conversion-from-rectangular-to-spherical-coordinates.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Triple Integrals Conversion from Rectangular to Spherical Coordinates</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">17 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/triple-integrals-in-calculus.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Triple Integrals in Calculus</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">14 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/triple-integrals-in-cylindrical-and-spherical-coordinates.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Triple Integrals in Cylindrical and Spherical Coordinates</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">16 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/triple-integrals-in-cylindrical-coordinates.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Triple Integrals in Cylindrical Coordinates</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">14 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/triple-integrals-in-spherical-coordinates.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Triple Integrals in Spherical Coordinates</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">14 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/type-i-and-type-ii-regions-double-integrals.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Type I and Type II regions double integrals</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">15 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/vector-valued-functions-of-two-variables.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Vector valued functions of two variables</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">14 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/volume-calculation-by-triple-integral.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Volume Calculation by Triple Integral</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">14 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/volume-under-surface-double-integral.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Volume under surface double integral</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">12 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div></div></div>        <div style="text-align: center; margin-top: 20px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+            <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">About 15. Multiple Integrals Calculus</h2>
+            <p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;"><b>Definition:</b> <br>Multiple integrals extend the concept of a single integral to functions of several variables, allowing us to integrate over regions in two or more dimensions, such as areas, volumes, or higher-dimensional spaces. For a function \( f(x,y) \), the double integral over a region \( R \) is written as \( \iint_R f(x,y) \, dA \), and for three variables, the triple integral is \( \iiint_V f(x,y,z) \, dV \). <br><br><b>Example:</b> <br>Compute the volume under the surface \( f(x,y) = 4 - x^2 - y^2 \) over the circular region \( R: x^2 + y^2 \leq 4 \). In polar coordinates, this becomes \( \int_0^{2\pi} \int_0^2 (4 - r^2) \, r \, dr \, d\theta = \int_0^{2\pi} \left[ 2r^2 - \frac{r^4}{4} \right]_0^2 d\theta = \int_0^{2\pi} (8 - 4) \, d\theta = 8\pi \). <br><br><b>Reason:</b><br>Multiple integrals are essential for computing physical quantities like area, volume, mass, center of mass, and total charge over non-rectangular domains, where single-variable integration is insufficient. They also enable change of variables (e.g., polar, cylindrical, spherical) to simplify complex regions, making them foundational in physics, engineering, and probability.</p>
+            <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
+                <p style="text-align:justify; line-height:1.7; color:#334155; font-size:0.95rem;">Practice MCQs for 15. Multiple Integrals Calculus. Test your knowledge with carefully crafted questions across easy, medium, and hard difficulty levels.</p>
+        <p style="font-size:13px; color:#94a3b8; margin-top:6px;">🔄 Last updated: 2026-08-19</p>
+<div class="badge-grid"><div class="badge-item" style="background:#dcfce7; border-color:#86efac;"><div class="num" style="color:#166534;">120</div><div class="lbl">Easy</div></div><div class="badge-item" style="background:#fef9c3; border-color:#fde047;"><div class="num" style="color:#854d0e;">282</div><div class="lbl">Medium</div></div><div class="badge-item" style="background:#fee2e2; border-color:#fca5a5;"><div class="num" style="color:#991b1b;">234</div><div class="lbl">Hard</div></div></div><div style="margin:20px 0;"><h3 style="font-size:17px; font-weight:700; color:#1e293b; margin-bottom:14px;">📌 Topics in this Chapter</h3><div style="display:flex; flex-direction:column; gap:10px;"><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/area-calculation-as-a-double-integral.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Area Calculation as a Double Integral</span></div><div class="topic-actions"><span class="topic-count">13 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/area-in-polar-coordinates-double-integral.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Area in polar coordinates double integral</span></div><div class="topic-actions"><span class="topic-count">13 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/center-of-gravity-and-centroid-of-a-solid.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Center of Gravity and Centroid of a Solid</span></div><div class="topic-actions"><span class="topic-count">15 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/center-of-gravity-of-an-inhomogeneous-lamina.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Center of Gravity of an Inhomogeneous Lamina</span></div><div class="topic-actions"><span class="topic-count">15 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/centers-of-gravity-using-multiple-integrals.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Centers of Gravity Using Multiple Integrals</span></div><div class="topic-actions"><span class="topic-count">14 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/change-of-variables-formula-for-double-integrals.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Change of Variables Formula for Double Integrals</span></div><div class="topic-actions"><span class="topic-count">15 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/change-of-variables-in-multiple-integrals-jacobians.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Change of Variables in Multiple Integrals: Jacobians</span></div><div class="topic-actions"><span class="topic-count">14 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/change-of-variables-in-triple-integrals.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Change of Variables in Triple Integrals</span></div><div class="topic-actions"><span class="topic-count">14 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/changing-order-of-integration-triple-integrals.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Changing order of integration triple integrals</span></div><div class="topic-actions"><span class="topic-count">14 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/convert-double-integral-to-polar-coordinates.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Convert double integral to polar coordinates</span></div><div class="topic-actions"><span class="topic-count">14 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/density-and-mass-of-an-inhomogeneous-lamina.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Density and Mass of an Inhomogeneous Lamina</span></div><div class="topic-actions"><span class="topic-count">14 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/double-integral-definition-riemann-sums.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Double integral definition Riemann sums</span></div><div class="topic-actions"><span class="topic-count">13 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/double-integrals-in-calculus.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Double Integrals in Calculus</span></div><div class="topic-actions"><span class="topic-count">12 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/double-integrals-in-polar-coordinates.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Double Integrals in Polar Coordinates</span></div><div class="topic-actions"><span class="topic-count">14 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/double-integrals-in-simple-polar-regions.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Double integrals in Simple Polar Regions</span></div><div class="topic-actions"><span class="topic-count">13 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/double-integrals-over-nonrectangular-regions.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Double Integrals over Nonrectangular Regions</span></div><div class="topic-actions"><span class="topic-count">15 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/evaluating-double-integrals-in-polar-coordinates.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Evaluating Double integrals in polar coordinates</span></div><div class="topic-actions"><span class="topic-count">10 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/evaluation-of-triple-integrals-over-rectangular-boxes.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Evaluation of Triple Integrals over Rectangular Boxes</span></div><div class="topic-actions"><span class="topic-count">11 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/fubinis-theorem-for-double-integrals.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Fubini&#039;s theorem for double integrals</span></div><div class="topic-actions"><span class="topic-count">14 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/how-to-evaluate-double-integrals.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">How to evaluate double integrals</span></div><div class="topic-actions"><span class="topic-count">12 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/iterated-integrals-with-variable-limits.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Iterated integrals with variable limits</span></div><div class="topic-actions"><span class="topic-count">14 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/jacobian-determinant-in-two-variables.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Jacobian determinant in two variables</span></div><div class="topic-actions"><span class="topic-count">15 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/parametric-representation-of-surfaces-of-revolution.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Parametric representation of surfaces of revolution</span></div><div class="topic-actions"><span class="topic-count">13 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/parametric-surfaces-representation.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Parametric surfaces representation</span></div><div class="topic-actions"><span class="topic-count">14 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/partial-derivatives-of-vector-functions.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Partial derivatives of vector functions</span></div><div class="topic-actions"><span class="topic-count">15 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/properties-of-double-integrals.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Properties of Double Integrals</span></div><div class="topic-actions"><span class="topic-count">14 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/properties-of-triple-integrals.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Properties of Triple Integrals</span></div><div class="topic-actions"><span class="topic-count">13 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/reversing-order-of-integration.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Reversing order of integration</span></div><div class="topic-actions"><span class="topic-count">15 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/set-up-limits-of-integration.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Set up limits of integration</span></div><div class="topic-actions"><span class="topic-count">13 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/surface-area-formula-double-integral.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Surface area formula double integral</span></div><div class="topic-actions"><span class="topic-count">14 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/surface-area-of-parametric-surfaces.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Surface area of parametric surfaces</span></div><div class="topic-actions"><span class="topic-count">14 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/surface-area-parametric-surfaces.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Surface Area: Parametric Surfaces</span></div><div class="topic-actions"><span class="topic-count">14 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/tangent-plane-to-parametric-surface.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Tangent plane to parametric surface</span></div><div class="topic-actions"><span class="topic-count">12 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/transformations-in-the-plane.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Transformations in the plane</span></div><div class="topic-actions"><span class="topic-count">14 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/triple-integral-definition.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Triple integral definition</span></div><div class="topic-actions"><span class="topic-count">12 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/triple-integral-evaluation-over-general-regions.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Triple Integral Evaluation over General Regions</span></div><div class="topic-actions"><span class="topic-count">16 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/triple-integrals-conversion-from-rectangular-to-cylindrical-coordinates.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Triple Integrals Conversion from Rectangular to Cylindrical Coordinates</span></div><div class="topic-actions"><span class="topic-count">15 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/triple-integrals-conversion-from-rectangular-to-spherical-coordinates.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Triple Integrals Conversion from Rectangular to Spherical Coordinates</span></div><div class="topic-actions"><span class="topic-count">17 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/triple-integrals-in-calculus.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Triple Integrals in Calculus</span></div><div class="topic-actions"><span class="topic-count">14 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/triple-integrals-in-cylindrical-and-spherical-coordinates.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Triple Integrals in Cylindrical and Spherical Coordinates</span></div><div class="topic-actions"><span class="topic-count">16 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/triple-integrals-in-cylindrical-coordinates.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Triple Integrals in Cylindrical Coordinates</span></div><div class="topic-actions"><span class="topic-count">14 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/triple-integrals-in-spherical-coordinates.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Triple Integrals in Spherical Coordinates</span></div><div class="topic-actions"><span class="topic-count">14 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/type-i-and-type-ii-regions-double-integrals.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Type I and Type II regions double integrals</span></div><div class="topic-actions"><span class="topic-count">15 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/vector-valued-functions-of-two-variables.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Vector valued functions of two variables</span></div><div class="topic-actions"><span class="topic-count">14 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/volume-calculation-by-triple-integral.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Volume Calculation by Triple Integral</span></div><div class="topic-actions"><span class="topic-count">14 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/multiple-integrals-calculus/topics/volume-under-surface-double-integral.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Volume under surface double integral</span></div><div class="topic-actions"><span class="topic-count">12 MCQs</span><span class="topic-arrow">View →</span></div></div></div></div>        <div class="footer-links">
             <a href="/quiz" class="btn-primary">🚀 Start Quiz</a>
             <a href="/practice" class="btn-secondary">📝 Practice Mode</a>
         </div>

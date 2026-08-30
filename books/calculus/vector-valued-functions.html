@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
 <!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -89,117 +89,272 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         }
     </script>
     <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
         body {
-            font-family: Arial, sans-serif;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background: linear-gradient(135deg, #667eea, #764ba2);
-            margin: 0;
-            padding: 0;
             min-height: 100vh;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
+        
         .container {
             max-width: 900px;
-            margin: auto;
-            padding: 20px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 0 8px;
         }
+        
         .card {
             background: white;
-            border-radius: 16px;
-            padding: 20px;
-            margin-top: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-radius: 20px;
+            padding: 18px 16px 24px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+            width: 100%;
         }
+        
+        @media (min-width: 640px) { 
+            .card { padding: 28px 32px; } 
+        }
+        @media (max-width: 480px) { 
+            .card { padding: 14px 12px; } 
+        }
+
+        .back-link { 
+            display: inline-block; 
+            margin-bottom: 12px; 
+            color: #7c3aed; 
+            text-decoration: none; 
+            font-weight: 500; 
+        }
+        .back-link:hover { text-decoration: underline; }
+        
+        .breadcrumb { 
+            font-size: 13px; 
+            color: #64748b; 
+            margin-bottom: 10px; 
+            word-break: break-word; 
+        }
+        .breadcrumb a { color: #7c3aed; text-decoration: none; }
+        .breadcrumb a:hover { text-decoration: underline; }
+
+        h1 { 
+            font-size: 1.6rem; 
+            line-height: 1.2; 
+            margin: 6px 0 4px; 
+            word-break: break-word; 
+        }
+        @media (max-width: 480px) { h1 { font-size: 1.4rem; } }
+
+        .chapter-info { 
+            font-size: 0.9rem; 
+            color: #475569; 
+            margin: 6px 0 10px; 
+        }
+
+        /* ---- BADGE GRID ---- */
+        .badge-grid { 
+            display: grid; 
+            grid-template-columns: repeat(3,1fr); 
+            gap: 8px; 
+            margin: 14px 0; 
+        }
+        .badge-item { 
+            padding: 10px 4px; 
+            border-radius: 12px; 
+            text-align: center; 
+            border: 1px solid #e5e7eb; 
+        }
+        .badge-item .num { font-size: 1.8rem; font-weight: 700; }
+        .badge-item .lbl { font-size: 0.7rem; color: #64748b; }
+        @media (max-width: 480px) { .badge-item .num { font-size: 1.4rem; } }
+
+        /* ---- TOPIC ITEMS (ENHANCED FOR MOBILE) ---- */
+        .topic-item {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 18px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border-left: 4px solid #8b5cf6;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            gap: 10px;
+            min-height: 56px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .topic-item:hover {
+            background: #f1f5f9;
+            transform: translateX(4px);
+        }
+        .topic-item:active {
+            transform: scale(0.98);
+            background: #e8edf5;
+        }
+
+        .topic-item .topic-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1 1 auto;
+            min-width: 140px;
+        }
+        .topic-item .topic-icon {
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+        .topic-item .topic-name {
+            font-weight: 500;
+            color: #1e293b;
+            font-size: 0.95rem;
+            word-break: break-word;
+            line-height: 1.4;
+        }
+        .topic-item .topic-actions {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+        .topic-item .topic-count {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: white;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            min-width: 50px;
+            text-align: center;
+            white-space: nowrap;
+            letter-spacing: 0.3px;
+        }
+        .topic-item .topic-arrow {
+            color: #8b5cf6;
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: transform 0.2s ease;
+        }
+        .topic-item:hover .topic-arrow {
+            transform: translateX(3px);
+        }
+
+        /* Mobile responsiveness for topics */
+        @media (max-width: 550px) {
+            .topic-item {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 14px 16px;
+                gap: 8px;
+                min-height: 70px;
+            }
+            .topic-item .topic-content {
+                width: 100%;
+                min-width: unset;
+            }
+            .topic-item .topic-name {
+                font-size: 0.92rem;
+            }
+            .topic-item .topic-actions {
+                width: 100%;
+                justify-content: space-between;
+                padding-top: 4px;
+                border-top: 1px dashed #e5e7eb;
+            }
+            .topic-item .topic-count {
+                font-size: 11px;
+                padding: 3px 12px;
+                min-width: 45px;
+            }
+            .topic-item .topic-arrow {
+                font-size: 12px;
+            }
+            .topic-item:active {
+                transform: scale(0.97);
+            }
+        }
+
+        @media (max-width: 380px) {
+            .topic-item {
+                padding: 12px 12px;
+                gap: 6px;
+            }
+            .topic-item .topic-name {
+                font-size: 0.85rem;
+            }
+            .topic-item .topic-actions {
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+            .topic-item .topic-count {
+                font-size: 10px;
+                padding: 2px 10px;
+            }
+        }
+
+        /* ---- BUTTONS ---- */
         .btn-primary {
             display: inline-block;
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
-            padding: 14px 32px;
-            border-radius: 12px;
+            padding: 12px 28px;
+            border-radius: 40px;
             text-decoration: none;
-            font-weight: bold;
-            margin-top: 10px;
+            font-weight: 700;
+            margin-top: 8px;
             transition: 0.2s;
+            border: none;
+            cursor: pointer;
         }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        .btn-primary:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 8px 20px rgba(102,126,234,0.4); 
         }
+
         .btn-secondary {
             display: inline-block;
-            background: #f3f4f6;
+            background: #f1f5f9;
             color: #1e293b;
-            padding: 10px 24px;
-            border-radius: 10px;
+            padding: 10px 22px;
+            border-radius: 40px;
             text-decoration: none;
             font-weight: 500;
-            margin-top: 10px;
-            transition: 0.2s;
-            border: 1px solid #e5e7eb;
+            border: 1px solid #d1d5db;
         }
-        .btn-secondary:hover {
-            background: #e5e7eb;
+        .btn-secondary:hover { background: #e5e7eb; }
+
+        .footer-links { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 10px; 
+            justify-content: center; 
+            margin-top: 18px; 
         }
-        .back-link {
-            display: inline-block;
-            margin-bottom: 15px;
-            color: #7c3aed;
-            text-decoration: none;
-        }
-        .back-link:hover {
-            text-decoration: underline;
-        }
-        .chapter-info {
-            font-size: 14px;
-            color: #64748b;
-            margin: 8px 0;
-        }
-        .breadcrumb {
-            font-size: 13px;
-            color: #94a3b8;
-            margin-bottom: 12px;
-        }
-        .breadcrumb a {
-            color: #7c3aed;
-            text-decoration: none;
-        }
-        .breadcrumb a:hover {
-            text-decoration: underline;
-        }
-        .math-rendered {
-            display: inline;
-            line-height: 1.6;
-        }
-        .math-rendered mjx-container {
-            display: inline-block;
-            margin: 0 2px;
-        }
-        .justify-text {
-            text-align: justify;
-            text-justify: inter-word;
-        }
-        .definition-text {
-            text-align: justify;
-            text-justify: inter-word;
-            line-height: 1.8;
-        }
-        .option-text {
-            text-align: justify;
-            text-justify: inter-word;
-        }
-        .explanation-text {
-            text-align: justify;
-            text-justify: inter-word;
-            line-height: 1.6;
-        }
-        .question-text {
-            font-size: 1rem;
-            line-height: 1.6;
-        }
-        .option-text {
-            display: inline;
-        }
-        .explanation-text {
-            font-size: 0.875rem;
-            line-height: 1.5;
+
+        img, svg { max-width: 100%; height: auto; }
+        .math { display: inline; }
+        
+        /* ---- RESPONSIVE TEXT ADJUSTMENTS ---- */
+        @media (max-width: 480px) {
+            .breadcrumb { font-size: 11px; }
+            .chapter-info { font-size: 0.8rem; }
+            .btn-primary, .btn-secondary { 
+                padding: 10px 20px; 
+                font-size: 0.9rem;
+                width: 100%;
+                text-align: center;
+            }
+            .footer-links { 
+                flex-direction: column; 
+                align-items: stretch; 
+                gap: 8px; 
+            }
         }
     </style>
 </head>
@@ -208,29 +363,30 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PT363CT7"
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
-<!-- Website Header -->
-<div style="text-align:center; padding:10px 0 5px 0;">
-    <a href="/" style="text-decoration:none;">
-        <span style="font-size:18px; font-weight:700; color:#7c3aed; background:white; padding:6px 20px; border-radius:30px; display:inline-block; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
-            🎓 BookMCQ
-        </span>
-    </a>
-</div>
+
 <div class="container">
+    <!-- header -->
+    <div style="text-align:center; padding:6px 0 12px;">
+        <a href="/" style="text-decoration:none;">
+            <span style="font-size:1.2rem; font-weight:700; color:#7c3aed; background:white; padding:6px 18px; border-radius:40px; display:inline-block; box-shadow:0 2px 8px rgba(0,0,0,0.08);">🎓 BookMCQ</span>
+        </a>
+    </div>
+
     <div class="card">
+        <!-- breadcrumb -->
         <div class="breadcrumb">
             <a href="/">🏠 Home</a> &gt; <a href="/books/calculus/">Calculus</a> &gt; 13. Vector Valued Functions
         </div>
         <a href="/books/calculus/" class="back-link">← Back to Calculus</a>
-        <h1>13. Vector Valued Functions - Calculus</h1>
+        <h1>📖 13. Vector Valued Functions</h1>
         <p class="chapter-info">📖 From <strong>Calculus</strong> • 1174 questions available</p>
 
-        <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">About 13. Vector Valued Functions</h2>
-        <p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">Vector Valued Functions: A vector-valued function is a rule that takes a single input number (usually time, *t*) and gives back a vector as its output. Instead of giving you just one number (like a scalar function, f(x) = 2x), it gives you a list of numbers that describe a point in 2D or 3D space. In 2D, it looks like r(t) = < f(t), g(t) > , and in 3D it looks like r(t) = < f(t), g(t), h(t) >. The functions f(t), g(t), and h(t) are called the component functions, and they are just regular, ordinary functions that each control one coordinate (x, y, and z) of the output point.</p><p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">Example: To make this clear, imagine throwing a ball. Its position at any second (*t*) is not just a single number, but a location on the field. A vector-valued function like r(t) = < 2t, 5t - t² > describes this path. Here, the x-coordinate is 2t (moving right at a steady speed), and the y-coordinate is 5t - t² (moving up and then down due to gravity). If you plug in *t=2*, you get r(2) = < 4, 6 >, which is the specific point (4,6) on the field where the ball is at 2 seconds.</p><p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">Reason: The reason we use vector-valued functions is that real-life movement happens in space, not just on a line. A regular function can only tell you how far away something is or its height, but it cannot tell you both the height and the horizontal distance at the same time. Vector-valued functions bundle all that information into one neat package. This allows us to see the entire path of a moving object as a single curve (like a parabola or a helix) instead of trying to piece together multiple separate graphs.</p><p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">Visualize and Use Vector-Valued Functions: To visualize a vector-valued function, imagine the input *t* as a clock ticking. At each tick, the function calculates a new point in space. As *t* increases, these points trace out a continuous curve or path. The function itself is not the curve you see on paper; rather, it is the "recipe" or the GPS directions that tells you where to plot the next point. In 2D, the curve lies on a flat plane (like a graph on your paper), and in 3D, it floats in space like a roller-coaster track.</p><p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">Example: Consider the 3D function r(t) = < cos(t), sin(t), t >. If you plug in *t=0*, you get < 1, 0, 0 >. If you plug in *t=π/2*, you get < 0, 1, π/2 >. If you keep going, the x and y coordinates go around in a circle (cos and sin), while the z-coordinate keeps climbing up (t). This creates a shape like a spiral staircase or a slinky. This is called a helix, and it is impossible to graph with a single, ordinary function because for any x-value, you have multiple z-values.</p><p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">Reason: The real power of using vector-valued functions is that they allow us to apply calculus (derivatives and integrals) to paths in space. The derivative of this function, r'(t), does not give you a slope like in regular calculus; instead, it gives you a tangent vector that points in the direction of motion at that exact instant. The length of this derivative gives you the speed of the object. Without vector-valued functions, calculating the speed, velocity, or acceleration of a roller-coaster car moving in 3D would require a messy system of separate equations. This function unifies all of that math into one elegant equation.</p>
-        <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
-            <p>Practice MCQs for 13. Vector Valued Functions. Test your knowledge with carefully crafted questions across easy, medium, and hard difficulty levels.</p>
-        <p style="font-size:13px; color:#64748b; margin-top:4px;">🔄 Last updated: 2026-08-16</p>
-<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:16px 0;"><div style="background:#dcfce7; padding:12px; border-radius:10px; text-align:center; border:1px solid #86efac;"><div style="font-size:24px; font-weight:700; color:#166534;">204</div><div style="font-size:12px; color:#64748b;">Easy Questions</div></div><div style="background:#fef9c3; padding:12px; border-radius:10px; text-align:center; border:1px solid #fde047;"><div style="font-size:24px; font-weight:700; color:#854d0e;">484</div><div style="font-size:12px; color:#64748b;">Medium Questions</div></div><div style="background:#fee2e2; padding:12px; border-radius:10px; text-align:center; border:1px solid #fca5a5;"><div style="font-size:24px; font-weight:700; color:#991b1b;">486</div><div style="font-size:12px; color:#64748b;">Hard Questions</div></div></div><div style="margin:16px 0;"><h3 style="font-size:16px; color:#1e293b; margin-bottom:12px;">📝 Topics in this Chapter</h3><div style="display:flex; flex-direction:column; gap:8px;"><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/antiderivatives-of-vector-functions.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Antiderivatives of vector functions</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">25 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/arc-length-of-vector-valued-function.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Arc length of vector valued function</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">26 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/arc-length-parameterization.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Arc length parameterization</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">25 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/artificial-satellites-orbital-mechanics.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Artificial satellites orbital mechanics</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">26 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/binormal-vector-formula.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Binormal vector formula</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">26 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/calculus-of-vector-valued-functions.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Calculus of Vector Valued Functions</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">26 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/central-forces-in-orbital-motion.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Central forces in orbital motion</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">27 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/change-of-parameter-for-curves.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Change of parameter for curves</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">25 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/change-of-parameter-of-arc-length.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Change of Parameter of Arc Length</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">25 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/curvature-formulas-summary.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Curvature formulas summary</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">25 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/curvature-in-calculus.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Curvature in calculus</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">28 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/curvature-interpretation-in-2d.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Curvature interpretation in 2D</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">26 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/curvature-of-a-curve-definition.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Curvature of a curve definition</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">25 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/definite-integral-of-vector-valued-functions.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Definite integral of vector valued functions</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">20 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/derivative-of-vector-valued-functions.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Derivative of vector valued functions</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">25 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/derivative-rules-for-vector-functions.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Derivative rules for vector functions</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">25 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/displacement-and-distance-traveled-vector.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Displacement and distance traveled vector</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">26 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/graphing-parametric-curves-with-technology.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Graphing parametric curves with technology</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">23 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/graphing-vector-valued-functions.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Graphing vector valued functions</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">25 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/how-to-find-arc-length-parametrization.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 How to find arc length parametrization</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">27 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/integration-rules-for-vector-functions.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Integration rules for vector functions</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">24 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/introduction-to-vector-valued-functions.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Introduction to Vector Valued Functions</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">25 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/inward-unit-normal-vector-in-2d.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Inward unit normal vector in 2D</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">24 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/keplers-first-and-second-laws-explained.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Kepler&#039;s first and second laws explained</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">27 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/keplers-laws-in-calculus.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Kepler&#039;s Laws in calculus</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">26 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/keplers-laws-of-planetary-motion.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Kepler&#039;s laws of planetary motion</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">27 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/keplers-third-law-formula.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Kepler&#039;s third law formula</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">27 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/limits-and-continuity-of-vector-functions.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Limits and continuity of vector functions</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">25 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/motion-along-a-curve-in-calculus.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Motion Along a Curve in calculus</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">28 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/newtons-law-of-gravitation-and-kepler.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Newton&#039;s law of gravitation and Kepler</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">28 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/parametric-curves-in-3d-space.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Parametric curves in 3D space</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">24 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/parametric-equations-for-surface-intersections.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Parametric equations for surface intersections</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">24 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/parametric-equations-of-projectile-motion.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Parametric equations of projectile motion</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">28 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/projectile-motion-vector-model.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Projectile motion vector model</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">27 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/properties-of-arc-length-parametrization.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Properties of arc length parametrization</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">24 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/radius-of-curvature-formula.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Radius of curvature formula</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">26 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/smooth-parametrizations-of-curves.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Smooth parametrizations of curves</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">24 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/tangent-and-normal-vectors-for-arc-length-parameter.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Tangent and normal vectors for arc length parameter</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">25 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/tangent-line-to-vector-function-graph.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Tangent line to vector function graph</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">26 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/tangential-and-normal-components-of-acceleration.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Tangential and normal components of acceleration</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">27 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/unit-normal-vector-formula.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Unit normal vector formula</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">25 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/unit-tangent-normal-and-binormal-vectors.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Unit Tangent Normal and Binormal Vectors</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">27 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/unit-tangent-vector-formula.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Unit tangent vector formula</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">25 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/vector-equation-of-a-line-segment.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Vector equation of a line segment</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">24 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/vector-valued-functions-definition-and-examples.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Vector valued functions definition and examples</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">24 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/velocity-acceleration-speed-vector-functions.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Velocity acceleration speed vector functions</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">27 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div></div></div>        <div style="text-align: center; margin-top: 20px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+            <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">About 13. Vector Valued Functions</h2>
+            <p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">Vector Valued Functions: A vector-valued function is a rule that takes a single input number (usually time, *t*) and gives back a vector as its output. Instead of giving you just one number (like a scalar function, f(x) = 2x), it gives you a list of numbers that describe a point in 2D or 3D space. In 2D, it looks like r(t) = < f(t), g(t) > , and in 3D it looks like r(t) = < f(t), g(t), h(t) >. The functions f(t), g(t), and h(t) are called the component functions, and they are just regular, ordinary functions that each control one coordinate (x, y, and z) of the output point.</p><p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">Example: To make this clear, imagine throwing a ball. Its position at any second (*t*) is not just a single number, but a location on the field. A vector-valued function like r(t) = < 2t, 5t - t² > describes this path. Here, the x-coordinate is 2t (moving right at a steady speed), and the y-coordinate is 5t - t² (moving up and then down due to gravity). If you plug in *t=2*, you get r(2) = < 4, 6 >, which is the specific point (4,6) on the field where the ball is at 2 seconds.</p><p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">Reason: The reason we use vector-valued functions is that real-life movement happens in space, not just on a line. A regular function can only tell you how far away something is or its height, but it cannot tell you both the height and the horizontal distance at the same time. Vector-valued functions bundle all that information into one neat package. This allows us to see the entire path of a moving object as a single curve (like a parabola or a helix) instead of trying to piece together multiple separate graphs.</p><p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">Visualize and Use Vector-Valued Functions: To visualize a vector-valued function, imagine the input *t* as a clock ticking. At each tick, the function calculates a new point in space. As *t* increases, these points trace out a continuous curve or path. The function itself is not the curve you see on paper; rather, it is the "recipe" or the GPS directions that tells you where to plot the next point. In 2D, the curve lies on a flat plane (like a graph on your paper), and in 3D, it floats in space like a roller-coaster track.</p><p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">Example: Consider the 3D function r(t) = < cos(t), sin(t), t >. If you plug in *t=0*, you get < 1, 0, 0 >. If you plug in *t=π/2*, you get < 0, 1, π/2 >. If you keep going, the x and y coordinates go around in a circle (cos and sin), while the z-coordinate keeps climbing up (t). This creates a shape like a spiral staircase or a slinky. This is called a helix, and it is impossible to graph with a single, ordinary function because for any x-value, you have multiple z-values.</p><p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">Reason: The real power of using vector-valued functions is that they allow us to apply calculus (derivatives and integrals) to paths in space. The derivative of this function, r'(t), does not give you a slope like in regular calculus; instead, it gives you a tangent vector that points in the direction of motion at that exact instant. The length of this derivative gives you the speed of the object. Without vector-valued functions, calculating the speed, velocity, or acceleration of a roller-coaster car moving in 3D would require a messy system of separate equations. This function unifies all of that math into one elegant equation.</p>
+            <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
+                <p style="text-align:justify; line-height:1.7; color:#334155; font-size:0.95rem;">Practice MCQs for 13. Vector Valued Functions. Test your knowledge with carefully crafted questions across easy, medium, and hard difficulty levels.</p>
+        <p style="font-size:13px; color:#94a3b8; margin-top:6px;">🔄 Last updated: 2026-08-16</p>
+<div class="badge-grid"><div class="badge-item" style="background:#dcfce7; border-color:#86efac;"><div class="num" style="color:#166534;">204</div><div class="lbl">Easy</div></div><div class="badge-item" style="background:#fef9c3; border-color:#fde047;"><div class="num" style="color:#854d0e;">484</div><div class="lbl">Medium</div></div><div class="badge-item" style="background:#fee2e2; border-color:#fca5a5;"><div class="num" style="color:#991b1b;">486</div><div class="lbl">Hard</div></div></div><div style="margin:20px 0;"><h3 style="font-size:17px; font-weight:700; color:#1e293b; margin-bottom:14px;">📌 Topics in this Chapter</h3><div style="display:flex; flex-direction:column; gap:10px;"><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/antiderivatives-of-vector-functions.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Antiderivatives of vector functions</span></div><div class="topic-actions"><span class="topic-count">25 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/arc-length-of-vector-valued-function.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Arc length of vector valued function</span></div><div class="topic-actions"><span class="topic-count">26 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/arc-length-parameterization.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Arc length parameterization</span></div><div class="topic-actions"><span class="topic-count">25 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/artificial-satellites-orbital-mechanics.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Artificial satellites orbital mechanics</span></div><div class="topic-actions"><span class="topic-count">26 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/binormal-vector-formula.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Binormal vector formula</span></div><div class="topic-actions"><span class="topic-count">26 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/calculus-of-vector-valued-functions.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Calculus of Vector Valued Functions</span></div><div class="topic-actions"><span class="topic-count">26 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/central-forces-in-orbital-motion.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Central forces in orbital motion</span></div><div class="topic-actions"><span class="topic-count">27 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/change-of-parameter-for-curves.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Change of parameter for curves</span></div><div class="topic-actions"><span class="topic-count">25 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/change-of-parameter-of-arc-length.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Change of Parameter of Arc Length</span></div><div class="topic-actions"><span class="topic-count">25 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/curvature-formulas-summary.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Curvature formulas summary</span></div><div class="topic-actions"><span class="topic-count">25 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/curvature-in-calculus.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Curvature in calculus</span></div><div class="topic-actions"><span class="topic-count">28 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/curvature-interpretation-in-2d.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Curvature interpretation in 2D</span></div><div class="topic-actions"><span class="topic-count">26 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/curvature-of-a-curve-definition.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Curvature of a curve definition</span></div><div class="topic-actions"><span class="topic-count">25 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/definite-integral-of-vector-valued-functions.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Definite integral of vector valued functions</span></div><div class="topic-actions"><span class="topic-count">20 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/derivative-of-vector-valued-functions.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Derivative of vector valued functions</span></div><div class="topic-actions"><span class="topic-count">25 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/derivative-rules-for-vector-functions.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Derivative rules for vector functions</span></div><div class="topic-actions"><span class="topic-count">25 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/displacement-and-distance-traveled-vector.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Displacement and distance traveled vector</span></div><div class="topic-actions"><span class="topic-count">26 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/graphing-parametric-curves-with-technology.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Graphing parametric curves with technology</span></div><div class="topic-actions"><span class="topic-count">23 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/graphing-vector-valued-functions.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Graphing vector valued functions</span></div><div class="topic-actions"><span class="topic-count">25 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/how-to-find-arc-length-parametrization.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">How to find arc length parametrization</span></div><div class="topic-actions"><span class="topic-count">27 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/integration-rules-for-vector-functions.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Integration rules for vector functions</span></div><div class="topic-actions"><span class="topic-count">24 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/introduction-to-vector-valued-functions.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Introduction to Vector Valued Functions</span></div><div class="topic-actions"><span class="topic-count">25 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/inward-unit-normal-vector-in-2d.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Inward unit normal vector in 2D</span></div><div class="topic-actions"><span class="topic-count">24 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/keplers-first-and-second-laws-explained.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Kepler&#039;s first and second laws explained</span></div><div class="topic-actions"><span class="topic-count">27 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/keplers-laws-in-calculus.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Kepler&#039;s Laws in calculus</span></div><div class="topic-actions"><span class="topic-count">26 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/keplers-laws-of-planetary-motion.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Kepler&#039;s laws of planetary motion</span></div><div class="topic-actions"><span class="topic-count">27 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/keplers-third-law-formula.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Kepler&#039;s third law formula</span></div><div class="topic-actions"><span class="topic-count">27 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/limits-and-continuity-of-vector-functions.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Limits and continuity of vector functions</span></div><div class="topic-actions"><span class="topic-count">25 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/motion-along-a-curve-in-calculus.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Motion Along a Curve in calculus</span></div><div class="topic-actions"><span class="topic-count">28 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/newtons-law-of-gravitation-and-kepler.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Newton&#039;s law of gravitation and Kepler</span></div><div class="topic-actions"><span class="topic-count">28 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/parametric-curves-in-3d-space.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Parametric curves in 3D space</span></div><div class="topic-actions"><span class="topic-count">24 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/parametric-equations-for-surface-intersections.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Parametric equations for surface intersections</span></div><div class="topic-actions"><span class="topic-count">24 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/parametric-equations-of-projectile-motion.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Parametric equations of projectile motion</span></div><div class="topic-actions"><span class="topic-count">28 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/projectile-motion-vector-model.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Projectile motion vector model</span></div><div class="topic-actions"><span class="topic-count">27 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/properties-of-arc-length-parametrization.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Properties of arc length parametrization</span></div><div class="topic-actions"><span class="topic-count">24 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/radius-of-curvature-formula.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Radius of curvature formula</span></div><div class="topic-actions"><span class="topic-count">26 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/smooth-parametrizations-of-curves.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Smooth parametrizations of curves</span></div><div class="topic-actions"><span class="topic-count">24 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/tangent-and-normal-vectors-for-arc-length-parameter.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Tangent and normal vectors for arc length parameter</span></div><div class="topic-actions"><span class="topic-count">25 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/tangent-line-to-vector-function-graph.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Tangent line to vector function graph</span></div><div class="topic-actions"><span class="topic-count">26 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/tangential-and-normal-components-of-acceleration.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Tangential and normal components of acceleration</span></div><div class="topic-actions"><span class="topic-count">27 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/unit-normal-vector-formula.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Unit normal vector formula</span></div><div class="topic-actions"><span class="topic-count">25 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/unit-tangent-normal-and-binormal-vectors.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Unit Tangent Normal and Binormal Vectors</span></div><div class="topic-actions"><span class="topic-count">27 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/unit-tangent-vector-formula.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Unit tangent vector formula</span></div><div class="topic-actions"><span class="topic-count">25 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/vector-equation-of-a-line-segment.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Vector equation of a line segment</span></div><div class="topic-actions"><span class="topic-count">24 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/vector-valued-functions-definition-and-examples.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Vector valued functions definition and examples</span></div><div class="topic-actions"><span class="topic-count">24 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/calculus/vector-valued-functions/topics/velocity-acceleration-speed-vector-functions.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Velocity acceleration speed vector functions</span></div><div class="topic-actions"><span class="topic-count">27 MCQs</span><span class="topic-arrow">View →</span></div></div></div></div>        <div class="footer-links">
             <a href="/quiz" class="btn-primary">🚀 Start Quiz</a>
             <a href="/practice" class="btn-secondary">📝 Practice Mode</a>
         </div>
