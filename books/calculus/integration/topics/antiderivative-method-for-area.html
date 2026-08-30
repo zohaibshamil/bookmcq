@@ -50,11 +50,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         skipHtmlTypes: 'script',
         ignoreHtmlClass: 'no-mathjax',
         processHtmlClass: 'math'
-      },
-      startup: {
-        ready: function() {
-          console.log('MathJax loaded, waiting for render trigger');
-        }
       }
     };
   </script>
@@ -70,15 +65,13 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       return escaped;
     }
 
-    var mathElements = [];
-    var isRendering = false;
-    var renderQueue = [];
+    var mathRendered = false;
+    var renderAttempts = 0;
+    var maxAttempts = 10;
 
     function renderMathInElement(element) {
       if (!element) return Promise.resolve();
-      if (!window.MathJax) {
-        // Store element for later rendering
-        mathElements.push(element);
+      if (!window.MathJax || !MathJax.typesetPromise) {
         return Promise.resolve();
       }
       try {
@@ -89,59 +82,55 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       }
     }
 
-    function processNextBatch() {
-      if (renderQueue.length === 0) {
-        isRendering = false;
-        return;
-      }
-      var batch = renderQueue.splice(0, 3); // Process 3 elements at a time
-      var promises = batch.map(function(el) {
-        return renderMathInElement(el).catch(function(e) {
-          console.log('Render error:', e);
-        });
-      });
-      Promise.all(promises).then(function() {
-        // Schedule next batch
-        if (renderQueue.length > 0) {
-          requestIdleCallback(processNextBatch, { timeout: 100 });
-        } else {
-          isRendering = false;
-        }
-      });
-    }
-
     function renderAllMath() {
-      if (!window.MathJax) {
-        // MathJax not loaded yet, try again later
-        setTimeout(renderAllMath, 200);
-        return;
-      }
+      renderAttempts++;
       
-      if (isRendering) return;
-      isRendering = true;
-
-      // Collect all math elements
-      var elements = document.querySelectorAll('.math');
-      if (elements.length === 0) {
-        isRendering = false;
+      if (!window.MathJax || !MathJax.typesetPromise) {
+        if (renderAttempts < maxAttempts) {
+          setTimeout(renderAllMath, 300);
+        }
         return;
       }
 
-      // Add any pending elements from before MathJax loaded
-      while (mathElements.length > 0) {
-        renderQueue.push(mathElements.pop());
+      if (mathRendered) return;
+      mathRendered = true;
+
+      var elements = document.querySelectorAll('.math');
+      if (elements.length === 0) return;
+
+      // Convert to array and render in batches
+      var elementArray = Array.from(elements);
+      var batchSize = 5;
+      var index = 0;
+
+      function renderBatch() {
+        var batch = elementArray.slice(index, index + batchSize);
+        if (batch.length === 0) return;
+
+        var promises = batch.map(function(el) {
+          return renderMathInElement(el).catch(function(e) {
+            console.log('Render error:', e);
+          });
+        });
+
+        Promise.all(promises).then(function() {
+          index += batchSize;
+          if (index < elementArray.length) {
+            // Use requestIdleCallback if available, else setTimeout
+            if (window.requestIdleCallback) {
+              requestIdleCallback(renderBatch, { timeout: 100 });
+            } else {
+              setTimeout(renderBatch, 50);
+            }
+          }
+        });
       }
 
-      // Add all current elements to queue
-      for (var i = 0; i < elements.length; i++) {
-        renderQueue.push(elements[i]);
-      }
-
-      // Start processing
-      if (renderQueue.length > 0) {
-        requestIdleCallback(processNextBatch, { timeout: 50 });
+      // Start rendering
+      if (window.requestIdleCallback) {
+        requestIdleCallback(renderBatch, { timeout: 100 });
       } else {
-        isRendering = false;
+        setTimeout(renderBatch, 50);
       }
     }
 
@@ -150,41 +139,14 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       return text;
     }
 
-    function setupLazyMathRendering() {
-      if (!window.MathJax) {
-        setTimeout(setupLazyMathRendering, 500);
-        return;
-      }
-
-      var observer = new IntersectionObserver(function(entries) {
-        entries.forEach(function(entry) {
-          if (entry.isIntersecting) {
-            var element = entry.target;
-            // Only render if not already rendered
-            if (!element.dataset.rendered) {
-              element.dataset.rendered = 'true';
-              renderMathInElement(element);
-            }
-            observer.unobserve(element);
-          }
-        });
-      }, {
-        rootMargin: '200px',
-        threshold: 0.1
-      });
-
-      // Observe all math elements
-      var elements = document.querySelectorAll('.math');
-      for (var i = 0; i < elements.length; i++) {
-        observer.observe(elements[i]);
-      }
-    }
-
     document.addEventListener('DOMContentLoaded', function() {
-      // Initial render - only visible content
+      // Wait for MathJax to be ready
+      setTimeout(renderAllMath, 200);
+    });
+
+    // Also try when page fully loads
+    window.addEventListener('load', function() {
       setTimeout(renderAllMath, 100);
-      // Setup lazy loading for rest
-      setTimeout(setupLazyMathRendering, 300);
     });
 
     if (window.MathJax) {
@@ -346,8 +308,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     @media (max-width: 480px) { .badge-item .num { font-size: 1.4rem; } }
 
     /* question blocks */
-    .q-block { background: white; padding: 14px 12px; border-radius: 12px; margin-bottom: 16px; border: 1px solid #e5e7eb; text-align: justify; }
-    .q-block { contain: layout style paint; }
+    .q-block { background: white; padding: 14px 12px; border-radius: 12px; margin-bottom: 16px; border: 1px solid #e5e7eb; text-align: justify; contain: layout style paint; }
     .q-text { font-weight: 600; margin: 0 0 10px; line-height: 1.5; text-align: justify; }
     .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; font-size: 0.9rem; color: #334155; text-align: justify; }
     .opt-item { display: flex; align-items: flex-start; gap: 4px; padding: 2px 0; text-align: justify; }
