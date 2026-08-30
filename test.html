@@ -7826,20 +7826,26 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
         }).length;
     });
 
-    // --- TOPICS HTML WITHOUT ICONS ---
+    // --- ENHANCED TOPICS HTML WITH MOBILE OPTIMIZATION ---
     var topicsHtml = '';
     if (chapterTopics && chapterTopics.length > 0) {
+        var iconColors = [''];
+        
         topicsHtml = '<div style="margin:20px 0;">';
         topicsHtml += '<h3 style="font-size:17px; font-weight:700; color:#1e293b; margin-bottom:14px;">📌 Topics in this Chapter</h3>';
         topicsHtml += '<div style="display:flex; flex-direction:column; gap:10px;">';
         
-        chapterTopics.forEach(function(topic) {
+        chapterTopics.forEach(function(topic, index) {
             var topicSlug = topic.slug || createSlug(topic.name);
             var topicName = escapeHtml(topic.name);
             var topicQCount = topicQuestionCounts[topic.id] || 0;
+            var icon = iconColors[index % iconColors.length];
             
             topicsHtml += '<div onclick="window.location.href=\'/books/' + bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html\'" class="topic-item">';
-            topicsHtml += '<span class="topic-name">📝 ' + topicName + '</span>';
+            topicsHtml += '<div class="topic-content">';
+            topicsHtml += '<span class="topic-icon">' + icon + '</span>';
+            topicsHtml += '<span class="topic-name">' + topicName + '</span>';
+            topicsHtml += '</div>';
             topicsHtml += '<div class="topic-actions">';
             topicsHtml += '<span class="topic-count">' + topicQCount + ' MCQs</span>';
             topicsHtml += '<span class="topic-arrow">View →</span>';
@@ -8076,14 +8082,23 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
     '            background: #e8edf5;\n' +
     '        }\n' +
     '\n' +
+    '        .topic-item .topic-content {\n' +
+    '            display: flex;\n' +
+    '            align-items: center;\n' +
+    '            gap: 10px;\n' +
+    '            flex: 1 1 auto;\n' +
+    '            min-width: 140px;\n' +
+    '        }\n' +
+    '        .topic-item .topic-icon {\n' +
+    '            font-size: 1.1rem;\n' +
+    '            flex-shrink: 0;\n' +
+    '        }\n' +
     '        .topic-item .topic-name {\n' +
     '            font-weight: 500;\n' +
     '            color: #1e293b;\n' +
     '            font-size: 0.95rem;\n' +
     '            word-break: break-word;\n' +
     '            line-height: 1.4;\n' +
-    '            flex: 1 1 auto;\n' +
-    '            min-width: 140px;\n' +
     '        }\n' +
     '        .topic-item .topic-actions {\n' +
     '            display: flex;\n' +
@@ -8124,9 +8139,11 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
     '                gap: 8px;\n' +
     '                min-height: 70px;\n' +
     '            }\n' +
-    '            .topic-item .topic-name {\n' +
+    '            .topic-item .topic-content {\n' +
     '                width: 100%;\n' +
     '                min-width: unset;\n' +
+    '            }\n' +
+    '            .topic-item .topic-name {\n' +
     '                font-size: 0.92rem;\n' +
     '            }\n' +
     '            .topic-item .topic-actions {\n' +
@@ -8260,7 +8277,6 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
     '</body>\n' +
     '</html>';
 }
- 
 // ✅ ADD THIS FUNCTION AT THE TOP OF YOUR SCRIPT (server-side)
 function escapeHtmlPreserveMath(text) {
     if (!text) return '';
