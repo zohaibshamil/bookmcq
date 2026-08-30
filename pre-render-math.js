@@ -1,5 +1,5 @@
 // pre-render-math.js
-const fs = require('fs-extra');
+const fs = require('fs');
 const path = require('path');
 const mjAPI = require('mathjax-node');
 
@@ -13,7 +13,27 @@ mjAPI.config({
 });
 mjAPI.start();
 
-// Function to render math to SVG
+// Helper to render math synchronously
+function renderMath(math, display = false) {
+    let result = math;
+    mjAPI.typeset({
+        math: math,
+        format: 'TeX',
+        svg: true,
+        speakText: false,
+        ex: 6,
+        width: 1000,
+        display: display
+    }, function(data) {
+        if (!data.errors) {
+            result = data.svg;
+        } else {
+            console.log('MathJax error for:', math, data.errors);
+        }
+    });
+    return result;
+}
+
 function renderMathToHTML(text) {
     if (!text) return text;
     if (!text.includes('$') && !text.includes('\\(') && !text.includes('\\[')) {
@@ -23,68 +43,22 @@ function renderMathToHTML(text) {
     try {
         // Process inline math: $...$
         let processed = text.replace(/\$(.+?)\$/g, function(match, math) {
-            let result = '';
-            mjAPI.typeset({
-                math: math,
-                format: 'TeX',
-                svg: true,
-                speakText: false,
-                ex: 6,
-                width: 1000
-            }, function(data) {
-                result = data.errors ? math : data.svg;
-            });
-            return '<span class="math-inline">' + result + '</span>';
+            return '<span class="math-inline">' + renderMath(math, false) + '</span>';
         });
         
         // Process display math: $$...$$
         processed = processed.replace(/\$\$(.+?)\$\$/g, function(match, math) {
-            let result = '';
-            mjAPI.typeset({
-                math: math,
-                format: 'TeX',
-                svg: true,
-                speakText: false,
-                ex: 6,
-                width: 1000,
-                display: true
-            }, function(data) {
-                result = data.errors ? math : data.svg;
-            });
-            return '<div class="math-display">' + result + '</div>';
+            return '<div class="math-display">' + renderMath(math, true) + '</div>';
         });
         
         // Process \(...\) style
         processed = processed.replace(/\\\((.+?)\\\)/g, function(match, math) {
-            let result = '';
-            mjAPI.typeset({
-                math: math,
-                format: 'TeX',
-                svg: true,
-                speakText: false,
-                ex: 6,
-                width: 1000
-            }, function(data) {
-                result = data.errors ? math : data.svg;
-            });
-            return '<span class="math-inline">' + result + '</span>';
+            return '<span class="math-inline">' + renderMath(math, false) + '</span>';
         });
         
         // Process \[...\] style
         processed = processed.replace(/\\\[(.+?)\\\]/g, function(match, math) {
-            let result = '';
-            mjAPI.typeset({
-                math: math,
-                format: 'TeX',
-                svg: true,
-                speakText: false,
-                ex: 6,
-                width: 1000,
-                display: true
-            }, function(data) {
-                result = data.errors ? math : data.svg;
-            });
-            return '<div class="math-display">' + result + '</div>';
+            return '<div class="math-display">' + renderMath(math, true) + '</div>';
         });
         
         return processed;
@@ -94,53 +68,85 @@ function renderMathToHTML(text) {
     }
 }
 
-// Function to process all HTML files
+// Process HTML files
 async function processHTMLFiles(dir) {
-    const files = await fs.readdir(dir);
+    const files = fs.readdirSync(dir);
     
     for (const file of files) {
         const filePath = path.join(dir, file);
-        const stat = await fs.stat(filePath);
+        const stat = fs.statSync(filePath);
         
         if (stat.isDirectory()) {
-            // Recursively process subdirectories
-            await processHTMLFiles(filePath);
+            // Skip node_modules and .git
+            if (file !== 'node_modules' && file !== '.git' && file !== '.github') {
+                processHTMLFiles(filePath);
+            }
         } else if (file.endsWith('.html') || file.endsWith('.htm')) {
+            // Skip files that are already rendered
+            if (file.includes('-rendered')) continue;
+            
             console.log('Processing:', filePath);
             
-            // Read file
-            let content = await fs.readFile(filePath, 'utf-8');
-            
-            // Check if file contains math
-            if (content.includes('$') || content.includes('\\(') || content.includes('\\[')) {
-                // Extract and render math in specific sections
-                // This is a simplified version - you may need to adjust based on your structure
+            try {
+                let content = fs.readFileSync(filePath, 'utf-8');
                 
-                // Process all math content
-                content = content.replace(/>([^<]*?)</g, function(match, text) {
-                    if (text.includes('$') || text.includes('\\(') || text.includes('\\[')) {
-                        return '>' + renderMathToHTML(text) + '<';
+                // Check if file contains math
+                if (content.includes('$') || content.includes('\\(') || content.includes('\\[')) {
+                    // Process content in specific sections
+                    // Look for content within math class elements
+                    
+                    // Find all .math content
+                    content = content.replace(/<p[^>]*class="[^"]*math[^"]*"[^>]*>([\s\S]*?)<\/p>/g, function(match, text) {
+                        if (text.includes('$') || text.includes('\\(') || text.includes('\\[')) {
+                            return match.replace(text, renderMathToHTML(text));
+                        }
+                        return match;
+                    });
+                    
+                    // Find all .q-text content
+                    content = content.replace(/<p[^>]*class="[^"]*q-text[^"]*"[^>]*>([\s\S]*?)<\/p>/g, function(match, text) {
+                        if (text.includes('$') || text.includes('\\(') || text.includes('\\[')) {
+                            return match.replace(text, renderMathToHTML(text));
+                        }
+                        return match;
+                    });
+                    
+                    // Find all .explanation content
+                    content = content.replace(/<div[^>]*class="[^"]*explanation[^"]*"[^>]*>([\s\S]*?)<\/div>/g, function(match, text) {
+                        if (text.includes('$') || text.includes('\\(') || text.includes('\\[')) {
+                            return match.replace(text, renderMathToHTML(text));
+                        }
+                        return match;
+                    });
+                    
+                    // Write back only if changed
+                    if (content.includes('math-inline') || content.includes('math-display')) {
+                        const outputPath = filePath.replace('.html', '-rendered.html');
+                        fs.writeFileSync(outputPath, content, 'utf-8');
+                        console.log('  ✓ Rendered math saved to:', path.basename(outputPath));
+                        
+                        // Optionally replace original
+                        fs.writeFileSync(filePath, content, 'utf-8');
+                        console.log('  ✓ Updated original file:', path.basename(filePath));
                     }
-                    return match;
-                });
-                
-                // Write back
-                await fs.writeFile(filePath, content, 'utf-8');
-                console.log('  ✓ Rendered math in:', filePath);
+                }
+            } catch (error) {
+                console.error('Error processing:', filePath, error);
             }
         }
     }
 }
 
-// Main execution
-async function main() {
+// Main function
+function main() {
+    console.log('🚀 Starting math pre-rendering...');
+    console.log('📁 Processing all HTML files...');
+    
     try {
-        console.log('Starting math pre-rendering...');
-        await processHTMLFiles('./'); // Process all HTML files in current directory
+        processHTMLFiles('./');
         console.log('✅ Math pre-rendering complete!');
-        process.exit(0);
     } catch (error) {
-        console.error('Error:', error);
+        console.error('❌ Error:', error);
         process.exit(1);
     }
 }
