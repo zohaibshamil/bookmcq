@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
 <!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -89,117 +89,272 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         }
     </script>
     <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
         body {
-            font-family: Arial, sans-serif;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background: linear-gradient(135deg, #667eea, #764ba2);
-            margin: 0;
-            padding: 0;
             min-height: 100vh;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
+        
         .container {
             max-width: 900px;
-            margin: auto;
-            padding: 20px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 0 8px;
         }
+        
         .card {
             background: white;
-            border-radius: 16px;
-            padding: 20px;
-            margin-top: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-radius: 20px;
+            padding: 18px 16px 24px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+            width: 100%;
         }
+        
+        @media (min-width: 640px) { 
+            .card { padding: 28px 32px; } 
+        }
+        @media (max-width: 480px) { 
+            .card { padding: 14px 12px; } 
+        }
+
+        .back-link { 
+            display: inline-block; 
+            margin-bottom: 12px; 
+            color: #7c3aed; 
+            text-decoration: none; 
+            font-weight: 500; 
+        }
+        .back-link:hover { text-decoration: underline; }
+        
+        .breadcrumb { 
+            font-size: 13px; 
+            color: #64748b; 
+            margin-bottom: 10px; 
+            word-break: break-word; 
+        }
+        .breadcrumb a { color: #7c3aed; text-decoration: none; }
+        .breadcrumb a:hover { text-decoration: underline; }
+
+        h1 { 
+            font-size: 1.6rem; 
+            line-height: 1.2; 
+            margin: 6px 0 4px; 
+            word-break: break-word; 
+        }
+        @media (max-width: 480px) { h1 { font-size: 1.4rem; } }
+
+        .chapter-info { 
+            font-size: 0.9rem; 
+            color: #475569; 
+            margin: 6px 0 10px; 
+        }
+
+        /* ---- BADGE GRID ---- */
+        .badge-grid { 
+            display: grid; 
+            grid-template-columns: repeat(3,1fr); 
+            gap: 8px; 
+            margin: 14px 0; 
+        }
+        .badge-item { 
+            padding: 10px 4px; 
+            border-radius: 12px; 
+            text-align: center; 
+            border: 1px solid #e5e7eb; 
+        }
+        .badge-item .num { font-size: 1.8rem; font-weight: 700; }
+        .badge-item .lbl { font-size: 0.7rem; color: #64748b; }
+        @media (max-width: 480px) { .badge-item .num { font-size: 1.4rem; } }
+
+        /* ---- TOPIC ITEMS (ENHANCED FOR MOBILE) ---- */
+        .topic-item {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 18px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border-left: 4px solid #8b5cf6;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            gap: 10px;
+            min-height: 56px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .topic-item:hover {
+            background: #f1f5f9;
+            transform: translateX(4px);
+        }
+        .topic-item:active {
+            transform: scale(0.98);
+            background: #e8edf5;
+        }
+
+        .topic-item .topic-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1 1 auto;
+            min-width: 140px;
+        }
+        .topic-item .topic-icon {
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+        .topic-item .topic-name {
+            font-weight: 500;
+            color: #1e293b;
+            font-size: 0.95rem;
+            word-break: break-word;
+            line-height: 1.4;
+        }
+        .topic-item .topic-actions {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+        .topic-item .topic-count {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: white;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            min-width: 50px;
+            text-align: center;
+            white-space: nowrap;
+            letter-spacing: 0.3px;
+        }
+        .topic-item .topic-arrow {
+            color: #8b5cf6;
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: transform 0.2s ease;
+        }
+        .topic-item:hover .topic-arrow {
+            transform: translateX(3px);
+        }
+
+        /* Mobile responsiveness for topics */
+        @media (max-width: 550px) {
+            .topic-item {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 14px 16px;
+                gap: 8px;
+                min-height: 70px;
+            }
+            .topic-item .topic-content {
+                width: 100%;
+                min-width: unset;
+            }
+            .topic-item .topic-name {
+                font-size: 0.92rem;
+            }
+            .topic-item .topic-actions {
+                width: 100%;
+                justify-content: space-between;
+                padding-top: 4px;
+                border-top: 1px dashed #e5e7eb;
+            }
+            .topic-item .topic-count {
+                font-size: 11px;
+                padding: 3px 12px;
+                min-width: 45px;
+            }
+            .topic-item .topic-arrow {
+                font-size: 12px;
+            }
+            .topic-item:active {
+                transform: scale(0.97);
+            }
+        }
+
+        @media (max-width: 380px) {
+            .topic-item {
+                padding: 12px 12px;
+                gap: 6px;
+            }
+            .topic-item .topic-name {
+                font-size: 0.85rem;
+            }
+            .topic-item .topic-actions {
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+            .topic-item .topic-count {
+                font-size: 10px;
+                padding: 2px 10px;
+            }
+        }
+
+        /* ---- BUTTONS ---- */
         .btn-primary {
             display: inline-block;
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
-            padding: 14px 32px;
-            border-radius: 12px;
+            padding: 12px 28px;
+            border-radius: 40px;
             text-decoration: none;
-            font-weight: bold;
-            margin-top: 10px;
+            font-weight: 700;
+            margin-top: 8px;
             transition: 0.2s;
+            border: none;
+            cursor: pointer;
         }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        .btn-primary:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 8px 20px rgba(102,126,234,0.4); 
         }
+
         .btn-secondary {
             display: inline-block;
-            background: #f3f4f6;
+            background: #f1f5f9;
             color: #1e293b;
-            padding: 10px 24px;
-            border-radius: 10px;
+            padding: 10px 22px;
+            border-radius: 40px;
             text-decoration: none;
             font-weight: 500;
-            margin-top: 10px;
-            transition: 0.2s;
-            border: 1px solid #e5e7eb;
+            border: 1px solid #d1d5db;
         }
-        .btn-secondary:hover {
-            background: #e5e7eb;
+        .btn-secondary:hover { background: #e5e7eb; }
+
+        .footer-links { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 10px; 
+            justify-content: center; 
+            margin-top: 18px; 
         }
-        .back-link {
-            display: inline-block;
-            margin-bottom: 15px;
-            color: #7c3aed;
-            text-decoration: none;
-        }
-        .back-link:hover {
-            text-decoration: underline;
-        }
-        .chapter-info {
-            font-size: 14px;
-            color: #64748b;
-            margin: 8px 0;
-        }
-        .breadcrumb {
-            font-size: 13px;
-            color: #94a3b8;
-            margin-bottom: 12px;
-        }
-        .breadcrumb a {
-            color: #7c3aed;
-            text-decoration: none;
-        }
-        .breadcrumb a:hover {
-            text-decoration: underline;
-        }
-        .math-rendered {
-            display: inline;
-            line-height: 1.6;
-        }
-        .math-rendered mjx-container {
-            display: inline-block;
-            margin: 0 2px;
-        }
-        .justify-text {
-            text-align: justify;
-            text-justify: inter-word;
-        }
-        .definition-text {
-            text-align: justify;
-            text-justify: inter-word;
-            line-height: 1.8;
-        }
-        .option-text {
-            text-align: justify;
-            text-justify: inter-word;
-        }
-        .explanation-text {
-            text-align: justify;
-            text-justify: inter-word;
-            line-height: 1.6;
-        }
-        .question-text {
-            font-size: 1rem;
-            line-height: 1.6;
-        }
-        .option-text {
-            display: inline;
-        }
-        .explanation-text {
-            font-size: 0.875rem;
-            line-height: 1.5;
+
+        img, svg { max-width: 100%; height: auto; }
+        .math { display: inline; }
+        
+        /* ---- RESPONSIVE TEXT ADJUSTMENTS ---- */
+        @media (max-width: 480px) {
+            .breadcrumb { font-size: 11px; }
+            .chapter-info { font-size: 0.8rem; }
+            .btn-primary, .btn-secondary { 
+                padding: 10px 20px; 
+                font-size: 0.9rem;
+                width: 100%;
+                text-align: center;
+            }
+            .footer-links { 
+                flex-direction: column; 
+                align-items: stretch; 
+                gap: 8px; 
+            }
         }
     </style>
 </head>
@@ -208,29 +363,30 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PT363CT7"
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
-<!-- Website Header -->
-<div style="text-align:center; padding:10px 0 5px 0;">
-    <a href="/" style="text-decoration:none;">
-        <span style="font-size:18px; font-weight:700; color:#7c3aed; background:white; padding:6px 20px; border-radius:30px; display:inline-block; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
-            🎓 BookMCQ
-        </span>
-    </a>
-</div>
+
 <div class="container">
+    <!-- header -->
+    <div style="text-align:center; padding:6px 0 12px;">
+        <a href="/" style="text-decoration:none;">
+            <span style="font-size:1.2rem; font-weight:700; color:#7c3aed; background:white; padding:6px 18px; border-radius:40px; display:inline-block; box-shadow:0 2px 8px rgba(0,0,0,0.08);">🎓 BookMCQ</span>
+        </a>
+    </div>
+
     <div class="card">
+        <!-- breadcrumb -->
         <div class="breadcrumb">
             <a href="/">🏠 Home</a> &gt; <a href="/books/operating-system/">Operating System</a> &gt; 6. CPU Scheduling
         </div>
         <a href="/books/operating-system/" class="back-link">← Back to Operating System</a>
-        <h1>6. CPU Scheduling - Operating System</h1>
+        <h1>📖 6. CPU Scheduling</h1>
         <p class="chapter-info">📖 From <strong>Operating System</strong> • 1570 questions available</p>
 
-        <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">About 6. CPU Scheduling</h2>
-        <p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">The CPU (Central Processing Unit) is the brain of the computer, and it can only do one thing at a time. CPU scheduling is the process the OS uses to decide which process gets to use the CPU and for how long. Since there are always many processes waiting for their turn, the scheduler acts like a manager who prioritizes tasks. The goal is to keep the CPU as busy as possible, while also being fair to all processes and making the system feel responsive to the user.</p><p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">Different scheduling algorithms are used for different purposes. For example, a "Round Robin" algorithm gives each process a small time slice and cycles through them, which is great for interactive systems. "Priority scheduling" allows more important tasks to run first. The OS constantly switches between processes, giving the illusion that everything is running at the same time. A good scheduling policy makes a computer feel fast and efficient, even when it is juggling many demanding tasks.</p>
-        <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
-            <p>Practice MCQs for 6. CPU Scheduling. Test your knowledge with carefully crafted questions across easy, medium, and hard difficulty levels.</p>
-        <p style="font-size:13px; color:#64748b; margin-top:4px;">🔄 Last updated: 2026-07-10</p>
-<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:16px 0;"><div style="background:#dcfce7; padding:12px; border-radius:10px; text-align:center; border:1px solid #86efac;"><div style="font-size:24px; font-weight:700; color:#166534;">360</div><div style="font-size:12px; color:#64748b;">Easy Questions</div></div><div style="background:#fef9c3; padding:12px; border-radius:10px; text-align:center; border:1px solid #fde047;"><div style="font-size:24px; font-weight:700; color:#854d0e;">607</div><div style="font-size:12px; color:#64748b;">Medium Questions</div></div><div style="background:#fee2e2; padding:12px; border-radius:10px; text-align:center; border:1px solid #fca5a5;"><div style="font-size:24px; font-weight:700; color:#991b1b;">603</div><div style="font-size:12px; color:#64748b;">Hard Questions</div></div></div><div style="margin:16px 0;"><h3 style="font-size:16px; color:#1e293b; margin-bottom:12px;">📝 Topics in this Chapter</h3><div style="display:flex; flex-direction:column; gap:8px;"><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/multicore-processors-in-multiple-processor-scheduling.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Multicore Processors in Multiple Processor Scheduling</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">43 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/linux-scheduling.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Linux Scheduling</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">75 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/first-come-first-served-scheduling-algorithm-in-operating-system.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 First Come First Served Scheduling Algorithm in Operating System</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">41 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/scheduling-criteria-in-operating-system.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Scheduling Criteria in Operating System</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">53 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/implementation-of-cpu-scheduling-algorithm-model.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Implementation of CPU Scheduling Algorithm Model</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">71 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/cpu-scheduler-in-operating-system.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 CPU Scheduler in Operating System</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">40 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/priority-scheduling-algorithm-in-operating-system.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Priority Scheduling Algorithm in Operating System</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">50 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/multilevel-queue-scheduling-algorithm.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Multilevel Queue Scheduling Algorithm</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">53 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/priority-based-scheduling-in-real-time-cpu-scheduling.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Priority Based Scheduling in Real Time CPU Scheduling</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">41 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/earliest-deadline-first-scheduling-in-real-time-cpu-scheduling.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Earliest Deadline First Scheduling in Real Time CPU Scheduling</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">49 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/proportional-share-scheduling-in-real-time-cpu-scheduling.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Proportional Share Scheduling in Real Time CPU Scheduling</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">46 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/simulations-of-cpu-scheduling-algorithm-model.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Simulations of CPU Scheduling Algorithm Model</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">72 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/contention-scope-in-thread-scheduling.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Contention Scope in Thread Scheduling</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">55 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/cpu-scheduling-basic-concepts.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 CPU Scheduling Basic Concepts</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">54 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/minimizing-latency-in-real-time-cpu-scheduling.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Minimizing Latency in Real Time CPU Scheduling</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">42 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/multilevel-feedback-queue-algorithm.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Multilevel Feedback Queue Algorithm</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">55 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/solaris-scheduling.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Solaris Scheduling</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">76 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/load-balancing-in-multiple-processor-scheduling.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Load Balancing in Multiple Processor Scheduling</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">41 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/windows-scheduling.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Windows Scheduling</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">69 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/preemptive-scheduling-in-operating-system.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Preemptive Scheduling in Operating System</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">39 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/queueing-cpu-scheduling-algorithm-model.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Queueing CPU Scheduling Algorithm Model</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">60 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/shortest-job-first-scheduling-algorithm-in-operating-system.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Shortest Job First Scheduling Algorithm in Operating System</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">59 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/processor-affinity-in-multiple-processor-scheduling.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Processor Affinity in Multiple Processor Scheduling</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">44 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/dispatcher-in-cpu-scheduling.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Dispatcher in CPU Scheduling</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">40 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/pthread-scheduling-in-thread-scheduling.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Pthread Scheduling in Thread Scheduling</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">44 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/rate-monotonic-scheduling-in-real-time-cpu-scheduling.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Rate Monotonic Scheduling in Real Time CPU Scheduling</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">48 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/deterministic-cpu-scheduling-algorithm-model.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Deterministic CPU Scheduling Algorithm Model</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">71 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/approaches-to-multiple-processor-scheduling.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Approaches to Multiple Processor Scheduling</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">46 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/cpu-io-burst-cycle.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 CPU I/O Burst Cycle</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">45 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/round-robin-scheduling-algorithm.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Round Robin Scheduling Algorithm</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">48 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div></div></div>        <div style="text-align: center; margin-top: 20px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+            <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">About 6. CPU Scheduling</h2>
+            <p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">The CPU (Central Processing Unit) is the brain of the computer, and it can only do one thing at a time. CPU scheduling is the process the OS uses to decide which process gets to use the CPU and for how long. Since there are always many processes waiting for their turn, the scheduler acts like a manager who prioritizes tasks. The goal is to keep the CPU as busy as possible, while also being fair to all processes and making the system feel responsive to the user.</p><p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">Different scheduling algorithms are used for different purposes. For example, a "Round Robin" algorithm gives each process a small time slice and cycles through them, which is great for interactive systems. "Priority scheduling" allows more important tasks to run first. The OS constantly switches between processes, giving the illusion that everything is running at the same time. A good scheduling policy makes a computer feel fast and efficient, even when it is juggling many demanding tasks.</p>
+            <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
+                <p style="text-align:justify; line-height:1.7; color:#334155; font-size:0.95rem;">Practice MCQs for 6. CPU Scheduling. Test your knowledge with carefully crafted questions across easy, medium, and hard difficulty levels.</p>
+        <p style="font-size:13px; color:#94a3b8; margin-top:6px;">🔄 Last updated: 2026-07-10</p>
+<div class="badge-grid"><div class="badge-item" style="background:#dcfce7; border-color:#86efac;"><div class="num" style="color:#166534;">360</div><div class="lbl">Easy</div></div><div class="badge-item" style="background:#fef9c3; border-color:#fde047;"><div class="num" style="color:#854d0e;">607</div><div class="lbl">Medium</div></div><div class="badge-item" style="background:#fee2e2; border-color:#fca5a5;"><div class="num" style="color:#991b1b;">603</div><div class="lbl">Hard</div></div></div><div style="margin:20px 0;"><h3 style="font-size:17px; font-weight:700; color:#1e293b; margin-bottom:14px;">📌 Topics in this Chapter</h3><div style="display:flex; flex-direction:column; gap:10px;"><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/approaches-to-multiple-processor-scheduling.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Approaches to Multiple Processor Scheduling</span></div><div class="topic-actions"><span class="topic-count">46 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/contention-scope-in-thread-scheduling.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Contention Scope in Thread Scheduling</span></div><div class="topic-actions"><span class="topic-count">55 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/cpu-io-burst-cycle.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">CPU I/O Burst Cycle</span></div><div class="topic-actions"><span class="topic-count">45 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/cpu-scheduler-in-operating-system.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">CPU Scheduler in Operating System</span></div><div class="topic-actions"><span class="topic-count">40 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/cpu-scheduling-basic-concepts.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">CPU Scheduling Basic Concepts</span></div><div class="topic-actions"><span class="topic-count">54 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/deterministic-cpu-scheduling-algorithm-model.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Deterministic CPU Scheduling Algorithm Model</span></div><div class="topic-actions"><span class="topic-count">71 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/dispatcher-in-cpu-scheduling.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Dispatcher in CPU Scheduling</span></div><div class="topic-actions"><span class="topic-count">40 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/earliest-deadline-first-scheduling-in-real-time-cpu-scheduling.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Earliest Deadline First Scheduling in Real Time CPU Scheduling</span></div><div class="topic-actions"><span class="topic-count">49 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/first-come-first-served-scheduling-algorithm-in-operating-system.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">First Come First Served Scheduling Algorithm in Operating System</span></div><div class="topic-actions"><span class="topic-count">41 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/implementation-of-cpu-scheduling-algorithm-model.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Implementation of CPU Scheduling Algorithm Model</span></div><div class="topic-actions"><span class="topic-count">71 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/linux-scheduling.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Linux Scheduling</span></div><div class="topic-actions"><span class="topic-count">75 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/load-balancing-in-multiple-processor-scheduling.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Load Balancing in Multiple Processor Scheduling</span></div><div class="topic-actions"><span class="topic-count">41 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/minimizing-latency-in-real-time-cpu-scheduling.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Minimizing Latency in Real Time CPU Scheduling</span></div><div class="topic-actions"><span class="topic-count">42 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/multicore-processors-in-multiple-processor-scheduling.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Multicore Processors in Multiple Processor Scheduling</span></div><div class="topic-actions"><span class="topic-count">43 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/multilevel-feedback-queue-algorithm.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Multilevel Feedback Queue Algorithm</span></div><div class="topic-actions"><span class="topic-count">55 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/multilevel-queue-scheduling-algorithm.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Multilevel Queue Scheduling Algorithm</span></div><div class="topic-actions"><span class="topic-count">53 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/preemptive-scheduling-in-operating-system.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Preemptive Scheduling in Operating System</span></div><div class="topic-actions"><span class="topic-count">39 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/priority-based-scheduling-in-real-time-cpu-scheduling.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Priority Based Scheduling in Real Time CPU Scheduling</span></div><div class="topic-actions"><span class="topic-count">41 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/priority-scheduling-algorithm-in-operating-system.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Priority Scheduling Algorithm in Operating System</span></div><div class="topic-actions"><span class="topic-count">50 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/processor-affinity-in-multiple-processor-scheduling.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Processor Affinity in Multiple Processor Scheduling</span></div><div class="topic-actions"><span class="topic-count">44 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/proportional-share-scheduling-in-real-time-cpu-scheduling.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Proportional Share Scheduling in Real Time CPU Scheduling</span></div><div class="topic-actions"><span class="topic-count">46 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/pthread-scheduling-in-thread-scheduling.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Pthread Scheduling in Thread Scheduling</span></div><div class="topic-actions"><span class="topic-count">44 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/queueing-cpu-scheduling-algorithm-model.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Queueing CPU Scheduling Algorithm Model</span></div><div class="topic-actions"><span class="topic-count">60 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/rate-monotonic-scheduling-in-real-time-cpu-scheduling.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Rate Monotonic Scheduling in Real Time CPU Scheduling</span></div><div class="topic-actions"><span class="topic-count">48 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/round-robin-scheduling-algorithm.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Round Robin Scheduling Algorithm</span></div><div class="topic-actions"><span class="topic-count">48 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/scheduling-criteria-in-operating-system.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Scheduling Criteria in Operating System</span></div><div class="topic-actions"><span class="topic-count">53 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/shortest-job-first-scheduling-algorithm-in-operating-system.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Shortest Job First Scheduling Algorithm in Operating System</span></div><div class="topic-actions"><span class="topic-count">59 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/simulations-of-cpu-scheduling-algorithm-model.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Simulations of CPU Scheduling Algorithm Model</span></div><div class="topic-actions"><span class="topic-count">72 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/solaris-scheduling.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Solaris Scheduling</span></div><div class="topic-actions"><span class="topic-count">76 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/cpu-scheduling/topics/windows-scheduling.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Windows Scheduling</span></div><div class="topic-actions"><span class="topic-count">69 MCQs</span><span class="topic-arrow">View →</span></div></div></div></div>        <div class="footer-links">
             <a href="/quiz" class="btn-primary">🚀 Start Quiz</a>
             <a href="/practice" class="btn-secondary">📝 Practice Mode</a>
         </div>

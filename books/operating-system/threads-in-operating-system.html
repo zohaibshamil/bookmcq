@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
 <!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -89,117 +89,272 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         }
     </script>
     <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
         body {
-            font-family: Arial, sans-serif;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background: linear-gradient(135deg, #667eea, #764ba2);
-            margin: 0;
-            padding: 0;
             min-height: 100vh;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
+        
         .container {
             max-width: 900px;
-            margin: auto;
-            padding: 20px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 0 8px;
         }
+        
         .card {
             background: white;
-            border-radius: 16px;
-            padding: 20px;
-            margin-top: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-radius: 20px;
+            padding: 18px 16px 24px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+            width: 100%;
         }
+        
+        @media (min-width: 640px) { 
+            .card { padding: 28px 32px; } 
+        }
+        @media (max-width: 480px) { 
+            .card { padding: 14px 12px; } 
+        }
+
+        .back-link { 
+            display: inline-block; 
+            margin-bottom: 12px; 
+            color: #7c3aed; 
+            text-decoration: none; 
+            font-weight: 500; 
+        }
+        .back-link:hover { text-decoration: underline; }
+        
+        .breadcrumb { 
+            font-size: 13px; 
+            color: #64748b; 
+            margin-bottom: 10px; 
+            word-break: break-word; 
+        }
+        .breadcrumb a { color: #7c3aed; text-decoration: none; }
+        .breadcrumb a:hover { text-decoration: underline; }
+
+        h1 { 
+            font-size: 1.6rem; 
+            line-height: 1.2; 
+            margin: 6px 0 4px; 
+            word-break: break-word; 
+        }
+        @media (max-width: 480px) { h1 { font-size: 1.4rem; } }
+
+        .chapter-info { 
+            font-size: 0.9rem; 
+            color: #475569; 
+            margin: 6px 0 10px; 
+        }
+
+        /* ---- BADGE GRID ---- */
+        .badge-grid { 
+            display: grid; 
+            grid-template-columns: repeat(3,1fr); 
+            gap: 8px; 
+            margin: 14px 0; 
+        }
+        .badge-item { 
+            padding: 10px 4px; 
+            border-radius: 12px; 
+            text-align: center; 
+            border: 1px solid #e5e7eb; 
+        }
+        .badge-item .num { font-size: 1.8rem; font-weight: 700; }
+        .badge-item .lbl { font-size: 0.7rem; color: #64748b; }
+        @media (max-width: 480px) { .badge-item .num { font-size: 1.4rem; } }
+
+        /* ---- TOPIC ITEMS (ENHANCED FOR MOBILE) ---- */
+        .topic-item {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 18px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border-left: 4px solid #8b5cf6;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            gap: 10px;
+            min-height: 56px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .topic-item:hover {
+            background: #f1f5f9;
+            transform: translateX(4px);
+        }
+        .topic-item:active {
+            transform: scale(0.98);
+            background: #e8edf5;
+        }
+
+        .topic-item .topic-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1 1 auto;
+            min-width: 140px;
+        }
+        .topic-item .topic-icon {
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+        .topic-item .topic-name {
+            font-weight: 500;
+            color: #1e293b;
+            font-size: 0.95rem;
+            word-break: break-word;
+            line-height: 1.4;
+        }
+        .topic-item .topic-actions {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+        .topic-item .topic-count {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: white;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            min-width: 50px;
+            text-align: center;
+            white-space: nowrap;
+            letter-spacing: 0.3px;
+        }
+        .topic-item .topic-arrow {
+            color: #8b5cf6;
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: transform 0.2s ease;
+        }
+        .topic-item:hover .topic-arrow {
+            transform: translateX(3px);
+        }
+
+        /* Mobile responsiveness for topics */
+        @media (max-width: 550px) {
+            .topic-item {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 14px 16px;
+                gap: 8px;
+                min-height: 70px;
+            }
+            .topic-item .topic-content {
+                width: 100%;
+                min-width: unset;
+            }
+            .topic-item .topic-name {
+                font-size: 0.92rem;
+            }
+            .topic-item .topic-actions {
+                width: 100%;
+                justify-content: space-between;
+                padding-top: 4px;
+                border-top: 1px dashed #e5e7eb;
+            }
+            .topic-item .topic-count {
+                font-size: 11px;
+                padding: 3px 12px;
+                min-width: 45px;
+            }
+            .topic-item .topic-arrow {
+                font-size: 12px;
+            }
+            .topic-item:active {
+                transform: scale(0.97);
+            }
+        }
+
+        @media (max-width: 380px) {
+            .topic-item {
+                padding: 12px 12px;
+                gap: 6px;
+            }
+            .topic-item .topic-name {
+                font-size: 0.85rem;
+            }
+            .topic-item .topic-actions {
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+            .topic-item .topic-count {
+                font-size: 10px;
+                padding: 2px 10px;
+            }
+        }
+
+        /* ---- BUTTONS ---- */
         .btn-primary {
             display: inline-block;
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
-            padding: 14px 32px;
-            border-radius: 12px;
+            padding: 12px 28px;
+            border-radius: 40px;
             text-decoration: none;
-            font-weight: bold;
-            margin-top: 10px;
+            font-weight: 700;
+            margin-top: 8px;
             transition: 0.2s;
+            border: none;
+            cursor: pointer;
         }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        .btn-primary:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 8px 20px rgba(102,126,234,0.4); 
         }
+
         .btn-secondary {
             display: inline-block;
-            background: #f3f4f6;
+            background: #f1f5f9;
             color: #1e293b;
-            padding: 10px 24px;
-            border-radius: 10px;
+            padding: 10px 22px;
+            border-radius: 40px;
             text-decoration: none;
             font-weight: 500;
-            margin-top: 10px;
-            transition: 0.2s;
-            border: 1px solid #e5e7eb;
+            border: 1px solid #d1d5db;
         }
-        .btn-secondary:hover {
-            background: #e5e7eb;
+        .btn-secondary:hover { background: #e5e7eb; }
+
+        .footer-links { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 10px; 
+            justify-content: center; 
+            margin-top: 18px; 
         }
-        .back-link {
-            display: inline-block;
-            margin-bottom: 15px;
-            color: #7c3aed;
-            text-decoration: none;
-        }
-        .back-link:hover {
-            text-decoration: underline;
-        }
-        .chapter-info {
-            font-size: 14px;
-            color: #64748b;
-            margin: 8px 0;
-        }
-        .breadcrumb {
-            font-size: 13px;
-            color: #94a3b8;
-            margin-bottom: 12px;
-        }
-        .breadcrumb a {
-            color: #7c3aed;
-            text-decoration: none;
-        }
-        .breadcrumb a:hover {
-            text-decoration: underline;
-        }
-        .math-rendered {
-            display: inline;
-            line-height: 1.6;
-        }
-        .math-rendered mjx-container {
-            display: inline-block;
-            margin: 0 2px;
-        }
-        .justify-text {
-            text-align: justify;
-            text-justify: inter-word;
-        }
-        .definition-text {
-            text-align: justify;
-            text-justify: inter-word;
-            line-height: 1.8;
-        }
-        .option-text {
-            text-align: justify;
-            text-justify: inter-word;
-        }
-        .explanation-text {
-            text-align: justify;
-            text-justify: inter-word;
-            line-height: 1.6;
-        }
-        .question-text {
-            font-size: 1rem;
-            line-height: 1.6;
-        }
-        .option-text {
-            display: inline;
-        }
-        .explanation-text {
-            font-size: 0.875rem;
-            line-height: 1.5;
+
+        img, svg { max-width: 100%; height: auto; }
+        .math { display: inline; }
+        
+        /* ---- RESPONSIVE TEXT ADJUSTMENTS ---- */
+        @media (max-width: 480px) {
+            .breadcrumb { font-size: 11px; }
+            .chapter-info { font-size: 0.8rem; }
+            .btn-primary, .btn-secondary { 
+                padding: 10px 20px; 
+                font-size: 0.9rem;
+                width: 100%;
+                text-align: center;
+            }
+            .footer-links { 
+                flex-direction: column; 
+                align-items: stretch; 
+                gap: 8px; 
+            }
         }
     </style>
 </head>
@@ -208,29 +363,30 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PT363CT7"
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
-<!-- Website Header -->
-<div style="text-align:center; padding:10px 0 5px 0;">
-    <a href="/" style="text-decoration:none;">
-        <span style="font-size:18px; font-weight:700; color:#7c3aed; background:white; padding:6px 20px; border-radius:30px; display:inline-block; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
-            🎓 BookMCQ
-        </span>
-    </a>
-</div>
+
 <div class="container">
+    <!-- header -->
+    <div style="text-align:center; padding:6px 0 12px;">
+        <a href="/" style="text-decoration:none;">
+            <span style="font-size:1.2rem; font-weight:700; color:#7c3aed; background:white; padding:6px 18px; border-radius:40px; display:inline-block; box-shadow:0 2px 8px rgba(0,0,0,0.08);">🎓 BookMCQ</span>
+        </a>
+    </div>
+
     <div class="card">
+        <!-- breadcrumb -->
         <div class="breadcrumb">
             <a href="/">🏠 Home</a> &gt; <a href="/books/operating-system/">Operating System</a> &gt; 4. Threads in Operating System
         </div>
         <a href="/books/operating-system/" class="back-link">← Back to Operating System</a>
-        <h1>4. Threads in Operating System - Operating System</h1>
+        <h1>📖 4. Threads in Operating System</h1>
         <p class="chapter-info">📖 From <strong>Operating System</strong> • 1232 questions available</p>
 
-        <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">About 4. Threads in Operating System</h2>
-        <p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">A thread is a smaller, lighter unit of work inside a process. While a process can do one task at a time, a thread is like a single path of execution within that process. For example, in a web browser process, one thread might be downloading a file, while another thread is displaying the webpage, and a third thread is responding to your mouse clicks. By using multiple threads, a process can perform several tasks simultaneously, which makes the application more responsive and faster.</p><p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">All threads that belong to the same process share the same memory space and resources, like open files. This sharing allows them to communicate with each other very easily and quickly compared to separate processes. However, it also means that they need to be careful not to mess up each other's work. The OS manages threads similarly to processes, but because they are lighter, creating and switching between threads is much faster and requires fewer resources, making the overall system more efficient.</p>
-        <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
-            <p>Practice MCQs for 4. Threads in Operating System. Test your knowledge with carefully crafted questions across easy, medium, and hard difficulty levels.</p>
-        <p style="font-size:13px; color:#64748b; margin-top:4px;">🔄 Last updated: 2026-08-08</p>
-<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:16px 0;"><div style="background:#dcfce7; padding:12px; border-radius:10px; text-align:center; border:1px solid #86efac;"><div style="font-size:24px; font-weight:700; color:#166534;">314</div><div style="font-size:12px; color:#64748b;">Easy Questions</div></div><div style="background:#fef9c3; padding:12px; border-radius:10px; text-align:center; border:1px solid #fde047;"><div style="font-size:24px; font-weight:700; color:#854d0e;">549</div><div style="font-size:12px; color:#64748b;">Medium Questions</div></div><div style="background:#fee2e2; padding:12px; border-radius:10px; text-align:center; border:1px solid #fca5a5;"><div style="font-size:24px; font-weight:700; color:#991b1b;">369</div><div style="font-size:12px; color:#64748b;">Hard Questions</div></div></div><div style="margin:16px 0;"><h3 style="font-size:16px; color:#1e293b; margin-bottom:12px;">📝 Topics in this Chapter</h3><div style="display:flex; flex-direction:column; gap:8px;"><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/multicore-programming-in-operating-system.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Multicore programming in operating system</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">82 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/multithreading-models-in-operating-system.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Multithreading models in operating system</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">30 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/many-to-many-multithreading-model-in-operating-system.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Many to Many Multithreading Model in operating system</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">35 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/java-threads-in-operating-system.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Java Threads in operating system</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">35 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/thread-cancellation-in-operating-system.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Thread cancellation in operating system</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">41 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/linux-threads-implementation.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Linux threads implementation</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">36 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/threads-in-operating-system-overview.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Threads in operating system overview</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">16 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/benefits-of-multithreading-in-operating-system.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Benefits of multithreading in operating system</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">35 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/implicit-threading-in-operating-system.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Implicit Threading in operating system</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">51 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/thread-libraries-in-operating-system.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Thread libraries in operating system</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">45 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/windows-threads-in-operating-system.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Windows Threads in operating system</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">205 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/scheduler-activations-in-operating-system.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Scheduler activations in operating system</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">38 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/fork-and-exec-system-calls-in-multithreading.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Fork and exec system calls in multithreading</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">43 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/multicore-programming-challenges-and-issues.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Multicore programming challenges and issues</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">78 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/one-to-one-multithreading-model-in-operating-system.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 One to One Multithreading Model in operating system</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">38 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/pthreads-in-operating-system.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Pthreads in operating system</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">35 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/open-multi-processing-implicit-threading.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Open Multi Processing Implicit Threading</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">57 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/signal-handling-in-multithreaded-programs.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Signal handling in multithreaded programs</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">32 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/types-of-parallelism-data-vs-task-parallelism.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Types of parallelism data vs task parallelism</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">65 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/thread-local-storage-tls-in-operating-system.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Thread local storage TLS in operating system</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">40 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/why-threads-are-used-in-operating-system.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Why threads are used in operating system</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">45 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/grand-central-dispatch-in-operating-system.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Grand Central Dispatch in operating system</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">58 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/many-to-one-multithreading-model-in-operating-system.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Many to One Multithreading Model in operating system</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">34 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/thread-pools-in-operating-system.html'" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#f8fafc; border-radius:10px; border-left:4px solid #8b5cf6; cursor:pointer; transition:0.2s;"><span style="font-weight:500; color:#1e293b;">📝 Thread Pools in operating system</span><div style="display:flex; align-items:center; gap:12px; flex-shrink:0;"><span style="background:#8b5cf6; color:white; padding:2px 12px; border-radius:16px; font-size:13px; font-weight:600; min-width:45px; text-align:center;">58 MCQs</span><span style="color:#8b5cf6; font-size:13px; font-weight:500;">View Topic →</span></div></div></div></div>        <div style="text-align: center; margin-top: 20px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+            <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">About 4. Threads in Operating System</h2>
+            <p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">A thread is a smaller, lighter unit of work inside a process. While a process can do one task at a time, a thread is like a single path of execution within that process. For example, in a web browser process, one thread might be downloading a file, while another thread is displaying the webpage, and a third thread is responding to your mouse clicks. By using multiple threads, a process can perform several tasks simultaneously, which makes the application more responsive and faster.</p><p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">All threads that belong to the same process share the same memory space and resources, like open files. This sharing allows them to communicate with each other very easily and quickly compared to separate processes. However, it also means that they need to be careful not to mess up each other's work. The OS manages threads similarly to processes, but because they are lighter, creating and switching between threads is much faster and requires fewer resources, making the overall system more efficient.</p>
+            <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
+                <p style="text-align:justify; line-height:1.7; color:#334155; font-size:0.95rem;">Practice MCQs for 4. Threads in Operating System. Test your knowledge with carefully crafted questions across easy, medium, and hard difficulty levels.</p>
+        <p style="font-size:13px; color:#94a3b8; margin-top:6px;">🔄 Last updated: 2026-08-08</p>
+<div class="badge-grid"><div class="badge-item" style="background:#dcfce7; border-color:#86efac;"><div class="num" style="color:#166534;">314</div><div class="lbl">Easy</div></div><div class="badge-item" style="background:#fef9c3; border-color:#fde047;"><div class="num" style="color:#854d0e;">549</div><div class="lbl">Medium</div></div><div class="badge-item" style="background:#fee2e2; border-color:#fca5a5;"><div class="num" style="color:#991b1b;">369</div><div class="lbl">Hard</div></div></div><div style="margin:20px 0;"><h3 style="font-size:17px; font-weight:700; color:#1e293b; margin-bottom:14px;">📌 Topics in this Chapter</h3><div style="display:flex; flex-direction:column; gap:10px;"><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/benefits-of-multithreading-in-operating-system.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Benefits of multithreading in operating system</span></div><div class="topic-actions"><span class="topic-count">35 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/fork-and-exec-system-calls-in-multithreading.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Fork and exec system calls in multithreading</span></div><div class="topic-actions"><span class="topic-count">43 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/grand-central-dispatch-in-operating-system.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Grand Central Dispatch in operating system</span></div><div class="topic-actions"><span class="topic-count">58 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/implicit-threading-in-operating-system.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Implicit Threading in operating system</span></div><div class="topic-actions"><span class="topic-count">51 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/java-threads-in-operating-system.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Java Threads in operating system</span></div><div class="topic-actions"><span class="topic-count">35 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/linux-threads-implementation.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Linux threads implementation</span></div><div class="topic-actions"><span class="topic-count">36 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/many-to-many-multithreading-model-in-operating-system.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Many to Many Multithreading Model in operating system</span></div><div class="topic-actions"><span class="topic-count">35 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/many-to-one-multithreading-model-in-operating-system.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Many to One Multithreading Model in operating system</span></div><div class="topic-actions"><span class="topic-count">34 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/multicore-programming-challenges-and-issues.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Multicore programming challenges and issues</span></div><div class="topic-actions"><span class="topic-count">78 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/multicore-programming-in-operating-system.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Multicore programming in operating system</span></div><div class="topic-actions"><span class="topic-count">82 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/multithreading-models-in-operating-system.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Multithreading models in operating system</span></div><div class="topic-actions"><span class="topic-count">30 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/one-to-one-multithreading-model-in-operating-system.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">One to One Multithreading Model in operating system</span></div><div class="topic-actions"><span class="topic-count">38 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/open-multi-processing-implicit-threading.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Open Multi Processing Implicit Threading</span></div><div class="topic-actions"><span class="topic-count">57 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/pthreads-in-operating-system.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Pthreads in operating system</span></div><div class="topic-actions"><span class="topic-count">35 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/scheduler-activations-in-operating-system.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Scheduler activations in operating system</span></div><div class="topic-actions"><span class="topic-count">38 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/signal-handling-in-multithreaded-programs.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Signal handling in multithreaded programs</span></div><div class="topic-actions"><span class="topic-count">32 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/thread-cancellation-in-operating-system.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Thread cancellation in operating system</span></div><div class="topic-actions"><span class="topic-count">41 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/thread-libraries-in-operating-system.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Thread libraries in operating system</span></div><div class="topic-actions"><span class="topic-count">45 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/thread-local-storage-tls-in-operating-system.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Thread local storage TLS in operating system</span></div><div class="topic-actions"><span class="topic-count">40 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/thread-pools-in-operating-system.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Thread Pools in operating system</span></div><div class="topic-actions"><span class="topic-count">58 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/threads-in-operating-system-overview.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Threads in operating system overview</span></div><div class="topic-actions"><span class="topic-count">16 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/types-of-parallelism-data-vs-task-parallelism.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Types of parallelism data vs task parallelism</span></div><div class="topic-actions"><span class="topic-count">65 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/why-threads-are-used-in-operating-system.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Why threads are used in operating system</span></div><div class="topic-actions"><span class="topic-count">45 MCQs</span><span class="topic-arrow">View →</span></div></div><div onclick="window.location.href='/books/operating-system/threads-in-operating-system/topics/windows-threads-in-operating-system.html'" class="topic-item"><div class="topic-content"><span class="topic-icon"></span><span class="topic-name">Windows Threads in operating system</span></div><div class="topic-actions"><span class="topic-count">205 MCQs</span><span class="topic-arrow">View →</span></div></div></div></div>        <div class="footer-links">
             <a href="/quiz" class="btn-primary">🚀 Start Quiz</a>
             <a href="/practice" class="btn-secondary">📝 Practice Mode</a>
         </div>
