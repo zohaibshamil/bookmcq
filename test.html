@@ -8757,14 +8757,14 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
 '  <meta name="theme-color" content="#7c3aed">\n' +
 '  <script type="application/ld+json">\n' + JSON.stringify(schemaData) + '\n' +
 '  <\/script>\n' +
-/* ===== PERFORMANCE FIX 1: Add resource hints ===== */
+/* ===== PERFORMANCE FIX 1: Resource hints ===== */
 '  <!-- Performance Optimizations -->\n' +
 '  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>\n' +
 '  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>\n' +
 '  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">\n' +
 '  <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">\n' +
 '  <link rel="preload" as="script" href="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">\n' +
-/* ===== PERFORMANCE FIX 2: Optimized MathJax config ===== */
+/* ===== PERFORMANCE FIX 2: MathJax config (unchanged) ===== */
 '  <script>\n' +
 '    window.MathJax = {\n' +
 '      tex: {\n' +
@@ -8786,18 +8786,12 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
 '        skipHtmlTypes: \'script\',\n' +
 '        ignoreHtmlClass: \'no-mathjax\',\n' +
 '        processHtmlClass: \'math\'\n' +
-'      },\n' +
-/* ===== PERFORMANCE FIX 3: Lazy rendering config ===== */
-'      startup: {\n' +
-'        ready: function() {\n' +
-'          console.log(\'MathJax loaded, waiting for render trigger\');\n' +
-'        }\n' +
 '      }\n' +
 '    };\n' +
 '  <\/script>\n' +
-/* ===== PERFORMANCE FIX 4: Load MathJax with defer (not async) ===== */
+/* ===== PERFORMANCE FIX 3: MathJax loaded with defer ===== */
 '  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" defer><\/script>\n' +
-/* ===== PERFORMANCE FIX 5: Optimized rendering logic ===== */
+/* ===== PERFORMANCE FIX 4: SIMPLIFIED rendering - NO Intersection Observer ===== */
 '  <script>\n' +
 '    function escapeHtmlPreserveMath(text) {\n' +
 '      if (!text) return \'\';\n' +
@@ -8809,16 +8803,13 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
 '      return escaped;\n' +
 '    }\n' +
 '\n' +
-/* ===== PERFORMANCE FIX 6: Batch rendering with requestIdleCallback ===== */  
-'    var mathElements = [];\n' +
-'    var isRendering = false;\n' +
-'    var renderQueue = [];\n' +
+'    var mathRendered = false;\n' +
+'    var renderAttempts = 0;\n' +
+'    var maxAttempts = 10;\n' +
 '\n' +
 '    function renderMathInElement(element) {\n' +
 '      if (!element) return Promise.resolve();\n' +
-'      if (!window.MathJax) {\n' +
-'        // Store element for later rendering\n' +
-'        mathElements.push(element);\n' +
+'      if (!window.MathJax || !MathJax.typesetPromise) {\n' +
 '        return Promise.resolve();\n' +
 '      }\n' +
 '      try {\n' +
@@ -8829,59 +8820,55 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
 '      }\n' +
 '    }\n' +
 '\n' +
-'    function processNextBatch() {\n' +
-'      if (renderQueue.length === 0) {\n' +
-'        isRendering = false;\n' +
-'        return;\n' +
-'      }\n' +
-'      var batch = renderQueue.splice(0, 3); // Process 3 elements at a time\n' +
-'      var promises = batch.map(function(el) {\n' +
-'        return renderMathInElement(el).catch(function(e) {\n' +
-'          console.log(\'Render error:\', e);\n' +
-'        });\n' +
-'      });\n' +
-'      Promise.all(promises).then(function() {\n' +
-'        // Schedule next batch\n' +
-'        if (renderQueue.length > 0) {\n' +
-'          requestIdleCallback(processNextBatch, { timeout: 100 });\n' +
-'        } else {\n' +
-'          isRendering = false;\n' +
-'        }\n' +
-'      });\n' +
-'    }\n' +
-'\n' +
 '    function renderAllMath() {\n' +
-'      if (!window.MathJax) {\n' +
-'        // MathJax not loaded yet, try again later\n' +
-'        setTimeout(renderAllMath, 200);\n' +
-'        return;\n' +
-'      }\n' +
+'      renderAttempts++;\n' +
 '      \n' +
-'      if (isRendering) return;\n' +
-'      isRendering = true;\n' +
-'\n' +
-'      // Collect all math elements\n' +
-'      var elements = document.querySelectorAll(\'.math\');\n' +
-'      if (elements.length === 0) {\n' +
-'        isRendering = false;\n' +
+'      if (!window.MathJax || !MathJax.typesetPromise) {\n' +
+'        if (renderAttempts < maxAttempts) {\n' +
+'          setTimeout(renderAllMath, 300);\n' +
+'        }\n' +
 '        return;\n' +
 '      }\n' +
 '\n' +
-'      // Add any pending elements from before MathJax loaded\n' +
-'      while (mathElements.length > 0) {\n' +
-'        renderQueue.push(mathElements.pop());\n' +
+'      if (mathRendered) return;\n' +
+'      mathRendered = true;\n' +
+'\n' +
+'      var elements = document.querySelectorAll(\'.math\');\n' +
+'      if (elements.length === 0) return;\n' +
+'\n' +
+'      // Convert to array and render in batches\n' +
+'      var elementArray = Array.from(elements);\n' +
+'      var batchSize = 5;\n' +
+'      var index = 0;\n' +
+'\n' +
+'      function renderBatch() {\n' +
+'        var batch = elementArray.slice(index, index + batchSize);\n' +
+'        if (batch.length === 0) return;\n' +
+'\n' +
+'        var promises = batch.map(function(el) {\n' +
+'          return renderMathInElement(el).catch(function(e) {\n' +
+'            console.log(\'Render error:\', e);\n' +
+'          });\n' +
+'        });\n' +
+'\n' +
+'        Promise.all(promises).then(function() {\n' +
+'          index += batchSize;\n' +
+'          if (index < elementArray.length) {\n' +
+'            // Use requestIdleCallback if available, else setTimeout\n' +
+'            if (window.requestIdleCallback) {\n' +
+'              requestIdleCallback(renderBatch, { timeout: 100 });\n' +
+'            } else {\n' +
+'              setTimeout(renderBatch, 50);\n' +
+'            }\n' +
+'          }\n' +
+'        });\n' +
 '      }\n' +
 '\n' +
-'      // Add all current elements to queue\n' +
-'      for (var i = 0; i < elements.length; i++) {\n' +
-'        renderQueue.push(elements[i]);\n' +
-'      }\n' +
-'\n' +
-'      // Start processing\n' +
-'      if (renderQueue.length > 0) {\n' +
-'        requestIdleCallback(processNextBatch, { timeout: 50 });\n' +
+'      // Start rendering\n' +
+'      if (window.requestIdleCallback) {\n' +
+'        requestIdleCallback(renderBatch, { timeout: 100 });\n' +
 '      } else {\n' +
-'        isRendering = false;\n' +
+'        setTimeout(renderBatch, 50);\n' +
 '      }\n' +
 '    }\n' +
 '\n' +
@@ -8890,49 +8877,21 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
 '      return text;\n' +
 '    }\n' +
 '\n' +
-/* ===== PERFORMANCE FIX 7: Intersection Observer for lazy rendering ===== */
-'    function setupLazyMathRendering() {\n' +
-'      if (!window.MathJax) {\n' +
-'        setTimeout(setupLazyMathRendering, 500);\n' +
-'        return;\n' +
-'      }\n' +
-'\n' +
-'      var observer = new IntersectionObserver(function(entries) {\n' +
-'        entries.forEach(function(entry) {\n' +
-'          if (entry.isIntersecting) {\n' +
-'            var element = entry.target;\n' +
-'            // Only render if not already rendered\n' +
-'            if (!element.dataset.rendered) {\n' +
-'              element.dataset.rendered = \'true\';\n' +
-'              renderMathInElement(element);\n' +
-'            }\n' +
-'            observer.unobserve(element);\n' +
-'          }\n' +
-'        });\n' +
-'      }, {\n' +
-'        rootMargin: \'200px\',\n' +
-'        threshold: 0.1\n' +
-'      });\n' +
-'\n' +
-'      // Observe all math elements\n' +
-'      var elements = document.querySelectorAll(\'.math\');\n' +
-'      for (var i = 0; i < elements.length; i++) {\n' +
-'        observer.observe(elements[i]);\n' +
-'      }\n' +
-'    }\n' +
-'\n' +
 '    document.addEventListener(\'DOMContentLoaded\', function() {\n' +
-'      // Initial render - only visible content\n' +
+'      // Wait for MathJax to be ready\n' +
+'      setTimeout(renderAllMath, 200);\n' +
+'    });\n' +
+'\n' +
+'    // Also try when page fully loads\n' +
+'    window.addEventListener(\'load\', function() {\n' +
 '      setTimeout(renderAllMath, 100);\n' +
-'      // Setup lazy loading for rest\n' +
-'      setTimeout(setupLazyMathRendering, 300);\n' +
 '    });\n' +
 '\n' +
 '    if (window.MathJax) {\n' +
 '      MathJax.typesetPromise = MathJax.typesetPromise || function() { return Promise.resolve(); };\n' +
 '    }\n' +
 '  <\/script>\n' +
-/* ===== PERFORMANCE FIX 8: CSS containment ===== */
+/* ===== PERFORMANCE FIX 5: CSS containment ===== */
 '  <style>\n' +
 '    * { box-sizing: border-box; margin: 0; padding: 0; }\n' +
 '    body {\n' +
@@ -9088,9 +9047,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
 '    @media (max-width: 480px) { .badge-item .num { font-size: 1.4rem; } }\n' +
 '\n' +
 '    /* question blocks */\n' +
-'    .q-block { background: white; padding: 14px 12px; border-radius: 12px; margin-bottom: 16px; border: 1px solid #e5e7eb; text-align: justify; }\n' +
-/* ===== PERFORMANCE FIX 9: CSS containment for reflow prevention ===== */
-'    .q-block { contain: layout style paint; }\n' +
+'    .q-block { background: white; padding: 14px 12px; border-radius: 12px; margin-bottom: 16px; border: 1px solid #e5e7eb; text-align: justify; contain: layout style paint; }\n' +
 '    .q-text { font-weight: 600; margin: 0 0 10px; line-height: 1.5; text-align: justify; }\n' +
 '    .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; font-size: 0.9rem; color: #334155; text-align: justify; }\n' +
 '    .opt-item { display: flex; align-items: flex-start; gap: 4px; padding: 2px 0; text-align: justify; }\n' +
@@ -9167,6 +9124,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
 '</div>\n' +
 '</body>\n' +
 '</html>';
+ 
      
     // ✅ Return the final built string, NOT undefined!
     return finalHtml;
