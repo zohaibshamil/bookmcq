@@ -8622,7 +8622,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     var topicDefinition = topic.definition || '';
     
     if (topicDefinition) {
-        // Process definition - math will be rendered by pre-render script
+        // Process definition for MathJax - wrap math expressions
         var processedDefinition = topicDefinition.replace(/\n/g, '<br>');
         definitionHtml = `
             <div style="margin: 8px 0 12px;">
@@ -8650,7 +8650,6 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
             var correctIndex = q.correct_answer !== undefined ? q.correct_answer : 0;
             var optionLabels = ['A', 'B', 'C', 'D'];
             
-            // Math will be rendered by pre-render script
             var questionText = escapeHtmlPreserveMath(q.question_text);
             var opt0 = escapeHtmlPreserveMath(opts[0] || '');
             var opt1 = escapeHtmlPreserveMath(opts[1] || '');
@@ -8750,7 +8749,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     
     var metaDescription = 'Practice ' + topicName + ' from ' + bookTitle + ' - ' + chapterDisplay + chapterName + '. ' + totalQs + ' MCQs answers, plus ' + easyCount + ' easy, ' + mediumCount + ' medium, and ' + hardCount + ' hard questions. Perfect for exam preparation.';
     
-    // ===== BUILD COMPLETE HTML - Math will be pre-rendered by GitHub Action =====
+    // ===== BUILD COMPLETE HTML - Math will be pre-rendered by GitHub Actions =====
     var finalHtml = '<!DOCTYPE html>\n' +
 '<html lang="en">\n' +
 '<head>\n' +
@@ -8769,7 +8768,6 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
 '  <meta name="theme-color" content="#7c3aed">\n' +
 '  <script type="application/ld+json">\n' + JSON.stringify(schemaData) + '\n' +
 '  <\/script>\n' +
-'  <!-- Math will be pre-rendered statically - no external dependencies -->\n' +
 '  <style>\n' +
 '    * { box-sizing: border-box; margin: 0; padding: 0; }\n' +
 '    body {\n' +
@@ -8917,7 +8915,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
 '      }\n' +
 '    }\n' +
 '\n' +
-'    /* difficulty badges - border around badges, black text, bold labels */\n' +
+'    /* difficulty badges - FIX 1: border around badges, black text, bold labels */\n' +
 '    .badge-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 14px 0; text-align: justify; }\n' +
 '    .badge-item { padding: 10px 4px; border-radius: 12px; text-align: center; border: 2px solid #000000; }\n' +
 '    .badge-item .num { font-size: 1.8rem; font-weight: 700; text-align: justify; color: #000000; }\n' +
@@ -8929,11 +8927,11 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
 '    .q-text { font-weight: 600; margin: 0 0 10px; line-height: 1.5; text-align: justify; }\n' +
 '    .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; font-size: 0.9rem; color: #334155; text-align: justify; }\n' +
 '    .opt-item { display: flex; align-items: flex-start; gap: 4px; padding: 2px 0; text-align: justify; }\n' +
-'    /* Option labels (A, B, C, D) - black color */\n' +
+'    /* FIX 2: Option labels (A, B, C, D) - black color */\n' +
 '    .opt-item .label { font-weight: 600; color: #000000; min-width: 18px; text-align: justify; }\n' +
 '    .opt-item .text { text-align: justify; word-break: break-word; }\n' +
 '    .opt-correct { background-color: #dcfce7; border-radius: 6px; padding: 4px 6px; text-align: justify; }\n' +
-'    /* Difficulty tag - black color */\n' +
+'    /* FIX 4: Difficulty tag - black color */\n' +
 '    .diff-tag { font-size: 0.7rem; color: #000000; margin-top: 8px; text-align: justify; }\n' +
 '    .explanation { margin-top: 10px; padding: 10px 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px; text-align: justify; }\n' +
 '    .explanation p { font-size: 0.8rem; color: #1e293b; margin: 0; line-height: 1.5; text-align: justify; }\n' +
@@ -8956,10 +8954,6 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
 '\n' +
 '    img, svg { max-width: 100%; height: auto; }\n' +
 '    .math { display: inline; }\n' +
-'    /* Styles for pre-rendered math */\n' +
-'    .math-inline { display: inline-block; vertical-align: middle; }\n' +
-'    .math-display { display: block; text-align: center; margin: 10px 0; overflow-x: auto; }\n' +
-'    .katex { font-size: 1.05em; }\n' +
 '  </style>\n' +
 '</head>\n' +
 '<body>\n' +
@@ -9008,7 +9002,6 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
 '</div>\n' +
 '</body>\n' +
 '</html>';
- 
      
     // ✅ Return the final built string, NOT undefined!
     return finalHtml;
