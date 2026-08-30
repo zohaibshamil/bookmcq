@@ -8622,7 +8622,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     var topicDefinition = topic.definition || '';
     
     if (topicDefinition) {
-        // Process definition - keep math expressions for workflow to render
+        // Process definition for MathJax - wrap math expressions
         var processedDefinition = topicDefinition.replace(/\n/g, '<br>');
         definitionHtml = `
             <div style="margin: 8px 0 12px;">
@@ -8650,7 +8650,6 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
             var correctIndex = q.correct_answer !== undefined ? q.correct_answer : 0;
             var optionLabels = ['A', 'B', 'C', 'D'];
             
-            // Keep math expressions for workflow to render
             var questionText = escapeHtmlPreserveMath(q.question_text);
             var opt0 = escapeHtmlPreserveMath(opts[0] || '');
             var opt1 = escapeHtmlPreserveMath(opts[1] || '');
@@ -8750,7 +8749,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     
     var metaDescription = 'Practice ' + topicName + ' from ' + bookTitle + ' - ' + chapterDisplay + chapterName + '. ' + totalQs + ' MCQs answers, plus ' + easyCount + ' easy, ' + mediumCount + ' medium, and ' + hardCount + ' hard questions. Perfect for exam preparation.';
     
-    // ===== BUILD COMPLETE HTML - Math will be pre-rendered by GitHub Actions =====
+    // ===== BUILD COMPLETE HTML with MathJax =====
     var finalHtml = '<!DOCTYPE html>\n' +
 '<html lang="en">\n' +
 '<head>\n' +
@@ -8769,7 +8768,141 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
 '  <meta name="theme-color" content="#7c3aed">\n' +
 '  <script type="application/ld+json">\n' + JSON.stringify(schemaData) + '\n' +
 '  <\/script>\n' +
-'  <!-- Math will be pre-rendered by GitHub Actions workflow -->\n' +
+/* ===== PERFORMANCE FIX 1: Resource hints ===== */
+'  <!-- Performance Optimizations -->\n' +
+'  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>\n' +
+'  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>\n' +
+'  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">\n' +
+'  <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">\n' +
+'  <link rel="preload" as="script" href="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">\n' +
+/* ===== PERFORMANCE FIX 2: MathJax config (unchanged) ===== */
+'  <script>\n' +
+'    window.MathJax = {\n' +
+'      tex: {\n' +
+'        inlineMath: [\n' +
+'          [\'$\', \'$\'],\n' +
+'          [\'\\\\(\', \'\\\\)\']\n' +
+'        ],\n' +
+'        displayMath: [\n' +
+'          [\'$$\', \'$$\'],\n' +
+'          [\'\\\\[\', \'\\\\]\']\n' +
+'        ],\n' +
+'        processEscapes: true,\n' +
+'        processEnvironments: true\n' +
+'      },\n' +
+'      svg: {\n' +
+'        fontCache: \'global\'\n' +
+'      },\n' +
+'      options: {\n' +
+'        skipHtmlTypes: \'script\',\n' +
+'        ignoreHtmlClass: \'no-mathjax\',\n' +
+'        processHtmlClass: \'math\'\n' +
+'      }\n' +
+'    };\n' +
+'  <\/script>\n' +
+/* ===== PERFORMANCE FIX 3: MathJax loaded with defer ===== */
+'  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" defer><\/script>\n' +
+/* ===== PERFORMANCE FIX 4: SIMPLIFIED rendering - NO Intersection Observer ===== */
+'  <script>\n' +
+'    function escapeHtmlPreserveMath(text) {\n' +
+'      if (!text) return \'\';\n' +
+'      var escaped = text.replace(/&/g, \'&amp;\')\n' +
+'                        .replace(/</g, \'&lt;\')\n' +
+'                        .replace(/>/g, \'&gt;\')\n' +
+'                        .replace(/"/g, \'&quot;\')\n' +
+'                        .replace(/\'/g, \'&#039;\');\n' +
+'      return escaped;\n' +
+'    }\n' +
+'\n' +
+'    var mathRendered = false;\n' +
+'    var renderAttempts = 0;\n' +
+'    var maxAttempts = 10;\n' +
+'\n' +
+'    function renderMathInElement(element) {\n' +
+'      if (!element) return Promise.resolve();\n' +
+'      if (!window.MathJax || !MathJax.typesetPromise) {\n' +
+'        return Promise.resolve();\n' +
+'      }\n' +
+'      try {\n' +
+'        return MathJax.typesetPromise([element]);\n' +
+'      } catch(e) {\n' +
+'        console.log(\'MathJax error:\', e);\n' +
+'        return Promise.resolve();\n' +
+'      }\n' +
+'    }\n' +
+'\n' +
+'    function renderAllMath() {\n' +
+'      renderAttempts++;\n' +
+'      \n' +
+'      if (!window.MathJax || !MathJax.typesetPromise) {\n' +
+'        if (renderAttempts < maxAttempts) {\n' +
+'          setTimeout(renderAllMath, 300);\n' +
+'        }\n' +
+'        return;\n' +
+'      }\n' +
+'\n' +
+'      if (mathRendered) return;\n' +
+'      mathRendered = true;\n' +
+'\n' +
+'      var elements = document.querySelectorAll(\'.math\');\n' +
+'      if (elements.length === 0) return;\n' +
+'\n' +
+'      // Convert to array and render in batches\n' +
+'      var elementArray = Array.from(elements);\n' +
+'      var batchSize = 5;\n' +
+'      var index = 0;\n' +
+'\n' +
+'      function renderBatch() {\n' +
+'        var batch = elementArray.slice(index, index + batchSize);\n' +
+'        if (batch.length === 0) return;\n' +
+'\n' +
+'        var promises = batch.map(function(el) {\n' +
+'          return renderMathInElement(el).catch(function(e) {\n' +
+'            console.log(\'Render error:\', e);\n' +
+'          });\n' +
+'        });\n' +
+'\n' +
+'        Promise.all(promises).then(function() {\n' +
+'          index += batchSize;\n' +
+'          if (index < elementArray.length) {\n' +
+'            // Use requestIdleCallback if available, else setTimeout\n' +
+'            if (window.requestIdleCallback) {\n' +
+'              requestIdleCallback(renderBatch, { timeout: 100 });\n' +
+'            } else {\n' +
+'              setTimeout(renderBatch, 50);\n' +
+'            }\n' +
+'          }\n' +
+'        });\n' +
+'      }\n' +
+'\n' +
+'      // Start rendering\n' +
+'      if (window.requestIdleCallback) {\n' +
+'        requestIdleCallback(renderBatch, { timeout: 100 });\n' +
+'      } else {\n' +
+'        setTimeout(renderBatch, 50);\n' +
+'      }\n' +
+'    }\n' +
+'\n' +
+'    function processMathContent(text) {\n' +
+'      if (!text) return \'\';\n' +
+'      return text;\n' +
+'    }\n' +
+'\n' +
+'    document.addEventListener(\'DOMContentLoaded\', function() {\n' +
+'      // Wait for MathJax to be ready\n' +
+'      setTimeout(renderAllMath, 200);\n' +
+'    });\n' +
+'\n' +
+'    // Also try when page fully loads\n' +
+'    window.addEventListener(\'load\', function() {\n' +
+'      setTimeout(renderAllMath, 100);\n' +
+'    });\n' +
+'\n' +
+'    if (window.MathJax) {\n' +
+'      MathJax.typesetPromise = MathJax.typesetPromise || function() { return Promise.resolve(); };\n' +
+'    }\n' +
+'  <\/script>\n' +
+/* ===== PERFORMANCE FIX 5: CSS with style changes ===== */
 '  <style>\n' +
 '    * { box-sizing: border-box; margin: 0; padding: 0; }\n' +
 '    body {\n' +
@@ -9005,6 +9138,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
 '</div>\n' +
 '</body>\n' +
 '</html>';
+ 
     // ✅ Return the final built string, NOT undefined!
     return finalHtml;
 }
