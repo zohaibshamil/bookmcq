@@ -1,0 +1,35 @@
+name: Pre-render Math
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: |
+        npm install mathjax-node
+        npm install fs-extra
+    
+    - name: Pre-render math in HTML files
+      run: node pre-render-math.js
+    
+    - name: Commit and push changes
+      run: |
+        git config user.name "GitHub Action"
+        git config user.email "action@github.com"
+        git add .
+        git diff --staged --quiet || git commit -m "Pre-render math formulas"
+        git push
