@@ -8578,7 +8578,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     var prevTopic = (currentIndex > 0) ? sortedTopics[currentIndex - 1] : null;
     var nextTopic = (currentIndex < sortedTopics.length - 1) ? sortedTopics[currentIndex + 1] : null;
     
-    // ===== Generate Navigation HTML =====
+    // ===== Generate Navigation HTML (EXACT deepseek style with full labels) =====
     function generateNavHtml(prev, current, next, bookSlug, chapterSlug) {
         var html = '<div class="nav-container">';
         
@@ -8622,6 +8622,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     var topicDefinition = topic.definition || '';
     
     if (topicDefinition) {
+        // Process definition - keep math expressions for workflow to render
         var processedDefinition = topicDefinition.replace(/\n/g, '<br>');
         definitionHtml = `
             <div style="margin: 8px 0 12px;">
@@ -8649,6 +8650,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
             var correctIndex = q.correct_answer !== undefined ? q.correct_answer : 0;
             var optionLabels = ['A', 'B', 'C', 'D'];
             
+            // Keep math expressions for workflow to render
             var questionText = escapeHtmlPreserveMath(q.question_text);
             var opt0 = escapeHtmlPreserveMath(opts[0] || '');
             var opt1 = escapeHtmlPreserveMath(opts[1] || '');
@@ -8748,7 +8750,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     
     var metaDescription = 'Practice ' + topicName + ' from ' + bookTitle + ' - ' + chapterDisplay + chapterName + '. ' + totalQs + ' MCQs answers, plus ' + easyCount + ' easy, ' + mediumCount + ' medium, and ' + hardCount + ' hard questions. Perfect for exam preparation.';
     
-    // ===== BUILD COMPLETE HTML =====
+    // ===== BUILD COMPLETE HTML - Math will be pre-rendered by GitHub Actions =====
     var finalHtml = '<!DOCTYPE html>\n' +
 '<html lang="en">\n' +
 '<head>\n' +
@@ -8767,6 +8769,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
 '  <meta name="theme-color" content="#7c3aed">\n' +
 '  <script type="application/ld+json">\n' + JSON.stringify(schemaData) + '\n' +
 '  <\/script>\n' +
+'  <!-- Math will be pre-rendered by GitHub Actions workflow -->\n' +
 '  <style>\n' +
 '    * { box-sizing: border-box; margin: 0; padding: 0; }\n' +
 '    body {\n' +
@@ -8791,11 +8794,13 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
 '      box-shadow: 0 12px 30px rgba(0,0,0,0.15);\n' +
 '      width: 100%;\n' +
 '    }\n' +
+'    /* responsive padding */\n' +
 '    @media (min-width: 640px) { .card { padding: 28px 32px; } }\n' +
 '    @media (max-width: 480px) { .card { padding: 14px 12px; } }\n' +
 '\n' +
 '    .back-link { display: inline-block; margin-bottom: 12px; color: #7c3aed; text-decoration: none; font-weight: 500; }\n' +
 '    .back-link:hover { text-decoration: underline; }\n' +
+'    /* FIX 3: Breadcrumb - black color */\n' +
 '    .breadcrumb { font-size: 13px; color: #000000; margin-bottom: 10px; word-break: break-word; text-align: justify; }\n' +
 '    .breadcrumb a { color: #000000; text-decoration: none; }\n' +
 '    .breadcrumb a:hover { text-decoration: underline; }\n' +
@@ -8805,6 +8810,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
 '\n' +
 '    .topic-info { font-size: 0.9rem; color: #475569; margin: 6px 0 10px; text-align: justify; }\n' +
 '\n' +
+'    /* ---- NAVIGATION (fully responsive with full labels) ---- */\n' +
 '    .nav-container {\n' +
 '      display: flex;\n' +
 '      flex-wrap: wrap;\n' +
@@ -8855,38 +8861,80 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
 '    }\n' +
 '    .nav-current .current-name { font-weight: 800; color: #5b21b6; text-align: justify; }\n' +
 '\n' +
+'    /* responsive adjustments for better viewing */\n' +
 '    @media (max-width: 650px) {\n' +
-'      .nav-container { flex-wrap: wrap; justify-content: center; gap: 6px; padding: 8px 10px; }\n' +
-'      .nav-link { font-size: 0.7rem; padding: 4px 8px; flex: 0 1 auto; }\n' +
-'      .nav-link .label { font-size: 0.6rem; }\n' +
-'      .nav-link .topic-name { font-size: 0.7rem; }\n' +
-'      .nav-current { font-size: 0.7rem; padding: 3px 8px; }\n' +
-'      .nav-disabled { font-size: 0.65rem; padding: 4px 8px; }\n' +
+'      .nav-container { \n' +
+'        flex-wrap: wrap; \n' +
+'        justify-content: center; \n' +
+'        gap: 6px; \n' +
+'        padding: 8px 10px; \n' +
+'      }\n' +
+'      .nav-link { \n' +
+'        font-size: 0.7rem; \n' +
+'        padding: 4px 8px; \n' +
+'        flex: 0 1 auto; \n' +
+'      }\n' +
+'      .nav-link .label { \n' +
+'        font-size: 0.6rem; \n' +
+'      }\n' +
+'      .nav-link .topic-name { \n' +
+'        font-size: 0.7rem; \n' +
+'      }\n' +
+'      .nav-current { \n' +
+'        font-size: 0.7rem; \n' +
+'        padding: 3px 8px; \n' +
+'      }\n' +
+'      .nav-disabled { \n' +
+'        font-size: 0.65rem; \n' +
+'        padding: 4px 8px; \n' +
+'      }\n' +
 '    }\n' +
 '\n' +
 '    @media (max-width: 480px) {\n' +
-'      .nav-container { gap: 4px; padding: 6px 6px; }\n' +
-'      .nav-link { font-size: 0.6rem; padding: 3px 6px; }\n' +
-'      .nav-link .label { font-size: 0.55rem; }\n' +
-'      .nav-link .topic-name { font-size: 0.6rem; }\n' +
-'      .nav-current { font-size: 0.6rem; padding: 2px 6px; }\n' +
-'      .nav-disabled { font-size: 0.55rem; padding: 3px 6px; }\n' +
-'      .nav-link .arrow { font-size: 0.8rem; }\n' +
+'      .nav-container { \n' +
+'        gap: 4px; \n' +
+'        padding: 6px 6px; \n' +
+'      }\n' +
+'      .nav-link { \n' +
+'        font-size: 0.6rem; \n' +
+'        padding: 3px 6px; \n' +
+'      }\n' +
+'      .nav-link .label { \n' +
+'        font-size: 0.55rem; \n' +
+'      }\n' +
+'      .nav-link .topic-name { \n' +
+'        font-size: 0.6rem; \n' +
+'      }\n' +
+'      .nav-current { \n' +
+'        font-size: 0.6rem; \n' +
+'        padding: 2px 6px; \n' +
+'      }\n' +
+'      .nav-disabled { \n' +
+'        font-size: 0.55rem; \n' +
+'        padding: 3px 6px; \n' +
+'      }\n' +
+'      .nav-link .arrow { \n' +
+'        font-size: 0.8rem; \n' +
+'      }\n' +
 '    }\n' +
 '\n' +
+'    /* difficulty badges - FIX 1: border around badges, black text, bold labels */\n' +
 '    .badge-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 14px 0; text-align: justify; }\n' +
 '    .badge-item { padding: 10px 4px; border-radius: 12px; text-align: center; border: 2px solid #000000; }\n' +
 '    .badge-item .num { font-size: 1.8rem; font-weight: 700; text-align: justify; color: #000000; }\n' +
 '    .badge-item .lbl { font-size: 0.7rem; color: #000000; text-align: justify; font-weight: 700; }\n' +
 '    @media (max-width: 480px) { .badge-item .num { font-size: 1.4rem; } }\n' +
 '\n' +
+'    /* question blocks */\n' +
 '    .q-block { background: white; padding: 14px 12px; border-radius: 12px; margin-bottom: 16px; border: 1px solid #e5e7eb; text-align: justify; contain: layout style paint; }\n' +
 '    .q-text { font-weight: 600; margin: 0 0 10px; line-height: 1.5; text-align: justify; }\n' +
 '    .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; font-size: 0.9rem; color: #334155; text-align: justify; }\n' +
 '    .opt-item { display: flex; align-items: flex-start; gap: 4px; padding: 2px 0; text-align: justify; }\n' +
+'    /* FIX 2: Option labels (A, B, C, D) - black color */\n' +
 '    .opt-item .label { font-weight: 600; color: #000000; min-width: 18px; text-align: justify; }\n' +
 '    .opt-item .text { text-align: justify; word-break: break-word; }\n' +
 '    .opt-correct { background-color: #dcfce7; border-radius: 6px; padding: 4px 6px; text-align: justify; }\n' +
+'    /* FIX 4: Difficulty tag - black color */\n' +
 '    .diff-tag { font-size: 0.7rem; color: #000000; margin-top: 8px; text-align: justify; }\n' +
 '    .explanation { margin-top: 10px; padding: 10px 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px; text-align: justify; }\n' +
 '    .explanation p { font-size: 0.8rem; color: #1e293b; margin: 0; line-height: 1.5; text-align: justify; }\n' +
@@ -8915,6 +8963,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     getGTMBodyCode() + '\n' +
 '\n' +
 '<div class="container">\n' +
+'  <!-- header -->\n' +
 '  <div style="text-align:center; padding:6px 0 12px;">\n' +
 '    <a href="/" style="text-decoration:none;">\n' +
 '      <span style="font-size:1.2rem; font-weight:700; color:#7c3aed; background:white; padding:6px 18px; border-radius:40px; display:inline-block; box-shadow:0 2px 8px rgba(0,0,0,0.08);">🎓 BookMCQ</span>\n' +
@@ -8922,6 +8971,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
 '  </div>\n' +
 '\n' +
 '  <main class="card">\n' +
+'    <!-- breadcrumb -->\n' +
 '    <div class="breadcrumb">\n' +
 '      <a href="/">🏠 Home</a> &gt; <a href="/books/' + bookSlug + '/">' + bookTitle + '</a> &gt; <a href="/books/' + bookSlug + '/' + chapterSlug + '.html">' + chapterDisplay + chapterName + '</a> &gt; ' + topicName + '\n' +
 '    </div>\n' +
@@ -8930,11 +8980,21 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
 '    <h1>📝 ' + topicName + ' (' + totalQs + ' MCQs)</h1>\n' +
 '    <p class="topic-info">📖 From <strong>' + bookTitle + '</strong> • ' + chapterDisplay + chapterName + ' • ' + totalQs + ' questions available</p>\n' +
 '\n' +
+'    <!-- ====== NAVIGATION (fully responsive) ====== -->\n' +
         navHtml + '\n' +
+'\n' +
         definitionHtml + '\n' +
+'\n' +
+'    <!-- difficulty badges -->\n' +
         difficultyHtml + '\n' +
+'\n' +
+'    <!-- all MCQs -->\n' +
         fullMcqsHtml + '\n' +
+'\n' +
+'    <!-- related topics -->\n' +
         relatedTopicsHtml + '\n' +
+'\n' +
+'    <!-- bottom navigation (same as top, but keep for consistency) -->\n' +
         '<div class="nav-container" style="margin-top:16px;">' + generateNavHtml(prevTopic, topic, nextTopic, bookSlug, chapterSlug).replace('<div class="nav-container">', '').replace('</div>', '') + '</div>\n' +
 '\n' +
 '    <div class="footer-links">\n' +
@@ -8945,8 +9005,6 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
 '</div>\n' +
 '</body>\n' +
 '</html>';
-    
- 
     // ✅ Return the final built string, NOT undefined!
     return finalHtml;
 }
