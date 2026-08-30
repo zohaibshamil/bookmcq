@@ -7792,7 +7792,6 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
     var chapterDisplay = chapter.chapter_number ? chapter.chapter_number + '. ' : '';
     var totalQs = chapterQuestions.length;
     // --- DYNAMIC DEFINITION FROM DATABASE ---
-// --- DYNAMIC DEFINITION FROM DATABASE ---
 var chapterDefinitionHtml = '';
 var chapterDefinition = chapter.definition || ''; // Get the definition from the chapter object
 
@@ -7850,10 +7849,10 @@ var sampleMcqsHtml = ''; // Removed sample MCQs to keep page clean
     
     var difficultyHtml = '';
     if (easyCount > 0 || mediumCount > 0 || hardCount > 0) {
-        difficultyHtml = '<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:16px 0;">';
-        difficultyHtml += '<div style="background:#dcfce7; padding:12px; border-radius:10px; text-align:center; border:1px solid #86efac;"><div style="font-size:24px; font-weight:700; color:#166534;">' + easyCount + '</div><div style="font-size:12px; color:#64748b;">Easy Questions</div></div>';
-        difficultyHtml += '<div style="background:#fef9c3; padding:12px; border-radius:10px; text-align:center; border:1px solid #fde047;"><div style="font-size:24px; font-weight:700; color:#854d0e;">' + mediumCount + '</div><div style="font-size:12px; color:#64748b;">Medium Questions</div></div>';
-        difficultyHtml += '<div style="background:#fee2e2; padding:12px; border-radius:10px; text-align:center; border:1px solid #fca5a5;"><div style="font-size:24px; font-weight:700; color:#991b1b;">' + hardCount + '</div><div style="font-size:12px; color:#64748b;">Hard Questions</div></div>';
+        difficultyHtml = '<div class="badge-grid">';
+        difficultyHtml += '<div class="badge-item" style="background:#dcfce7; border-color:#86efac;"><div class="num" style="color:#166534;">' + easyCount + '</div><div class="lbl">Easy</div></div>';
+        difficultyHtml += '<div class="badge-item" style="background:#fef9c3; border-color:#fde047;"><div class="num" style="color:#854d0e;">' + mediumCount + '</div><div class="lbl">Medium</div></div>';
+        difficultyHtml += '<div class="badge-item" style="background:#fee2e2; border-color:#fca5a5;"><div class="num" style="color:#991b1b;">' + hardCount + '</div><div class="lbl">Hard</div></div>';
         difficultyHtml += '</div>';
     }
     
@@ -7883,7 +7882,7 @@ return '<!DOCTYPE html>\n' +
 '<html lang="en">\n' +
 '<head>\n' +
 '    <meta charset="UTF-8">\n' +
-'    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">\n' +
+'    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">\n' +
     getGTMHeadCode() + '\n' +
 '    <title>' + chapterDisplay + chapterName + ' - ' + bookTitle + ' Practice Questions with Difficulty Levels | BookMCQ</title>\n' +
 '    <meta name="description" content="' + metaDescription + '">\n' +
@@ -7963,145 +7962,114 @@ return '<!DOCTYPE html>\n' +
 '        }\n' +
 '    <\/script>\n' +
 '    <style>\n' +
+'        * { box-sizing: border-box; margin: 0; padding: 0; }\n' +
 '        body {\n' +
-'            font-family: Arial, sans-serif;\n' +
+'            font-family: system-ui, -apple-system, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif;\n' +
 '            background: linear-gradient(135deg, #667eea, #764ba2);\n' +
-'            margin: 0;\n' +
-'            padding: 0;\n' +
 '            min-height: 100vh;\n' +
+'            padding: 12px;\n' +
+'            display: flex;\n' +
+'            flex-direction: column;\n' +
+'            align-items: center;\n' +
 '        }\n' +
 '        .container {\n' +
 '            max-width: 900px;\n' +
-'            margin: auto;\n' +
-'            padding: 20px;\n' +
+'            width: 100%;\n' +
+'            margin: 0 auto;\n' +
+'            padding: 0 8px;\n' +
 '        }\n' +
 '        .card {\n' +
 '            background: white;\n' +
-'            border-radius: 16px;\n' +
-'            padding: 20px;\n' +
-'            margin-top: 20px;\n' +
-'            box-shadow: 0 10px 25px rgba(0,0,0,0.1);\n' +
+'            border-radius: 20px;\n' +
+'            padding: 18px 16px 24px;\n' +
+'            box-shadow: 0 12px 30px rgba(0,0,0,0.15);\n' +
+'            width: 100%;\n' +
 '        }\n' +
+'        @media (min-width: 640px) { .card { padding: 28px 32px; } }\n' +
+'        @media (max-width: 480px) { .card { padding: 14px 12px; } }\n' +
+'\n' +
+'        .back-link { display: inline-block; margin-bottom: 12px; color: #7c3aed; text-decoration: none; font-weight: 500; }\n' +
+'        .back-link:hover { text-decoration: underline; }\n' +
+'        .breadcrumb { font-size: 13px; color: #64748b; margin-bottom: 10px; word-break: break-word; }\n' +
+'        .breadcrumb a { color: #7c3aed; text-decoration: none; }\n' +
+'        .breadcrumb a:hover { text-decoration: underline; }\n' +
+'\n' +
+'        h1 { font-size: 1.6rem; line-height: 1.2; margin: 6px 0 4px; word-break: break-word; }\n' +
+'        @media (max-width: 480px) { h1 { font-size: 1.4rem; } }\n' +
+'\n' +
+'        .chapter-info { font-size: 0.9rem; color: #475569; margin: 6px 0 10px; }\n' +
+'\n' +
+'        /* ---- BADGE GRID (matching topic page) ---- */\n' +
+'        .badge-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 14px 0; }\n' +
+'        .badge-item { padding: 10px 4px; border-radius: 12px; text-align: center; border: 1px solid #e5e7eb; }\n' +
+'        .badge-item .num { font-size: 1.8rem; font-weight: 700; }\n' +
+'        .badge-item .lbl { font-size: 0.7rem; color: #64748b; }\n' +
+'        @media (max-width: 480px) { .badge-item .num { font-size: 1.4rem; } }\n' +
+'\n' +
+'        /* ---- TOPIC LIST (matching topic page pills style) ---- */\n' +
+'        .topic-pills { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }\n' +
+'        .topic-pills a { background: #f3f4f6; padding: 4px 12px; border-radius: 30px; font-size: 0.75rem; color: #1e293b; text-decoration: none; border: 1px solid #e5e7eb; white-space: nowrap; }\n' +
+'        .topic-pills a:hover { background: #e0e7ff; }\n' +
+'\n' +
 '        .btn-primary {\n' +
 '            display: inline-block;\n' +
 '            background: linear-gradient(135deg, #667eea, #764ba2);\n' +
 '            color: white;\n' +
-'            padding: 14px 32px;\n' +
-'            border-radius: 12px;\n' +
+'            padding: 12px 28px;\n' +
+'            border-radius: 40px;\n' +
 '            text-decoration: none;\n' +
-'            font-weight: bold;\n' +
-'            margin-top: 10px;\n' +
+'            font-weight: 700;\n' +
+'            margin-top: 8px;\n' +
 '            transition: 0.2s;\n' +
+'            border: none;\n' +
+'            cursor: pointer;\n' +
 '        }\n' +
-'        .btn-primary:hover {\n' +
-'            transform: translateY(-2px);\n' +
-'            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);\n' +
-'        }\n' +
+'        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(102,126,234,0.4); }\n' +
+'\n' +
 '        .btn-secondary {\n' +
 '            display: inline-block;\n' +
-'            background: #f3f4f6;\n' +
+'            background: #f1f5f9;\n' +
 '            color: #1e293b;\n' +
-'            padding: 10px 24px;\n' +
-'            border-radius: 10px;\n' +
+'            padding: 10px 22px;\n' +
+'            border-radius: 40px;\n' +
 '            text-decoration: none;\n' +
 '            font-weight: 500;\n' +
-'            margin-top: 10px;\n' +
-'            transition: 0.2s;\n' +
-'            border: 1px solid #e5e7eb;\n' +
+'            border: 1px solid #d1d5db;\n' +
 '        }\n' +
-'        .btn-secondary:hover {\n' +
-'            background: #e5e7eb;\n' +
-'        }\n' +
-'        .back-link {\n' +
-'            display: inline-block;\n' +
-'            margin-bottom: 15px;\n' +
-'            color: #7c3aed;\n' +
-'            text-decoration: none;\n' +
-'        }\n' +
-'        .back-link:hover {\n' +
-'            text-decoration: underline;\n' +
-'        }\n' +
-'        .chapter-info {\n' +
-'            font-size: 14px;\n' +
-'            color: #64748b;\n' +
-'            margin: 8px 0;\n' +
-'        }\n' +
-'        .breadcrumb {\n' +
-'            font-size: 13px;\n' +
-'            color: #94a3b8;\n' +
-'            margin-bottom: 12px;\n' +
-'        }\n' +
-'        .breadcrumb a {\n' +
-'            color: #7c3aed;\n' +
-'            text-decoration: none;\n' +
-'        }\n' +
-'        .breadcrumb a:hover {\n' +
-'            text-decoration: underline;\n' +
-'        }\n' +
-'        .math-rendered {\n' +
-'            display: inline;\n' +
-'            line-height: 1.6;\n' +
-'        }\n' +
-'        .math-rendered mjx-container {\n' +
-'            display: inline-block;\n' +
-'            margin: 0 2px;\n' +
-'        }\n' +
-'        .justify-text {\n' +
-'            text-align: justify;\n' +
-'            text-justify: inter-word;\n' +
-'        }\n' +     
-'        .definition-text {\n' +
-'            text-align: justify;\n' +
-'            text-justify: inter-word;\n' +
-'            line-height: 1.8;\n' +
-'        }\n' +         
-'        .option-text {\n' +
-'            text-align: justify;\n' +
-'            text-justify: inter-word;\n' +
-'        }\n' +    
-'        .explanation-text {\n' +
-'            text-align: justify;\n' +
-'            text-justify: inter-word;\n' +
-'            line-height: 1.6;\n' +
-'        }\n' +       
-'        .question-text {\n' +
-'            font-size: 1rem;\n' +
-'            line-height: 1.6;\n' +
-'        }\n' +
-'        .option-text {\n' +
-'            display: inline;\n' +
-'        }\n' +
-'        .explanation-text {\n' +
-'            font-size: 0.875rem;\n' +
-'            line-height: 1.5;\n' +
-'        }\n' +
+'        .btn-secondary:hover { background: #e5e7eb; }\n' +
+'\n' +
+'        .footer-links { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 18px; }\n' +
+'\n' +
+'        img, svg { max-width: 100%; height: auto; }\n' +
+'        .math { display: inline; }\n' +
 '    </style>\n' +
 '</head>\n' +
 '<body>\n' +
     getGTMBodyCode() + '\n' +
-'<!-- Website Header -->\n' +
-'<div style="text-align:center; padding:10px 0 5px 0;">\n' +
-'    <a href="/" style="text-decoration:none;">\n' +
-'        <span style="font-size:18px; font-weight:700; color:#7c3aed; background:white; padding:6px 20px; border-radius:30px; display:inline-block; box-shadow:0 2px 8px rgba(0,0,0,0.08);">\n' +
-'            🎓 BookMCQ\n' +
-'        </span>\n' +
-'    </a>\n' +
-'</div>\n' +
+'\n' +
 '<div class="container">\n' +
+'    <!-- header -->\n' +
+'    <div style="text-align:center; padding:6px 0 12px;">\n' +
+'        <a href="/" style="text-decoration:none;">\n' +
+'            <span style="font-size:1.2rem; font-weight:700; color:#7c3aed; background:white; padding:6px 18px; border-radius:40px; display:inline-block; box-shadow:0 2px 8px rgba(0,0,0,0.08);">🎓 BookMCQ</span>\n' +
+'        </a>\n' +
+'    </div>\n' +
+'\n' +
 '    <div class="card">\n' +
+'        <!-- breadcrumb -->\n' +
 '        <div class="breadcrumb">\n' +
 '            <a href="/">🏠 Home</a> &gt; <a href="/books/' + bookSlug + '/">' + bookTitle + '</a> &gt; ' + chapterDisplay + chapterName + '\n' +
 '        </div>\n' +
 '        <a href="/books/' + bookSlug + '/" class="back-link">← Back to ' + bookTitle + '</a>\n' +
-'        <h1>' + chapterDisplay + chapterName + ' - ' + bookTitle + '</h1>\n' +
+'        <h1>📖 ' + chapterDisplay + chapterName + '</h1>\n' +
 '        <p class="chapter-info">📖 From <strong>' + bookTitle + '</strong> • ' + totalQs + ' questions available</p>\n' +
     chapterDefinitionHtml +
-'        <p>Practice MCQs for ' + chapterDisplay + chapterName + '. Test your knowledge with carefully crafted questions across easy, medium, and hard difficulty levels.</p>\n' +
-'        <p style="font-size:13px; color:#64748b; margin-top:4px;">🔄 Last updated: ' + lastUpdated + '</p>\n' +
+'        <p style="text-align:justify; line-height:1.7; color:#334155; font-size:0.95rem;">Practice MCQs for ' + chapterDisplay + chapterName + '. Test your knowledge with carefully crafted questions across easy, medium, and hard difficulty levels.</p>\n' +
+'        <p style="font-size:13px; color:#94a3b8; margin-top:6px;">🔄 Last updated: ' + lastUpdated + '</p>\n' +
     difficultyHtml +
     topicsHtml +
     sampleMcqsHtml +
-'        <div style="text-align: center; margin-top: 20px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">\n' +
+'        <div class="footer-links">\n' +
 '            <a href="/quiz" class="btn-primary">🚀 Start Quiz</a>\n' +
 '            <a href="/practice" class="btn-secondary">📝 Practice Mode</a>\n' +
 '        </div>\n' +
