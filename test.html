@@ -8117,6 +8117,71 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
     '    <meta name="theme-color" content="#7c3aed">\n' +
     '    <script type="application/ld+json">\n' + JSON.stringify(schemaData) + '\n' +
     '    <\/script>\n' +
+    '    <script src="https://cdn.tailwindcss.com"><\/script>\n' +
+    '    <script>\n' +
+    '        window.MathJax = {\n' +
+    '            tex: {\n' +
+    '                inlineMath: [\n' +
+    '                    [\'$\', \'$\'],\n' +
+    '                    [\'\\\\(\', \'\\\\)\']\n' +
+    '                ],\n' +
+    '                displayMath: [\n' +
+    '                    [\'$$\', \'$$\'],\n' +
+    '                    [\'\\\\[\', \'\\\\]\']\n' +
+    '                ],\n' +
+    '                processEscapes: true,\n' +
+    '                processEnvironments: true\n' +
+    '            },\n' +
+    '            svg: {\n' +
+    '                fontCache: \'global\'\n' +
+    '            },\n' +
+    '            options: {\n' +
+    '                skipHtmlTypes: \'script\',\n' +
+    '                ignoreHtmlClass: \'no-mathjax\',\n' +
+    '                processHtmlClass: \'math\'\n' +
+    '            }\n' +
+    '        };\n' +
+    '    <\/script>\n' +
+    '    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async><\/script>\n' +
+    '    <script>\n' +
+    '        function escapeHtmlPreserveMath(text) {\n' +
+    '            if (!text) return \'\';\n' +
+    '            var escaped = text.replace(/&/g, \'&amp;\')\n' +
+    '                              .replace(/</g, \'&lt;\')\n' +
+    '                              .replace(/>/g, \'&gt;\')\n' +
+    '                              .replace(/"/g, \'&quot;\')\n' +
+    '                              .replace(/\'/g, \'&#039;\');\n' +
+    '            return escaped;\n' +
+    '        }\n' +
+    '\n' +
+    '        async function renderMathInElement(element) {\n' +
+    '            if (window.MathJax && element) {\n' +
+    '                try {\n' +
+    '                    await MathJax.typesetPromise([element]);\n' +
+    '                } catch(e) {\n' +
+    '                    console.log(\'MathJax error:\', e);\n' +
+    '                }\n' +
+    '            }\n' +
+    '        }\n' +
+    '\n' +
+    '        async function renderAllMath() {\n' +
+    '            if (window.MathJax) {\n' +
+    '                try {\n' +
+    '                    await MathJax.typesetPromise();\n' +
+    '                } catch(e) {\n' +
+    '                    console.log(\'MathJax error:\', e);\n' +
+    '                }\n' +
+    '            }\n' +
+    '        }\n' +
+    '\n' +
+    '        document.addEventListener(\'DOMContentLoaded\', function() {\n' +
+    '            renderAllMath();\n' +
+    '        });\n' +
+    '\n' +
+    '        if (window.MathJax) {\n' +
+    '            MathJax.typesetPromise = MathJax.typesetPromise || function() { return Promise.resolve(); };\n' +
+    '        }\n' +
+    '    <\/script>\n' +
     '    <style>\n' +
     '        * { box-sizing: border-box; margin: 0; padding: 0; }\n' +
     '        \n' +
@@ -8367,6 +8432,7 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
     '        }\n' +
     '\n' +
     '        img, svg { max-width: 100%; height: auto; }\n' +
+    '        .math { display: inline; }\n' +
     '        \n' +
     '        /* ---- RESPONSIVE TEXT ADJUSTMENTS ---- */\n' +
     '        @media (max-width: 480px) {\n' +
