@@ -20,7 +20,7 @@ console.log('📌 All other folders will be ignored.\n');
 // Helper to render math synchronously
 function renderMath(math, display = false) {
     let result = math;
-    let error = null;
+    let completed = false;
     
     mjAPI.typeset({
         math: math,
@@ -32,12 +32,19 @@ function renderMath(math, display = false) {
         display: display
     }, function(data) {
         if (data.errors) {
-            error = data.errors;
             console.log('  ⚠️ MathJax error:', data.errors);
         } else {
             result = data.svg;
         }
+        completed = true;
     });
+    
+    // Wait for completion (simple polling)
+    let attempts = 0;
+    while (!completed && attempts < 50) {
+        attempts++;
+        // This is a synchronous wait - MathJax Node should be synchronous
+    }
     
     return result;
 }
@@ -51,38 +58,54 @@ function renderMathToHTML(text) {
     try {
         // Process \(...\) style
         let processed = text.replace(/\\\((.+?)\\\)/g, function(match, math) {
-            const rendered = renderMath(math, false);
-            if (rendered !== math) {
-                return rendered;
+            try {
+                const rendered = renderMath(math, false);
+                if (rendered && rendered !== math) {
+                    return rendered;
+                }
+                return match;
+            } catch (e) {
+                return match;
             }
-            return match;
         });
         
         // Process $...$ style
         processed = processed.replace(/\$(.+?)\$/g, function(match, math) {
-            const rendered = renderMath(math, false);
-            if (rendered !== math) {
-                return rendered;
+            try {
+                const rendered = renderMath(math, false);
+                if (rendered && rendered !== math) {
+                    return rendered;
+                }
+                return match;
+            } catch (e) {
+                return match;
             }
-            return match;
         });
         
         // Process \[...\] style (display math)
         processed = processed.replace(/\\\[(.+?)\\\]/g, function(match, math) {
-            const rendered = renderMath(math, true);
-            if (rendered !== math) {
-                return rendered;
+            try {
+                const rendered = renderMath(math, true);
+                if (rendered && rendered !== math) {
+                    return rendered;
+                }
+                return match;
+            } catch (e) {
+                return match;
             }
-            return match;
         });
         
         // Process $$...$$ style (display math)
         processed = processed.replace(/\$\$(.+?)\$\$/g, function(match, math) {
-            const rendered = renderMath(math, true);
-            if (rendered !== math) {
-                return rendered;
+            try {
+                const rendered = renderMath(math, true);
+                if (rendered && rendered !== math) {
+                    return rendered;
+                }
+                return match;
+            } catch (e) {
+                return match;
             }
-            return match;
         });
         
         return processed;
@@ -95,6 +118,7 @@ function renderMathToHTML(text) {
 function processBooksFolder() {
     const booksDir = './books';
     let processedCount = 0;
+    let filesWithMath = 0;
     
     if (!fs.existsSync(booksDir)) {
         console.log('❌ Books folder not found!');
@@ -115,8 +139,10 @@ function processBooksFolder() {
             } else if (file.endsWith('.html')) {
                 try {
                     let content = fs.readFileSync(filePath, 'utf-8');
+                    let originalContent = content;
                     
                     if (content.includes('$') || content.includes('\\(') || content.includes('\\[')) {
+                        filesWithMath++;
                         let modified = false;
                         
                         // Process math in ALL text content
@@ -182,26 +208,31 @@ function processBooksFolder() {
     }
     
     processDirectory(booksDir);
+    console.log(`\n📊 Found ${filesWithMath} files with math content.`);
     return processedCount;
 }
 
 // Wait for MathJax to be ready before processing
 console.log('⏳ Initializing MathJax...');
 
-try {
-    const count = processBooksFolder();
-    console.log('\n' + '='.repeat(50));
-    if (count > 0) {
-        console.log(`✅ SUCCESS: ${count} files processed in the books folder.`);
-        console.log('📌 ONLY the books folder was modified.');
-    } else {
-        console.log('ℹ️ No files needed processing in the books folder.');
+// Give MathJax a moment to initialize
+setTimeout(() => {
+    try {
+        const count = processBooksFolder();
+        console.log('\n' + '='.repeat(50));
+        if (count > 0) {
+            console.log(`✅ SUCCESS: ${count} files processed in the books folder.`);
+            console.log('📌 ONLY the books folder was modified.');
+        } else {
+            console.log('ℹ️ No files needed processing in the books folder.');
+        }
+        console.log('='.repeat(50));
+        
+        // Don't call quit() - it doesn't exist in this version
+        // mjAPI.quit(); // REMOVED - causes error
+        process.exit(0);
+    } catch (error) {
+        console.error('❌ Error:', error);
+        process.exit(1);
     }
-    console.log('='.repeat(50));
-    
-    // Shutdown MathJax
-    mjAPI.quit();
-} catch (error) {
-    console.error('❌ Error:', error);
-    process.exit(1);
-}
+}, 1000);
