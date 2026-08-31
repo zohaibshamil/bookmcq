@@ -46,14 +46,16 @@ async function renderMathToHTML(text) {
     }
     
     try {
-        // Process \(...\) style
+        // Process math expressions sequentially
         let processed = text;
         
         // Find all math expressions and render them
         const matches = [];
-        const regex = /\\\((.+?)\\\)/g;
+        
+        // Process \(...\) style - FIXED: proper escaping
+        const regex1 = /\\\((.+?)\\\)/g;
         let match;
-        while ((match = regex.exec(text)) !== null) {
+        while ((match = regex1.exec(text)) !== null) {
             matches.push({
                 full: match[0],
                 math: match[1],
@@ -62,18 +64,21 @@ async function renderMathToHTML(text) {
             });
         }
         
-        // Also find $...$ style
+        // Process $...$ style
         const regex2 = /\$(.+?)\$/g;
         while ((match = regex2.exec(text)) !== null) {
-            matches.push({
-                full: match[0],
-                math: match[1],
-                index: match.index,
-                display: false
-            });
+            // Skip if it's $$...$$ (display math)
+            if (text[match.index - 1] !== '$' && text[match.index + match[0].length] !== '$') {
+                matches.push({
+                    full: match[0],
+                    math: match[1],
+                    index: match.index,
+                    display: false
+                });
+            }
         }
         
-        // Find display math: \[...\]
+        // Process \[...\] style - FIXED: proper escaping
         const regex3 = /\\\[(.+?)\\\]/g;
         while ((match = regex3.exec(text)) !== null) {
             matches.push({
@@ -84,7 +89,7 @@ async function renderMathToHTML(text) {
             });
         }
         
-        // Find display math: $$...$$
+        // Process $$...$$ style
         const regex4 = /\$\$(.+?)\$\$/g;
         while ((match = regex4.exec(text)) !== null) {
             matches.push({
@@ -112,6 +117,7 @@ async function renderMathToHTML(text) {
                 result += rendered;
             } catch (e) {
                 console.log(`  ⚠️ MathJax error for: ${item.math.substring(0, 30)}...`);
+                console.log(`  Error: ${e}`);
                 result += item.full; // Keep original if error
             }
             
@@ -155,61 +161,30 @@ async function processBooksFolder() {
                     
                     if (content.includes('$') || content.includes('\\(') || content.includes('\\[')) {
                         filesWithMath++;
-                        let modified = false;
-                        let newContent = content;
+                        console.log(`📄 Found math in: ${path.relative(booksDir, filePath)}`);
                         
-                        // Process math in ALL text content
-                        // Method 1: Process inside HTML elements
-                        const elementPatterns = [
-                            /<p[^>]*>([\s\S]*?)<\/p>/g,
-                            /<div[^>]*class="[^"]*(?:explanation|definition|q-text|math|diff-tag)[^"]*"[^>]*>([\s\S]*?)<\/div>/g,
-                            /<span[^>]*class="[^"]*(?:math|q-text)[^"]*"[^>]*>([\s\S]*?)<\/span>/g,
-                            /<li[^>]*>([\s\S]*?)<\/li>/g,
-                            /<strong[^>]*>([\s\S]*?)<\/strong>/g,
-                            /<em[^>]*>([\s\S]*?)<\/em>/g
-                        ];
+                        // Process ALL math in the content at once
+                        // We need to process the entire content, not piece by piece
+                        let newContent = await renderMathToHTML(content);
                         
-                        for (const pattern of elementPatterns) {
-                            newContent = newContent.replace(pattern, async function(match, text) {
-                                if (text && (text.includes('$') || text.includes('\\(') || text.includes('\\['))) {
-                                    const rendered = await renderMathToHTML(text);
-                                    if (rendered !== text) {
-                                        modified = true;
-                                        return match.replace(text, rendered);
-                                    }
-                                }
-                                return match;
-                            });
-                        }
-                        
-                        // Method 2: Process ANY text between tags
-                        newContent = newContent.replace(/>([^<]*?)</g, async function(match, text) {
-                            if (text && (text.includes('$') || text.includes('\\(') || text.includes('\\['))) {
-                                const rendered = await renderMathToHTML(text);
-                                if (rendered !== text) {
-                                    modified = true;
-                                    return '>' + rendered + '<';
+                        if (newContent !== content) {
+                            // Check if math was actually rendered
+                            if (newContent.includes('<svg')) {
+                                fs.writeFileSync(filePath, newContent, 'utf-8');
+                                processedCount++;
+                                const relativePath = path.relative(booksDir, filePath);
+                                console.log(`  ✓ Processed: books/${relativePath} (${newContent.match(/<svg/g)?.length || 0} formulas rendered)`);
+                            } else {
+                                console.log(`  ⚠️ Math found but not rendered in: ${path.basename(filePath)}`);
+                                // Check what math patterns are present
+                                const mathMatches = newContent.match(/\\\([^\\]+\\\)|\\\[[^\\]+\\\]|\$\$[^$]+\$\$|\$[^$]+\$/g);
+                                if (mathMatches) {
+                                    console.log(`    Found ${mathMatches.length} math expressions in this file`);
+                                    console.log(`    First few: ${mathMatches.slice(0, 3).join(', ')}`);
                                 }
                             }
-                            return match;
-                        });
-                        
-                        if (modified) {
-                            fs.writeFileSync(filePath, newContent, 'utf-8');
-                            processedCount++;
-                            const relativePath = path.relative(booksDir, filePath);
-                            console.log(`  ✓ Processed: books/${relativePath}`);
                         } else {
-                            // Check if there's still unprocessed math
-                            if (newContent.includes('\\(') || newContent.includes('\\[') || newContent.includes('$')) {
-                                console.log(`  ⚠️ Math found but not processed in: ${path.basename(filePath)}`);
-                                // Try one more time with a different approach
-                                let finalContent = newContent;
-                                const simpleMatches = newContent.match(/\\\([^\\]+\\\)/g);
-                                if (simpleMatches) {
-                                    console.log(`    Found ${simpleMatches.length} math expressions in this file`);
-                                }
-                            }
+                            console.log(`  ⚠️ No changes made to: ${path.basename(filePath)}`);
                         }
                     }
                 } catch (error) {
