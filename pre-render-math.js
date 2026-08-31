@@ -1,11 +1,12 @@
-// pre-render-math.js
+// pre-render-math.js - No external dependencies!
 const fs = require('fs');
 const path = require('path');
-const katex = require('katex');
 
 console.log('🚀 Starting math pre-rendering...');
 console.log('📁 ONLY processing files in the "books" folder...');
+console.log('📌 Using simple math rendering (no external packages)\n');
 
+// Simple math renderer - converts $math$ to styled HTML
 function renderMathToHTML(text) {
     if (!text) return text;
     if (!text.includes('$') && !text.includes('\\(') && !text.includes('\\[')) {
@@ -13,28 +14,30 @@ function renderMathToHTML(text) {
     }
     
     try {
+        // Process inline math: $...$ or \(...\)
         let processed = text.replace(/\$(.+?)\$/g, function(match, math) {
-            try {
-                return katex.renderToString(math.trim(), {
-                    throwOnError: false,
-                    displayMode: false,
-                    trust: true
-                });
-            } catch (e) {
-                return match;
-            }
+            return '<span class="math-inline" style="font-family: \'Times New Roman\', serif; font-style: italic;">' + 
+                   math.trim() + 
+                   '</span>';
         });
         
+        processed = processed.replace(/\\\((.+?)\\\)/g, function(match, math) {
+            return '<span class="math-inline" style="font-family: \'Times New Roman\', serif; font-style: italic;">' + 
+                   math.trim() + 
+                   '</span>';
+        });
+        
+        // Process display math: $$...$$ or \[...\]
         processed = processed.replace(/\$\$(.+?)\$\$/g, function(match, math) {
-            try {
-                return katex.renderToString(math.trim(), {
-                    throwOnError: false,
-                    displayMode: true,
-                    trust: true
-                });
-            } catch (e) {
-                return match;
-            }
+            return '<div class="math-display" style="text-align: center; font-family: \'Times New Roman\', serif; font-style: italic; padding: 10px 0;">' + 
+                   math.trim() + 
+                   '</div>';
+        });
+        
+        processed = processed.replace(/\\\[(.+?)\\\]/g, function(match, math) {
+            return '<div class="math-display" style="text-align: center; font-family: \'Times New Roman\', serif; font-style: italic; padding: 10px 0;">' + 
+                   math.trim() + 
+                   '</div>';
         });
         
         return processed;
@@ -43,6 +46,7 @@ function renderMathToHTML(text) {
     }
 }
 
+// Process only the books folder
 function processBooksFolder() {
     const booksDir = './books';
     let processedCount = 0;
@@ -68,9 +72,11 @@ function processBooksFolder() {
                 try {
                     let content = fs.readFileSync(filePath, 'utf-8');
                     
+                    // Check if file contains math delimiters
                     if (content.includes('$') || content.includes('\\(') || content.includes('\\[')) {
                         let modified = false;
                         
+                        // Process math in specific HTML elements
                         const patterns = [
                             /<p[^>]*>([\s\S]*?)<\/p>/g,
                             /<div[^>]*class="[^"]*(?:explanation|definition|q-text|math)[^"]*"[^>]*>([\s\S]*?)<\/div>/g,
@@ -108,6 +114,7 @@ function processBooksFolder() {
     return processedCount;
 }
 
+// Main execution
 try {
     const count = processBooksFolder();
     console.log('\n' + '='.repeat(50));
