@@ -3,11 +3,13 @@ const fs = require('fs');
 const path = require('path');
 const mjAPI = require('mathjax-node');
 
-// Configure MathJax
+// Configure MathJax - FIXED configuration
 mjAPI.config({
     MathJax: {
         SVG: {
-            fontCache: 'global'
+            fontCache: 'global',
+            scale: 100,
+            minScaleAdjust: 50
         }
     }
 });
@@ -32,10 +34,165 @@ function renderMathPromise(math, display = false) {
             if (data.errors) {
                 reject(data.errors);
             } else {
-                resolve(data.svg);
+                // Ensure we have valid SVG
+                if (data.svg && data.svg.trim().length > 0) {
+                    resolve(data.svg);
+                } else {
+                    reject(new Error('Empty SVG output'));
+                }
             }
         });
     });
+}
+
+// Helper function to find math expressions with proper handling of braces
+function findMathExpressions(text) {
+    const matches = [];
+    let index = 0;
+    
+    // Process \(...\) style - handle nested braces
+    let match;
+    const regex1 = /\\\(/g;
+    while ((match = regex1.exec(text)) !== null) {
+        const start = match.index + 2;
+        let braceCount = 0;
+        let end = start;
+        let found = false;
+        
+        for (let i = start; i < text.length; i++) {
+            if (text[i] === '{') braceCount++;
+            else if (text[i] === '}') braceCount--;
+            else if (text[i] === '\\' && text[i+1] === ')') {
+                if (braceCount === 0) {
+                    end = i;
+                    found = true;
+                    break;
+                }
+            }
+        }
+        
+        if (found) {
+            const math = text.substring(start, end);
+            matches.push({
+                full: text.substring(match.index, end + 2),
+                math: math,
+                index: match.index,
+                display: false
+            });
+        }
+    }
+    
+    // Process \[...\] style
+    const regex2 = /\\\[/g;
+    while ((match = regex2.exec(text)) !== null) {
+        const start = match.index + 2;
+        let braceCount = 0;
+        let end = start;
+        let found = false;
+        
+        for (let i = start; i < text.length; i++) {
+            if (text[i] === '{') braceCount++;
+            else if (text[i] === '}') braceCount--;
+            else if (text[i] === '\\' && text[i+1] === ']') {
+                if (braceCount === 0) {
+                    end = i;
+                    found = true;
+                    break;
+                }
+            }
+        }
+        
+        if (found) {
+            const math = text.substring(start, end);
+            matches.push({
+                full: text.substring(match.index, end + 2),
+                math: math,
+                index: match.index,
+                display: true
+            });
+        }
+    }
+    
+    // Process $...$ style (inline)
+    const regex3 = /\$(?!\$)/g;
+    while ((match = regex3.exec(text)) !== null) {
+        const start = match.index + 1;
+        let braceCount = 0;
+        let end = start;
+        let found = false;
+        
+        for (let i = start; i < text.length; i++) {
+            if (text[i] === '{') braceCount++;
+            else if (text[i] === '}') braceCount--;
+            else if (text[i] === '$') {
+                if (braceCount === 0 && text[i-1] !== '\\') {
+                    end = i;
+                    found = true;
+                    break;
+                }
+            }
+        }
+        
+        if (found && end > start) {
+            const math = text.substring(start, end);
+            // Skip if it looks like a display math $$...$$
+            if (!math.includes('$')) {
+                matches.push({
+                    full: text.substring(match.index, end + 1),
+                    math: math,
+                    index: match.index,
+                    display: false
+                });
+            }
+        }
+    }
+    
+    // Process $$...$$ style (display)
+    const regex4 = /\$\$/g;
+    while ((match = regex4.exec(text)) !== null) {
+        const start = match.index + 2;
+        let braceCount = 0;
+        let end = start;
+        let found = false;
+        
+        for (let i = start; i < text.length; i++) {
+            if (text[i] === '{') braceCount++;
+            else if (text[i] === '}') braceCount--;
+            else if (text[i] === '$' && text[i+1] === '$') {
+                if (braceCount === 0 && text[i-1] !== '\\') {
+                    end = i;
+                    found = true;
+                    break;
+                }
+            }
+        }
+        
+        if (found && end > start) {
+            const math = text.substring(start, end);
+            matches.push({
+                full: text.substring(match.index, end + 2),
+                math: math,
+                index: match.index,
+                display: true
+            });
+        }
+    }
+    
+    // Sort by index
+    matches.sort((a, b) => a.index - b.index);
+    
+    // Remove overlapping matches
+    const uniqueMatches = [];
+    let lastEnd = -1;
+    for (const m of matches) {
+        const end = m.index + m.full.length;
+        if (m.index >= lastEnd) {
+            uniqueMatches.push(m);
+            lastEnd = end;
+        }
+    }
+    
+    return uniqueMatches;
 }
 
 // Async function to render math to HTML
@@ -46,78 +203,46 @@ async function renderMathToHTML(text) {
     }
     
     try {
-        // Process math expressions sequentially
-        let processed = text;
+        // Find all math expressions
+        const matches = findMathExpressions(text);
         
-        // Find all math expressions and render them
-        const matches = [];
-        
-        // Process \(...\) style - FIXED: proper escaping
-        const regex1 = /\\\((.+?)\\\)/g;
-        let match;
-        while ((match = regex1.exec(text)) !== null) {
-            matches.push({
-                full: match[0],
-                math: match[1],
-                index: match.index,
-                display: false
-            });
+        if (matches.length === 0) {
+            return text;
         }
         
-        // Process $...$ style
-        const regex2 = /\$(.+?)\$/g;
-        while ((match = regex2.exec(text)) !== null) {
-            // Skip if it's $$...$$ (display math)
-            if (text[match.index - 1] !== '$' && text[match.index + match[0].length] !== '$') {
-                matches.push({
-                    full: match[0],
-                    math: match[1],
-                    index: match.index,
-                    display: false
-                });
-            }
-        }
-        
-        // Process \[...\] style - FIXED: proper escaping
-        const regex3 = /\\\[(.+?)\\\]/g;
-        while ((match = regex3.exec(text)) !== null) {
-            matches.push({
-                full: match[0],
-                math: match[1],
-                index: match.index,
-                display: true
-            });
-        }
-        
-        // Process $$...$$ style
-        const regex4 = /\$\$(.+?)\$\$/g;
-        while ((match = regex4.exec(text)) !== null) {
-            matches.push({
-                full: match[0],
-                math: match[1],
-                index: match.index,
-                display: true
-            });
-        }
-        
-        // Sort by index (to process in order)
-        matches.sort((a, b) => a.index - b.index);
+        console.log(`  Found ${matches.length} math expressions to render`);
         
         // Render each math expression
         let result = '';
         let lastIndex = 0;
+        let successCount = 0;
         
         for (const item of matches) {
             // Add text before this match
             result += text.substring(lastIndex, item.index);
             
             try {
-                // Render the math
-                const rendered = await renderMathPromise(item.math, item.display);
-                result += rendered;
+                // Render the math with retry
+                let rendered = null;
+                let attempts = 0;
+                while (attempts < 2 && !rendered) {
+                    try {
+                        rendered = await renderMathPromise(item.math, item.display);
+                    } catch (e) {
+                        attempts++;
+                        if (attempts === 2) throw e;
+                    }
+                }
+                
+                if (rendered) {
+                    result += rendered;
+                    successCount++;
+                } else {
+                    result += item.full;
+                }
             } catch (e) {
-                console.log(`  ⚠️ MathJax error for: ${item.math.substring(0, 30)}...`);
-                console.log(`  Error: ${e}`);
+                console.log(`  ⚠️ MathJax error for: ${item.math.substring(0, 50)}...`);
+                console.log(`  Error: ${e.message || e}`);
                 result += item.full; // Keep original if error
             }
             
@@ -127,9 +252,13 @@ async function renderMathToHTML(text) {
         // Add remaining text
         result += text.substring(lastIndex);
         
+        if (successCount > 0) {
+            console.log(`  ✓ Rendered ${successCount}/${matches.length} formulas`);
+        }
+        
         return result;
     } catch (e) {
-        console.log('  ⚠️ Rendering error:', e);
+        console.log('  ⚠️ Rendering error:', e.message || e);
         return text;
     }
 }
@@ -161,30 +290,27 @@ async function processBooksFolder() {
                     
                     if (content.includes('$') || content.includes('\\(') || content.includes('\\[')) {
                         filesWithMath++;
-                        console.log(`📄 Found math in: ${path.relative(booksDir, filePath)}`);
+                        console.log(`\n📄 Processing: ${path.relative(booksDir, filePath)}`);
                         
-                        // Process ALL math in the content at once
-                        // We need to process the entire content, not piece by piece
+                        // Process math in the content
                         let newContent = await renderMathToHTML(content);
                         
+                        // Check if content changed
                         if (newContent !== content) {
-                            // Check if math was actually rendered
-                            if (newContent.includes('<svg')) {
+                            // Check if math was actually rendered (contains SVG)
+                            const svgCount = (newContent.match(/<svg/g) || []).length;
+                            const oldSvgCount = (content.match(/<svg/g) || []).length;
+                            
+                            if (svgCount > oldSvgCount) {
                                 fs.writeFileSync(filePath, newContent, 'utf-8');
                                 processedCount++;
                                 const relativePath = path.relative(booksDir, filePath);
-                                console.log(`  ✓ Processed: books/${relativePath} (${newContent.match(/<svg/g)?.length || 0} formulas rendered)`);
+                                console.log(`  ✅ Updated: books/${relativePath} (${svgCount - oldSvgCount} new SVG renders)`);
                             } else {
-                                console.log(`  ⚠️ Math found but not rendered in: ${path.basename(filePath)}`);
-                                // Check what math patterns are present
-                                const mathMatches = newContent.match(/\\\([^\\]+\\\)|\\\[[^\\]+\\\]|\$\$[^$]+\$\$|\$[^$]+\$/g);
-                                if (mathMatches) {
-                                    console.log(`    Found ${mathMatches.length} math expressions in this file`);
-                                    console.log(`    First few: ${mathMatches.slice(0, 3).join(', ')}`);
-                                }
+                                console.log(`  ⚠️ No new SVG renders in: ${path.basename(filePath)}`);
                             }
                         } else {
-                            console.log(`  ⚠️ No changes made to: ${path.basename(filePath)}`);
+                            console.log(`  ℹ️ No changes needed for: ${path.basename(filePath)}`);
                         }
                     }
                 } catch (error) {
