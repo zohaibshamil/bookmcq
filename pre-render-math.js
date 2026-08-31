@@ -1,11 +1,46 @@
-// pre-render-math.js - KaTeX for proper math rendering
+// pre-render-math.js - MathJax Node for server-side rendering
 const fs = require('fs');
 const path = require('path');
-const katex = require('katex');
+const mjAPI = require('mathjax-node');
 
-console.log('🚀 Starting math pre-rendering with KaTeX...');
+// Configure MathJax
+mjAPI.config({
+    MathJax: {
+        SVG: {
+            fontCache: 'global'
+        }
+    }
+});
+mjAPI.start();
+
+console.log('🚀 Starting math pre-rendering with MathJax (server-side)...');
 console.log('📁 ONLY processing files in the "books" folder...');
 console.log('📌 All other folders will be ignored.\n');
+
+// Helper to render math synchronously
+function renderMath(math, display = false) {
+    let result = math;
+    let error = null;
+    
+    mjAPI.typeset({
+        math: math,
+        format: 'TeX',
+        svg: true,
+        speakText: false,
+        ex: 6,
+        width: 1000,
+        display: display
+    }, function(data) {
+        if (data.errors) {
+            error = data.errors;
+            console.log('  ⚠️ MathJax error:', data.errors);
+        } else {
+            result = data.svg;
+        }
+    });
+    
+    return result;
+}
 
 function renderMathToHTML(text) {
     if (!text) return text;
@@ -14,61 +49,45 @@ function renderMathToHTML(text) {
     }
     
     try {
-        // Process \(...\) style - THIS IS WHAT'S IN YOUR CONTENT
+        // Process \(...\) style
         let processed = text.replace(/\\\((.+?)\\\)/g, function(match, math) {
-            try {
-                return katex.renderToString(math.trim(), {
-                    throwOnError: false,
-                    displayMode: false,
-                    trust: true
-                });
-            } catch (e) {
-                console.log('  ⚠️ KaTeX error on:', math.substring(0, 50) + '...');
-                return match;
+            const rendered = renderMath(math, false);
+            if (rendered !== math) {
+                return rendered;
             }
+            return match;
         });
         
-        // Process inline math: $...$
+        // Process $...$ style
         processed = processed.replace(/\$(.+?)\$/g, function(match, math) {
-            try {
-                return katex.renderToString(math.trim(), {
-                    throwOnError: false,
-                    displayMode: false,
-                    trust: true
-                });
-            } catch (e) {
-                return match;
+            const rendered = renderMath(math, false);
+            if (rendered !== math) {
+                return rendered;
             }
+            return match;
         });
         
-        // Process display math: $$...$$
-        processed = processed.replace(/\$\$(.+?)\$\$/g, function(match, math) {
-            try {
-                return katex.renderToString(math.trim(), {
-                    throwOnError: false,
-                    displayMode: true,
-                    trust: true
-                });
-            } catch (e) {
-                return match;
-            }
-        });
-        
-        // Process \[...\] style
+        // Process \[...\] style (display math)
         processed = processed.replace(/\\\[(.+?)\\\]/g, function(match, math) {
-            try {
-                return katex.renderToString(math.trim(), {
-                    throwOnError: false,
-                    displayMode: true,
-                    trust: true
-                });
-            } catch (e) {
-                return match;
+            const rendered = renderMath(math, true);
+            if (rendered !== math) {
+                return rendered;
             }
+            return match;
+        });
+        
+        // Process $$...$$ style (display math)
+        processed = processed.replace(/\$\$(.+?)\$\$/g, function(match, math) {
+            const rendered = renderMath(math, true);
+            if (rendered !== math) {
+                return rendered;
+            }
+            return match;
         });
         
         return processed;
     } catch (e) {
+        console.log('  ⚠️ Rendering error:', e);
         return text;
     }
 }
@@ -97,27 +116,22 @@ function processBooksFolder() {
                 try {
                     let content = fs.readFileSync(filePath, 'utf-8');
                     
-                    // Check if file contains math delimiters
                     if (content.includes('$') || content.includes('\\(') || content.includes('\\[')) {
                         let modified = false;
                         
-                        // Process ALL text content, not just specific elements
-                        // First, process math in paragraphs
-                        content = content.replace(/<p[^>]*>([\s\S]*?)<\/p>/g, function(match, text) {
-                            if (text && (text.includes('$') || text.includes('\\(') || text.includes('\\['))) {
-                                const rendered = renderMathToHTML(text);
-                                if (rendered !== text) {
-                                    modified = true;
-                                    return match.replace(text, rendered);
-                                }
-                            }
-                            return match;
-                        });
+                        // Process math in ALL text content
+                        // Method 1: Process inside HTML elements
+                        const elementPatterns = [
+                            /<p[^>]*>([\s\S]*?)<\/p>/g,
+                            /<div[^>]*class="[^"]*(?:explanation|definition|q-text|math|diff-tag)[^"]*"[^>]*>([\s\S]*?)<\/div>/g,
+                            /<span[^>]*class="[^"]*(?:math|q-text)[^"]*"[^>]*>([\s\S]*?)<\/span>/g,
+                            /<li[^>]*>([\s\S]*?)<\/li>/g,
+                            /<strong[^>]*>([\s\S]*?)<\/strong>/g,
+                            /<em[^>]*>([\s\S]*?)<\/em>/g
+                        ];
                         
-                        // Process math in divs with specific classes
-                        const classPatterns = ['explanation', 'definition', 'q-text', 'math', 'diff-tag'];
-                        for (const className of classPatterns) {
-                            content = content.replace(new RegExp('<div[^>]*class="[^"]*' + className + '[^"]*"[^>]*>([\\s\\S]*?)<\\/div>', 'g'), function(match, text) {
+                        for (const pattern of elementPatterns) {
+                            content = content.replace(pattern, function(match, text) {
                                 if (text && (text.includes('$') || text.includes('\\(') || text.includes('\\['))) {
                                     const rendered = renderMathToHTML(text);
                                     if (rendered !== text) {
@@ -129,20 +143,7 @@ function processBooksFolder() {
                             });
                         }
                         
-                        // Process math in spans
-                        content = content.replace(/<span[^>]*>([\s\S]*?)<\/span>/g, function(match, text) {
-                            if (text && (text.includes('$') || text.includes('\\(') || text.includes('\\['))) {
-                                const rendered = renderMathToHTML(text);
-                                if (rendered !== text) {
-                                    modified = true;
-                                    return match.replace(text, rendered);
-                                }
-                            }
-                            return match;
-                        });
-                        
-                        // Process any remaining text that might contain math
-                        // This handles text that's not inside specific tags
+                        // Method 2: Process ANY text between tags
                         content = content.replace(/>([^<]*?)</g, function(match, text) {
                             if (text && (text.includes('$') || text.includes('\\(') || text.includes('\\['))) {
                                 const rendered = renderMathToHTML(text);
@@ -154,16 +155,23 @@ function processBooksFolder() {
                             return match;
                         });
                         
+                        // Method 3: Process option text
+                        content = content.replace(/- ([^<]*?)(?=<|$)/g, function(match, text) {
+                            if (text && (text.includes('$') || text.includes('\\(') || text.includes('\\['))) {
+                                const rendered = renderMathToHTML(text);
+                                if (rendered !== text) {
+                                    modified = true;
+                                    return '- ' + rendered;
+                                }
+                            }
+                            return match;
+                        });
+                        
                         if (modified) {
                             fs.writeFileSync(filePath, content, 'utf-8');
                             processedCount++;
                             const relativePath = path.relative(booksDir, filePath);
                             console.log(`  ✓ Processed: books/${relativePath}`);
-                        } else {
-                            // Check if there's math that wasn't processed
-                            if (content.includes('\\(') || content.includes('\\[')) {
-                                console.log(`  ⚠️ Found math in ${path.basename(filePath)} but couldn't process.`);
-                            }
                         }
                     }
                 } catch (error) {
@@ -177,6 +185,9 @@ function processBooksFolder() {
     return processedCount;
 }
 
+// Wait for MathJax to be ready before processing
+console.log('⏳ Initializing MathJax...');
+
 try {
     const count = processBooksFolder();
     console.log('\n' + '='.repeat(50));
@@ -185,9 +196,11 @@ try {
         console.log('📌 ONLY the books folder was modified.');
     } else {
         console.log('ℹ️ No files needed processing in the books folder.');
-        console.log('💡 Tip: Make sure your HTML files contain math delimiters like $...$ or \\(...\\)');
     }
     console.log('='.repeat(50));
+    
+    // Shutdown MathJax
+    mjAPI.quit();
 } catch (error) {
     console.error('❌ Error:', error);
     process.exit(1);
