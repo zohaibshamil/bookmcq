@@ -1,12 +1,12 @@
-// pre-render-math.js - No external dependencies!
+// pre-render-math.js - KaTeX for proper math rendering
 const fs = require('fs');
 const path = require('path');
+const katex = require('katex');
 
-console.log('🚀 Starting math pre-rendering...');
+console.log('🚀 Starting math pre-rendering with KaTeX...');
 console.log('📁 ONLY processing files in the "books" folder...');
-console.log('📌 Using simple math rendering (no external packages)\n');
+console.log('📌 All other folders will be ignored.\n');
 
-// Simple math renderer - converts $math$ to styled HTML
 function renderMathToHTML(text) {
     if (!text) return text;
     if (!text.includes('$') && !text.includes('\\(') && !text.includes('\\[')) {
@@ -14,30 +14,61 @@ function renderMathToHTML(text) {
     }
     
     try {
-        // Process inline math: $...$ or \(...\)
+        // Process inline math: $...$
         let processed = text.replace(/\$(.+?)\$/g, function(match, math) {
-            return '<span class="math-inline" style="font-family: \'Times New Roman\', serif; font-style: italic;">' + 
-                   math.trim() + 
-                   '</span>';
+            try {
+                return katex.renderToString(math.trim(), {
+                    throwOnError: false,
+                    displayMode: false,
+                    trust: true,
+                    macros: {
+                        "\\R": "\\mathbb{R}",
+                        "\\N": "\\mathbb{N}",
+                        "\\Z": "\\mathbb{Z}"
+                    }
+                });
+            } catch (e) {
+                return match;
+            }
         });
         
+        // Process \(...\) style
         processed = processed.replace(/\\\((.+?)\\\)/g, function(match, math) {
-            return '<span class="math-inline" style="font-family: \'Times New Roman\', serif; font-style: italic;">' + 
-                   math.trim() + 
-                   '</span>';
+            try {
+                return katex.renderToString(math.trim(), {
+                    throwOnError: false,
+                    displayMode: false,
+                    trust: true
+                });
+            } catch (e) {
+                return match;
+            }
         });
         
-        // Process display math: $$...$$ or \[...\]
+        // Process display math: $$...$$
         processed = processed.replace(/\$\$(.+?)\$\$/g, function(match, math) {
-            return '<div class="math-display" style="text-align: center; font-family: \'Times New Roman\', serif; font-style: italic; padding: 10px 0;">' + 
-                   math.trim() + 
-                   '</div>';
+            try {
+                return katex.renderToString(math.trim(), {
+                    throwOnError: false,
+                    displayMode: true,
+                    trust: true
+                });
+            } catch (e) {
+                return match;
+            }
         });
         
+        // Process \[...\] style
         processed = processed.replace(/\\\[(.+?)\\\]/g, function(match, math) {
-            return '<div class="math-display" style="text-align: center; font-family: \'Times New Roman\', serif; font-style: italic; padding: 10px 0;">' + 
-                   math.trim() + 
-                   '</div>';
+            try {
+                return katex.renderToString(math.trim(), {
+                    throwOnError: false,
+                    displayMode: true,
+                    trust: true
+                });
+            } catch (e) {
+                return match;
+            }
         });
         
         return processed;
@@ -46,7 +77,6 @@ function renderMathToHTML(text) {
     }
 }
 
-// Process only the books folder
 function processBooksFolder() {
     const booksDir = './books';
     let processedCount = 0;
@@ -56,8 +86,7 @@ function processBooksFolder() {
         return 0;
     }
     
-    console.log(`📂 Processing ONLY: ${booksDir}`);
-    console.log('📌 All other folders will be ignored.\n');
+    console.log(`📂 Processing ONLY: ${booksDir}\n`);
     
     function processDirectory(dir) {
         const files = fs.readdirSync(dir);
@@ -72,15 +101,14 @@ function processBooksFolder() {
                 try {
                     let content = fs.readFileSync(filePath, 'utf-8');
                     
-                    // Check if file contains math delimiters
                     if (content.includes('$') || content.includes('\\(') || content.includes('\\[')) {
                         let modified = false;
                         
-                        // Process math in specific HTML elements
+                        // Process math in all text content
                         const patterns = [
                             /<p[^>]*>([\s\S]*?)<\/p>/g,
                             /<div[^>]*class="[^"]*(?:explanation|definition|q-text|math)[^"]*"[^>]*>([\s\S]*?)<\/div>/g,
-                            /<span[^>]*class="[^"]*math[^"]*"[^>]*>([\s\S]*?)<\/span>/g
+                            /<span[^>]*class="[^"]*(?:math|q-text)[^"]*"[^>]*>([\s\S]*?)<\/span>/g
                         ];
                         
                         for (const pattern of patterns) {
@@ -114,7 +142,6 @@ function processBooksFolder() {
     return processedCount;
 }
 
-// Main execution
 try {
     const count = processBooksFolder();
     console.log('\n' + '='.repeat(50));
