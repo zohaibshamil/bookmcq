@@ -1,8 +1,7 @@
-// pre-render-math.js - MathJax Node for server-side rendering (OPTIMIZED)
+// pre-render-math.js - MathJax Node for server-side rendering (FIXED)
 const fs = require('fs');
 const path = require('path');
 const mjAPI = require('mathjax-node');
-const { optimize } = require('svgo');
 
 // Configure MathJax
 mjAPI.config({
@@ -18,54 +17,7 @@ console.log('🚀 Starting math pre-rendering with MathJax (server-side)...');
 console.log('📁 ONLY processing files in the "books" folder...');
 console.log('📌 All other folders will be ignored.\n');
 
-// SVG Optimization function
-function optimizeSVG(svgString) {
-    try {
-        const result = optimize(svgString, {
-            plugins: [
-                'removeDoctype',
-                'removeXMLProcInst',
-                'removeComments',
-                'removeMetadata',
-                'removeEditorsNSData',
-                'cleanupAttrs',
-                'inlineStyles',
-                'minifyStyles',
-                'convertStyleToAttrs',
-                'cleanupIDs',
-                'removeRasterImages',
-                'removeUselessDefs',
-                'cleanupNumericValues',
-                'cleanupListOfValues',
-                'convertColors',
-                'removeUnknownsAndDefaults',
-                'removeNonInheritableGroupAttrs',
-                'removeUselessStrokeAndFill',
-                'removeViewBox',
-                'cleanupEnableBackground',
-                'removeHiddenElems',
-                'removeEmptyText',
-                'convertShapeToPath',
-                'moveElemsAttrsToGroup',
-                'moveGroupAttrsToElems',
-                'collapseGroups',
-                'convertPathData',
-                'convertTransform',
-                'removeEmptyAttrs',
-                'removeEmptyContainers',
-                'mergePaths',
-                'removeUnusedNS',
-                'sortDefsChildren'
-            ]
-        });
-        return result.data;
-    } catch (e) {
-        console.log('  ⚠️ SVG optimization error:', e.message);
-        return svgString; // Return original if optimization fails
-    }
-}
-
-// PROMISE-BASED render function with accessibility and optimization
+// PROMISE-BASED render function - waits for MathJax to complete
 function renderMathPromise(math, display = false) {
     return new Promise((resolve, reject) => {
         mjAPI.typeset({
@@ -80,20 +32,7 @@ function renderMathPromise(math, display = false) {
             if (data.errors) {
                 reject(data.errors);
             } else {
-                let svg = data.svg;
-                
-                // Step 1: Add aria-label for accessibility
-                const cleanMath = math.replace(/\s+/g, ' ').trim();
-                const shortMath = cleanMath.length > 100 ? cleanMath.substring(0, 100) + '...' : cleanMath;
-                svg = svg.replace(
-                    '<svg', 
-                    `<svg aria-label="Math: ${shortMath}" role="img"`
-                );
-                
-                // Step 2: Optimize SVG
-                svg = optimizeSVG(svg);
-                
-                resolve(svg);
+                resolve(data.svg);
             }
         });
     });
@@ -107,10 +46,13 @@ async function renderMathToHTML(text) {
     }
     
     try {
-        // Find all math expressions
+        // Process math expressions sequentially
+        let processed = text;
+        
+        // Find all math expressions and render them
         const matches = [];
         
-        // Process \(...\) style
+        // Process \(...\) style - FIXED: proper escaping
         const regex1 = /\\\((.+?)\\\)/g;
         let match;
         while ((match = regex1.exec(text)) !== null) {
@@ -122,10 +64,10 @@ async function renderMathToHTML(text) {
             });
         }
         
-        // Process $...$ style (but not $$...$$)
+        // Process $...$ style
         const regex2 = /\$(.+?)\$/g;
         while ((match = regex2.exec(text)) !== null) {
-            // Check if it's not $$...$$
+            // Skip if it's $$...$$ (display math)
             if (text[match.index - 1] !== '$' && text[match.index + match[0].length] !== '$') {
                 matches.push({
                     full: match[0],
@@ -136,7 +78,7 @@ async function renderMathToHTML(text) {
             }
         }
         
-        // Process \[...\] style
+        // Process \[...\] style - FIXED: proper escaping
         const regex3 = /\\\[(.+?)\\\]/g;
         while ((match = regex3.exec(text)) !== null) {
             matches.push({
@@ -158,34 +100,32 @@ async function renderMathToHTML(text) {
             });
         }
         
-        // Sort by index
+        // Sort by index (to process in order)
         matches.sort((a, b) => a.index - b.index);
         
         // Render each math expression
         let result = '';
         let lastIndex = 0;
-        let renderedCount = 0;
         
         for (const item of matches) {
+            // Add text before this match
             result += text.substring(lastIndex, item.index);
             
             try {
+                // Render the math
                 const rendered = await renderMathPromise(item.math, item.display);
                 result += rendered;
-                renderedCount++;
             } catch (e) {
-                console.log(`  ⚠️ MathJax error: ${item.math.substring(0, 30)}...`);
-                result += item.full;
+                console.log(`  ⚠️ MathJax error for: ${item.math.substring(0, 30)}...`);
+                console.log(`  Error: ${e}`);
+                result += item.full; // Keep original if error
             }
             
             lastIndex = item.index + item.full.length;
         }
         
+        // Add remaining text
         result += text.substring(lastIndex);
-        
-        if (renderedCount > 0) {
-            // console.log(`  ✓ Rendered ${renderedCount} formulas`);
-        }
         
         return result;
     } catch (e) {
@@ -198,7 +138,6 @@ async function processBooksFolder() {
     const booksDir = './books';
     let processedCount = 0;
     let filesWithMath = 0;
-    let totalFormulas = 0;
     
     if (!fs.existsSync(booksDir)) {
         console.log('❌ Books folder not found!');
@@ -222,24 +161,30 @@ async function processBooksFolder() {
                     
                     if (content.includes('$') || content.includes('\\(') || content.includes('\\[')) {
                         filesWithMath++;
+                        console.log(`📄 Found math in: ${path.relative(booksDir, filePath)}`);
                         
-                        // Process ALL math in the content
+                        // Process ALL math in the content at once
+                        // We need to process the entire content, not piece by piece
                         let newContent = await renderMathToHTML(content);
                         
                         if (newContent !== content) {
                             // Check if math was actually rendered
-                            const svgCount = (newContent.match(/<svg/g) || []).length;
-                            const originalSvgCount = (content.match(/<svg/g) || []).length;
-                            
-                            if (svgCount > 0) {
+                            if (newContent.includes('<svg')) {
                                 fs.writeFileSync(filePath, newContent, 'utf-8');
                                 processedCount++;
-                                totalFormulas += svgCount;
                                 const relativePath = path.relative(booksDir, filePath);
-                                console.log(`  ✓ Processed: ${relativePath} (${svgCount} formulas, ${originalSvgCount > 0 ? 're-optimized' : 'new'})`);
+                                console.log(`  ✓ Processed: books/${relativePath} (${newContent.match(/<svg/g)?.length || 0} formulas rendered)`);
                             } else {
-                                console.log(`  ⚠️ No SVG rendered in: ${path.basename(filePath)}`);
+                                console.log(`  ⚠️ Math found but not rendered in: ${path.basename(filePath)}`);
+                                // Check what math patterns are present
+                                const mathMatches = newContent.match(/\\\([^\\]+\\\)|\\\[[^\\]+\\\]|\$\$[^$]+\$\$|\$[^$]+\$/g);
+                                if (mathMatches) {
+                                    console.log(`    Found ${mathMatches.length} math expressions in this file`);
+                                    console.log(`    First few: ${mathMatches.slice(0, 3).join(', ')}`);
+                                }
                             }
+                        } else {
+                            console.log(`  ⚠️ No changes made to: ${path.basename(filePath)}`);
                         }
                     }
                 } catch (error) {
@@ -251,20 +196,20 @@ async function processBooksFolder() {
     
     await processDirectory(booksDir);
     console.log(`\n📊 Found ${filesWithMath} files with math content.`);
-    console.log(`📊 Rendered ${totalFormulas} formulas total.`);
     return processedCount;
 }
 
 // Main execution
 console.log('⏳ Initializing MathJax...');
 
+// Give MathJax time to initialize
 setTimeout(async () => {
     try {
         const count = await processBooksFolder();
         console.log('\n' + '='.repeat(50));
         if (count > 0) {
-            console.log(`✅ SUCCESS: ${count} files processed with optimized SVGs!`);
-            console.log('📌 Added aria-label for accessibility and optimized SVG size.');
+            console.log(`✅ SUCCESS: ${count} files processed in the books folder.`);
+            console.log('📌 ONLY the books folder was modified.');
         } else {
             console.log('ℹ️ No files were modified.');
             console.log('💡 Check that your HTML files contain math delimiters like:');
