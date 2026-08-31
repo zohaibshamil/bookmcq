@@ -13,7 +13,6 @@ function renderMathToHTML(text) {
     }
     
     try {
-        // Process inline math: $...$
         let processed = text.replace(/\$(.+?)\$/g, function(match, math) {
             try {
                 return katex.renderToString(math.trim(), {
@@ -26,7 +25,6 @@ function renderMathToHTML(text) {
             }
         });
         
-        // Process display math: $$...$$
         processed = processed.replace(/\$\$(.+?)\$\$/g, function(match, math) {
             try {
                 return katex.renderToString(math.trim(), {
@@ -45,12 +43,10 @@ function renderMathToHTML(text) {
     }
 }
 
-// ONLY process files in the books directory
 function processBooksFolder() {
     const booksDir = './books';
     let processedCount = 0;
     
-    // Check if books folder exists
     if (!fs.existsSync(booksDir)) {
         console.log('❌ Books folder not found!');
         return 0;
@@ -59,7 +55,6 @@ function processBooksFolder() {
     console.log(`📂 Processing ONLY: ${booksDir}`);
     console.log('📌 All other folders will be ignored.\n');
     
-    // Recursively process directories
     function processDirectory(dir) {
         const files = fs.readdirSync(dir);
         
@@ -68,17 +63,14 @@ function processBooksFolder() {
             const stat = fs.statSync(filePath);
             
             if (stat.isDirectory()) {
-                // Recursively process subdirectories inside books
                 processDirectory(filePath);
             } else if (file.endsWith('.html')) {
                 try {
                     let content = fs.readFileSync(filePath, 'utf-8');
                     
-                    // Only process if content has math delimiters
                     if (content.includes('$') || content.includes('\\(') || content.includes('\\[')) {
                         let modified = false;
                         
-                        // Process content in specific elements
                         const patterns = [
                             /<p[^>]*>([\s\S]*?)<\/p>/g,
                             /<div[^>]*class="[^"]*(?:explanation|definition|q-text|math)[^"]*"[^>]*>([\s\S]*?)<\/div>/g,
@@ -101,7 +93,6 @@ function processBooksFolder() {
                         if (modified) {
                             fs.writeFileSync(filePath, content, 'utf-8');
                             processedCount++;
-                            // Show relative path from books folder
                             const relativePath = path.relative(booksDir, filePath);
                             console.log(`  ✓ Processed: books/${relativePath}`);
                         }
@@ -113,12 +104,10 @@ function processBooksFolder() {
         }
     }
     
-    // Start processing from the books directory ONLY
     processDirectory(booksDir);
     return processedCount;
 }
 
-// Run the processor
 try {
     const count = processBooksFolder();
     console.log('\n' + '='.repeat(50));
