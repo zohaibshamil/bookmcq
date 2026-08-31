@@ -1,0 +1,42 @@
+name: Pre-render Math (Books Only)
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'books/**/*.html'  # ONLY run when HTML files in books folder change
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.PAT_TOKEN }}
+        fetch-depth: 0
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm install
+    
+    - name: Pre-render math (books only)
+      run: node pre-render-math.js
+    
+    - name: Commit and push changes
+      env:
+        PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        # ONLY add changes from the books folder
+        git add books/
+        git diff --staged --quiet || git commit -m "Pre-render math formulas in books folder"
+        git push https://x-access-token:${PAT_TOKEN}@github.com/zohaibshamil/bookmcq.git HEAD:main
