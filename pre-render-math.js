@@ -14,26 +14,22 @@ function renderMathToHTML(text) {
     }
     
     try {
-        // Process inline math: $...$
-        let processed = text.replace(/\$(.+?)\$/g, function(match, math) {
+        // Process \(...\) style - THIS IS WHAT'S IN YOUR CONTENT
+        let processed = text.replace(/\\\((.+?)\\\)/g, function(match, math) {
             try {
                 return katex.renderToString(math.trim(), {
                     throwOnError: false,
                     displayMode: false,
-                    trust: true,
-                    macros: {
-                        "\\R": "\\mathbb{R}",
-                        "\\N": "\\mathbb{N}",
-                        "\\Z": "\\mathbb{Z}"
-                    }
+                    trust: true
                 });
             } catch (e) {
+                console.log('  ⚠️ KaTeX error on:', math.substring(0, 50) + '...');
                 return match;
             }
         });
         
-        // Process \(...\) style
-        processed = processed.replace(/\\\((.+?)\\\)/g, function(match, math) {
+        // Process inline math: $...$
+        processed = processed.replace(/\$(.+?)\$/g, function(match, math) {
             try {
                 return katex.renderToString(math.trim(), {
                     throwOnError: false,
@@ -101,18 +97,27 @@ function processBooksFolder() {
                 try {
                     let content = fs.readFileSync(filePath, 'utf-8');
                     
+                    // Check if file contains math delimiters
                     if (content.includes('$') || content.includes('\\(') || content.includes('\\[')) {
                         let modified = false;
                         
-                        // Process math in all text content
-                        const patterns = [
-                            /<p[^>]*>([\s\S]*?)<\/p>/g,
-                            /<div[^>]*class="[^"]*(?:explanation|definition|q-text|math)[^"]*"[^>]*>([\s\S]*?)<\/div>/g,
-                            /<span[^>]*class="[^"]*(?:math|q-text)[^"]*"[^>]*>([\s\S]*?)<\/span>/g
-                        ];
+                        // Process ALL text content, not just specific elements
+                        // First, process math in paragraphs
+                        content = content.replace(/<p[^>]*>([\s\S]*?)<\/p>/g, function(match, text) {
+                            if (text && (text.includes('$') || text.includes('\\(') || text.includes('\\['))) {
+                                const rendered = renderMathToHTML(text);
+                                if (rendered !== text) {
+                                    modified = true;
+                                    return match.replace(text, rendered);
+                                }
+                            }
+                            return match;
+                        });
                         
-                        for (const pattern of patterns) {
-                            content = content.replace(pattern, function(match, text) {
+                        // Process math in divs with specific classes
+                        const classPatterns = ['explanation', 'definition', 'q-text', 'math', 'diff-tag'];
+                        for (const className of classPatterns) {
+                            content = content.replace(new RegExp('<div[^>]*class="[^"]*' + className + '[^"]*"[^>]*>([\\s\\S]*?)<\\/div>', 'g'), function(match, text) {
                                 if (text && (text.includes('$') || text.includes('\\(') || text.includes('\\['))) {
                                     const rendered = renderMathToHTML(text);
                                     if (rendered !== text) {
@@ -124,11 +129,41 @@ function processBooksFolder() {
                             });
                         }
                         
+                        // Process math in spans
+                        content = content.replace(/<span[^>]*>([\s\S]*?)<\/span>/g, function(match, text) {
+                            if (text && (text.includes('$') || text.includes('\\(') || text.includes('\\['))) {
+                                const rendered = renderMathToHTML(text);
+                                if (rendered !== text) {
+                                    modified = true;
+                                    return match.replace(text, rendered);
+                                }
+                            }
+                            return match;
+                        });
+                        
+                        // Process any remaining text that might contain math
+                        // This handles text that's not inside specific tags
+                        content = content.replace(/>([^<]*?)</g, function(match, text) {
+                            if (text && (text.includes('$') || text.includes('\\(') || text.includes('\\['))) {
+                                const rendered = renderMathToHTML(text);
+                                if (rendered !== text) {
+                                    modified = true;
+                                    return '>' + rendered + '<';
+                                }
+                            }
+                            return match;
+                        });
+                        
                         if (modified) {
                             fs.writeFileSync(filePath, content, 'utf-8');
                             processedCount++;
                             const relativePath = path.relative(booksDir, filePath);
                             console.log(`  ✓ Processed: books/${relativePath}`);
+                        } else {
+                            // Check if there's math that wasn't processed
+                            if (content.includes('\\(') || content.includes('\\[')) {
+                                console.log(`  ⚠️ Found math in ${path.basename(filePath)} but couldn't process.`);
+                            }
                         }
                     }
                 } catch (error) {
@@ -150,6 +185,7 @@ try {
         console.log('📌 ONLY the books folder was modified.');
     } else {
         console.log('ℹ️ No files needed processing in the books folder.');
+        console.log('💡 Tip: Make sure your HTML files contain math delimiters like $...$ or \\(...\\)');
     }
     console.log('='.repeat(50));
 } catch (error) {
