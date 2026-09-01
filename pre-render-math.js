@@ -1,13 +1,6 @@
-// pre-render-math.mjs
-import fs from 'fs';
-import path from 'path';
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
-import mathjax from 'mathjax-full';
-import { AllPackages } from 'mathjax-full/js/input/tex/AllPackages.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// pre-render-math.js
+const fs = require('fs');
+const path = require('path');
 
 // ===== HELPER FUNCTIONS =====
 
@@ -47,14 +40,18 @@ async function initMathJax() {
     if (mathjaxInstance) return mathjaxInstance;
     
     try {
-        const { init } = await import('mathjax-full');
+        // Dynamic import for ES module
+        const mathjaxModule = await import('mathjax-full');
+        const { init } = mathjaxModule;
         
         const MathJax = await init({
             loader: {
                 load: ['input/tex-full', 'output/svg']
             },
             tex: {
-                packages: AllPackages,
+                packages: ['base', 'ams', 'newcommand', 'noundefined', 'autoload', 'configmacros', 
+                          'mathtools', 'textcomp', 'textmacros', 'tagformat', 'boldsymbol', 
+                          'color', 'colortbl', 'physics', 'upgreek'],
                 inlineMath: [
                     ['$', '$'],
                     ['\\(', '\\)']
@@ -238,7 +235,7 @@ async function processHTMLFile(filePath) {
             return false;
         }
         
-        // Process within <p> tags - using async callback
+        // Process within <p> tags
         const pTagRegex = /(<p[^>]*>)([\s\S]*?)(<\/p>)/g;
         let match;
         let newContent = '';
@@ -249,7 +246,6 @@ async function processHTMLFile(filePath) {
             const startIndex = match.index;
             const endIndex = startIndex + fullMatch.length;
             
-            // Add content before this match
             newContent += content.substring(lastIndex, startIndex);
             
             if (hasRawMath(text) || hasRenderedMath(text)) {
