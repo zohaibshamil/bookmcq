@@ -40,57 +40,62 @@ async function initMathJax() {
     if (mathjaxInstance) return mathjaxInstance;
     
     try {
-        // Dynamic import for ES module
-        const mathjaxModule = await import('mathjax-full');
-        const { init } = mathjaxModule;
-        
-        const MathJax = await init({
-            loader: {
-                load: ['input/tex-full', 'output/svg']
-            },
-            tex: {
-                packages: ['base', 'ams', 'newcommand', 'noundefined', 'autoload', 'configmacros', 
-                          'mathtools', 'textcomp', 'textmacros', 'tagformat', 'boldsymbol', 
-                          'color', 'colortbl', 'physics', 'upgreek'],
-                inlineMath: [
-                    ['$', '$'],
-                    ['\\(', '\\)']
-                ],
-                displayMath: [
-                    ['$$', '$$'],
-                    ['\\[', '\\]']
-                ],
-                processEscapes: true,
-                processEnvironments: true,
-                macros: {
-                    "R": "\\mathbb{R}",
-                    "N": "\\mathbb{N}",
-                    "Z": "\\mathbb{Z}",
-                    "Q": "\\mathbb{Q}",
-                    "C": "\\mathbb{C}"
-                }
-            },
-            svg: {
-                fontCache: 'global',
-                scale: 1,
-                minScale: 0.5,
-                mtextInheritFont: false,
-                merrorInheritFont: true,
-                mathmlSpacing: false,
-                skipAttributes: {},
-                exFactor: 6,
-                displayAlign: 'center',
-                displayIndent: '0'
-            },
-            options: {
-                skipHtmlTypes: 'script',
-                ignoreHtmlClass: 'no-mathjax',
-                processHtmlClass: 'mathjax'
+        // ✅ FIX: Properly import and initialize MathJax
+        const { mathjax } = await import('mathjax-full/js/mathjax.js');
+        const { TeX } = await import('mathjax-full/js/input/tex.js');
+        const { SVG } = await import('mathjax-full/js/output/svg.js');
+        const { liteAdaptor } = await import('mathjax-full/js/adaptors/liteAdaptor.js');
+        const { RegisterHTMLHandler } = await import('mathjax-full/js/handlers/html.js');
+        const { AllPackages } = await import('mathjax-full/js/input/tex/AllPackages.js');
+
+        // Create adaptor and register handler
+        const adaptor = liteAdaptor();
+        RegisterHTMLHandler(adaptor);
+
+        // Create MathJax instance
+        const tex = new TeX({
+            packages: ['base', 'ams', 'newcommand', 'noundefined', 'autoload', 'configmacros', 
+                      'mathtools', 'textcomp', 'textmacros', 'tagformat', 'boldsymbol', 
+                      'color', 'colortbl', 'physics', 'upgreek'],
+            inlineMath: [
+                ['$', '$'],
+                ['\\(', '\\)']
+            ],
+            displayMath: [
+                ['$$', '$$'],
+                ['\\[', '\\]']
+            ],
+            processEscapes: true,
+            processEnvironments: true,
+            macros: {
+                "R": "\\mathbb{R}",
+                "N": "\\mathbb{N}",
+                "Z": "\\mathbb{Z}",
+                "Q": "\\mathbb{Q}",
+                "C": "\\mathbb{C}"
             }
         });
-        
-        mathjaxInstance = MathJax;
-        return MathJax;
+
+        const svg = new SVG({
+            fontCache: 'global',
+            scale: 1,
+            minScale: 0.5,
+            mtextInheritFont: false,
+            merrorInheritFont: true,
+            mathmlSpacing: false,
+            skipAttributes: {},
+            exFactor: 6,
+            displayAlign: 'center',
+            displayIndent: '0'
+        });
+
+        const html = mathjax.document('', {
+            InputJax: tex,
+            OutputJax: svg
+        });
+
+        mathjaxInstance = html;
+        return html;
     } catch (error) {
         console.error('Failed to initialize MathJax:', error);
         throw error;
@@ -112,55 +117,55 @@ async function renderMathToHTML(text, displayMode = false) {
     if (!hasRawMath(decodedText)) return text;
     
     try {
-        const mathjaxInstance = await initMathJax();
+        const document = await initMathJax();
         let processed = decodedText;
         
-        // Process display math: $$...$$
+        // Process display math: $$...$$ and \[...\]
         processed = processed.replace(/\$\$(.+?)\$\$/g, function(match, math) {
             try {
                 const cleanMath = math.trim();
                 const tex = '\\[' + cleanMath + '\\]';
-                const rendered = mathjaxInstance.tex2svg(tex);
-                const svgHtml = extractSvgContent(rendered);
+                const node = document.convert(tex, { display: true });
+                const svgHtml = adaptor.outerHTML(node);
                 return cleanMathJaxOutput(svgHtml);
             } catch (e) {
                 return match;
             }
         });
         
-        // Process inline math: $...$
+        // Process inline math: $...$ and \(...\)
         processed = processed.replace(/(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)/g, function(match, math) {
             try {
                 const cleanMath = math.trim();
                 const tex = '\\(' + cleanMath + '\\)';
-                const rendered = mathjaxInstance.tex2svg(tex);
-                const svgHtml = extractSvgContent(rendered);
+                const node = document.convert(tex, { display: false });
+                const svgHtml = adaptor.outerHTML(node);
                 return cleanMathJaxOutput(svgHtml);
             } catch (e) {
                 return match;
             }
         });
         
-        // Process \(...\)
+        // Process \(...\) (catch any remaining)
         processed = processed.replace(/\\\((.+?)\\\)/g, function(match, math) {
             try {
                 const cleanMath = math.trim();
                 const tex = '\\(' + cleanMath + '\\)';
-                const rendered = mathjaxInstance.tex2svg(tex);
-                const svgHtml = extractSvgContent(rendered);
+                const node = document.convert(tex, { display: false });
+                const svgHtml = adaptor.outerHTML(node);
                 return cleanMathJaxOutput(svgHtml);
             } catch (e) {
                 return match;
             }
         });
         
-        // Process \[...\]
+        // Process \[...\] (catch any remaining)
         processed = processed.replace(/\\\[(.+?)\\\]/g, function(match, math) {
             try {
                 const cleanMath = math.trim();
                 const tex = '\\[' + cleanMath + '\\]';
-                const rendered = mathjaxInstance.tex2svg(tex);
-                const svgHtml = extractSvgContent(rendered);
+                const node = document.convert(tex, { display: true });
+                const svgHtml = adaptor.outerHTML(node);
                 return cleanMathJaxOutput(svgHtml);
             } catch (e) {
                 return match;
@@ -171,8 +176,8 @@ async function renderMathToHTML(text, displayMode = false) {
         processed = processed.replace(/\\begin\{([^}]+)\}([\s\S]*?)\\end\{\1\}/g, function(match, env, content) {
             try {
                 const tex = '\\begin{' + env + '}' + content + '\\end{' + env + '}';
-                const rendered = mathjaxInstance.tex2svg(tex);
-                const svgHtml = extractSvgContent(rendered);
+                const node = document.convert(tex, { display: true });
+                const svgHtml = adaptor.outerHTML(node);
                 return cleanMathJaxOutput(svgHtml);
             } catch (e) {
                 return match;
@@ -184,25 +189,6 @@ async function renderMathToHTML(text, displayMode = false) {
         console.error('MathJax rendering error:', e);
         return text;
     }
-}
-
-function extractSvgContent(rendered) {
-    if (typeof rendered === 'string') {
-        return rendered;
-    }
-    
-    if (rendered && rendered.outerHTML) {
-        return rendered.outerHTML;
-    }
-    
-    if (rendered && rendered.toString) {
-        const str = rendered.toString();
-        if (str.includes('<svg')) {
-            return str;
-        }
-    }
-    
-    return String(rendered);
 }
 
 function cleanMathJaxOutput(html) {
@@ -477,6 +463,9 @@ async function processHTMLFiles(dir) {
     return { processed: processedCount, modified: modifiedCount, skipped: skippedCount };
 }
 
+// Need adaptor reference for rendering
+let adaptor = null;
+
 // ===== MAIN =====
 
 async function main() {
@@ -485,7 +474,8 @@ async function main() {
     
     try {
         console.log('⚙️ Initializing MathJax...');
-        await initMathJax();
+        const document = await initMathJax();
+        adaptor = document.adaptor;
         
         const result = await processHTMLFiles('./');
         
