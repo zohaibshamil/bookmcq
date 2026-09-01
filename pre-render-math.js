@@ -10,7 +10,7 @@ console.log('📌 All other folders will be ignored.\n');
 // MathJax v3 state
 let mathjax = null;
 
-// Initialize MathJax v3 once
+// Initialize MathJax v3 once - FIXED CONFIGURATION
 async function initMathJax() {
     if (!mathjax) {
         console.log('⏳ Initializing MathJax v3.2...');
@@ -29,23 +29,13 @@ async function initMathJax() {
                         ['$$', '$$']
                     ],
                     processEscapes: true,
-                    processEnvironments: true,
                     packages: ['base', 'ams', 'noerrors', 'noundefined']
                 },
                 svg: {
-                    fontCache: 'global',
-                    ex: 6,
-                    scale: 1,
-                    display: true
-                },
-                options: {
-                    skipHtmlTypes: 'script',
-                    includeHtmlTags: {
-                        skip: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
-                        include: []
-                    },
-                    enableMenu: false
+                    fontCache: 'global'
                 }
+                // REMOVED: ex, display, skipHtmlTypes, enableMenu, skip, include
+                // These options don't exist in MathJax v3
             });
             console.log('✅ MathJax v3.2 initialized successfully');
         } catch (error) {
@@ -70,8 +60,8 @@ async function renderMath(math, display = false) {
         // Render with MathJax v3
         const result = await mathjaxInstance.tex2svg(cleanedMath, {
             display: display,
-            em: 6,
-            ex: 6,
+            em: 6,      // em value for font size
+            ex: 6,      // ex value for font size  
             containerWidth: 1000
         });
         
@@ -86,7 +76,9 @@ async function renderMath(math, display = false) {
             }
         }
         
-        return svgContent;
+        // If no SVG found, return empty string
+        console.log(`  ⚠️ No SVG output for: ${math.substring(0, 40)}...`);
+        return '';
         
     } catch (error) {
         console.log(`  ❌ MathJax v3.2 error for: ${math.substring(0, 40)}...`);
@@ -175,7 +167,7 @@ async function renderMathToHTML(text) {
         // Sort by index (process in order)
         matches.sort((a, b) => a.index - b.index);
         
-        // Remove duplicate matches (if same math appears multiple times)
+        // Remove duplicate matches
         const uniqueMatches = [];
         const seen = new Set();
         for (const item of matches) {
