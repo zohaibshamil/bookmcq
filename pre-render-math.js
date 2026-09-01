@@ -34,18 +34,47 @@ function decodeHtmlEntities(text) {
         .replace(/&nbsp;/g, ' ');
 }
 
-// ===== CRITICAL NEW FUNCTION: Clean KaTeX output =====
-function cleanKatexOutput(html) {
-    // Remove annotation tags containing raw LaTeX
-    html = html.replace(/<annotation[^>]*>.*?<\/annotation>/g, '');
+// ===== READ KATEX CSS FROM NODE_MODULES =====
+function getKatexCSS() {
+    try {
+        const cssPath = path.join(__dirname, 'node_modules', 'katex', 'dist', 'katex.min.css');
+        if (fs.existsSync(cssPath)) {
+            return fs.readFileSync(cssPath, 'utf-8');
+        }
+        console.warn('⚠️ KaTeX CSS not found in node_modules!');
+        return '';
+    } catch (e) {
+        console.warn('⚠️ Error reading KaTeX CSS:', e.message);
+        return '';
+    }
+}
+
+// ===== INJECT CSS INTO HTML HEAD =====
+function injectKatexCSS(content) {
+    const css = getKatexCSS();
     
-    // Remove MathML if not needed (optional - keeps only HTML rendering)
-    // html = html.replace(/<math[^>]*>.*?<\/math>/g, '');
+    if (!css) {
+        console.warn('⚠️ No CSS to inject');
+        return content;
+    }
     
-    // Remove extra whitespace
-    html = html.replace(/\s+/g, ' ').trim();
+    // Check if already injected
+    if (content.includes('katex.min.css') || content.includes('id="katex-styles"')) {
+        return content;
+    }
     
-    return html;
+    // Create style tag with embedded CSS
+    const styleTag = `<style id="katex-styles">\n${css}\n</style>`;
+    
+    // Inject into <head>
+    if (content.includes('<head>')) {
+        return content.replace(/<head>/i, `<head>\n    ${styleTag}`);
+    } else if (content.includes('<html>')) {
+        return content.replace(/<html>/i, `<html>\n<head>\n    ${styleTag}\n</head>`);
+    } else {
+        // If no head, add at the top
+        return styleTag + '\n' + content;
+    }
 }
 
 // ===== KATEX 0.18+ TRUST OPTION HELPER =====
@@ -66,7 +95,7 @@ function renderMathToHTML(text, displayMode = false) {
     // Skip if already rendered
     if (hasRenderedMath(text)) {
         // Clean any remaining annotation tags
-        return cleanKatexOutput(text);
+        return text;
     }
     
     // Decode HTML entities
@@ -103,7 +132,7 @@ function renderMathToHTML(text, displayMode = false) {
             try {
                 const cleanMath = math.trim();
                 let rendered = katex.renderToString(cleanMath, getRenderOptions(true));
-                return cleanKatexOutput(rendered);
+                return rendered;
             } catch (e) {
                 return match;
             }
@@ -114,7 +143,7 @@ function renderMathToHTML(text, displayMode = false) {
             try {
                 const cleanMath = math.trim();
                 let rendered = katex.renderToString(cleanMath, getRenderOptions(false));
-                return cleanKatexOutput(rendered);
+                return rendered;
             } catch (e) {
                 return match;
             }
@@ -125,7 +154,7 @@ function renderMathToHTML(text, displayMode = false) {
             try {
                 const cleanMath = math.trim();
                 let rendered = katex.renderToString(cleanMath, getRenderOptions(false));
-                return cleanKatexOutput(rendered);
+                return rendered;
             } catch (e) {
                 return match;
             }
@@ -136,7 +165,7 @@ function renderMathToHTML(text, displayMode = false) {
             try {
                 const cleanMath = math.trim();
                 let rendered = katex.renderToString(cleanMath, getRenderOptions(true));
-                return cleanKatexOutput(rendered);
+                return rendered;
             } catch (e) {
                 return match;
             }
@@ -277,8 +306,10 @@ function processHTMLFile(filePath) {
         }
         
         if (modified) {
+            // INJECT KATEX CSS INTO HEAD (fully self-contained)
+            content = injectKatexCSS(content);
             fs.writeFileSync(filePath, content, 'utf-8');
-            console.log('    ✅ Updated');
+            console.log('    ✅ Updated + CSS injected');
             return true;
         } else {
             console.log('    ℹ️ No changes made');
@@ -337,8 +368,6 @@ function processHTMLFiles(dir) {
 
 // ===== MAIN =====
 
-// ===== MAIN =====
-
 function main() {
     console.log('🚀 Starting math pre-rendering with KaTeX (Catax)');
     console.log(`📦 KaTeX version: ${katex.version}`);
@@ -366,6 +395,7 @@ function main() {
         console.log(`📝 Files modified: ${result.modified}`);
         console.log(`⏭️ Files skipped: ${result.skipped}`);
         console.log(`💡 Rendering engine: KaTeX v${katex.version} (Catax)`);
+        console.log('💡 CSS embedded: Fully self-contained (no CDN)');
         console.log('='.repeat(50));
     } catch (error) {
         console.error('\n❌ Error:', error);
