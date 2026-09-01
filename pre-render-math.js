@@ -1,12 +1,13 @@
 // pre-render-math.js
 const fs = require('fs');
 const path = require('path');
+const katex = require('katex');
 
 // ===== HELPER FUNCTIONS =====
 
 // Check if content already has rendered math
 function hasRenderedMath(text) {
-    return text.includes('class="mjx-"') || 
+    return text.includes('class="katex"') || 
            text.includes('mathjax') ||
            text.includes('MJX') ||
            /data-mjx/.test(text);
@@ -21,7 +22,7 @@ function hasRawMath(text) {
            /\\begin\{.*?\}/.test(text);
 }
 
-// Decode HTML entities for MathJax processing
+// Decode HTML entities for math processing
 function decodeHtmlEntities(text) {
     return text
         .replace(/&amp;/g, '&')
@@ -32,82 +33,14 @@ function decodeHtmlEntities(text) {
         .replace(/&nbsp;/g, ' ');
 }
 
-// ===== MATHJAX RENDERER =====
+// ===== MATH RENDERER =====
 
-let mathjaxInstance = null;
-
-async function initMathJax() {
-    if (mathjaxInstance) return mathjaxInstance;
-    
-    try {
-        // ✅ FIX: Properly import and initialize MathJax
-        const { mathjax } = await import('mathjax-full/js/mathjax.js');
-        const { TeX } = await import('mathjax-full/js/input/tex.js');
-        const { SVG } = await import('mathjax-full/js/output/svg.js');
-        const { liteAdaptor } = await import('mathjax-full/js/adaptors/liteAdaptor.js');
-        const { RegisterHTMLHandler } = await import('mathjax-full/js/handlers/html.js');
-        const { AllPackages } = await import('mathjax-full/js/input/tex/AllPackages.js');
-
-        // Create adaptor and register handler
-        const adaptor = liteAdaptor();
-        RegisterHTMLHandler(adaptor);
-
-        // Create MathJax instance
-        const tex = new TeX({
-            packages: ['base', 'ams', 'newcommand', 'noundefined', 'autoload', 'configmacros', 
-                      'mathtools', 'textcomp', 'textmacros', 'tagformat', 'boldsymbol', 
-                      'color', 'colortbl', 'physics', 'upgreek'],
-            inlineMath: [
-                ['$', '$'],
-                ['\\(', '\\)']
-            ],
-            displayMath: [
-                ['$$', '$$'],
-                ['\\[', '\\]']
-            ],
-            processEscapes: true,
-            processEnvironments: true,
-            macros: {
-                "R": "\\mathbb{R}",
-                "N": "\\mathbb{N}",
-                "Z": "\\mathbb{Z}",
-                "Q": "\\mathbb{Q}",
-                "C": "\\mathbb{C}"
-            }
-        });
-
-        const svg = new SVG({
-            fontCache: 'global',
-            scale: 1,
-            minScale: 0.5,
-            mtextInheritFont: false,
-            merrorInheritFont: true,
-            mathmlSpacing: false,
-            skipAttributes: {},
-            exFactor: 6,
-            displayAlign: 'center',
-            displayIndent: '0'
-        });
-
-        const html = mathjax.document('', {
-            InputJax: tex,
-            OutputJax: svg
-        });
-
-        mathjaxInstance = html;
-        return html;
-    } catch (error) {
-        console.error('Failed to initialize MathJax:', error);
-        throw error;
-    }
-}
-
-async function renderMathToHTML(text, displayMode = false) {
+function renderMathToHTML(text, displayMode = false) {
     if (!text) return text;
     
     // Skip if already rendered
     if (hasRenderedMath(text)) {
-        return cleanMathJaxOutput(text);
+        return cleanMathOutput(text);
     }
     
     // Decode HTML entities
@@ -117,68 +50,60 @@ async function renderMathToHTML(text, displayMode = false) {
     if (!hasRawMath(decodedText)) return text;
     
     try {
-        const document = await initMathJax();
         let processed = decodedText;
         
-        // Process display math: $$...$$ and \[...\]
+        // Process display math: $$...$$
         processed = processed.replace(/\$\$(.+?)\$\$/g, function(match, math) {
             try {
                 const cleanMath = math.trim();
-                const tex = '\\[' + cleanMath + '\\]';
-                const node = document.convert(tex, { display: true });
-                const svgHtml = adaptor.outerHTML(node);
-                return cleanMathJaxOutput(svgHtml);
+                return katex.renderToString(cleanMath, {
+                    displayMode: true,
+                    throwOnError: false,
+                    output: 'html'
+                });
             } catch (e) {
+                console.error('Error rendering display math:', e.message);
                 return match;
             }
         });
         
-        // Process inline math: $...$ and \(...\)
+        // Process inline math: $...$
         processed = processed.replace(/(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)/g, function(match, math) {
             try {
                 const cleanMath = math.trim();
-                const tex = '\\(' + cleanMath + '\\)';
-                const node = document.convert(tex, { display: false });
-                const svgHtml = adaptor.outerHTML(node);
-                return cleanMathJaxOutput(svgHtml);
+                return katex.renderToString(cleanMath, {
+                    displayMode: false,
+                    throwOnError: false,
+                    output: 'html'
+                });
             } catch (e) {
                 return match;
             }
         });
         
-        // Process \(...\) (catch any remaining)
+        // Process \(...\)
         processed = processed.replace(/\\\((.+?)\\\)/g, function(match, math) {
             try {
                 const cleanMath = math.trim();
-                const tex = '\\(' + cleanMath + '\\)';
-                const node = document.convert(tex, { display: false });
-                const svgHtml = adaptor.outerHTML(node);
-                return cleanMathJaxOutput(svgHtml);
+                return katex.renderToString(cleanMath, {
+                    displayMode: false,
+                    throwOnError: false,
+                    output: 'html'
+                });
             } catch (e) {
                 return match;
             }
         });
         
-        // Process \[...\] (catch any remaining)
+        // Process \[...\]
         processed = processed.replace(/\\\[(.+?)\\\]/g, function(match, math) {
             try {
                 const cleanMath = math.trim();
-                const tex = '\\[' + cleanMath + '\\]';
-                const node = document.convert(tex, { display: true });
-                const svgHtml = adaptor.outerHTML(node);
-                return cleanMathJaxOutput(svgHtml);
-            } catch (e) {
-                return match;
-            }
-        });
-        
-        // Process environments \begin{...}...\end{...}
-        processed = processed.replace(/\\begin\{([^}]+)\}([\s\S]*?)\\end\{\1\}/g, function(match, env, content) {
-            try {
-                const tex = '\\begin{' + env + '}' + content + '\\end{' + env + '}';
-                const node = document.convert(tex, { display: true });
-                const svgHtml = adaptor.outerHTML(node);
-                return cleanMathJaxOutput(svgHtml);
+                return katex.renderToString(cleanMath, {
+                    displayMode: true,
+                    throwOnError: false,
+                    output: 'html'
+                });
             } catch (e) {
                 return match;
             }
@@ -186,23 +111,14 @@ async function renderMathToHTML(text, displayMode = false) {
         
         return processed;
     } catch (e) {
-        console.error('MathJax rendering error:', e);
+        console.error('Math rendering error:', e);
         return text;
     }
 }
 
-function cleanMathJaxOutput(html) {
+function cleanMathOutput(html) {
     if (!html) return '';
-    
-    html = html.replace(/\s+/g, ' ').trim();
-    
-    if (html.includes('<svg')) {
-        if (!html.includes('class="mjx-')) {
-            html = html.replace('<svg', '<svg class="mjx-svg"');
-        }
-    }
-    
-    return html;
+    return html.replace(/\s+/g, ' ').trim();
 }
 
 // ===== FILE PROCESSING =====
@@ -235,7 +151,7 @@ async function processHTMLFile(filePath) {
             newContent += content.substring(lastIndex, startIndex);
             
             if (hasRawMath(text) || hasRenderedMath(text)) {
-                const rendered = await renderMathToHTML(text);
+                const rendered = renderMathToHTML(text);
                 if (rendered !== text) {
                     modified = true;
                     newContent += openTag + rendered + closeTag;
@@ -265,7 +181,7 @@ async function processHTMLFile(filePath) {
             divNewContent += content.substring(divLastIndex, startIndex);
             
             if (text.includes('class="math') || hasRenderedMath(text) || hasRawMath(text)) {
-                const rendered = await renderMathToHTML(text);
+                const rendered = renderMathToHTML(text);
                 if (rendered !== text) {
                     modified = true;
                     divNewContent += openTag + rendered + closeTag;
@@ -295,7 +211,7 @@ async function processHTMLFile(filePath) {
             spanNewContent += content.substring(spanLastIndex, startIndex);
             
             if (hasRenderedMath(text) || hasRawMath(text)) {
-                const rendered = await renderMathToHTML(text);
+                const rendered = renderMathToHTML(text);
                 if (rendered !== text) {
                     modified = true;
                     spanNewContent += openTag + rendered + closeTag;
@@ -325,7 +241,7 @@ async function processHTMLFile(filePath) {
             headingNewContent += content.substring(headingLastIndex, startIndex);
             
             if (hasRawMath(text) || hasRenderedMath(text)) {
-                const rendered = await renderMathToHTML(text);
+                const rendered = renderMathToHTML(text);
                 if (rendered !== text) {
                     modified = true;
                     headingNewContent += openTag + rendered + closeTag;
@@ -355,7 +271,7 @@ async function processHTMLFile(filePath) {
             liNewContent += content.substring(liLastIndex, startIndex);
             
             if (hasRawMath(text) || hasRenderedMath(text)) {
-                const rendered = await renderMathToHTML(text);
+                const rendered = renderMathToHTML(text);
                 if (rendered !== text) {
                     modified = true;
                     liNewContent += openTag + rendered + closeTag;
@@ -386,7 +302,7 @@ async function processHTMLFile(filePath) {
             
             if (match && match.trim() !== '') {
                 if (hasRenderedMath(match) || hasRawMath(match)) {
-                    const rendered = await renderMathToHTML(match);
+                    const rendered = renderMathToHTML(match);
                     if (rendered !== match) {
                         modified = true;
                         textNewContent += rendered;
@@ -419,7 +335,7 @@ async function processHTMLFile(filePath) {
     }
 }
 
-// Recursively process all HTML files
+// Recursively process all HTML files in books directory
 async function processHTMLFiles(dir) {
     console.log(`📁 Scanning: ${dir}`);
     
@@ -433,6 +349,7 @@ async function processHTMLFiles(dir) {
         const stat = fs.statSync(fullPath);
         
         if (stat.isDirectory()) {
+            // Skip system directories
             if (!['node_modules', '.git', '.github'].includes(entry)) {
                 const result = await processHTMLFiles(fullPath);
                 processedCount += result.processed;
@@ -463,21 +380,23 @@ async function processHTMLFiles(dir) {
     return { processed: processedCount, modified: modifiedCount, skipped: skippedCount };
 }
 
-// Need adaptor reference for rendering
-let adaptor = null;
-
 // ===== MAIN =====
 
 async function main() {
-    console.log('🚀 Starting math pre-rendering with MathJax v3.2');
-    console.log('📁 Processing all HTML files...\n');
+    console.log('🚀 Starting math pre-rendering with KaTeX');
+    console.log('📁 Processing HTML files in books folder only...\n');
     
     try {
-        console.log('⚙️ Initializing MathJax...');
-        const document = await initMathJax();
-        adaptor = document.adaptor;
+        // ONLY process books directory - no fallback
+        const targetDir = './books';
         
-        const result = await processHTMLFiles('./');
+        if (!fs.existsSync(targetDir)) {
+            console.log('📁 No books directory found - nothing to process');
+            console.log('✅ Done!');
+            return;
+        }
+        
+        const result = await processHTMLFiles(targetDir);
         
         console.log('\n' + '='.repeat(50));
         console.log('✅ Math pre-rendering complete!');
@@ -485,7 +404,7 @@ async function main() {
         console.log(`📊 Total files processed: ${result.processed}`);
         console.log(`📝 Files modified: ${result.modified}`);
         console.log(`⏭️ Files skipped: ${result.skipped}`);
-        console.log(`💡 Rendering engine: MathJax v3.2`);
+        console.log(`💡 Rendering engine: KaTeX`);
         console.log('='.repeat(50));
     } catch (error) {
         console.error('\n❌ Error:', error);
