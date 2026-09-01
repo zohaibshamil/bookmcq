@@ -94,7 +94,6 @@ function renderMathToHTML(text, displayMode = false) {
     
     // Skip if already rendered
     if (hasRenderedMath(text)) {
-        // Clean any remaining annotation tags
         return text;
     }
     
@@ -292,24 +291,11 @@ function processHTMLFile(filePath) {
             return match;
         });
         
-        // FINAL CLEANUP: Remove any remaining annotation tags
-        if (modified || content.includes('<annotation')) {
-            let cleaned = content;
-            cleaned = cleaned.replace(/<annotation[^>]*>.*?<\/annotation>/g, '');
-            // Also clean up any empty katex-mathml that might remain
-            cleaned = cleaned.replace(/<span class="katex-mathml"><\/span>/g, '');
-            
-            if (cleaned !== content) {
-                content = cleaned;
-                modified = true;
-            }
-        }
-        
         if (modified) {
-            // INJECT KATEX CSS INTO HEAD (fully self-contained)
+            // Inject KaTeX CSS into head
             content = injectKatexCSS(content);
             fs.writeFileSync(filePath, content, 'utf-8');
-            console.log('    ✅ Updated + CSS injected');
+            console.log('    ✅ Updated');
             return true;
         } else {
             console.log('    ℹ️ No changes made');
