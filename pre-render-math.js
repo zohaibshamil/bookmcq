@@ -47,7 +47,6 @@ async function initMathJax() {
     if (mathjaxInstance) return mathjaxInstance;
     
     try {
-        // Import the mathjax-full library properly
         const { init } = await import('mathjax-full');
         
         const MathJax = await init({
@@ -191,17 +190,14 @@ async function renderMathToHTML(text, displayMode = false) {
 }
 
 function extractSvgContent(rendered) {
-    // Convert the SVG element to a string
     if (typeof rendered === 'string') {
         return rendered;
     }
     
-    // If it's a DOM element
     if (rendered && rendered.outerHTML) {
         return rendered.outerHTML;
     }
     
-    // If it's a node with toString method
     if (rendered && rendered.toString) {
         const str = rendered.toString();
         if (str.includes('<svg')) {
@@ -209,19 +205,15 @@ function extractSvgContent(rendered) {
         }
     }
     
-    // Fallback: try to convert to string
     return String(rendered);
 }
 
 function cleanMathJaxOutput(html) {
     if (!html) return '';
     
-    // Remove extra whitespace
     html = html.replace(/\s+/g, ' ').trim();
     
-    // Ensure SVG has proper styling
     if (html.includes('<svg')) {
-        // Add standard MathJax classes if missing
         if (!html.includes('class="mjx-')) {
             html = html.replace('<svg', '<svg class="mjx-svg"');
         }
@@ -246,104 +238,190 @@ async function processHTMLFile(filePath) {
             return false;
         }
         
-        // ===== PROCESSING =====
+        // Process within <p> tags - using async callback
+        const pTagRegex = /(<p[^>]*>)([\s\S]*?)(<\/p>)/g;
+        let match;
+        let newContent = '';
+        let lastIndex = 0;
         
-        // Process within <p> tags
-        content = content.replace(/(<p[^>]*>)([\s\S]*?)(<\/p>)/g, function(match, openTag, text, closeTag) {
+        while ((match = pTagRegex.exec(content)) !== null) {
+            const [fullMatch, openTag, text, closeTag] = match;
+            const startIndex = match.index;
+            const endIndex = startIndex + fullMatch.length;
+            
+            // Add content before this match
+            newContent += content.substring(lastIndex, startIndex);
+            
             if (hasRawMath(text) || hasRenderedMath(text)) {
                 const rendered = await renderMathToHTML(text);
                 if (rendered !== text) {
                     modified = true;
-                    return openTag + rendered + closeTag;
+                    newContent += openTag + rendered + closeTag;
+                } else {
+                    newContent += fullMatch;
                 }
+            } else {
+                newContent += fullMatch;
             }
-            return match;
-        });
+            
+            lastIndex = endIndex;
+        }
+        newContent += content.substring(lastIndex);
+        if (modified) content = newContent;
         
         // Process within <div> tags
-        content = content.replace(/(<div[^>]*>)([\s\S]*?)(<\/div>)/g, function(match, openTag, text, closeTag) {
-            if (text.includes('class="math') || hasRenderedMath(text)) {
+        const divTagRegex = /(<div[^>]*>)([\s\S]*?)(<\/div>)/g;
+        let divMatch;
+        let divNewContent = '';
+        let divLastIndex = 0;
+        
+        while ((divMatch = divTagRegex.exec(content)) !== null) {
+            const [fullMatch, openTag, text, closeTag] = divMatch;
+            const startIndex = divMatch.index;
+            const endIndex = startIndex + fullMatch.length;
+            
+            divNewContent += content.substring(divLastIndex, startIndex);
+            
+            if (text.includes('class="math') || hasRenderedMath(text) || hasRawMath(text)) {
                 const rendered = await renderMathToHTML(text);
                 if (rendered !== text) {
                     modified = true;
-                    return openTag + rendered + closeTag;
+                    divNewContent += openTag + rendered + closeTag;
+                } else {
+                    divNewContent += fullMatch;
                 }
-                return match;
+            } else {
+                divNewContent += fullMatch;
             }
-            if (hasRawMath(text)) {
-                const rendered = await renderMathToHTML(text);
-                if (rendered !== text) {
-                    modified = true;
-                    return openTag + rendered + closeTag;
-                }
-            }
-            return match;
-        });
+            
+            divLastIndex = endIndex;
+        }
+        divNewContent += content.substring(divLastIndex);
+        if (modified) content = divNewContent;
         
         // Process within <span> tags
-        content = content.replace(/(<span[^>]*>)([\s\S]*?)(<\/span>)/g, function(match, openTag, text, closeTag) {
-            if (hasRenderedMath(text)) {
+        const spanTagRegex = /(<span[^>]*>)([\s\S]*?)(<\/span>)/g;
+        let spanMatch;
+        let spanNewContent = '';
+        let spanLastIndex = 0;
+        
+        while ((spanMatch = spanTagRegex.exec(content)) !== null) {
+            const [fullMatch, openTag, text, closeTag] = spanMatch;
+            const startIndex = spanMatch.index;
+            const endIndex = startIndex + fullMatch.length;
+            
+            spanNewContent += content.substring(spanLastIndex, startIndex);
+            
+            if (hasRenderedMath(text) || hasRawMath(text)) {
                 const rendered = await renderMathToHTML(text);
                 if (rendered !== text) {
                     modified = true;
-                    return openTag + rendered + closeTag;
+                    spanNewContent += openTag + rendered + closeTag;
+                } else {
+                    spanNewContent += fullMatch;
                 }
-                return match;
+            } else {
+                spanNewContent += fullMatch;
             }
-            if (hasRawMath(text)) {
-                const rendered = await renderMathToHTML(text);
-                if (rendered !== text) {
-                    modified = true;
-                    return openTag + rendered + closeTag;
-                }
-            }
-            return match;
-        });
+            
+            spanLastIndex = endIndex;
+        }
+        spanNewContent += content.substring(spanLastIndex);
+        if (modified) content = spanNewContent;
         
         // Process within <h1>-<h6> tags
-        content = content.replace(/(<h[1-6][^>]*>)([\s\S]*?)(<\/h[1-6]>)/g, function(match, openTag, text, closeTag) {
+        const headingRegex = /(<h[1-6][^>]*>)([\s\S]*?)(<\/h[1-6]>)/g;
+        let headingMatch;
+        let headingNewContent = '';
+        let headingLastIndex = 0;
+        
+        while ((headingMatch = headingRegex.exec(content)) !== null) {
+            const [fullMatch, openTag, text, closeTag] = headingMatch;
+            const startIndex = headingMatch.index;
+            const endIndex = startIndex + fullMatch.length;
+            
+            headingNewContent += content.substring(headingLastIndex, startIndex);
+            
             if (hasRawMath(text) || hasRenderedMath(text)) {
                 const rendered = await renderMathToHTML(text);
                 if (rendered !== text) {
                     modified = true;
-                    return openTag + rendered + closeTag;
+                    headingNewContent += openTag + rendered + closeTag;
+                } else {
+                    headingNewContent += fullMatch;
                 }
+            } else {
+                headingNewContent += fullMatch;
             }
-            return match;
-        });
+            
+            headingLastIndex = endIndex;
+        }
+        headingNewContent += content.substring(headingLastIndex);
+        if (modified) content = headingNewContent;
         
         // Process within <li> tags
-        content = content.replace(/(<li[^>]*>)([\s\S]*?)(<\/li>)/g, function(match, openTag, text, closeTag) {
+        const liTagRegex = /(<li[^>]*>)([\s\S]*?)(<\/li>)/g;
+        let liMatch;
+        let liNewContent = '';
+        let liLastIndex = 0;
+        
+        while ((liMatch = liTagRegex.exec(content)) !== null) {
+            const [fullMatch, openTag, text, closeTag] = liMatch;
+            const startIndex = liMatch.index;
+            const endIndex = startIndex + fullMatch.length;
+            
+            liNewContent += content.substring(liLastIndex, startIndex);
+            
             if (hasRawMath(text) || hasRenderedMath(text)) {
                 const rendered = await renderMathToHTML(text);
                 if (rendered !== text) {
                     modified = true;
-                    return openTag + rendered + closeTag;
+                    liNewContent += openTag + rendered + closeTag;
+                } else {
+                    liNewContent += fullMatch;
                 }
+            } else {
+                liNewContent += fullMatch;
             }
-            return match;
-        });
+            
+            liLastIndex = endIndex;
+        }
+        liNewContent += content.substring(liLastIndex);
+        if (modified) content = liNewContent;
         
         // Process text nodes outside of tags
         const textNodesRegex = /([^<>\n]*)(?=<|$)/g;
-        content = content.replace(textNodesRegex, function(match) {
-            if (!match || match.trim() === '') return match;
-            if (hasRenderedMath(match)) {
-                const rendered = await renderMathToHTML(match);
-                if (rendered !== match) {
-                    modified = true;
-                    return rendered;
+        let textMatch;
+        let textNewContent = '';
+        let textLastIndex = 0;
+        
+        while ((textMatch = textNodesRegex.exec(content)) !== null) {
+            const match = textMatch[0];
+            const startIndex = textMatch.index;
+            const endIndex = startIndex + match.length;
+            
+            textNewContent += content.substring(textLastIndex, startIndex);
+            
+            if (match && match.trim() !== '') {
+                if (hasRenderedMath(match) || hasRawMath(match)) {
+                    const rendered = await renderMathToHTML(match);
+                    if (rendered !== match) {
+                        modified = true;
+                        textNewContent += rendered;
+                    } else {
+                        textNewContent += match;
+                    }
+                } else {
+                    textNewContent += match;
                 }
-                return match;
+            } else {
+                textNewContent += match;
             }
-            if (!hasRawMath(match)) return match;
-            const rendered = await renderMathToHTML(match);
-            if (rendered !== match) {
-                modified = true;
-                return rendered;
-            }
-            return match;
-        });
+            
+            textLastIndex = endIndex;
+        }
+        textNewContent += content.substring(textLastIndex);
+        if (modified) content = textNewContent;
         
         if (modified) {
             fs.writeFileSync(filePath, content, 'utf-8');
@@ -385,7 +463,6 @@ async function processHTMLFiles(dir) {
             try {
                 const content = fs.readFileSync(fullPath, 'utf-8');
                 
-                // Skip if no math at all
                 if (!hasRawMath(content) && !hasRenderedMath(content)) {
                     console.log(`  ℹ️ Skipping ${entry} (no math)`);
                     skippedCount++;
@@ -411,7 +488,6 @@ async function main() {
     console.log('📁 Processing all HTML files...\n');
     
     try {
-        // Initialize MathJax first
         console.log('⚙️ Initializing MathJax...');
         await initMathJax();
         
