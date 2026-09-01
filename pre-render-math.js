@@ -1,21 +1,21 @@
-// pre-render-math.js - MathJax v4 for server-side rendering
+// pre-render-math.js - MathJax v3.2 for server-side rendering
 const fs = require('fs');
 const path = require('path');
-const { mathjax } = require('mathjax');
+const { init } = require('mathjax');
 
-console.log('🚀 Starting math pre-rendering with MathJax v4...');
+console.log('🚀 Starting math pre-rendering with MathJax v3.2...');
 console.log('📁 ONLY processing files in the "books" folder...');
 console.log('📌 All other folders will be ignored.\n');
 
-// MathJax v4 state
-let mj = null;
+// MathJax v3 state
+let mathjax = null;
 
-// Initialize MathJax v4 once
+// Initialize MathJax v3 once
 async function initMathJax() {
-    if (!mj) {
-        console.log('⏳ Initializing MathJax v4...');
+    if (!mathjax) {
+        console.log('⏳ Initializing MathJax v3.2...');
         try {
-            mj = await mathjax.init({
+            mathjax = await init({
                 loader: {
                     load: ['input/tex', 'output/svg']
                 },
@@ -47,16 +47,16 @@ async function initMathJax() {
                     enableMenu: false
                 }
             });
-            console.log('✅ MathJax v4 initialized successfully');
+            console.log('✅ MathJax v3.2 initialized successfully');
         } catch (error) {
-            console.error('❌ Failed to initialize MathJax v4:', error);
+            console.error('❌ Failed to initialize MathJax v3.2:', error);
             throw error;
         }
     }
-    return mj;
+    return mathjax;
 }
 
-// Render math using MathJax v4
+// Render math using MathJax v3.2
 async function renderMath(math, display = false) {
     try {
         const mathjaxInstance = await initMathJax();
@@ -67,7 +67,7 @@ async function renderMath(math, display = false) {
             .replace(/\n/g, ' ')            // Remove newlines
             .trim();
         
-        // Render with MathJax v4
+        // Render with MathJax v3
         const result = await mathjaxInstance.tex2svg(cleanedMath, {
             display: display,
             em: 6,
@@ -86,11 +86,10 @@ async function renderMath(math, display = false) {
             }
         }
         
-        // If no SVG found, return the result as-is
         return svgContent;
         
     } catch (error) {
-        console.log(`  ❌ MathJax v4 error for: ${math.substring(0, 40)}...`);
+        console.log(`  ❌ MathJax v3.2 error for: ${math.substring(0, 40)}...`);
         console.log(`  Error: ${error.message || error}`);
         return null;
     }
@@ -334,11 +333,6 @@ async function main() {
             console.log('   - \\[ ... \\] for display math');
             console.log('   - $ ... $ for inline math');
             console.log('   - $$ ... $$ for display math');
-            console.log('');
-            console.log('💡 If you have math that should render but doesn\'t, check:');
-            console.log('   - That the math is valid LaTeX');
-            console.log('   - That the delimiters are correctly escaped in HTML');
-            console.log('   - That the math doesn\'t contain special characters that need escaping');
         }
         console.log('='.repeat(50));
         process.exit(0);
