@@ -48,6 +48,17 @@ function cleanKatexOutput(html) {
     return html;
 }
 
+// ===== KATEX 0.18+ TRUST OPTION HELPER =====
+// In v0.18.0+, `trust` must be a function or a boolean
+function createTrustOptions() {
+    // For full trust (like the old `trust: true`), return a function that always returns true
+    return function(context) {
+        // context contains: { command, url, protocol }
+        // Return true to allow all commands and URLs
+        return true;
+    };
+}
+
 // Render math using KaTeX with clean output
 function renderMathToHTML(text, displayMode = false) {
     if (!text) return text;
@@ -64,6 +75,26 @@ function renderMathToHTML(text, displayMode = false) {
     // Check if contains raw math
     if (!hasRawMath(decodedText)) return text;
     
+    // Common render options for KaTeX 0.18+
+    const getRenderOptions = function(display) {
+        return {
+            throwOnError: false,
+            displayMode: display,
+            // In v0.18.0+, trust must be a function
+            trust: createTrustOptions(),
+            macros: {
+                "\\R": "\\mathbb{R}",
+                "\\N": "\\mathbb{N}",
+                "\\Z": "\\mathbb{Z}",
+                "\\Q": "\\mathbb{Q}",
+                "\\C": "\\mathbb{C}"
+            },
+            // New in v0.18.0: stricter output by default
+            // We disable minRuleThickness to keep compatibility
+            minRuleThickness: -Infinity
+        };
+    };
+    
     try {
         let processed = decodedText;
         
@@ -71,19 +102,7 @@ function renderMathToHTML(text, displayMode = false) {
         processed = processed.replace(/\$\$(.+?)\$\$/g, function(match, math) {
             try {
                 const cleanMath = math.trim();
-                let rendered = katex.renderToString(cleanMath, {
-                    throwOnError: false,
-                    displayMode: true,
-                    trust: true,
-                    macros: {
-                        "\\R": "\\mathbb{R}",
-                        "\\N": "\\mathbb{N}",
-                        "\\Z": "\\mathbb{Z}",
-                        "\\Q": "\\mathbb{Q}",
-                        "\\C": "\\mathbb{C}"
-                    }
-                });
-                // Clean the rendered output
+                let rendered = katex.renderToString(cleanMath, getRenderOptions(true));
                 return cleanKatexOutput(rendered);
             } catch (e) {
                 return match;
@@ -94,18 +113,7 @@ function renderMathToHTML(text, displayMode = false) {
         processed = processed.replace(/(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)/g, function(match, math) {
             try {
                 const cleanMath = math.trim();
-                let rendered = katex.renderToString(cleanMath, {
-                    throwOnError: false,
-                    displayMode: false,
-                    trust: true,
-                    macros: {
-                        "\\R": "\\mathbb{R}",
-                        "\\N": "\\mathbb{N}",
-                        "\\Z": "\\mathbb{Z}",
-                        "\\Q": "\\mathbb{Q}",
-                        "\\C": "\\mathbb{C}"
-                    }
-                });
+                let rendered = katex.renderToString(cleanMath, getRenderOptions(false));
                 return cleanKatexOutput(rendered);
             } catch (e) {
                 return match;
@@ -116,18 +124,7 @@ function renderMathToHTML(text, displayMode = false) {
         processed = processed.replace(/\\\((.+?)\\\)/g, function(match, math) {
             try {
                 const cleanMath = math.trim();
-                let rendered = katex.renderToString(cleanMath, {
-                    throwOnError: false,
-                    displayMode: false,
-                    trust: true,
-                    macros: {
-                        "\\R": "\\mathbb{R}",
-                        "\\N": "\\mathbb{N}",
-                        "\\Z": "\\mathbb{Z}",
-                        "\\Q": "\\mathbb{Q}",
-                        "\\C": "\\mathbb{C}"
-                    }
-                });
+                let rendered = katex.renderToString(cleanMath, getRenderOptions(false));
                 return cleanKatexOutput(rendered);
             } catch (e) {
                 return match;
@@ -138,18 +135,7 @@ function renderMathToHTML(text, displayMode = false) {
         processed = processed.replace(/\\\[(.+?)\\\]/g, function(match, math) {
             try {
                 const cleanMath = math.trim();
-                let rendered = katex.renderToString(cleanMath, {
-                    throwOnError: false,
-                    displayMode: true,
-                    trust: true,
-                    macros: {
-                        "\\R": "\\mathbb{R}",
-                        "\\N": "\\mathbb{N}",
-                        "\\Z": "\\mathbb{Z}",
-                        "\\Q": "\\mathbb{Q}",
-                        "\\C": "\\mathbb{C}"
-                    }
-                });
+                let rendered = katex.renderToString(cleanMath, getRenderOptions(true));
                 return cleanKatexOutput(rendered);
             } catch (e) {
                 return match;
