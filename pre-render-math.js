@@ -337,13 +337,27 @@ function processHTMLFiles(dir) {
 
 // ===== MAIN =====
 
+// ===== MAIN =====
+
 function main() {
     console.log('🚀 Starting math pre-rendering with KaTeX (Catax)');
     console.log(`📦 KaTeX version: ${katex.version}`);
-    console.log('📁 Processing all HTML files...\n');
+    console.log('📁 Processing HTML files in books/ folder only...\n');
     
     try {
-        const result = processHTMLFiles('./');
+        // Get the absolute path to the books folder
+        const booksDir = path.resolve(process.cwd(), 'books');
+        
+        // Check if books folder exists
+        if (!fs.existsSync(booksDir)) {
+            console.log('❌ books/ folder not found!');
+            console.log('📁 Current directory:', process.cwd());
+            console.log('📁 Contents:', fs.readdirSync('./').join(', '));
+            process.exit(1);
+        }
+        
+        console.log(`📂 Target directory: ${booksDir}`);
+        const result = processHTMLFiles(booksDir);
         
         console.log('\n' + '='.repeat(50));
         console.log('✅ Math pre-rendering complete!');
