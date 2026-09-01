@@ -8,7 +8,7 @@ const { AllPackages } = require('mathjax-full/js/input/tex/AllPackages.js');
 
 // Check if content already has rendered math
 function hasRenderedMath(text) {
-    return text.includes('class="mjx-") || 
+    return text.includes('class="mjx-"') || 
            text.includes('mathjax') ||
            text.includes('MJX') ||
            /data-mjx/.test(text);
