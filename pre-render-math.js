@@ -468,6 +468,8 @@ let adaptor = null;
 
 // ===== MAIN =====
 
+// ===== MAIN =====
+
 async function main() {
     console.log('🚀 Starting math pre-rendering with MathJax v3.2');
     console.log('📁 Processing all HTML files...\n');
@@ -477,7 +479,14 @@ async function main() {
         const document = await initMathJax();
         adaptor = document.adaptor;
         
-        const result = await processHTMLFiles('./');
+        // ✅ FIX: Only process the books folder
+        const booksDir = './books';
+        if (!fs.existsSync(booksDir)) {
+            console.log('❌ Books directory not found!');
+            process.exit(1);
+        }
+        
+        const result = await processHTMLFiles(booksDir);  // ← Changed from './' to './books'
         
         console.log('\n' + '='.repeat(50));
         console.log('✅ Math pre-rendering complete!');
@@ -492,6 +501,5 @@ async function main() {
         process.exit(1);
     }
 }
-
 // Run the script
 main();
