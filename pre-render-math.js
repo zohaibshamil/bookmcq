@@ -3,59 +3,39 @@ const fs = require('fs');
 const path = require('path');
 const katex = require('katex');
 
-// ===== HELPER FUNCTIONS (borrowed from generateTopicPage) =====
+// ===== HELPER FUNCTIONS =====
 
-// Escape HTML but preserve math delimiters
-function escapeHtmlPreserveMath(text) {
-    if (!text) return text;
+// Check if content already has rendered math (MORE THOROUGH)
+function hasRenderedMath(text) {
+    // Check for multiple KaTeX indicators
+    return text.includes('class="katex"') || 
+           text.includes('class="katex-mathml"') ||
+           text.includes('katex-html') ||
+           text.includes('katex-error') ||
+           text.includes('data-katex') ||
+           text.includes('application/x-tex') ||  // CRITICAL: catches rendered math
+           text.includes('<math xmlns="http://www.w3.org/1998/Math/MathML"') ||
+           // Check if it has KaTeX CSS classes
+           /class="[^"]*katex[^"]*"/.test(text);
+}
+
+// Check if text contains raw math delimiters (NOT rendered)
+function hasRawMath(text) {
+    // Check for raw math delimiters that haven't been rendered
+    // Make sure they're not inside KaTeX annotations
+    if (hasRenderedMath(text)) return false;
     
-    // First, temporarily protect math delimiters with placeholders
-    const placeholders = [];
-    let protectedText = text;
-    
-    // Protect $...$ with placeholder
-    protectedText = protectedText.replace(/\$(.+?)\$/g, function(match, math) {
-        const placeholder = `<<<MATH_INLINE_${placeholders.length}>>>`;
-        placeholders.push({ type: 'inline', math: math, original: match });
-        return placeholder;
-    });
-    
-    // Protect $$...$$ with placeholder
-    protectedText = protectedText.replace(/\$\$(.+?)\$\$/g, function(match, math) {
-        const placeholder = `<<<MATH_DISPLAY_${placeholders.length}>>>`;
-        placeholders.push({ type: 'display', math: math, original: match });
-        return placeholder;
-    });
-    
-    // Protect \(...\) with placeholder
-    protectedText = protectedText.replace(/\\\((.+?)\\\)/g, function(match, math) {
-        const placeholder = `<<<MATH_PAREN_${placeholders.length}>>>`;
-        placeholders.push({ type: 'paren', math: math, original: match });
-        return placeholder;
-    });
-    
-    // Protect \[...\] with placeholder
-    protectedText = protectedText.replace(/\\\[(.+?)\\\]/g, function(match, math) {
-        const placeholder = `<<<MATH_BRACKET_${placeholders.length}>>>`;
-        placeholders.push({ type: 'bracket', math: math, original: match });
-        return placeholder;
-    });
-    
-    // Escape HTML (but don't escape our placeholders)
-    let escaped = protectedText
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    
-    // Restore math placeholders
-    placeholders.forEach((p, index) => {
-        const placeholder = `<<<MATH_${p.type.toUpperCase()}_${index}>>>`;
-        escaped = escaped.replace(placeholder, p.original);
-    });
-    
-    return escaped;
+    // Check for math delimiters
+    return text.includes('$') || 
+           text.includes('\\(') || 
+           text.includes('\\[') ||
+           /\\begin\{.*?\}/.test(text);
+}
+
+// Check if text is inside a KaTeX annotation (skip it)
+function isInKatexAnnotation(text, match) {
+    // If the match is inside a KaTeX annotation, skip it
+    return text.includes('<annotation') && text.includes('</annotation>');
 }
 
 // Decode HTML entities for KaTeX processing
@@ -69,27 +49,29 @@ function decodeHtmlEntities(text) {
         .replace(/&nbsp;/g, ' ');
 }
 
-// Check if text contains any math delimiters
-function hasMath(text) {
-    return text.includes('$') || text.includes('\\(') || text.includes('\\[');
-}
-
-// Render math using KaTeX (with proper handling)
+// Render math using KaTeX
 function renderMathToHTML(text) {
     if (!text) return text;
-    if (!hasMath(text)) return text;
     
-    // First decode HTML entities
+    // Skip if already rendered
+    if (hasRenderedMath(text)) {
+        return text;
+    }
+    
+    // Decode HTML entities
     let decodedText = decodeHtmlEntities(text);
     
-    // Check again after decoding
-    if (!hasMath(decodedText)) return text;
+    // Check if contains raw math
+    if (!hasRawMath(decodedText)) return text;
     
     try {
         let processed = decodedText;
         
-        // Process display math: $$...$$ (must come before $...$)
+        // Process display math: $$...$$
         processed = processed.replace(/\$\$(.+?)\$\$/g, function(match, math) {
+            // Skip if this match is inside KaTeX annotation
+            if (isInKatexAnnotation(decodedText, match)) return match;
+            
             try {
                 const cleanMath = math.trim();
                 return katex.renderToString(cleanMath, {
@@ -105,13 +87,15 @@ function renderMathToHTML(text) {
                     }
                 });
             } catch (e) {
-                console.error('  ⚠️ Error rendering display math:', math.substring(0, 50) + '...', e.message);
-                return match; // Return original on error
+                return match;
             }
         });
         
-        // Process inline math: $...$ (but not $$...$$)
+        // Process inline math: $...$
         processed = processed.replace(/(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)/g, function(match, math) {
+            // Skip if this match is inside KaTeX annotation
+            if (isInKatexAnnotation(decodedText, match)) return match;
+            
             try {
                 const cleanMath = math.trim();
                 return katex.renderToString(cleanMath, {
@@ -127,13 +111,14 @@ function renderMathToHTML(text) {
                     }
                 });
             } catch (e) {
-                console.error('  ⚠️ Error rendering inline math:', math.substring(0, 50) + '...', e.message);
                 return match;
             }
         });
         
-        // Process \(...\) style
+        // Process \(...\)
         processed = processed.replace(/\\\((.+?)\\\)/g, function(match, math) {
+            if (isInKatexAnnotation(decodedText, match)) return match;
+            
             try {
                 const cleanMath = math.trim();
                 return katex.renderToString(cleanMath, {
@@ -149,13 +134,14 @@ function renderMathToHTML(text) {
                     }
                 });
             } catch (e) {
-                console.error('  ⚠️ Error rendering \\( \\) math:', math.substring(0, 50) + '...', e.message);
                 return match;
             }
         });
         
-        // Process \[...\] style
+        // Process \[...\]
         processed = processed.replace(/\\\[(.+?)\\\]/g, function(match, math) {
+            if (isInKatexAnnotation(decodedText, match)) return match;
+            
             try {
                 const cleanMath = math.trim();
                 return katex.renderToString(cleanMath, {
@@ -171,26 +157,19 @@ function renderMathToHTML(text) {
                     }
                 });
             } catch (e) {
-                console.error('  ⚠️ Error rendering \\[ \\] math:', math.substring(0, 50) + '...', e.message);
                 return match;
             }
         });
         
         return processed;
     } catch (e) {
-        console.error('  ❌ Math rendering error:', e.message);
         return text;
     }
 }
 
 // ===== FILE PROCESSING =====
 
-// Check if content already has rendered math
-function hasRenderedMath(text) {
-    return text.includes('class="katex"') || text.includes('<span class="katex-mathml">');
-}
-
-// Process HTML file
+// Process HTML file with enhanced detection
 function processHTMLFile(filePath) {
     console.log('  Processing:', path.basename(filePath));
     
@@ -198,23 +177,25 @@ function processHTMLFile(filePath) {
         let content = fs.readFileSync(filePath, 'utf-8');
         let modified = false;
         
-        // Skip if no math in the file
-        if (!hasMath(content)) {
-            console.log('    ℹ️ No math found, skipping');
-            return false;
-        }
+        // ===== ENHANCED SKIP LOGIC =====
         
-        // Skip if already has rendered math (to avoid double-rendering)
+        // 1. Check if the entire file already has rendered math
         if (hasRenderedMath(content)) {
-            console.log('    ℹ️ Already has rendered math, skipping');
+            console.log('    ⏭️ Already rendered - skipping file');
             return false;
         }
         
-        // Process text content - look for math in various HTML contexts
+        // 2. Check if file has NO raw math at all
+        if (!hasRawMath(content)) {
+            console.log('    ℹ️ No raw math found - skipping');
+            return false;
+        }
+        
+        // ===== PROCESSING =====
         
         // Process within <p> tags
         content = content.replace(/(<p[^>]*>)([\s\S]*?)(<\/p>)/g, function(match, openTag, text, closeTag) {
-            if (hasMath(text) && !hasRenderedMath(text)) {
+            if (hasRawMath(text) && !hasRenderedMath(text)) {
                 const rendered = renderMathToHTML(text);
                 if (rendered !== text) {
                     modified = true;
@@ -224,12 +205,10 @@ function processHTMLFile(filePath) {
             return match;
         });
         
-        // Process within <div> tags (for definitions and explanations)
+        // Process within <div> tags
         content = content.replace(/(<div[^>]*>)([\s\S]*?)(<\/div>)/g, function(match, openTag, text, closeTag) {
-            // Skip if it's a math container or already has rendered math
             if (text.includes('class="math') || hasRenderedMath(text)) return match;
-            
-            if (hasMath(text)) {
+            if (hasRawMath(text)) {
                 const rendered = renderMathToHTML(text);
                 if (rendered !== text) {
                     modified = true;
@@ -241,10 +220,8 @@ function processHTMLFile(filePath) {
         
         // Process within <span> tags
         content = content.replace(/(<span[^>]*>)([\s\S]*?)(<\/span>)/g, function(match, openTag, text, closeTag) {
-            // Skip if it's already math rendered
             if (hasRenderedMath(text)) return match;
-            
-            if (hasMath(text)) {
+            if (hasRawMath(text)) {
                 const rendered = renderMathToHTML(text);
                 if (rendered !== text) {
                     modified = true;
@@ -254,9 +231,9 @@ function processHTMLFile(filePath) {
             return match;
         });
         
-        // Process within <h2>, <h3>, etc.
+        // Process within <h1>-<h6> tags
         content = content.replace(/(<h[1-6][^>]*>)([\s\S]*?)(<\/h[1-6]>)/g, function(match, openTag, text, closeTag) {
-            if (hasMath(text) && !hasRenderedMath(text)) {
+            if (hasRawMath(text) && !hasRenderedMath(text)) {
                 const rendered = renderMathToHTML(text);
                 if (rendered !== text) {
                     modified = true;
@@ -268,7 +245,7 @@ function processHTMLFile(filePath) {
         
         // Process within <li> tags
         content = content.replace(/(<li[^>]*>)([\s\S]*?)(<\/li>)/g, function(match, openTag, text, closeTag) {
-            if (hasMath(text) && !hasRenderedMath(text)) {
+            if (hasRawMath(text) && !hasRenderedMath(text)) {
                 const rendered = renderMathToHTML(text);
                 if (rendered !== text) {
                     modified = true;
@@ -278,14 +255,15 @@ function processHTMLFile(filePath) {
             return match;
         });
         
-        // Process text nodes outside of tags (fallback)
-        // This is more complex and might need a proper HTML parser for production
-        // But for now, we'll use a simple approach
+        // Process text nodes outside of tags
         const textNodesRegex = /([^<>\n]*)(?=<|$)/g;
         content = content.replace(textNodesRegex, function(match) {
             if (!match || match.trim() === '') return match;
             if (hasRenderedMath(match)) return match;
-            if (!hasMath(match)) return match;
+            if (!hasRawMath(match)) return match;
+            
+            // Skip if this text is inside a KaTeX annotation
+            if (match.includes('<annotation') || match.includes('</annotation>')) return match;
             
             const rendered = renderMathToHTML(match);
             if (rendered !== match) {
@@ -297,45 +275,69 @@ function processHTMLFile(filePath) {
         
         if (modified) {
             fs.writeFileSync(filePath, content, 'utf-8');
-            console.log('    ✅ Updated: math rendered successfully');
+            console.log('    ✅ Updated');
             return true;
         } else {
             console.log('    ℹ️ No changes made');
             return false;
         }
     } catch (error) {
-        console.error('    ❌ Error processing:', error.message);
+        console.error('    ❌ Error:', error.message);
         return false;
     }
 }
 
-// Recursively process all HTML files in directory
+// Recursively process all HTML files
 function processHTMLFiles(dir) {
-    console.log(`📁 Scanning directory: ${dir}`);
+    console.log(`📁 Scanning: ${dir}`);
     
     const entries = fs.readdirSync(dir);
     let processedCount = 0;
     let modifiedCount = 0;
+    let skippedCount = 0;
     
     for (const entry of entries) {
         const fullPath = path.join(dir, entry);
         const stat = fs.statSync(fullPath);
         
         if (stat.isDirectory()) {
-            // Skip node_modules, .git, .github
             if (!['node_modules', '.git', '.github'].includes(entry)) {
                 const result = processHTMLFiles(fullPath);
                 processedCount += result.processed;
                 modifiedCount += result.modified;
+                skippedCount += result.skipped || 0;
             }
         } else if (entry.endsWith('.html') || entry.endsWith('.htm')) {
             processedCount++;
+            
+            // Quick file check before processing
+            try {
+                const content = fs.readFileSync(fullPath, 'utf-8');
+                
+                // Skip if already fully rendered
+                if (hasRenderedMath(content)) {
+                    console.log(`  ⏭️ Skipping ${entry} (already rendered)`);
+                    skippedCount++;
+                    continue;
+                }
+                
+                // Skip if no raw math
+                if (!hasRawMath(content)) {
+                    console.log(`  ℹ️ Skipping ${entry} (no raw math)`);
+                    skippedCount++;
+                    continue;
+                }
+            } catch (e) {
+                console.error(`  ❌ Error reading ${entry}:`, e.message);
+                continue;
+            }
+            
             const modified = processHTMLFile(fullPath);
             if (modified) modifiedCount++;
         }
     }
     
-    return { processed: processedCount, modified: modifiedCount };
+    return { processed: processedCount, modified: modifiedCount, skipped: skippedCount };
 }
 
 // ===== MAIN =====
@@ -343,17 +345,21 @@ function processHTMLFiles(dir) {
 function main() {
     console.log('🚀 Starting math pre-rendering with KaTeX (Catax)');
     console.log(`📦 KaTeX version: ${katex.version}`);
-    console.log('📁 Processing all HTML files in current directory...\n');
+    console.log('📁 Processing all HTML files...\n');
     
     try {
         const result = processHTMLFiles('./');
         
-        console.log('\n✅ Math pre-rendering complete!');
-        console.log(`📊 Processed: ${result.processed} HTML files`);
-        console.log(`📝 Modified: ${result.modified} files`);
-        console.log(`💡 KaTeX rendered math using Catax engine`);
+        console.log('\n' + '='.repeat(50));
+        console.log('✅ Math pre-rendering complete!');
+        console.log('='.repeat(50));
+        console.log(`📊 Total files processed: ${result.processed}`);
+        console.log(`📝 Files modified: ${result.modified}`);
+        console.log(`⏭️ Files skipped: ${result.skipped}`);
+        console.log(`💡 Rendering engine: KaTeX v${katex.version} (Catax)`);
+        console.log('='.repeat(50));
     } catch (error) {
-        console.error('\n❌ Error during processing:', error);
+        console.error('\n❌ Error:', error);
         process.exit(1);
     }
 }
