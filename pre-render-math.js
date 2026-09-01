@@ -1,20 +1,16 @@
-// pre-render-math.js
+// pre-render-math.js - COMPLETE CLEAN VERSION
 const fs = require('fs');
 const path = require('path');
 const katex = require('katex');
 
 // ===== HELPER FUNCTIONS =====
 
-// Check if content already has rendered math
 function hasRenderedMath(text) {
     return text.includes('class="katex"') || 
-           text.includes('class="katex-mathml"') ||
            text.includes('katex-html') ||
-           text.includes('data-katex') ||
            /class="[^"]*katex[^"]*"/.test(text);
 }
 
-// Check if text contains raw math delimiters
 function hasRawMath(text) {
     if (hasRenderedMath(text)) return false;
     return text.includes('$') || 
@@ -23,7 +19,6 @@ function hasRawMath(text) {
            /\\begin\{.*?\}/.test(text);
 }
 
-// Decode HTML entities for KaTeX processing
 function decodeHtmlEntities(text) {
     return text
         .replace(/&amp;/g, '&')
@@ -34,34 +29,37 @@ function decodeHtmlEntities(text) {
         .replace(/&nbsp;/g, ' ');
 }
 
-// ===== CRITICAL NEW FUNCTION: Clean KaTeX output =====
+// ===== CRITICAL: COMPLETE CLEANUP =====
 function cleanKatexOutput(html) {
-    // Remove annotation tags containing raw LaTeX
-    html = html.replace(/<annotation[^>]*>.*?<\/annotation>/g, '');
+    // Remove ALL annotation tags with raw LaTeX
+    html = html.replace(/<annotation[^>]*>[\s\S]*?<\/annotation>/g, '');
     
-    // Remove MathML if not needed (optional - keeps only HTML rendering)
-    // html = html.replace(/<math[^>]*>.*?<\/math>/g, '');
+    // Remove ALL math tags (MathML)
+    html = html.replace(/<math[^>]*>[\s\S]*?<\/math>/g, '');
     
-    // Remove extra whitespace
+    // Remove empty katex-mathml spans
+    html = html.replace(/<span class="katex-mathml"><\/span>/g, '');
+    
+    // Remove any remaining text that looks like LaTeX
+    html = html.replace(/encoding="application\/x-tex"/g, '');
+    
+    // Clean up extra whitespace
     html = html.replace(/\s+/g, ' ').trim();
     
     return html;
 }
 
-// Render math using KaTeX with clean output
+// Render math with complete cleanup
 function renderMathToHTML(text, displayMode = false) {
     if (!text) return text;
     
-    // Skip if already rendered
+    // If already rendered, just clean it
     if (hasRenderedMath(text)) {
-        // Clean any remaining annotation tags
         return cleanKatexOutput(text);
     }
     
-    // Decode HTML entities
     let decodedText = decodeHtmlEntities(text);
     
-    // Check if contains raw math
     if (!hasRawMath(decodedText)) return text;
     
     try {
@@ -75,6 +73,7 @@ function renderMathToHTML(text, displayMode = false) {
                     throwOnError: false,
                     displayMode: true,
                     trust: true,
+                    output: 'html', // Force HTML output (not MathML)
                     macros: {
                         "\\R": "\\mathbb{R}",
                         "\\N": "\\mathbb{N}",
@@ -83,7 +82,7 @@ function renderMathToHTML(text, displayMode = false) {
                         "\\C": "\\mathbb{C}"
                     }
                 });
-                // Clean the rendered output
+                // COMPLETE CLEANUP - remove all traces of original LaTeX
                 return cleanKatexOutput(rendered);
             } catch (e) {
                 return match;
@@ -98,6 +97,7 @@ function renderMathToHTML(text, displayMode = false) {
                     throwOnError: false,
                     displayMode: false,
                     trust: true,
+                    output: 'html',
                     macros: {
                         "\\R": "\\mathbb{R}",
                         "\\N": "\\mathbb{N}",
@@ -120,6 +120,7 @@ function renderMathToHTML(text, displayMode = false) {
                     throwOnError: false,
                     displayMode: false,
                     trust: true,
+                    output: 'html',
                     macros: {
                         "\\R": "\\mathbb{R}",
                         "\\N": "\\mathbb{N}",
@@ -142,6 +143,7 @@ function renderMathToHTML(text, displayMode = false) {
                     throwOnError: false,
                     displayMode: true,
                     trust: true,
+                    output: 'html',
                     macros: {
                         "\\R": "\\mathbb{R}",
                         "\\N": "\\mathbb{N}",
@@ -164,7 +166,6 @@ function renderMathToHTML(text, displayMode = false) {
 
 // ===== FILE PROCESSING =====
 
-// Process HTML file
 function processHTMLFile(filePath) {
     console.log('  Processing:', path.basename(filePath));
     
@@ -172,15 +173,15 @@ function processHTMLFile(filePath) {
         let content = fs.readFileSync(filePath, 'utf-8');
         let modified = false;
         
-        // Check if file has any math to process
+        // Check if file has any math
         if (!hasRawMath(content) && !content.includes('class="katex"')) {
             console.log('    ℹ️ No math found - skipping');
             return false;
         }
         
-        // ===== PROCESSING =====
+        // ===== PROCESS ALL TAGS =====
         
-        // Process within <p> tags
+        // Process <p> tags
         content = content.replace(/(<p[^>]*>)([\s\S]*?)(<\/p>)/g, function(match, openTag, text, closeTag) {
             if (hasRawMath(text) || text.includes('class="katex"')) {
                 const rendered = renderMathToHTML(text);
@@ -192,17 +193,9 @@ function processHTMLFile(filePath) {
             return match;
         });
         
-        // Process within <div> tags
+        // Process <div> tags
         content = content.replace(/(<div[^>]*>)([\s\S]*?)(<\/div>)/g, function(match, openTag, text, closeTag) {
-            if (text.includes('class="math') || text.includes('class="katex"')) {
-                const rendered = renderMathToHTML(text);
-                if (rendered !== text) {
-                    modified = true;
-                    return openTag + rendered + closeTag;
-                }
-                return match;
-            }
-            if (hasRawMath(text)) {
+            if (hasRawMath(text) || text.includes('class="katex"')) {
                 const rendered = renderMathToHTML(text);
                 if (rendered !== text) {
                     modified = true;
@@ -212,17 +205,9 @@ function processHTMLFile(filePath) {
             return match;
         });
         
-        // Process within <span> tags
+        // Process <span> tags
         content = content.replace(/(<span[^>]*>)([\s\S]*?)(<\/span>)/g, function(match, openTag, text, closeTag) {
-            if (text.includes('class="katex"')) {
-                const rendered = renderMathToHTML(text);
-                if (rendered !== text) {
-                    modified = true;
-                    return openTag + rendered + closeTag;
-                }
-                return match;
-            }
-            if (hasRawMath(text)) {
+            if (hasRawMath(text) || text.includes('class="katex"')) {
                 const rendered = renderMathToHTML(text);
                 if (rendered !== text) {
                     modified = true;
@@ -232,7 +217,7 @@ function processHTMLFile(filePath) {
             return match;
         });
         
-        // Process within <h1>-<h6> tags
+        // Process <h1>-<h6> tags
         content = content.replace(/(<h[1-6][^>]*>)([\s\S]*?)(<\/h[1-6]>)/g, function(match, openTag, text, closeTag) {
             if (hasRawMath(text) || text.includes('class="katex"')) {
                 const rendered = renderMathToHTML(text);
@@ -244,7 +229,7 @@ function processHTMLFile(filePath) {
             return match;
         });
         
-        // Process within <li> tags
+        // Process <li> tags
         content = content.replace(/(<li[^>]*>)([\s\S]*?)(<\/li>)/g, function(match, openTag, text, closeTag) {
             if (hasRawMath(text) || text.includes('class="katex"')) {
                 const rendered = renderMathToHTML(text);
@@ -256,7 +241,7 @@ function processHTMLFile(filePath) {
             return match;
         });
         
-        // Process text nodes outside of tags
+        // Process text nodes
         const textNodesRegex = /([^<>\n]*)(?=<|$)/g;
         content = content.replace(textNodesRegex, function(match) {
             if (!match || match.trim() === '') return match;
@@ -277,22 +262,29 @@ function processHTMLFile(filePath) {
             return match;
         });
         
-        // FINAL CLEANUP: Remove any remaining annotation tags
-        if (modified || content.includes('<annotation')) {
-            let cleaned = content;
-            cleaned = cleaned.replace(/<annotation[^>]*>.*?<\/annotation>/g, '');
-            // Also clean up any empty katex-mathml that might remain
-            cleaned = cleaned.replace(/<span class="katex-mathml"><\/span>/g, '');
+        // FINAL CLEANUP PASS
+        if (modified || content.includes('<annotation') || content.includes('<math')) {
+            // Remove ALL annotation tags
+            content = content.replace(/<annotation[^>]*>[\s\S]*?<\/annotation>/g, '');
             
-            if (cleaned !== content) {
-                content = cleaned;
-                modified = true;
-            }
+            // Remove ALL math tags
+            content = content.replace(/<math[^>]*>[\s\S]*?<\/math>/g, '');
+            
+            // Remove empty spans
+            content = content.replace(/<span class="katex-mathml"><\/span>/g, '');
+            
+            // Remove any stray LaTeX text
+            content = content.replace(/encoding="application\/x-tex"/g, '');
+            
+            // Clean up multiple spaces
+            content = content.replace(/\s{2,}/g, ' ');
+            
+            modified = true;
         }
         
         if (modified) {
             fs.writeFileSync(filePath, content, 'utf-8');
-            console.log('    ✅ Updated');
+            console.log('    ✅ Updated (cleaned)');
             return true;
         } else {
             console.log('    ℹ️ No changes made');
@@ -329,8 +321,6 @@ function processHTMLFiles(dir) {
             
             try {
                 const content = fs.readFileSync(fullPath, 'utf-8');
-                
-                // Skip if no math at all
                 if (!hasRawMath(content) && !content.includes('class="katex"')) {
                     console.log(`  ℹ️ Skipping ${entry} (no math)`);
                     skippedCount++;
@@ -352,7 +342,7 @@ function processHTMLFiles(dir) {
 // ===== MAIN =====
 
 function main() {
-    console.log('🚀 Starting math pre-rendering with KaTeX (Catax)');
+    console.log('🚀 Starting math pre-rendering with KaTeX');
     console.log(`📦 KaTeX version: ${katex.version}`);
     console.log('📁 Processing all HTML files...\n');
     
@@ -365,7 +355,9 @@ function main() {
         console.log(`📊 Total files processed: ${result.processed}`);
         console.log(`📝 Files modified: ${result.modified}`);
         console.log(`⏭️ Files skipped: ${result.skipped}`);
-        console.log(`💡 Rendering engine: KaTeX v${katex.version} (Catax)`);
+        console.log('='.repeat(50));
+        console.log('✨ All math is now fully static HTML/CSS');
+        console.log('📝 No JavaScript or LaTeX remains in the HTML');
         console.log('='.repeat(50));
     } catch (error) {
         console.error('\n❌ Error:', error);
@@ -373,5 +365,4 @@ function main() {
     }
 }
 
-// Run the script
 main();
