@@ -1,8 +1,13 @@
-// pre-render-math.js
-const fs = require('fs');
-const path = require('path');
-const mathjax = require('mathjax-full');
-const { AllPackages } = require('mathjax-full/js/input/tex/AllPackages.js');
+// pre-render-math.mjs
+import fs from 'fs';
+import path from 'path';
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
+import mathjax from 'mathjax-full';
+import { AllPackages } from 'mathjax-full/js/input/tex/AllPackages.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // ===== HELPER FUNCTIONS =====
 
@@ -37,13 +42,15 @@ function decodeHtmlEntities(text) {
 // ===== MATHJAX RENDERER =====
 
 let mathjaxInstance = null;
-let renderPromise = null;
 
 async function initMathJax() {
     if (mathjaxInstance) return mathjaxInstance;
     
     try {
-        const MathJax = await mathjax.init({
+        // Import the mathjax-full library properly
+        const { init } = await import('mathjax-full');
+        
+        const MathJax = await init({
             loader: {
                 load: ['input/tex-full', 'output/svg']
             },
@@ -109,17 +116,15 @@ async function renderMathToHTML(text, displayMode = false) {
     if (!hasRawMath(decodedText)) return text;
     
     try {
-        const mathjax = await initMathJax();
+        const mathjaxInstance = await initMathJax();
         let processed = decodedText;
         
         // Process display math: $$...$$
         processed = processed.replace(/\$\$(.+?)\$\$/g, function(match, math) {
             try {
                 const cleanMath = math.trim();
-                // Wrap in display math delimiters
                 const tex = '\\[' + cleanMath + '\\]';
-                const rendered = mathjax.tex2svg(tex);
-                // Extract HTML from SVG
+                const rendered = mathjaxInstance.tex2svg(tex);
                 const svgHtml = extractSvgContent(rendered);
                 return cleanMathJaxOutput(svgHtml);
             } catch (e) {
@@ -132,7 +137,7 @@ async function renderMathToHTML(text, displayMode = false) {
             try {
                 const cleanMath = math.trim();
                 const tex = '\\(' + cleanMath + '\\)';
-                const rendered = mathjax.tex2svg(tex);
+                const rendered = mathjaxInstance.tex2svg(tex);
                 const svgHtml = extractSvgContent(rendered);
                 return cleanMathJaxOutput(svgHtml);
             } catch (e) {
@@ -145,7 +150,7 @@ async function renderMathToHTML(text, displayMode = false) {
             try {
                 const cleanMath = math.trim();
                 const tex = '\\(' + cleanMath + '\\)';
-                const rendered = mathjax.tex2svg(tex);
+                const rendered = mathjaxInstance.tex2svg(tex);
                 const svgHtml = extractSvgContent(rendered);
                 return cleanMathJaxOutput(svgHtml);
             } catch (e) {
@@ -158,7 +163,7 @@ async function renderMathToHTML(text, displayMode = false) {
             try {
                 const cleanMath = math.trim();
                 const tex = '\\[' + cleanMath + '\\]';
-                const rendered = mathjax.tex2svg(tex);
+                const rendered = mathjaxInstance.tex2svg(tex);
                 const svgHtml = extractSvgContent(rendered);
                 return cleanMathJaxOutput(svgHtml);
             } catch (e) {
@@ -170,7 +175,7 @@ async function renderMathToHTML(text, displayMode = false) {
         processed = processed.replace(/\\begin\{([^}]+)\}([\s\S]*?)\\end\{\1\}/g, function(match, env, content) {
             try {
                 const tex = '\\begin{' + env + '}' + content + '\\end{' + env + '}';
-                const rendered = mathjax.tex2svg(tex);
+                const rendered = mathjaxInstance.tex2svg(tex);
                 const svgHtml = extractSvgContent(rendered);
                 return cleanMathJaxOutput(svgHtml);
             } catch (e) {
@@ -228,7 +233,7 @@ function cleanMathJaxOutput(html) {
 // ===== FILE PROCESSING =====
 
 // Process HTML file
-function processHTMLFile(filePath) {
+async function processHTMLFile(filePath) {
     console.log('  Processing:', path.basename(filePath));
     
     try {
@@ -246,7 +251,7 @@ function processHTMLFile(filePath) {
         // Process within <p> tags
         content = content.replace(/(<p[^>]*>)([\s\S]*?)(<\/p>)/g, function(match, openTag, text, closeTag) {
             if (hasRawMath(text) || hasRenderedMath(text)) {
-                const rendered = renderMathToHTML(text);
+                const rendered = await renderMathToHTML(text);
                 if (rendered !== text) {
                     modified = true;
                     return openTag + rendered + closeTag;
@@ -258,7 +263,7 @@ function processHTMLFile(filePath) {
         // Process within <div> tags
         content = content.replace(/(<div[^>]*>)([\s\S]*?)(<\/div>)/g, function(match, openTag, text, closeTag) {
             if (text.includes('class="math') || hasRenderedMath(text)) {
-                const rendered = renderMathToHTML(text);
+                const rendered = await renderMathToHTML(text);
                 if (rendered !== text) {
                     modified = true;
                     return openTag + rendered + closeTag;
@@ -266,7 +271,7 @@ function processHTMLFile(filePath) {
                 return match;
             }
             if (hasRawMath(text)) {
-                const rendered = renderMathToHTML(text);
+                const rendered = await renderMathToHTML(text);
                 if (rendered !== text) {
                     modified = true;
                     return openTag + rendered + closeTag;
@@ -278,7 +283,7 @@ function processHTMLFile(filePath) {
         // Process within <span> tags
         content = content.replace(/(<span[^>]*>)([\s\S]*?)(<\/span>)/g, function(match, openTag, text, closeTag) {
             if (hasRenderedMath(text)) {
-                const rendered = renderMathToHTML(text);
+                const rendered = await renderMathToHTML(text);
                 if (rendered !== text) {
                     modified = true;
                     return openTag + rendered + closeTag;
@@ -286,7 +291,7 @@ function processHTMLFile(filePath) {
                 return match;
             }
             if (hasRawMath(text)) {
-                const rendered = renderMathToHTML(text);
+                const rendered = await renderMathToHTML(text);
                 if (rendered !== text) {
                     modified = true;
                     return openTag + rendered + closeTag;
@@ -298,7 +303,7 @@ function processHTMLFile(filePath) {
         // Process within <h1>-<h6> tags
         content = content.replace(/(<h[1-6][^>]*>)([\s\S]*?)(<\/h[1-6]>)/g, function(match, openTag, text, closeTag) {
             if (hasRawMath(text) || hasRenderedMath(text)) {
-                const rendered = renderMathToHTML(text);
+                const rendered = await renderMathToHTML(text);
                 if (rendered !== text) {
                     modified = true;
                     return openTag + rendered + closeTag;
@@ -310,7 +315,7 @@ function processHTMLFile(filePath) {
         // Process within <li> tags
         content = content.replace(/(<li[^>]*>)([\s\S]*?)(<\/li>)/g, function(match, openTag, text, closeTag) {
             if (hasRawMath(text) || hasRenderedMath(text)) {
-                const rendered = renderMathToHTML(text);
+                const rendered = await renderMathToHTML(text);
                 if (rendered !== text) {
                     modified = true;
                     return openTag + rendered + closeTag;
@@ -324,7 +329,7 @@ function processHTMLFile(filePath) {
         content = content.replace(textNodesRegex, function(match) {
             if (!match || match.trim() === '') return match;
             if (hasRenderedMath(match)) {
-                const rendered = renderMathToHTML(match);
+                const rendered = await renderMathToHTML(match);
                 if (rendered !== match) {
                     modified = true;
                     return rendered;
@@ -332,7 +337,7 @@ function processHTMLFile(filePath) {
                 return match;
             }
             if (!hasRawMath(match)) return match;
-            const rendered = renderMathToHTML(match);
+            const rendered = await renderMathToHTML(match);
             if (rendered !== match) {
                 modified = true;
                 return rendered;
@@ -355,7 +360,7 @@ function processHTMLFile(filePath) {
 }
 
 // Recursively process all HTML files
-function processHTMLFiles(dir) {
+async function processHTMLFiles(dir) {
     console.log(`📁 Scanning: ${dir}`);
     
     const entries = fs.readdirSync(dir);
@@ -369,7 +374,7 @@ function processHTMLFiles(dir) {
         
         if (stat.isDirectory()) {
             if (!['node_modules', '.git', '.github'].includes(entry)) {
-                const result = processHTMLFiles(fullPath);
+                const result = await processHTMLFiles(fullPath);
                 processedCount += result.processed;
                 modifiedCount += result.modified;
                 skippedCount += result.skipped || 0;
@@ -391,7 +396,7 @@ function processHTMLFiles(dir) {
                 continue;
             }
             
-            const modified = processHTMLFile(fullPath);
+            const modified = await processHTMLFile(fullPath);
             if (modified) modifiedCount++;
         }
     }
