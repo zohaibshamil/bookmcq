@@ -1,17 +1,17 @@
 // pre-render-math.js
 const fs = require('fs');
 const path = require('path');
-const katex = require('katex');
+const mathjax = require('mathjax-full');
+const { AllPackages } = require('mathjax-full/js/input/tex/AllPackages.js');
 
 // ===== HELPER FUNCTIONS =====
 
 // Check if content already has rendered math
 function hasRenderedMath(text) {
-    return text.includes('class="katex"') || 
-           text.includes('class="katex-mathml"') ||
-           text.includes('katex-html') ||
-           text.includes('data-katex') ||
-           /class="[^"]*katex[^"]*"/.test(text);
+    return text.includes('class="mjx-") || 
+           text.includes('mathjax') ||
+           text.includes('MJX') ||
+           /data-mjx/.test(text);
 }
 
 // Check if text contains raw math delimiters
@@ -23,7 +23,7 @@ function hasRawMath(text) {
            /\\begin\{.*?\}/.test(text);
 }
 
-// Decode HTML entities for KaTeX processing
+// Decode HTML entities for MathJax processing
 function decodeHtmlEntities(text) {
     return text
         .replace(/&amp;/g, '&')
@@ -34,28 +34,72 @@ function decodeHtmlEntities(text) {
         .replace(/&nbsp;/g, ' ');
 }
 
-// ===== CRITICAL NEW FUNCTION: Clean KaTeX output =====
-function cleanKatexOutput(html) {
-    // Remove annotation tags containing raw LaTeX
-    html = html.replace(/<annotation[^>]*>.*?<\/annotation>/g, '');
+// ===== MATHJAX RENDERER =====
+
+let mathjaxInstance = null;
+let renderPromise = null;
+
+async function initMathJax() {
+    if (mathjaxInstance) return mathjaxInstance;
     
-    // Remove MathML if not needed (optional - keeps only HTML rendering)
-    // html = html.replace(/<math[^>]*>.*?<\/math>/g, '');
-    
-    // Remove extra whitespace
-    html = html.replace(/\s+/g, ' ').trim();
-    
-    return html;
+    try {
+        const MathJax = await mathjax.init({
+            loader: {
+                load: ['input/tex-full', 'output/svg']
+            },
+            tex: {
+                packages: AllPackages,
+                inlineMath: [
+                    ['$', '$'],
+                    ['\\(', '\\)']
+                ],
+                displayMath: [
+                    ['$$', '$$'],
+                    ['\\[', '\\]']
+                ],
+                processEscapes: true,
+                processEnvironments: true,
+                macros: {
+                    "R": "\\mathbb{R}",
+                    "N": "\\mathbb{N}",
+                    "Z": "\\mathbb{Z}",
+                    "Q": "\\mathbb{Q}",
+                    "C": "\\mathbb{C}"
+                }
+            },
+            svg: {
+                fontCache: 'global',
+                scale: 1,
+                minScale: 0.5,
+                mtextInheritFont: false,
+                merrorInheritFont: true,
+                mathmlSpacing: false,
+                skipAttributes: {},
+                exFactor: 6,
+                displayAlign: 'center',
+                displayIndent: '0'
+            },
+            options: {
+                skipHtmlTypes: 'script',
+                ignoreHtmlClass: 'no-mathjax',
+                processHtmlClass: 'mathjax'
+            }
+        });
+        
+        mathjaxInstance = MathJax;
+        return MathJax;
+    } catch (error) {
+        console.error('Failed to initialize MathJax:', error);
+        throw error;
+    }
 }
 
-// Render math using KaTeX with clean output
-function renderMathToHTML(text, displayMode = false) {
+async function renderMathToHTML(text, displayMode = false) {
     if (!text) return text;
     
     // Skip if already rendered
     if (hasRenderedMath(text)) {
-        // Clean any remaining annotation tags
-        return cleanKatexOutput(text);
+        return cleanMathJaxOutput(text);
     }
     
     // Decode HTML entities
@@ -65,26 +109,19 @@ function renderMathToHTML(text, displayMode = false) {
     if (!hasRawMath(decodedText)) return text;
     
     try {
+        const mathjax = await initMathJax();
         let processed = decodedText;
         
         // Process display math: $$...$$
         processed = processed.replace(/\$\$(.+?)\$\$/g, function(match, math) {
             try {
                 const cleanMath = math.trim();
-                let rendered = katex.renderToString(cleanMath, {
-                    throwOnError: false,
-                    displayMode: true,
-                    trust: true,
-                    macros: {
-                        "\\R": "\\mathbb{R}",
-                        "\\N": "\\mathbb{N}",
-                        "\\Z": "\\mathbb{Z}",
-                        "\\Q": "\\mathbb{Q}",
-                        "\\C": "\\mathbb{C}"
-                    }
-                });
-                // Clean the rendered output
-                return cleanKatexOutput(rendered);
+                // Wrap in display math delimiters
+                const tex = '\\[' + cleanMath + '\\]';
+                const rendered = mathjax.tex2svg(tex);
+                // Extract HTML from SVG
+                const svgHtml = extractSvgContent(rendered);
+                return cleanMathJaxOutput(svgHtml);
             } catch (e) {
                 return match;
             }
@@ -94,19 +131,10 @@ function renderMathToHTML(text, displayMode = false) {
         processed = processed.replace(/(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)/g, function(match, math) {
             try {
                 const cleanMath = math.trim();
-                let rendered = katex.renderToString(cleanMath, {
-                    throwOnError: false,
-                    displayMode: false,
-                    trust: true,
-                    macros: {
-                        "\\R": "\\mathbb{R}",
-                        "\\N": "\\mathbb{N}",
-                        "\\Z": "\\mathbb{Z}",
-                        "\\Q": "\\mathbb{Q}",
-                        "\\C": "\\mathbb{C}"
-                    }
-                });
-                return cleanKatexOutput(rendered);
+                const tex = '\\(' + cleanMath + '\\)';
+                const rendered = mathjax.tex2svg(tex);
+                const svgHtml = extractSvgContent(rendered);
+                return cleanMathJaxOutput(svgHtml);
             } catch (e) {
                 return match;
             }
@@ -116,19 +144,10 @@ function renderMathToHTML(text, displayMode = false) {
         processed = processed.replace(/\\\((.+?)\\\)/g, function(match, math) {
             try {
                 const cleanMath = math.trim();
-                let rendered = katex.renderToString(cleanMath, {
-                    throwOnError: false,
-                    displayMode: false,
-                    trust: true,
-                    macros: {
-                        "\\R": "\\mathbb{R}",
-                        "\\N": "\\mathbb{N}",
-                        "\\Z": "\\mathbb{Z}",
-                        "\\Q": "\\mathbb{Q}",
-                        "\\C": "\\mathbb{C}"
-                    }
-                });
-                return cleanKatexOutput(rendered);
+                const tex = '\\(' + cleanMath + '\\)';
+                const rendered = mathjax.tex2svg(tex);
+                const svgHtml = extractSvgContent(rendered);
+                return cleanMathJaxOutput(svgHtml);
             } catch (e) {
                 return match;
             }
@@ -138,19 +157,22 @@ function renderMathToHTML(text, displayMode = false) {
         processed = processed.replace(/\\\[(.+?)\\\]/g, function(match, math) {
             try {
                 const cleanMath = math.trim();
-                let rendered = katex.renderToString(cleanMath, {
-                    throwOnError: false,
-                    displayMode: true,
-                    trust: true,
-                    macros: {
-                        "\\R": "\\mathbb{R}",
-                        "\\N": "\\mathbb{N}",
-                        "\\Z": "\\mathbb{Z}",
-                        "\\Q": "\\mathbb{Q}",
-                        "\\C": "\\mathbb{C}"
-                    }
-                });
-                return cleanKatexOutput(rendered);
+                const tex = '\\[' + cleanMath + '\\]';
+                const rendered = mathjax.tex2svg(tex);
+                const svgHtml = extractSvgContent(rendered);
+                return cleanMathJaxOutput(svgHtml);
+            } catch (e) {
+                return match;
+            }
+        });
+        
+        // Process environments \begin{...}...\end{...}
+        processed = processed.replace(/\\begin\{([^}]+)\}([\s\S]*?)\\end\{\1\}/g, function(match, env, content) {
+            try {
+                const tex = '\\begin{' + env + '}' + content + '\\end{' + env + '}';
+                const rendered = mathjax.tex2svg(tex);
+                const svgHtml = extractSvgContent(rendered);
+                return cleanMathJaxOutput(svgHtml);
             } catch (e) {
                 return match;
             }
@@ -158,8 +180,49 @@ function renderMathToHTML(text, displayMode = false) {
         
         return processed;
     } catch (e) {
+        console.error('MathJax rendering error:', e);
         return text;
     }
+}
+
+function extractSvgContent(rendered) {
+    // Convert the SVG element to a string
+    if (typeof rendered === 'string') {
+        return rendered;
+    }
+    
+    // If it's a DOM element
+    if (rendered && rendered.outerHTML) {
+        return rendered.outerHTML;
+    }
+    
+    // If it's a node with toString method
+    if (rendered && rendered.toString) {
+        const str = rendered.toString();
+        if (str.includes('<svg')) {
+            return str;
+        }
+    }
+    
+    // Fallback: try to convert to string
+    return String(rendered);
+}
+
+function cleanMathJaxOutput(html) {
+    if (!html) return '';
+    
+    // Remove extra whitespace
+    html = html.replace(/\s+/g, ' ').trim();
+    
+    // Ensure SVG has proper styling
+    if (html.includes('<svg')) {
+        // Add standard MathJax classes if missing
+        if (!html.includes('class="mjx-')) {
+            html = html.replace('<svg', '<svg class="mjx-svg"');
+        }
+    }
+    
+    return html;
 }
 
 // ===== FILE PROCESSING =====
@@ -173,7 +236,7 @@ function processHTMLFile(filePath) {
         let modified = false;
         
         // Check if file has any math to process
-        if (!hasRawMath(content) && !content.includes('class="katex"')) {
+        if (!hasRawMath(content) && !hasRenderedMath(content)) {
             console.log('    ℹ️ No math found - skipping');
             return false;
         }
@@ -182,7 +245,7 @@ function processHTMLFile(filePath) {
         
         // Process within <p> tags
         content = content.replace(/(<p[^>]*>)([\s\S]*?)(<\/p>)/g, function(match, openTag, text, closeTag) {
-            if (hasRawMath(text) || text.includes('class="katex"')) {
+            if (hasRawMath(text) || hasRenderedMath(text)) {
                 const rendered = renderMathToHTML(text);
                 if (rendered !== text) {
                     modified = true;
@@ -194,7 +257,7 @@ function processHTMLFile(filePath) {
         
         // Process within <div> tags
         content = content.replace(/(<div[^>]*>)([\s\S]*?)(<\/div>)/g, function(match, openTag, text, closeTag) {
-            if (text.includes('class="math') || text.includes('class="katex"')) {
+            if (text.includes('class="math') || hasRenderedMath(text)) {
                 const rendered = renderMathToHTML(text);
                 if (rendered !== text) {
                     modified = true;
@@ -214,7 +277,7 @@ function processHTMLFile(filePath) {
         
         // Process within <span> tags
         content = content.replace(/(<span[^>]*>)([\s\S]*?)(<\/span>)/g, function(match, openTag, text, closeTag) {
-            if (text.includes('class="katex"')) {
+            if (hasRenderedMath(text)) {
                 const rendered = renderMathToHTML(text);
                 if (rendered !== text) {
                     modified = true;
@@ -234,7 +297,7 @@ function processHTMLFile(filePath) {
         
         // Process within <h1>-<h6> tags
         content = content.replace(/(<h[1-6][^>]*>)([\s\S]*?)(<\/h[1-6]>)/g, function(match, openTag, text, closeTag) {
-            if (hasRawMath(text) || text.includes('class="katex"')) {
+            if (hasRawMath(text) || hasRenderedMath(text)) {
                 const rendered = renderMathToHTML(text);
                 if (rendered !== text) {
                     modified = true;
@@ -246,7 +309,7 @@ function processHTMLFile(filePath) {
         
         // Process within <li> tags
         content = content.replace(/(<li[^>]*>)([\s\S]*?)(<\/li>)/g, function(match, openTag, text, closeTag) {
-            if (hasRawMath(text) || text.includes('class="katex"')) {
+            if (hasRawMath(text) || hasRenderedMath(text)) {
                 const rendered = renderMathToHTML(text);
                 if (rendered !== text) {
                     modified = true;
@@ -260,7 +323,7 @@ function processHTMLFile(filePath) {
         const textNodesRegex = /([^<>\n]*)(?=<|$)/g;
         content = content.replace(textNodesRegex, function(match) {
             if (!match || match.trim() === '') return match;
-            if (match.includes('class="katex"')) {
+            if (hasRenderedMath(match)) {
                 const rendered = renderMathToHTML(match);
                 if (rendered !== match) {
                     modified = true;
@@ -276,19 +339,6 @@ function processHTMLFile(filePath) {
             }
             return match;
         });
-        
-        // FINAL CLEANUP: Remove any remaining annotation tags
-        if (modified || content.includes('<annotation')) {
-            let cleaned = content;
-            cleaned = cleaned.replace(/<annotation[^>]*>.*?<\/annotation>/g, '');
-            // Also clean up any empty katex-mathml that might remain
-            cleaned = cleaned.replace(/<span class="katex-mathml"><\/span>/g, '');
-            
-            if (cleaned !== content) {
-                content = cleaned;
-                modified = true;
-            }
-        }
         
         if (modified) {
             fs.writeFileSync(filePath, content, 'utf-8');
@@ -331,7 +381,7 @@ function processHTMLFiles(dir) {
                 const content = fs.readFileSync(fullPath, 'utf-8');
                 
                 // Skip if no math at all
-                if (!hasRawMath(content) && !content.includes('class="katex"')) {
+                if (!hasRawMath(content) && !hasRenderedMath(content)) {
                     console.log(`  ℹ️ Skipping ${entry} (no math)`);
                     skippedCount++;
                     continue;
@@ -351,13 +401,16 @@ function processHTMLFiles(dir) {
 
 // ===== MAIN =====
 
-function main() {
-    console.log('🚀 Starting math pre-rendering with KaTeX (Catax)');
-    console.log(`📦 KaTeX version: ${katex.version}`);
+async function main() {
+    console.log('🚀 Starting math pre-rendering with MathJax v3.2');
     console.log('📁 Processing all HTML files...\n');
     
     try {
-        const result = processHTMLFiles('./');
+        // Initialize MathJax first
+        console.log('⚙️ Initializing MathJax...');
+        await initMathJax();
+        
+        const result = await processHTMLFiles('./');
         
         console.log('\n' + '='.repeat(50));
         console.log('✅ Math pre-rendering complete!');
@@ -365,7 +418,7 @@ function main() {
         console.log(`📊 Total files processed: ${result.processed}`);
         console.log(`📝 Files modified: ${result.modified}`);
         console.log(`⏭️ Files skipped: ${result.skipped}`);
-        console.log(`💡 Rendering engine: KaTeX v${katex.version} (Catax)`);
+        console.log(`💡 Rendering engine: MathJax v3.2`);
         console.log('='.repeat(50));
     } catch (error) {
         console.error('\n❌ Error:', error);
