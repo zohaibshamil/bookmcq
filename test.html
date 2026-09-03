@@ -1099,6 +1099,21 @@
             flex: 1;
             min-width: 120px;
         }
+.deploy-status-waiting {
+    color: #f59e0b !important;
+    font-weight: 600;
+}
+
+.deploy-status-countdown {
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    background: #1e293b;
+    color: #fbbf24;
+    padding: 4px 12px;
+    border-radius: 6px;
+    display: inline-block;
+}
+     
      /* Deploy Book Preview Styles */
 #deployBookPreview {
     transition: all 0.3s ease;
@@ -10489,7 +10504,7 @@ document.getElementById('deployBookSelector')?.addEventListener('change', async 
     }
 });
 
-// Deploy entire book
+// ============ DEPLOY ENTIRE BOOK (BATCHED WITH 5-MINUTE DELAY) ============
 async function deployEntireBook() {
     const select = document.getElementById('deployBookSelector');
     const bookId = select.value;
@@ -10504,7 +10519,6 @@ async function deployEntireBook() {
     const config = getGitHubConfig();
     if (!config) return;
     
-    // Get book details from preview data
     if (!deployBookPreviewData || deployBookPreviewData.bookId !== parseInt(bookId)) {
         showToast('Please wait for preview to load', true);
         return;
@@ -10513,12 +10527,24 @@ async function deployEntireBook() {
     const bookTitle = deployBookPreviewData.bookTitle;
     const totalFiles = deployBookPreviewData.totalFiles;
     
-    // Confirmation
-    if (!confirm(`📚 Deploy Entire Book: "${bookTitle}"\n\nThis will deploy:\n• 1 book index page\n• ${deployBookPreviewData.chapterCount} chapter pages\n• ${deployBookPreviewData.topicCount} topic pages\n\nTotal: ${totalFiles} files\n\nThis will create ONE commit with all files.\n\nContinue?`)) {
-        return;
+    // Confirmation with warning about large books
+    let confirmMsg = `📚 Deploy Entire Book: "${bookTitle}"\n\n`;
+    confirmMsg += `This will deploy:\n• 1 book index page\n• ${deployBookPreviewData.chapterCount} chapter pages\n• ${deployBookPreviewData.topicCount} topic pages\n\n`;
+    confirmMsg += `Total: ${totalFiles} files\n\n`;
+    
+    // Warn about large books
+    if (totalFiles > 100) {
+        const batches = Math.ceil(totalFiles / 300);
+        confirmMsg += `⚠️ This is a large book (${totalFiles} files).\n`;
+        confirmMsg += `Files will be deployed in ${batches} batches of 300 files each.\n`;
+        confirmMsg += `⏱️ There will be a 5-minute delay between each batch.\n`;
+        confirmMsg += `Estimated total time: ~${batches * 5} minutes.\n\n`;
     }
     
-    // Disable button and show status
+    confirmMsg += `Continue?`;
+    
+    if (!confirm(confirmMsg)) return;
+    
     deployBtn.disabled = true;
     deployBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
     statusEl.textContent = '⏳ Generating pages...';
@@ -10581,7 +10607,7 @@ async function deployEntireBook() {
         statusEl.textContent = '⏳ Generating pages...';
         deployBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
         
-        const files = [];
+        const allFiles = [];
         const bookSlug = book.slug || createSlug(book.title);
         let fileCount = 0;
         
@@ -10601,7 +10627,7 @@ async function deployEntireBook() {
         });
         
         const bookIndexHtml = generateBookIndexPage(book, chapters, topics, {}, allQuestions.length, chapterQCounts, bookStats);
-        files.push({ path: `books/${bookSlug}/index.html`, content: bookIndexHtml });
+        allFiles.push({ path: `books/${bookSlug}/index.html`, content: bookIndexHtml });
         fileCount++;
         
         // 6b. Generate chapter pages
@@ -10619,7 +10645,7 @@ async function deployEntireBook() {
             });
             
             const chapterHtml = generateChapterPage(book, chapter, chapterTopics, chapterQuestions, chapterStats, optionsMap);
-            files.push({ path: `books/${bookSlug}/${chapterSlug}.html`, content: chapterHtml });
+            allFiles.push({ path: `books/${bookSlug}/${chapterSlug}.html`, content: chapterHtml });
             fileCount++;
             
             if (fileCount % 10 === 0) {
@@ -10647,7 +10673,7 @@ async function deployEntireBook() {
             });
             
             const topicHtml = generateTopicPage(book, chapter, topic, topicQuestions, topicStats, allBookTopics, optionsMap);
-            files.push({ path: `books/${bookSlug}/${chapterSlug}/topics/${topicSlug}.html`, content: topicHtml });
+            allFiles.push({ path: `books/${bookSlug}/${chapterSlug}/topics/${topicSlug}.html`, content: topicHtml });
             fileCount++;
             
             if (fileCount % 10 === 0) {
@@ -10656,28 +10682,105 @@ async function deployEntireBook() {
         }
         
         addDeployLog(`✅ Generated ${fileCount} files total`, 'success');
-        statusEl.textContent = `⏳ Committing ${fileCount} files...`;
+        
+        // ====== BATCH COMMIT WITH 300 FILES PER BATCH AND 5-MINUTE DELAY ======
+        const BATCH_SIZE = 300;
+        const DELAY_MS = 5 * 60 * 1000; // 5 minutes in milliseconds
+        
+        let successCount = 0;
+        let failCount = 0;
+        let totalCommitted = 0;
+        const totalBatches = Math.ceil(allFiles.length / BATCH_SIZE);
+        
+        statusEl.textContent = `⏳ Committing ${fileCount} files in batches of ${BATCH_SIZE}...`;
         deployBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Committing...';
         
-        // 7. Commit to GitHub
-        const result = await commitToGitHub(files, config);
-        
-        if (result.success) {
-            addDeployLog(`✅ Successfully deployed "${bookTitle}" (${fileCount} files)`, 'success');
-            statusEl.textContent = `✅ Done! ${fileCount} files deployed`;
-            statusEl.style.color = '#16a34a';
-            showToast(`✅ "${bookTitle}" deployed successfully! (${fileCount} files)`);
-            deployBtn.innerHTML = '<i class="fas fa-check-circle"></i> Done!';
+        // Process in batches
+        for (let i = 0; i < allFiles.length; i += BATCH_SIZE) {
+            const batch = allFiles.slice(i, i + BATCH_SIZE);
+            const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
             
-            // Reset after 3 seconds
-            setTimeout(() => {
-                deployBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Deploy Book';
-                deployBtn.disabled = false;
-            }, 3000);
+            addDeployLog(`📦 Committing batch ${batchNumber}/${totalBatches} (${batch.length} files)...`, 'info');
+            statusEl.textContent = `⏳ Committing batch ${batchNumber}/${totalBatches} (${batch.length} files)...`;
             
-        } else {
-            throw new Error(result.message || 'Commit failed');
+            const result = await commitToGitHub(batch, config);
+            
+            if (result.success) {
+                successCount++;
+                totalCommitted += result.fileCount;
+                addDeployLog(`✅ Batch ${batchNumber} committed successfully (${result.fileCount} files)`, 'success');
+                statusEl.textContent = `✅ Batch ${batchNumber}/${totalBatches} done (${totalCommitted} files so far)`;
+                statusEl.style.color = '#16a34a';
+            } else {
+                failCount++;
+                addDeployLog(`❌ Batch ${batchNumber} failed: ${result.message}`, 'error');
+                statusEl.textContent = `❌ Batch ${batchNumber} failed: ${result.message}`;
+                statusEl.style.color = '#dc2626';
+                
+                // Ask user if they want to continue
+                if (batchNumber < totalBatches) {
+                    const retry = confirm(`Batch ${batchNumber} failed: ${result.message}\n\nContinue with remaining batches?`);
+                    if (!retry) {
+                        throw new Error(`Stopped at batch ${batchNumber}. ${successCount} batches succeeded, ${failCount} failed.`);
+                    }
+                }
+            }
+            
+            // ====== 5-MINUTE DELAY BETWEEN BATCHES ======
+            if (i + BATCH_SIZE < allFiles.length) {
+                const nextBatchNumber = batchNumber + 1;
+                addDeployLog(`⏱️ Waiting 5 minutes before batch ${nextBatchNumber}/${totalBatches}...`, 'warning');
+                statusEl.textContent = `⏱️ Waiting 5 minutes before batch ${nextBatchNumber}/${totalBatches}...`;
+                statusEl.style.color = '#f59e0b';
+                
+                // Show countdown
+                let remainingSeconds = 300; // 5 minutes
+                const countdownInterval = setInterval(() => {
+                    const minutes = Math.floor(remainingSeconds / 60);
+                    const seconds = remainingSeconds % 60;
+                    statusEl.textContent = `⏱️ Waiting ${minutes}m ${seconds}s before batch ${nextBatchNumber}/${totalBatches}...`;
+                    remainingSeconds--;
+                    if (remainingSeconds < 0) {
+                        clearInterval(countdownInterval);
+                    }
+                }, 1000);
+                
+                // Wait for 5 minutes
+                await new Promise(r => setTimeout(r, DELAY_MS));
+                clearInterval(countdownInterval);
+                
+                addDeployLog(`✅ Wait complete. Starting batch ${nextBatchNumber}/${totalBatches}...`, 'info');
+                statusEl.textContent = `⏳ Starting batch ${nextBatchNumber}/${totalBatches}...`;
+                statusEl.style.color = '#6b7280';
+            }
         }
+        
+        // ====== Summary ======
+        if (failCount === 0) {
+            addDeployLog(`✅ SUCCESS: All ${totalCommitted} files deployed successfully in ${successCount} batches!`, 'success');
+            statusEl.textContent = `✅ Done! ${totalCommitted} files deployed in ${successCount} batches`;
+            statusEl.style.color = '#16a34a';
+            showToast(`✅ "${bookTitle}" deployed successfully! (${totalCommitted} files in ${successCount} batches)`);
+            deployBtn.innerHTML = '<i class="fas fa-check-circle"></i> Done!';
+        } else if (successCount > 0) {
+            addDeployLog(`⚠️ Partial success: ${totalCommitted} files deployed, ${failCount} batches failed`, 'warning');
+            statusEl.textContent = `⚠️ ${totalCommitted} files deployed, ${failCount} batches failed`;
+            statusEl.style.color = '#f59e0b';
+            showToast(`⚠️ ${totalCommitted} files deployed, ${failCount} batches failed`, true);
+            deployBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Partial';
+        } else {
+            addDeployLog(`❌ All ${failCount} batches failed!`, 'error');
+            statusEl.textContent = `❌ All batches failed`;
+            statusEl.style.color = '#dc2626';
+            showToast(`❌ All batches failed!`, true);
+            deployBtn.innerHTML = '<i class="fas fa-times-circle"></i> Failed';
+        }
+        
+        // Reset after 5 seconds
+        setTimeout(() => {
+            deployBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Deploy Book';
+            deployBtn.disabled = false;
+        }, 5000);
         
     } catch (error) {
         console.error('Deploy book error:', error);
@@ -10689,7 +10792,6 @@ async function deployEntireBook() {
         deployBtn.disabled = false;
     }
 }
-
 // Event listener for Deploy Book button
 document.getElementById('deployBookBtn')?.addEventListener('click', deployEntireBook);
 
