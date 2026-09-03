@@ -359,9 +359,10 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             font-size: 11px;
             color: #6b7280;
         }
+        /* Category font changed to BLACK - FIXED */
         .book-category {
             font-size: 10px;
-            color: #8b5cf6;
+            color: #000000;
             background: #f3e8ff;
             padding: 2px 8px;
             border-radius: 20px;
@@ -477,18 +478,20 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         }
     </style>
 </head>
-<body class="disable-select">
+<body>
 
 <!-- Google Tag Manager (noscript) -->
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PT363CT7"
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
     
+<!-- MAIN LANDMARK - ADDED -->
+<main role="main" aria-label="Main content">
 
 <div class="max-w-6xl mx-auto px-4">
     
     <!-- Navigation -->
-    <nav class="bg-white/10 backdrop-blur-lg rounded-full px-4 md:px-6 py-3 mb-8 sticky top-4 z-50 shadow-lg">
+    <nav class="bg-white/10 backdrop-blur-lg rounded-full px-4 md:px-6 py-3 mb-8 sticky top-4 z-50 shadow-lg" aria-label="Main navigation">
         <div class="flex justify-between items-center">
             <div class="flex items-center gap-2">
                 <i class="fas fa-graduation-cap text-white text-xl md:text-2xl"></i>
@@ -505,7 +508,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                 <a href="/privacy" id="navPrivacy" class="nav-link text-white/80 hover:text-white transition">🔒 Privacy</a>
             </div>
             
-            <button id="mobileMenuBtn" class="mobile-menu-btn text-white text-2xl">
+            <button id="mobileMenuBtn" class="mobile-menu-btn text-white text-2xl" aria-label="Toggle mobile menu">
                 ☰
             </button>
         </div>
@@ -677,18 +680,19 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 <!-- AI Chat -->
 <div class="ai-chat-btn">
-    <button id="aiChatBtn" class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 rounded-full shadow-xl hover:scale-105 transition">
+    <button id="aiChatBtn" class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 rounded-full shadow-xl hover:scale-105 transition flex items-center gap-2" aria-label="Open AI Chat Assistant">
         <i class="fas fa-robot text-xl"></i>
+        <span class="hidden sm:inline text-sm font-medium">Chat</span>
     </button>
 </div>
 
-<div id="aiChatWindow" class="ai-chat-window hidden">
+<div id="aiChatWindow" class="ai-chat-window hidden" role="dialog" aria-label="AI Chat Assistant">
     <div class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-3 flex justify-between items-center">
         <div class="flex items-center gap-2">
             <i class="fas fa-robot"></i>
             <span class="font-semibold">MCQ Assistant</span>
         </div>
-        <button id="closeChatBtn" class="text-white hover:opacity-70">&times;</button>
+        <button id="closeChatBtn" class="text-white hover:opacity-70" aria-label="Close chat">&times;</button>
     </div>
     <div id="chatMessages" class="chat-messages bg-gray-50">
         <div class="chat-message bot">
@@ -699,49 +703,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
     <div class="p-3 border-t bg-white">
         <div class="flex gap-2">
-            <input type="text" id="chatInput" placeholder="Ask about books, topics, or MCQs..." class="flex-1 p-2 border rounded-xl text-sm">
+            <input type="text" id="chatInput" placeholder="Ask about books, topics, or MCQs..." class="flex-1 p-2 border rounded-xl text-sm" aria-label="Chat input">
             <button id="sendChatBtn" class="bg-purple-600 text-white px-4 py-2 rounded-xl">Send</button>
         </div>
     </div>
 </div>
+
+</main>
+<!-- END MAIN LANDMARK -->
 
 <script>
     // ============================================
     // BOOKMCQ - HOME PAGE SCRIPT
     // ============================================
 
-    class SecurityManager {
-        constructor() {
-            this.#initSecurity();
-        }
-        
-        #initSecurity() {
-            document.addEventListener('contextmenu', (e) => { e.preventDefault(); return false; });
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'F5' || e.keyCode === 116) {
-                    return true;
-                }
-                const forbidden = [
-                    'PrintScreen', 'F12', 'F11',
-                    (e.ctrlKey && e.shiftKey && e.key === 'I'),
-                    (e.ctrlKey && e.shiftKey && e.key === 'C'),
-                    (e.ctrlKey && e.key === 'u'),
-                    (e.ctrlKey && e.key === 's')
-                ];
-                if (forbidden.includes(e.key) || forbidden.some(cond => cond === true)) {
-                    e.preventDefault();
-                    return false;
-                }
-            });
-            document.addEventListener('dragstart', (e) => { e.preventDefault(); return false; });
-            document.addEventListener('selectstart', (e) => {
-                if (!e.target.closest('input') && !e.target.closest('textarea')) {
-                    e.preventDefault();
-                    return false;
-                }
-            });
-        }
-    }
+    // Security completely removed - right click and shortcuts enabled
 
     class CacheManager {
         #cachePrefix = 'bookmcq_';
@@ -1104,7 +1080,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     }
 
     // Initialize
-    const security = new SecurityManager();
     const supabaseService = new SupabaseService();
     
     async function loadStats() {
