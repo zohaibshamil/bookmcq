@@ -96,8 +96,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Supabase JS -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Custom Styles -->
     <link rel="stylesheet" href="styles.css">
     
@@ -819,158 +817,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
     // Security completely removed - right click and shortcuts enabled
 
-    class CacheManager {
-        #cachePrefix = 'bookmcq_';
-        #ttl = 3600000;
-        set(key, data, ttl = this.#ttl) {
-            try {
-                localStorage.setItem(this.#cachePrefix + key, JSON.stringify({ data, timestamp: Date.now(), ttl }));
-                return true;
-            } catch(e) { return false; }
-        }
-        get(key) {
-            try {
-                const item = localStorage.getItem(this.#cachePrefix + key);
-                if (!item) return null;
-                const parsed = JSON.parse(item);
-                if (Date.now() - parsed.timestamp > parsed.ttl) { this.remove(key); return null; }
-                return parsed.data;
-            } catch(e) { return null; }
-        }
-        remove(key) { localStorage.removeItem(this.#cachePrefix + key); }
-    }
-
-    class SupabaseService {
-        #supabase;
-        #cache;
-        #url = 'https://wnsuuazwcxmuwqyphvse.supabase.co';
-        #key = 'sb_publishable_qsQzf3RycZtO8Uj1hd3mcg_jaX6iQ9C';
-        constructor() {
-            this.#cache = new CacheManager();
-            this.#supabase = window.supabase.createClient(this.#url, this.#key);
-        }
-        async getBooks() {
-            // DISABLED: Returning empty array because data is now static
-            return [];
-        }
-        async getStats() {
-            // DISABLED: Returning static stats because data is now static
-            return { books: 8, questions: 59575 };
-        }
-        async getCategories() {
-            // DISABLED: Returning empty array because data is now static
-            return [];
-        }
-        async getSubjects() {
-            // DISABLED: Returning empty array because data is now static
-            return [];
-        }
-    }
-
-    class AIChatManager {
-        #supabaseService;
-        constructor(supabaseService) {
-            this.#supabaseService = supabaseService;
-        }
-        async processQuery(query) {
-            const lowerQuery = query.toLowerCase();
-            let response = '';
-            if (lowerQuery.includes('book') || lowerQuery.includes('available')) {
-                response = `📚 We have 8 books available. Some of them include: An Introduction To Microprocessor 8085, Calculus, Campbell Biology, Data Communication and Networks, and more. You can practice MCQs from any of these books.`;
-            } else if (lowerQuery.includes('question') || lowerQuery.includes('mcq')) {
-                response = `🔍 You can find MCQs in the Quiz and Practice sections. Select a book and topic to get started!`;
-            } else if (lowerQuery.includes('request') || lowerQuery.includes('add book')) {
-                response = "📖 Want to request a book? Go to the Contact page and select 'Book Request' from the dropdown. Tell us the book title and author, and we'll add it within 48 hours!";
-            } else if (lowerQuery.includes('job') || lowerQuery.includes('government') || lowerQuery.includes('private') || lowerQuery.includes('css') || lowerQuery.includes('pps') || lowerQuery.includes('upsc')) {
-                response = "💼 We offer comprehensive preparation for government jobs (CSS, PMS, UPSC, FPSC, PPSC, SPSC, BPSC), private jobs (Banking, IT, Management), and competitive exams. Practice subject-wise MCQs to ace your tests!";
-            } else {
-                response = `I can help you find books and MCQs. Try asking: "What books are available?" or "How to request a book?" or "How to prepare for government jobs?"`;
-            }
-            return response;
-        }
-    }
-
-    class CategoryBooksManager {
-        #supabaseService;
-        #booksData = [];
-        #categoriesData = [];
-        
-        constructor(supabaseService) {
-            this.#supabaseService = supabaseService;
-        }
-        
-        async loadBooks() {
-            // DISABLED: Using static data
-            this.#booksData = [
-                { title: 'An Introduction To Microprocessor 8085', category: 'Computer Science' },
-                { title: 'Calculus', category: 'Mathematics' },
-                { title: 'Campbell Biology', category: 'Biology' },
-                { title: 'Data Communication and Networks', category: 'Computer Science' },
-                { title: 'Digital SAT Algebra', category: 'Digital SAT' },
-                { title: 'Operating System', category: 'Computer Science' },
-                { title: 'Principles of Biochemistry', category: 'Biology' },
-                { title: 'World History: Modern', category: 'History' }
-            ];
-            return this.#booksData;
-        }
-        
-        async loadCategories() {
-            // DISABLED: Using static data
-            this.#categoriesData = [
-                { name: 'Biology' },
-                { name: 'Computer Science' },
-                { name: 'Digital SAT' },
-                { name: 'History' },
-                { name: 'Mathematics' }
-            ];
-            return this.#categoriesData;
-        }
-        
-        getCategoryIcon(categoryName) {
-            const name = categoryName.toLowerCase();
-            if (name.includes('computer') || name.includes('programming') || name.includes('coding') || name.includes('science')) return '💻';
-            if (name.includes('web') || name.includes('html') || name.includes('css') || name.includes('react')) return '🌐';
-            if (name.includes('data') || name.includes('machine') || name.includes('ai')) return '📊';
-            if (name.includes('interview') || name.includes('prep') || name.includes('placement')) return '🎯';
-            if (name.includes('math') || name.includes('mathematics')) return '📐';
-            if (name.includes('physics') || name.includes('chemistry') || name.includes('biology')) return '🔬';
-            if (name.includes('business') || name.includes('management')) return '💼';
-            if (name.includes('language') || name.includes('english')) return '📖';
-            if (name.includes('general') || name.includes('gk') || name.includes('current')) return '🌍';
-            return '📚';
-        }
-        
-        getBooksByCategory(categoryName) {
-            if (categoryName === 'all') {
-                return this.#booksData;
-            }
-            return this.#booksData.filter(book => {
-                return book.category && book.category.toLowerCase() === categoryName.toLowerCase();
-            });
-        }
-        
-        renderCategories(containerId, onCategoryClick) {
-            // This is now a no-op since categories are static in HTML
-            // We keep it to avoid errors
-            const container = document.getElementById(containerId);
-            if (!container) return;
-            // Do nothing, static HTML is already rendered
-        }
-        
-        displayBooks(books, containerId) {
-            // This is now a no-op since books are static in HTML
-            // We keep it to avoid errors
-            const container = document.getElementById(containerId);
-            if (!container) return;
-            // Do nothing, static HTML is already rendered
-        }
-        
-        #escapeHtml(str) {
-            if (!str) return '';
-            return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;');
-        }
-    }
-
     function initMobileMenu() {
         const mobileBtn = document.getElementById('mobileMenuBtn');
         const dropdown = document.getElementById('mobileDropdown');
@@ -1014,10 +860,41 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         });
     }
     
-    async function initCategoryFilters(supabaseService) {
+    function initCategoryFilters() {
         // Category filter functionality for static categories
-        const categoryBooksManager = new CategoryBooksManager(supabaseService);
-        await categoryBooksManager.loadBooks();
+        const booksData = [
+            { title: 'An Introduction To Microprocessor 8085', category: 'Computer Science' },
+            { title: 'Calculus', category: 'Mathematics' },
+            { title: 'Campbell Biology', category: 'Biology' },
+            { title: 'Data Communication and Networks', category: 'Computer Science' },
+            { title: 'Digital SAT Algebra', category: 'Digital SAT' },
+            { title: 'Operating System', category: 'Computer Science' },
+            { title: 'Principles of Biochemistry', category: 'Biology' },
+            { title: 'World History: Modern', category: 'History' }
+        ];
+        
+        function getCategoryIcon(categoryName) {
+            const name = categoryName.toLowerCase();
+            if (name.includes('computer') || name.includes('programming') || name.includes('coding') || name.includes('science')) return '💻';
+            if (name.includes('web') || name.includes('html') || name.includes('css') || name.includes('react')) return '🌐';
+            if (name.includes('data') || name.includes('machine') || name.includes('ai')) return '📊';
+            if (name.includes('interview') || name.includes('prep') || name.includes('placement')) return '🎯';
+            if (name.includes('math') || name.includes('mathematics')) return '📐';
+            if (name.includes('physics') || name.includes('chemistry') || name.includes('biology')) return '🔬';
+            if (name.includes('business') || name.includes('management')) return '💼';
+            if (name.includes('language') || name.includes('english')) return '📖';
+            if (name.includes('general') || name.includes('gk') || name.includes('current')) return '🌍';
+            return '📚';
+        }
+        
+        function getBooksByCategory(categoryName) {
+            if (categoryName === 'all') {
+                return booksData;
+            }
+            return booksData.filter(book => {
+                return book.category && book.category.toLowerCase() === categoryName.toLowerCase();
+            });
+        }
         
         // Add click handlers to static category buttons
         const buttons = document.querySelectorAll('.category-filter-btn');
@@ -1034,7 +911,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                 this.classList.remove('bg-purple-100', 'text-purple-700');
                 
                 // Filter and display books
-                const filteredBooks = categoryBooksManager.getBooksByCategory(categoryName);
+                const filteredBooks = getBooksByCategory(categoryName);
                 const container = document.getElementById('booksByCategory');
                 if (container) {
                     if (filteredBooks.length === 0) {
@@ -1042,7 +919,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                     } else {
                         let html = '<div class="books-grid">';
                         filteredBooks.forEach((book, index) => {
-                            const categoryIcon = categoryBooksManager.getCategoryIcon(book.category);
+                            const categoryIcon = getCategoryIcon(book.category);
                             html += `
                                 <div class="book-list-item" onclick="window.location.href='/quiz'">
                                     <div class="book-info">
@@ -1085,16 +962,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         }
     }
 
-    async function updateDynamicSEO(supabaseService) {
-        // Static subjects
-        const subjectsElement = document.getElementById('dynamicSubjectsText');
-        if (subjectsElement) {
-            subjectsElement.innerHTML = '📚 Available Subjects: Biology, Computer Science, Digital SAT, History, Mathematics';
-        }
-    }
-
-    async function setupAIChat(supabaseService) {
-        const chatManager = new AIChatManager(supabaseService);
+    function setupAIChat() {
         const chatBtn = document.getElementById('aiChatBtn');
         const chatWindow = document.getElementById('aiChatWindow');
         const closeChatBtn = document.getElementById('closeChatBtn');
@@ -1124,13 +992,30 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         
         const removeTyping = () => { const typing = document.getElementById('typingIndicator'); if (typing) typing.remove(); };
         
+        const processQuery = (query) => {
+            const lowerQuery = query.toLowerCase();
+            let response = '';
+            if (lowerQuery.includes('book') || lowerQuery.includes('available')) {
+                response = `📚 We have 8 books available. Some of them include: An Introduction To Microprocessor 8085, Calculus, Campbell Biology, Data Communication and Networks, and more. You can practice MCQs from any of these books.`;
+            } else if (lowerQuery.includes('question') || lowerQuery.includes('mcq')) {
+                response = `🔍 You can find MCQs in the Quiz and Practice sections. Select a book and topic to get started!`;
+            } else if (lowerQuery.includes('request') || lowerQuery.includes('add book')) {
+                response = "📖 Want to request a book? Go to the Contact page and select 'Book Request' from the dropdown. Tell us the book title and author, and we'll add it within 48 hours!";
+            } else if (lowerQuery.includes('job') || lowerQuery.includes('government') || lowerQuery.includes('private') || lowerQuery.includes('css') || lowerQuery.includes('pps') || lowerQuery.includes('upsc')) {
+                response = "💼 We offer comprehensive preparation for government jobs (CSS, PMS, UPSC, FPSC, PPSC, SPSC, BPSC), private jobs (Banking, IT, Management), and competitive exams. Practice subject-wise MCQs to ace your tests!";
+            } else {
+                response = `I can help you find books and MCQs. Try asking: "What books are available?" or "How to request a book?" or "How to prepare for government jobs?"`;
+            }
+            return response;
+        };
+        
         const sendMessage = async () => {
             const message = chatInput.value.trim();
             if (!message) return;
             addMessage(message, true);
             chatInput.value = '';
             showTyping();
-            const response = await chatManager.processQuery(message);
+            const response = processQuery(message);
             removeTyping();
             addMessage(response, false);
         };
@@ -1140,19 +1025,18 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     }
 
     // Initialize
-    const supabaseService = new SupabaseService();
-    
-    function loadStats() {
-        // Static stats already in HTML, nothing to do
-        // But we keep the function for compatibility
+    function updateDynamicSubjects() {
+        const subjectsElement = document.getElementById('dynamicSubjectsText');
+        if (subjectsElement) {
+            subjectsElement.innerHTML = '📚 Available Subjects: Biology, Computer Science, Digital SAT, History, Mathematics';
+        }
     }
     
-    loadStats();
-    setupAIChat(supabaseService);
+    updateDynamicSubjects();
+    setupAIChat();
     initNavbarScroll();
-    initCategoryFilters(supabaseService);
+    initCategoryFilters();
     setupStatsCardHandlers();
-    updateDynamicSEO(supabaseService);
     initMobileMenu();
 </script>
 </body>
