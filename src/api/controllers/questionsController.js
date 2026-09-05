@@ -1,6 +1,4 @@
-// src/api/controllers/questionsController.js
 const { supabase } = require('../../config/supabase');
-const cacheManager = require('../../utils/cacheManager');
 
 exports.getQuestions = async (req, res) => {
     try {
@@ -9,8 +7,7 @@ exports.getQuestions = async (req, res) => {
             page = 1, 
             pageSize = 10,
             difficulty = '',
-            topicId = null,
-            random = false
+            topicId = null
         } = req.query;
         
         if (!chapterId) {
@@ -21,17 +18,6 @@ exports.getQuestions = async (req, res) => {
         const parsedPageSize = parseInt(pageSize);
         const isAll = parsedPageSize === 0;
         
-        // Build cache key
-        const cacheKey = `questions_chapter_${chapterId}_${parsedPage}_${parsedPageSize}_${difficulty}_${topicId || 'all'}`;
-        
-        // Check cache for non-random requests
-        if (!random) {
-            const cached = cacheManager.get(cacheKey);
-            if (cached) {
-                return res.json(cached);
-            }
-        }
-
         let query = supabase
             .from('questions')
             .select(`
@@ -55,14 +41,8 @@ exports.getQuestions = async (req, res) => {
             query = query.eq('difficulty', difficulty);
         }
 
-        // Random ordering if requested
-        if (random) {
-            query = query.order('id'); // Supabase doesn't support random() in JS client
-        } else {
-            query = query.order('id');
-        }
+        query = query.order('id');
 
-        // Handle pagination or all
         let data, error, count;
         
         if (isAll) {
@@ -127,11 +107,6 @@ exports.getQuestions = async (req, res) => {
             totalPages: isAll ? 1 : Math.ceil((count || 0) / parsedPageSize)
         };
 
-        // Cache only non-random requests
-        if (!random) {
-            cacheManager.set(cacheKey, result, CACHE_TTL);
-        }
-
         res.json(result);
     } catch (error) {
         console.error('Error in getQuestions:', error);
@@ -142,13 +117,7 @@ exports.getQuestions = async (req, res) => {
 exports.getQuestionById = async (req, res) => {
     try {
         const { id } = req.params;
-        const cacheKey = `question_${id}`;
         
-        const cached = cacheManager.get(cacheKey);
-        if (cached) {
-            return res.json(cached);
-        }
-
         const { data, error } = await supabase
             .from('questions')
             .select(`
@@ -164,7 +133,6 @@ exports.getQuestionById = async (req, res) => {
             if (error.code === 'PGRST116') {
                 return res.status(404).json({ error: 'Question not found' });
             }
-            console.error('Supabase error:', error);
             return res.status(500).json({ error: 'Failed to fetch question' });
         }
 
@@ -180,7 +148,6 @@ exports.getQuestionById = async (req, res) => {
             options: optionsData || []
         };
 
-        cacheManager.set(cacheKey, question, CACHE_TTL);
         res.json(question);
     } catch (error) {
         console.error('Error in getQuestionById:', error);
