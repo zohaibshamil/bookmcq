@@ -1,4 +1,3 @@
-// server.js
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -19,11 +18,11 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(helmet({
-    contentSecurityPolicy: false, // Disable for MathJax
+    contentSecurityPolicy: false,
 }));
 app.use(compression());
 app.use(cors({
-    origin: ['http://localhost:3000', 'https://www.bookmcq.com'],
+    origin: ['http://localhost:3000', 'http://localhost:5500', 'https://www.bookmcq.com'],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
@@ -39,47 +38,27 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// Serve static files
-app.use(express.static(path.join(__dirname, 'public')));
-
 // API routes
 app.use('/api/books', booksRoutes);
 app.use('/api/chapters', chaptersRoutes);
 app.use('/api/topics', topicsRoutes);
 app.use('/api/questions', questionsRoutes);
 
-// Health check endpoint
+// Health check
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Catch-all route to serve HTML pages
-app.get('*', (req, res) => {
-    const filePath = path.join(__dirname, 'public', req.path);
-    // Check if it's a known HTML file
-    const htmlFiles = ['practice.html', 'index.html', 'quiz.html', 'topics.html', 'contact.html', 'privacy.html'];
-    const requestedFile = req.path === '/' ? 'index.html' : req.path;
-    
-    if (htmlFiles.includes(requestedFile)) {
-        res.sendFile(path.join(__dirname, 'public', requestedFile));
-    } else if (req.path.startsWith('/assets/') || req.path.startsWith('/styles.css')) {
-        res.sendFile(filePath);
-    } else {
-        // Default to index.html for SPA-like behavior
-        res.sendFile(path.join(__dirname, 'public', 'index.html'));
-    }
-});
-
-// Error handling middleware
+// Error handling
 app.use((err, req, res, next) => {
     console.error('Error:', err);
-    res.status(500).json({ 
+    res.status(500).json({
         error: 'Internal server error',
         message: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
 });
 
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Environment: ${process.env.NODE_ENV}`);
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(`📚 API available at http://localhost:${PORT}/api`);
 });
