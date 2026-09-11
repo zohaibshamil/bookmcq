@@ -8051,13 +8051,6 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
     }
     
     var lastUpdated = new Date().toISOString().split('T')[0];
-    if (chapterQuestions.length > 0) {
-        var dates = chapterQuestions.map(function(q) { return q.created_at; }).filter(function(d) { return d; });
-        if (dates.length > 0) {
-            var sortedDates = dates.sort(function(a, b) { return new Date(b) - new Date(a); });
-            lastUpdated = new Date(sortedDates[0]).toISOString().split('T')[0];
-        }
-    }
     
     var schemaData = {
         '@context': 'https://schema.org',
@@ -8623,13 +8616,6 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     }
     
     var lastUpdated = new Date().toISOString().split('T')[0];
-    if (topicQuestions.length > 0) {
-        var dates = topicQuestions.map(function(q) { return q.created_at; }).filter(function(d) { return d; });
-        if (dates.length > 0) {
-            var sortedDates = dates.sort(function(a, b) { return new Date(b) - new Date(a); });
-            lastUpdated = new Date(sortedDates[0]).toISOString().split('T')[0];
-        }
-    }
     
     var seoTitle = topicName + ': ' + totalQs + ' Practice MCQs with Answers and Explanation | BookMCQ';
     
@@ -8872,7 +8858,8 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
 '    <h1>📝 ' + topicName + ' (' + totalQs + ' MCQs)</h1>\n' +
 '    <p class="topic-info">📖 From <strong>' + bookTitle + '</strong> • ' + chapterDisplay + chapterName + ' • ' + totalQs + ' questions available</p>\n' +
 '\n' +
-'    <!-- ====== NAVIGATION (fully responsive) ====== -->\n' +
+'    <p style="font-size:13px; color:#000000; margin-top:6px;">🔄 Last updated: ' + lastUpdated + '</p>\n' +
+ '    <!-- ====== NAVIGATION (fully responsive) ====== -->\n' +
         navHtml + '\n' +
 '\n' +
         definitionHtml + '\n' +
