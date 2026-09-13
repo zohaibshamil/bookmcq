@@ -8630,7 +8630,25 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
         'dateModified': lastUpdated
     };
     
-    var metaDescription = 'definitionHtml';
+    // Use topic definition as meta description (strip HTML tags, trim to ~160 chars)
+var rawDefinition = topic.definition || '';
+var cleanDefinition = rawDefinition
+    .replace(/<[^>]*>/g, '')           // remove HTML tags if any
+    .replace(/\s+/g, ' ')              // collapse whitespace
+    .trim();
+
+var metaDescription;
+if (cleanDefinition) {
+    // Truncate to 160 characters for SEO best practice
+    if (cleanDefinition.length > 160) {
+        metaDescription = cleanDefinition.substring(0, 157) + '...';
+    } else {
+        metaDescription = cleanDefinition;
+    }
+} else {
+    // Fallback if no definition exists
+    metaDescription = 'Practice ' + topicName + ' from ' + bookTitle + ' - ' + chapterDisplay + chapterName + '. ' + totalQs + ' MCQs with answers and explanations.';
+}
     
     // ===== BUILD COMPLETE HTML - NO MathJax, NO External Dependencies =====
     var finalHtml = '<!DOCTYPE html>\n' +
