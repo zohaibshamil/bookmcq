@@ -8639,14 +8639,16 @@ var cleanDefinition = rawDefinition
 
 var metaDescription;
 if (cleanDefinition) {
+    // Remove "Definition:" prefix
+    var cleanText = cleanDefinition.replace(/^definition:\s*/i, '').trim();
+    
     // Truncate to 160 characters for SEO best practice
-    if (cleanDefinition.length > 190) {
-        metaDescription = cleanDefinition.substring(0, 187) + '... Includes definition, examples, and practice MCQs.';
+    if (cleanText.length > 190) {
+        metaDescription = cleanText.substring(0, 187) + '... Includes definition, examples, and practice MCQs.';
     } else {
-        metaDescription = cleanDefinition;
+        metaDescription = cleanText;
     }
 } else {
-    // Fallback if no definition exists
     metaDescription = 'Practice ' + topicName + ' from ' + bookTitle + ' - ' + chapterDisplay + chapterName + '. ' + totalQs + ' MCQs with answers and explanations.';
 }
     
