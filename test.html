@@ -8639,17 +8639,30 @@ var cleanDefinition = rawDefinition
 
 var metaDescription;
 if (cleanDefinition) {
-    // Remove "Definition:" prefix
+    // 1. Strip "Definition:" prefix
     var cleanText = cleanDefinition.replace(/^definition:\s*/i, '').trim();
     
-    // Truncate to 160 characters for SEO best practice
-    if (cleanText.length > 190) {
-        metaDescription = cleanText.substring(0, 187) + '... Includes definition, examples, and practice MCQs.';
+    // 2. Split into sentences
+    var sentences = cleanText.match(/[^.!?]+[.!?]+/g) || [cleanText];
+    
+    // 3. Take the first sentence
+    var firstSentence = sentences[0].trim();
+    
+    // 4. If first sentence is too long (over 180 chars), truncate at word boundary
+    if (firstSentence.length > 180) {
+        var truncated = firstSentence.substring(0, 177);
+        var lastSpace = truncated.lastIndexOf(' ');
+        if (lastSpace > 120) {
+            truncated = truncated.substring(0, lastSpace);
+        }
+        metaDescription = truncated + '... Includes examples and ' + totalQs + ' practice MCQs with explanations.';
     } else {
-        metaDescription = cleanText;
+        // 5. First sentence is fine, use it + value suffix
+        metaDescription = firstSentence + ' Includes examples and ' + totalQs + ' practice MCQs with explanations.';
     }
 } else {
-    metaDescription = 'Practice ' + topicName + ' from ' + bookTitle + ' - ' + chapterDisplay + chapterName + '. ' + totalQs + ' MCQs with answers and explanations.';
+    // 6. Fallback
+    metaDescription = 'Practice ' + topicName + ' from ' + bookTitle + '. ' + totalQs + ' MCQs with answers, explanations, and difficulty levels.';
 }
     
     // ===== BUILD COMPLETE HTML - NO MathJax, NO External Dependencies =====
