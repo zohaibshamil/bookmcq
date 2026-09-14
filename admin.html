@@ -8617,7 +8617,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     
     var lastUpdated = new Date().toISOString().split('T')[0];
     
-    var seoTitle = topicName + ': ' + totalQs + ' Practice MCQs with Answers and Explanation | BookMCQ';
+    var seoTitle = topicName + ': Definition, Examples & MCQs | BookMCQ';
     
     var schemaData = {
         '@context': 'https://schema.org',
@@ -8630,7 +8630,40 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
         'dateModified': lastUpdated
     };
     
-    var metaDescription = 'Practice ' + topicName + ' from ' + bookTitle + ' - ' + chapterDisplay + chapterName + '. ' + totalQs + ' MCQs answers, plus ' + easyCount + ' easy, ' + mediumCount + ' medium, and ' + hardCount + ' hard questions. Perfect for exam preparation.';
+    // Use topic definition as meta description (strip HTML tags, trim to ~160 chars)
+var rawDefinition = topic.definition || '';
+var cleanDefinition = rawDefinition
+    .replace(/<[^>]*>/g, '')           // remove HTML tags if any
+    .replace(/\s+/g, ' ')              // collapse whitespace
+    .trim();
+
+var metaDescription;
+if (cleanDefinition) {
+    // 1. Strip "Definition:" prefix
+    var cleanText = cleanDefinition.replace(/^definition:\s*/i, '').trim();
+    
+    // 2. Split into sentences
+    var sentences = cleanText.match(/[^.!?]+[.!?]+/g) || [cleanText];
+    
+    // 3. Take the first sentence
+    var firstSentence = sentences[0].trim();
+    
+    // 4. If first sentence is too long (over 180 chars), truncate at word boundary
+    if (firstSentence.length > 180) {
+        var truncated = firstSentence.substring(0, 177);
+        var lastSpace = truncated.lastIndexOf(' ');
+        if (lastSpace > 120) {
+            truncated = truncated.substring(0, lastSpace);
+        }
+        metaDescription = truncated + '... Includes examples and MCQs with explanations.';
+    } else {
+        // 5. First sentence is fine, use it + value suffix
+        metaDescription = firstSentence + ' Includes examples and MCQs with explanations.';
+    }
+} else {
+    // 6. Fallback
+    metaDescription = 'Practice ' + topicName + ' from ' + bookTitle + '. ' + totalQs + ' MCQs with answers, explanations, and difficulty levels.';
+}
     
     // ===== BUILD COMPLETE HTML - NO MathJax, NO External Dependencies =====
     var finalHtml = '<!DOCTYPE html>\n' +
