@@ -9767,7 +9767,37 @@ async function deployAllTopics() {
     
     setDeployButtonState('topics', false, '<i class="fas fa-cloud-upload-alt"></i> Deploy Selected');
 }
-
+// ============ DEPLOY BOOK SELECTOR (FOR ENTIRE BOOK DEPLOYMENT) ============
+async function loadDeployBookSelector() {
+    const select = document.getElementById('deployBookSelector');
+    if (!select) return;
+    
+    // Show loading state
+    select.innerHTML = '<option value="">Loading books...</option>';
+    
+    try {
+        const { data: books, error } = await _supabase
+            .from('books')
+            .select('id, title, slug')
+            .order('title');
+        
+        if (error) throw error;
+        
+        if (!books || books.length === 0) {
+            select.innerHTML = '<option value="">No books found</option>';
+            return;
+        }
+        
+        select.innerHTML = '<option value="">-- Select Book --</option>';
+        books.forEach(book => {
+            select.innerHTML += `<option value="${book.id}" data-slug="${book.slug}">${escapeHtml(book.title)}</option>`;
+        });
+        
+    } catch (error) {
+        console.error('Error loading books for deploy selector:', error);
+        select.innerHTML = '<option value="">Error loading books</option>';
+    }
+}
     // ============ HELPER: Get GitHub config ============
     function getGitHubConfig() {
         const repo = document.getElementById('githubRepo').value.trim();
