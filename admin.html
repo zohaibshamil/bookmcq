@@ -10515,7 +10515,10 @@ async function deployEntireBook() {
         
         addDeployLog(`📝 Found ${topics.length} topics`, 'info');
         statusEl.textContent = `⏳ Found ${topics.length} topics...`;
-        
+
+// ============ DEPLOY BOOK PREVIEW DATA ============
+let deployBookPreviewData = null;
+     
         // 4. Fetch all questions for this book
         statusEl.textContent = '⏳ Fetching questions...';
         addDeployLog('🔄 Fetching questions...', 'info');
@@ -10725,7 +10728,73 @@ document.getElementById('deployBookBtn')?.addEventListener('click', deployEntire
 // Add this to your existing showTab function for 'github'
 // Find the showTab function and add this line inside the 'github' case:
 // loadDeployBookSelector();
- 
+ // Add this in setupEventListeners()
+document.getElementById('deployBookSelector')?.addEventListener('change', async function() {
+    const bookId = this.value;
+    const preview = document.getElementById('deployBookPreview');
+    const deployBtn = document.getElementById('deployBookBtn');
+    
+    if (!bookId) {
+        preview.classList.add('hidden');
+        deployBtn.disabled = true;
+        return;
+    }
+    
+    // Show loading
+    preview.classList.remove('hidden');
+    document.getElementById('deployBookFileCount').textContent = '...';
+    document.getElementById('previewBookCount').textContent = '...';
+    document.getElementById('previewChapterCount').textContent = '...';
+    document.getElementById('previewTopicCount').textContent = '...';
+    deployBtn.disabled = true;
+    
+    try {
+        // Count chapters
+        const { count: chapterCount, error: chError } = await _supabase
+            .from('chapters')
+            .select('id', { count: 'exact', head: true })
+            .eq('book_id', parseInt(bookId));
+        
+        // Get chapter IDs for topic count
+        const { data: chapters } = await _supabase
+            .from('chapters')
+            .select('id')
+            .eq('book_id', parseInt(bookId));
+        
+        let topicCount = 0;
+        if (chapters && chapters.length > 0) {
+            const chapterIds = chapters.map(c => c.id);
+            const { count } = await _supabase
+                .from('subtopics')
+                .select('id', { count: 'exact', head: true })
+                .in('chapter_id', chapterIds);
+            topicCount = count || 0;
+        }
+        
+        const totalFiles = 1 + (chapterCount || 0) + topicCount;
+        
+        document.getElementById('deployBookFileCount').textContent = totalFiles + ' files';
+        document.getElementById('previewBookCount').textContent = '1';
+        document.getElementById('previewChapterCount').textContent = chapterCount || 0;
+        document.getElementById('previewTopicCount').textContent = topicCount;
+        
+        // Store preview data
+        window.deployBookPreviewData = {
+            bookId: parseInt(bookId),
+            bookTitle: this.options[this.selectedIndex]?.text || '',
+            totalFiles: totalFiles,
+            chapterCount: chapterCount || 0,
+            topicCount: topicCount
+        };
+        
+        deployBtn.disabled = false;
+        
+    } catch (error) {
+        console.error('Error loading preview:', error);
+        document.getElementById('deployBookFileCount').textContent = 'Error';
+        deployBtn.disabled = true;
+    }
+});
     
     // ============ EVENT LISTENERS ============
     function setupEventListeners() {
