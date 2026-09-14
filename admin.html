@@ -2494,7 +2494,7 @@ let seoDropdownInitialized = false;
     
     // ============ SESSION TIMEOUT ============
     let sessionTimeout;
-    const SESSION_DURATION = 10 * 60 * 1000;
+    const SESSION_DURATION = 20 * 60 * 1000;
     
     function resetSessionTimer() {
         if (sessionTimeout) clearTimeout(sessionTimeout);
@@ -10433,8 +10433,8 @@ async function deployEntireBook() {
         const batches = Math.ceil(totalFiles / 300);
         confirmMsg += `⚠️ This is a large book (${totalFiles} files).\n`;
         confirmMsg += `Files will be deployed in ${batches} batches of 300 files each.\n`;
-        confirmMsg += `⏱️ There will be a 10-minute delay between each batch.\n`;
-        confirmMsg += `Estimated total time: ~${batches * 10} minutes.\n\n`;
+        confirmMsg += `⏱️ There will be a 15-minute delay between each batch.\n`;
+        confirmMsg += `Estimated total time: ~${batches * 15} minutes.\n\n`;
     }
     
     confirmMsg += `Continue?`;
@@ -10581,7 +10581,7 @@ async function deployEntireBook() {
         
         // ====== BATCH COMMIT WITH 300 FILES PER BATCH AND 5-MINUTE DELAY ======
         const BATCH_SIZE = 300;
-        const DELAY_MS = 10 * 60 * 1000; // 5 minutes in milliseconds
+        const DELAY_MS = 15 * 60 * 1000; // 15 minutes in milliseconds
         
         let successCount = 0;
         let failCount = 0;
@@ -10622,15 +10622,15 @@ async function deployEntireBook() {
                 }
             }
             
-            // ====== 5-MINUTE DELAY BETWEEN BATCHES ======
+            // ====== 15-MINUTE DELAY BETWEEN BATCHES ======
             if (i + BATCH_SIZE < allFiles.length) {
                 const nextBatchNumber = batchNumber + 1;
-                addDeployLog(`⏱️ Waiting 5 minutes before batch ${nextBatchNumber}/${totalBatches}...`, 'warning');
-                statusEl.textContent = `⏱️ Waiting 5 minutes before batch ${nextBatchNumber}/${totalBatches}...`;
+                addDeployLog(`⏱️ Waiting 15 minutes before batch ${nextBatchNumber}/${totalBatches}...`, 'warning');
+                statusEl.textContent = `⏱️ Waiting 15 minutes before batch ${nextBatchNumber}/${totalBatches}...`;
                 statusEl.style.color = '#f59e0b';
                 
                 // Show countdown
-                let remainingSeconds = 600; // 10 minutes
+                let remainingSeconds = 600; // 15 minutes
                 const countdownInterval = setInterval(() => {
                     const minutes = Math.floor(remainingSeconds / 60);
                     const seconds = remainingSeconds % 60;
@@ -10641,7 +10641,7 @@ async function deployEntireBook() {
                     }
                 }, 1000);
                 
-                // Wait for 5 minutes
+                // Wait for 15 minutes
                 await new Promise(r => setTimeout(r, DELAY_MS));
                 clearInterval(countdownInterval);
                 
@@ -10672,7 +10672,7 @@ async function deployEntireBook() {
             deployBtn.innerHTML = '<i class="fas fa-times-circle"></i> Failed';
         }
         
-        // Reset after 5 seconds
+        // Reset after 15 seconds
         setTimeout(() => {
             deployBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Deploy Book';
             deployBtn.disabled = false;
