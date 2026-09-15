@@ -1,0 +1,64 @@
+name: Inject AdSense Snippet
+
+on:
+  push:
+    branches:
+      - main   # change to 'master' if your default branch is master
+    paths:
+      - '**.html'
+  workflow_dispatch:   # allows manual trigger from Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  inject-adsense:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Inject AdSense into all HTML files
+        run: |
+          SNIPPET='<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5790863833339632" crossorigin="anonymous"></script>'
+          MARKER='ca-pub-5790863833339632'
+
+          # Find all .html files, excluding common build/node folders
+          find . -type f -name "*.html" \
+            -not -path "./node_modules/*" \
+            -not -path "./.git/*" \
+            -not -path "./dist/*" \
+            -not -path "./build/*" | while read -r file; do
+
+            # Skip if snippet already present
+            if grep -q "$MARKER" "$file"; then
+              echo "⏩ Skipping (already present): $file"
+              continue
+            fi
+
+            # Inject right before </head> (case-insensitive)
+            if grep -qi "</head>" "$file"; then
+              # Use perl for safe in-place multiline insertion
+              perl -0pi -e "s{</head>}{$SNIPPET\n</head>}i" "$file"
+              echo "✅ Injected into: $file"
+            else
+              echo "⚠️  No </head> found, skipping: $file"
+            fi
+          done
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if [[ -n "$(git status --porcelain)" ]]; then
+            git add -A
+            git commit -m "chore: auto-inject AdSense snippet into HTML files"
+            git push
+          else
+            echo "No changes to commit."
+          fi
