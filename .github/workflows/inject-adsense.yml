@@ -1,10 +1,18 @@
 name: Inject AdSense Snippet
 
 on:
+  # Trigger 1: after pre-render finishes (for books/** changes)
   workflow_run:
     workflows: ["Pre-render Math (Books Only)"]
     types: [completed]
     branches: [main, master]
+
+  # Trigger 2: any HTML change outside books/ (e.g. root .html files)
+  push:
+    branches: [main, master]
+    paths:
+      - '**.html'
+      - '!books/**'      # books/ is handled by workflow_run to avoid double-run
   workflow_dispatch:
 
 permissions:
@@ -12,12 +20,14 @@ permissions:
 
 jobs:
   inject-adsense:
-    # Only run if pre-render succeeded (or manual trigger)
+    # Skip if pre-render workflow failed
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
-      - name: Wait 1 minutes for pre-render to settle
+      # Only wait when triggered by pre-render (books flow)
+      - name: Wait 1 minute for pre-render to settle
+        if: ${{ github.event_name == 'workflow_run' }}
         run: sleep 60
 
       - name: Checkout repository
