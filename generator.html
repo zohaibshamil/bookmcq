@@ -935,6 +935,201 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                 padding-left: 60px;
             }
         }
+
+        /* ========== MODERN INFO DROPDOWN (DESKTOP) ========== */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown > .nav-link {
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .dropdown::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            height: 18px;
+            background: transparent;
+            pointer-events: auto;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            top: calc(100% + 14px);
+            left: 50%;
+            transform: translateX(-50%) translateY(-6px);
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            min-width: 230px;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.18), 0 4px 12px rgba(124,58,237,0.10);
+            border-radius: 14px;
+            z-index: 1000;
+            overflow: visible;
+            padding: 6px;
+            opacity: 0;
+            transition: opacity 0.22s ease, transform 0.22s ease;
+            border: 1px solid rgba(124, 58, 237, 0.12);
+        }
+        .dropdown-content::before {
+            content: '';
+            position: absolute;
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%) rotate(45deg);
+            width: 12px;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.98);
+            border-top: 1px solid rgba(124, 58, 237, 0.12);
+            border-left: 1px solid rgba(124, 58, 237, 0.12);
+            border-top-left-radius: 3px;
+            z-index: 1;
+        }
+        .dropdown-content a {
+            color: #1e293b !important;
+            padding: 11px 16px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-radius: 10px;
+            transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+            white-space: nowrap;
+            position: relative;
+            z-index: 2;
+        }
+        .dropdown-content a:hover {
+            background: linear-gradient(135deg, #f3e8ff 0%, #ede9fe 100%);
+            color: #7c3aed !important;
+            transform: translateX(3px);
+        }
+        .dropdown:hover .dropdown-content,
+        .dropdown:focus-within .dropdown-content {
+            display: block;
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        .dropdown-arrow {
+            font-size: 0.6rem;
+            margin-left: 2px;
+            transition: transform 0.25s ease;
+            display: inline-block;
+        }
+        .dropdown:hover .dropdown-arrow { transform: rotate(180deg); }
+        .navbar-scrolled .dropdown-content a { color: #4a5568 !important; }
+        .navbar-scrolled .dropdown-content a:hover {
+            color: #7c3aed !important;
+            background: linear-gradient(135deg, #f3e8ff 0%, #ede9fe 100%);
+        }
+
+        /* Mobile menu */
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        @media (max-width: 768px) {
+            .desktop-menu { display: none !important; }
+            .mobile-menu-btn { display: block; }
+            .dropdown::after { display: none; }
+            .dropdown-content {
+                position: static;
+                transform: none;
+                box-shadow: none;
+                margin-top: 0;
+                border-radius: 0;
+                padding: 0;
+                background: transparent;
+                border: none;
+                backdrop-filter: none;
+                opacity: 1;
+            }
+            .dropdown-content::before { display: none; }
+            .dropdown:hover .dropdown-content { transform: none; }
+        }
+        @media (min-width: 769px) {
+            .mobile-menu-btn { display: none; }
+            #mobileDropdown { display: none !important; }
+        }
+        nav.bg-white\/10 { background: rgba(255, 255, 255, 0.1) !important; }
+
+        /* ========== FIX: Mobile dropdown appears below sticky navbar ========== */
+        @media (max-width: 768px) {
+            #mobileDropdown {
+                position: fixed !important;
+                top: 76px;
+                left: 16px;
+                right: 16px;
+                max-height: calc(100vh - 92px);
+                overflow-y: auto;
+                z-index: 45;
+                margin-bottom: 0 !important;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+
+        /* ========== MOBILE INFO SUBMENU (PURE CSS — using <details>) ========== */
+        .mobile-info-details {
+            display: block;
+            width: 100%;
+        }
+        .mobile-info-details > summary {
+            list-style: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            color: #374151;
+            font-size: 1rem;
+            font-weight: 400;
+            transition: background 0.2s ease;
+        }
+        .mobile-info-details > summary::-webkit-details-marker { display: none; }
+        .mobile-info-details > summary::marker { display: none; content: ''; }
+        .mobile-info-details > summary:hover {
+            background: #faf5ff;
+        }
+        .mobile-info-details .mobile-info-arrow {
+            font-size: 0.7rem;
+            color: #7c3aed;
+            transition: transform 0.25s ease;
+            display: inline-block;
+        }
+        .mobile-info-details[open] > summary {
+            background: #faf5ff;
+        }
+        .mobile-info-details[open] .mobile-info-arrow {
+            transform: rotate(180deg);
+        }
+        .mobile-info-submenu {
+            background: #faf5ff;
+            border-top: 1px solid #f3e8ff;
+            border-bottom: 1px solid #f3e8ff;
+        }
+        .mobile-info-submenu a {
+            display: block;
+            padding: 12px 16px 12px 2.2rem;
+            color: #374151;
+            font-size: 0.9rem;
+            text-decoration: none;
+            transition: background 0.2s ease;
+        }
+        .mobile-info-submenu a:hover {
+            background: #f3e8ff;
+        }
+
+
     <\/style>
 </head>
 <body>
@@ -947,37 +1142,58 @@ height="0" width="0" style="display:none;visibility:hidden"><\/iframe><\/noscrip
 <div class="max-w-6xl mx-auto px-4">
     
     <!-- Navigation -->
-    <nav class="bg-white/10 backdrop-blur-lg rounded-full px-4 md:px-6 py-3 mb-6 sticky top-4 z-50 shadow-lg">
+    <nav class="bg-white/10 backdrop-blur-lg rounded-full px-4 md:px-6 py-3 mb-8 sticky top-4 z-50 shadow-lg">
         <div class="flex justify-between items-center">
             <div class="flex items-center gap-2">
                 <i class="fas fa-graduation-cap text-white text-xl md:text-2xl"></i>
                 <span class="text-white font-bold text-lg md:text-xl">BookMCQ</span>
                 <span class="text-white/60 text-xs hidden sm:inline">| Master Every Chapter</span>
             </div>
-            
+
             <div class="desktop-menu flex gap-3 md:gap-6">
                 <a href="/" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap">🏠 Home</a>
-                <a href="/quiz" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap flex items-center gap-1">📝 Quiz <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1">FREE</span></a>
-                <a href="/practice" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap flex items-center gap-1">📚 Practice <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1">FREE</span></a>
-                <a href="/topics" class="nav-link active text-white transition text-sm md:text-base whitespace-nowrap">📖 Topics</a>
-                <a href="/contact" class="nav-link text-white/80 hover:text-white transition">📧 Contact</a>
-                <a href="/privacy" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap">🔒 Privacy</a>
+                <a href="/quiz" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap flex items-center gap-1">📝 Quiz <span class="bg-green-500 text-black text-[10px] px-1.5 py-0.5 rounded-full ml-1">FREE</span></a>
+                <a href="/practice" class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap flex items-center gap-1">📚 Practice <span class="bg-green-500 text-black text-[10px] px-1.5 py-0.5 rounded-full ml-1">FREE</span></a>
+                <a href="/topics" class="nav-link active text-white/80 hover:text-white transition">📖 Topics Library</a>
+                <div class="dropdown">
+                    <span class="nav-link text-white/80 hover:text-white transition text-sm md:text-base whitespace-nowrap">ℹ️ Info <span class="dropdown-arrow">▼</span></span>
+                    <div class="dropdown-content">
+                        <a href="/about-author">👤 About Author</a>
+                        <a href="/contact">📧 Contact Us</a>
+                        <a href="/privacy">🔒 Privacy Policy</a>
+                        <a href="/why-trust-us">✅ Why Trust Us</a>
+                        <a href="/terms-of-service">📜 Terms of Service</a>
+                        <a href="/faq">❓ FAQ</a>
+                    </div>
+                </div>
             </div>
-            
-            <button id="mobileMenuBtn" class="mobile-menu-btn text-white text-2xl">
-                ☰
-            </button>
+
+            <button id="mobileMenuBtn" class="mobile-menu-btn text-white text-2xl" aria-label="Toggle navigation menu">☰</button>
         </div>
     </nav>
-    
-    <!-- Mobile Dropdown -->
+
+    <!-- Mobile Dropdown Menu -->
     <div id="mobileDropdown" class="hidden bg-white rounded-xl shadow-xl w-full mb-4 py-2 z-50" style="display: none;" role="navigation" aria-label="Mobile navigation">
         <a href="/" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition">🏠 Home</a>
         <a href="/quiz" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center">📝 Quiz <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span></a>
         <a href="/practice" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition flex justify-between items-center">📚 Practice <span class="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">FREE</span></a>
-        <a href="/topics" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition">📖 Topics</a>
-        <a href="/contact" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition">📧 Contact</a>
-        <a href="/privacy" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition">🔒 Privacy</a>
+        <a href="/topics" class="block px-4 py-3 text-gray-700 hover:bg-purple-50 transition">📖 Topics Library</a>
+
+        <!-- Info Submenu (Pure CSS using <details>) -->
+        <details class="mobile-info-details">
+            <summary>
+                <span>ℹ️ Info</span>
+                <span class="mobile-info-arrow">▼</span>
+            </summary>
+            <div class="mobile-info-submenu">
+                <a href="/about-author">👤 About Author</a>
+                <a href="/contact">📧 Contact Us</a>
+                <a href="/privacy">🔒 Privacy Policy</a>
+                <a href="/why-trust-us">✅ Why Trust Us</a>
+                <a href="/terms-of-service">📜 Terms of Service</a>
+                <a href="/faq">❓ FAQ</a>
+            </div>
+        </details>
     </div>
 
     <!-- Main Topic Library -->
