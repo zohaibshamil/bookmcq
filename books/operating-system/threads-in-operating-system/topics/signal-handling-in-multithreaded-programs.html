@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-PT363CT7');</script>
+<!-- End Google Tag Manager -->
+  <title>Signal handling in multithreaded programs: Definition, Examples & MCQs | BookMCQ</title>
+  <meta name="description" content="Signal handling in multithreaded programs involves delivering asynchronous notifications (signals) to specific threads or processes, requiring careful coordination since... Includes examples and MCQs with explanations.">
+  <meta name="keywords" content="Signal handling in multithreaded programs MCQs, Operating System Signal handling in multithreaded programs questions, Signal handling in multithreaded programs practice, Operating System topics, Signal handling in multithreaded programs easy medium hard">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://www.bookmcq.com/books/operating-system/threads-in-operating-system/topics/signal-handling-in-multithreaded-programs.html">
+  <meta property="og:url" content="https://www.bookmcq.com/books/operating-system/threads-in-operating-system/topics/signal-handling-in-multithreaded-programs.html">
+  <meta property="og:title" content="Signal handling in multithreaded programs - Operating System MCQs | BookMCQ">
+  <meta property="og:description" content="Practice Signal handling in multithreaded programs from Operating System. 43 questions with difficulty breakdown: Easy 2, Medium 13, Hard 28.">
+  <meta property="og:type" content="website">
+  <meta name="theme-color" content="#7c3aed">
+  <script type="application/ld+json">
+{"@context":"https://schema.org","@type":"CollectionPage","name":"Signal handling in multithreaded programs - Operating System","description":"Practice Signal handling in multithreaded programs from Operating System - 4. Threads in Operating System. 43 MCQs with answers, plus 2 easy, 13 medium, and 28 hard questions.","url":"https://www.bookmcq.com/books/operating-system/threads-in-operating-system/topics/signal-handling-in-multithreaded-programs.html","isPartOf":{"@type":"Book","name":"Operating System"},"about":{"@type":"Thing","name":"Signal handling in multithreaded programs"},"dateModified":"2026-10-28"}
+  </script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      min-height: 100vh;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      max-width: 900px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 0 8px;
+    }
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 18px 16px 24px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+      width: 100%;
+    }
+    /* responsive padding */
+    @media (min-width: 640px) { .card { padding: 28px 32px; } }
+    @media (max-width: 480px) { .card { padding: 14px 12px; } }
+
+    .back-link { display: inline-block; margin-bottom: 12px; color: #7c3aed; text-decoration: none; font-weight: 500; }
+    .back-link:hover { text-decoration: underline; }
+    .breadcrumb { font-size: 13px; color: #000000; margin-bottom: 10px; word-break: break-word; text-align: justify; }
+    .breadcrumb a { color: #000000; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    h1 { font-size: 1.6rem; line-height: 1.2; margin: 6px 0 4px; word-break: break-word; text-align: justify; }
+    @media (max-width: 480px) { h1 { font-size: 1.4rem; } }
+
+    .topic-info { font-size: 0.9rem; color: #475569; margin: 6px 0 10px; text-align: justify; }
+
+    /* ---- NAVIGATION (fully responsive with full labels) ---- */
+    .nav-container {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px 6px;
+      background: #f8fafc;
+      padding: 10px 12px;
+      border-radius: 14px;
+      margin: 16px 0 12px;
+      border: 2px solid #e5e7eb;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+      width: 100%;
+    }
+    .nav-link {
+      color: #7c3aed;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.8rem;
+      padding: 6px 10px;
+      border-radius: 10px;
+      background: white;
+      border: 1px solid #e5e7eb;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      flex: 0 1 auto;
+      min-width: 0;
+      word-break: break-word;
+      line-height: 1.3;
+    }
+    .nav-link:hover { background: #f3e8ff; border-color: #7c3aed; }
+    .nav-link .topic-name { font-weight: 700; color: #7c3aed; text-decoration: underline; text-underline-offset: 2px; word-break: break-word; text-align: justify; }
+    .nav-link .label { font-size: 0.7rem; color: #64748b; font-weight: 500; white-space: nowrap; text-align: justify; }
+    .nav-link .arrow { font-size: 1.1rem; line-height: 1; flex-shrink: 0; }
+    .nav-disabled { color: #94a3b8; font-weight: 500; font-size: 0.75rem; opacity: 0.6; padding: 6px 10px; background: #f1f5f9; border-radius: 10px; border: 1px solid #e5e7eb; white-space: nowrap; text-align: justify; }
+    .nav-current {
+      font-weight: 700;
+      color: #1e293b;
+      font-size: 0.85rem;
+      padding: 4px 12px;
+      background: #ede9fe;
+      border-radius: 10px;
+      border: 2px solid #7c3aed;
+      white-space: nowrap;
+      flex-shrink: 0;
+      text-align: justify;
+    }
+    .nav-current .current-name { font-weight: 800; color: #5b21b6; text-align: justify; }
+
+    /* responsive adjustments for better viewing */
+    @media (max-width: 650px) {
+      .nav-container { 
+        flex-wrap: wrap; 
+        justify-content: center; 
+        gap: 6px; 
+        padding: 8px 10px; 
+      }
+      .nav-link { 
+        font-size: 0.7rem; 
+        padding: 4px 8px; 
+        flex: 0 1 auto; 
+      }
+      .nav-link .label { 
+        font-size: 0.6rem; 
+      }
+      .nav-link .topic-name { 
+        font-size: 0.7rem; 
+      }
+      .nav-current { 
+        font-size: 0.7rem; 
+        padding: 3px 8px; 
+      }
+      .nav-disabled { 
+        font-size: 0.65rem; 
+        padding: 4px 8px; 
+      }
+    }
+
+    @media (max-width: 480px) {
+      .nav-container { 
+        gap: 4px; 
+        padding: 6px 6px; 
+      }
+      .nav-link { 
+        font-size: 0.6rem; 
+        padding: 3px 6px; 
+      }
+      .nav-link .label { 
+        font-size: 0.55rem; 
+      }
+      .nav-link .topic-name { 
+        font-size: 0.6rem; 
+      }
+      .nav-current { 
+        font-size: 0.6rem; 
+        padding: 2px 6px; 
+      }
+      .nav-disabled { 
+        font-size: 0.55rem; 
+        padding: 3px 6px; 
+      }
+      .nav-link .arrow { 
+        font-size: 0.8rem; 
+      }
+    }
+
+    /* difficulty badges - border around badges, black text, bold labels */
+    .badge-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 14px 0; text-align: center; }
+    .badge-item { padding: 10px 4px; border-radius: 12px; text-align: center; border: 2px solid #000000; }
+    .badge-item .num { font-size: 1.8rem; font-weight: 700; text-align: center; color: #000000; }
+    .badge-item .lbl { font-size: 0.7rem; color: #000000; text-align: center; font-weight: 700; }
+    @media (max-width: 480px) { .badge-item .num { font-size: 1.4rem; } }
+
+    /* question blocks */
+    .q-block { background: white; padding: 14px 12px; border-radius: 12px; margin-bottom: 16px; border: 1px solid #e5e7eb; text-align: justify; contain: layout style paint; }
+    .q-text { font-weight: 600; margin: 0 0 10px; line-height: 1.5; text-align: justify; }
+    .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; font-size: 0.9rem; color: #334155; text-align: justify; }
+    .opt-item { display: flex; align-items: flex-start; gap: 4px; padding: 2px 0; text-align: justify; }
+    .opt-item .label { font-weight: 600; color: #000000; min-width: 18px; text-align: justify; }
+    .opt-item .text { text-align: justify; word-break: break-word; }
+    .opt-correct { background-color: #dcfce7; border-radius: 6px; padding: 4px 6px; text-align: justify; }
+    .diff-tag { font-size: 0.7rem; color: #000000; margin-top: 8px; text-align: justify; }
+    .explanation { margin-top: 10px; padding: 10px 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px; text-align: justify; }
+    .explanation p { font-size: 0.8rem; color: #1e293b; margin: 0; line-height: 1.5; text-align: justify; }
+
+    @media (max-width: 500px) {
+      .options-grid { grid-template-columns: 1fr; gap: 2px; }
+      .q-block { padding: 12px 10px; }
+      .explanation p { font-size: 0.75rem; }
+    }
+
+    .btn-primary { display: inline-block; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 12px 28px; border-radius: 40px; text-decoration: none; font-weight: 700; margin-top: 8px; transition: 0.2s; border: none; cursor: pointer; text-align: justify; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(102,126,234,0.4); }
+    .btn-secondary { display: inline-block; background: #f1f5f9; color: #1e293b; padding: 10px 22px; border-radius: 40px; text-decoration: none; font-weight: 500; border: 1px solid #d1d5db; text-align: justify; }
+    .btn-secondary:hover { background: #e5e7eb; }
+
+    .footer-links { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 18px; text-align: justify; }
+    .topic-pills { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; text-align: justify; }
+    .topic-pills a { background: #f3f4f6; padding: 4px 12px; border-radius: 30px; font-size: 0.75rem; color: #1e293b; text-decoration: none; border: 1px solid #e5e7eb; white-space: nowrap; text-align: justify; }
+    .topic-pills a:hover { background: #e0e7ff; }
+
+    img, svg { max-width: 100%; height: auto; }
+  </style>
+</head>
+<body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PT363CT7"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+<div class="container">
+  <!-- header -->
+  <div style="text-align:center; padding:6px 0 12px;">
+    <a href="/" style="text-decoration:none;">
+      <span style="font-size:1.2rem; font-weight:700; color:#7c3aed; background:white; padding:6px 18px; border-radius:40px; display:inline-block; box-shadow:0 2px 8px rgba(0,0,0,0.08);">🎓 BookMCQ</span>
+    </a>
+  </div>
+
+  <main class="card">
+    <!-- breadcrumb -->
+    <div class="breadcrumb">
+      <a href="/">🏠 Home</a> &gt; <a href="/books/operating-system/">Operating System</a> &gt; <a href="/books/operating-system/threads-in-operating-system.html">4. Threads in Operating System</a> &gt; Signal handling in multithreaded programs
+    </div>
+    <a href="/books/operating-system/threads-in-operating-system.html" class="back-link">← Back to 4. Threads in Operating System</a>
+    
+    <h1>📝 Signal handling in multithreaded programs (43 MCQs)</h1>
+    <p class="topic-info">📖 From <strong>Operating System</strong> • 4. Threads in Operating System • 43 questions available</p>
+
+    <!-- ====== NAVIGATION (fully responsive) ====== -->
+<div class="nav-container"><a href="/books/operating-system/threads-in-operating-system/topics/fork-and-exec-system-calls-in-multithreading.html" class="nav-link"><span class="arrow">←</span><span class="label">Previous Topic:</span><span class="topic-name">Fork and exec system calls in multithreading</span></a><span class="nav-current">📝 <span class="current-name">Signal handling in multithreaded programs</span></span><a href="/books/operating-system/threads-in-operating-system/topics/thread-cancellation-in-operating-system.html" class="nav-link"><span class="topic-name">Thread cancellation in operating system</span><span class="label">:Next Topic</span><span class="arrow">→</span></a></div>
+
+
+            <div style="margin: 8px 0 12px;">
+                <h2 style="font-size:1.2rem; font-weight:700; color:#1e293b; margin-top:8px;">What is Signal handling in multithreaded programs?</h2>
+                <p style="text-align: justify; text-justify: inter-word; line-height:1.7; color:#334155; font-size:0.95rem; word-break:break-word;"><b>Definition:</b> <br>Signal handling in multithreaded programs involves delivering asynchronous notifications (signals) to specific threads or processes, requiring careful coordination since signals can interrupt any thread unpredictably. POSIX specifies that signals targeting process are delivered to one arbitrary thread, while thread-directed signals go to specific threads, necessitating robust signal masks and handlers to prevent race conditions and inconsistent states.<br><br><b>Working:</b><br>Each thread maintains signal mask blocking certain signals. Process-directed signals choose recipient from threads not blocking that signal. Thread-directed signals via pthread_kill() target specific threads. Signal handlers execute in context of receiving thread, potentially interrupting critical sections. Proper handling requires installing handlers before creating threads and using sigwait() for synchronous signal processing.<br><br><b>Example:</b> <br>Main thread installs SIGINT handler, creates worker threads. User presses Ctrl+C sending SIGINT. OS delivers to main thread (not blocking it), handler executes cleanup. If worker thread blocked SIGINT, it won't receive signal. Solution: Use sigprocmask() to control which threads receive which signals appropriately.<br><br><b>Reason:</b><br>Signals provide mechanism for external events (keyboard interrupts, timer expiration) to notify programs. In multithreaded contexts, unpredictable delivery complicates reasoning about program state. Proper signal handling ensures clean shutdown, prevents corruption from interrupted critical sections, and enables responsive event-driven architectures.<br><br><b>Common MisConceptions:</b><br>Students believe signals always go to main thread, but POSIX allows delivery to any unblocking thread. Another misconception is that signal handlers can safely call any function, when only async-signal-safe functions prevent undefined behavior. Some think masking signals in one thread affects others, but each thread has independent signal mask.<br><br><b>Exam Preparation Tips: How to prepare this topic</b><br>Understand signal delivery rules, memorize async-signal-safe functions, practice using sigwait() for controlled signal handling, study signal mask inheritance, and learn proper handler installation timing relative to thread creation to avoid race conditions.<br><br><b>Key Terms:</b> <ul style='margin-top:5px; margin-bottom:10px; padding-left:20px;'><li><b>Signal</b> - asynchronous notification to process or thread.</li><li><b>Signal Mask</b> - set of blocked signals per thread.</li><li><b>Sigwait</b> - synchronous signal waiting function.</li><li><b>Async-Signal-Safe</b> - functions safe in signal handlers.</li></ul></p>
+            </div>
+        
+
+    <p style="font-size:13px; color:#000000; margin-top:6px;">🔄 Last updated: 2026-10-28</p>
+    <!-- difficulty badges -->
+<div class="badge-grid"><div class="badge-item" style="background:#dcfce7; border-color:#86efac;"><div class="num" style="color:#000000;">2</div><div class="lbl" style="font-weight:700; color:#000000;">Easy</div></div><div class="badge-item" style="background:#fef9c3; border-color:#fde047;"><div class="num" style="color:#000000;">13</div><div class="lbl" style="font-weight:700; color:#000000;">Medium</div></div><div class="badge-item" style="background:#fee2e2; border-color:#fca5a5;"><div class="num" style="color:#000000;">28</div><div class="lbl" style="font-weight:700; color:#000000;">Hard</div></div></div>
+
+    <!-- all MCQs -->
+<div style="margin:12px 0;"><h3 style="font-size:1.1rem; color:#1e293b; margin-bottom:10px;">📝 All Signal handling in multithreaded programs MCQs</h3><div class="q-block"><p class="q-text">Q1. A multithreaded server receives a signal indicating that its process should terminate gracefully. Which design best ensures that termination is coordinated without allowing arbitrary worker threads to perform conflicting cleanup?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">Allow every thread to independently terminate the process</span></div><div class="opt-item opt-correct"><span class="label">B.</span><span class="text">Arrange for a designated signal-handling thread to receive and coordinate the termination request ✅</span></div><div class="opt-item "><span class="label">C.</span><span class="text">Ignore the signal until all threads terminate naturally</span></div><div class="opt-item "><span class="label">D.</span><span class="text">Let whichever worker finishes first destroy all shared resources</span></div></div><div class="diff-tag">💡 Difficulty: medium | ✅ Correct: B</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> A designated signal-handling thread centralizes the response to process-wide termination requests. It can notify workers, stop accepting new tasks, coordinate cleanup, and initiate orderly shutdown, reducing races caused by multiple threads independently managing shared resources.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q2. Why can delivering a process-directed signal to an arbitrary eligible thread complicate the design of a multithreaded application?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">Every eligible thread must execute the handler simultaneously</span></div><div class="opt-item "><span class="label">B.</span><span class="text">The signal is automatically converted into a thread-local event</span></div><div class="opt-item opt-correct"><span class="label">C.</span><span class="text">The application may be unable to predict which thread&#039;s execution context will run the handler ✅</span></div><div class="opt-item "><span class="label">D.</span><span class="text">The operating system must create a new process for every signal</span></div></div><div class="diff-tag">💡 Difficulty: medium | ✅ Correct: C</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> A process-directed signal may be delivered to an eligible thread selected by the operating system. If the application assumes a particular worker will handle it, the handler may run in an unexpected context and interfere with thread-specific state or synchronization.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q3. A program blocks a particular signal in every worker thread and leaves it unblocked in a dedicated signal-waiting thread. What is the main benefit of this arrangement?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">It makes the signal disposition different for each thread</span></div><div class="opt-item "><span class="label">B.</span><span class="text">It guarantees that all signals are queued indefinitely</span></div><div class="opt-item "><span class="label">C.</span><span class="text">It eliminates the need to decide how signals should be handled</span></div><div class="opt-item opt-correct"><span class="label">D.</span><span class="text">It creates a predictable place for synchronous signal reception and response ✅</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: D</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Blocking the signal in workers and unblocking it in a designated receiver helps establish a controlled handling path. A synchronous waiting mechanism can receive the signal in that thread, where the application can coordinate responses without executing an asynchronous handler in arbitrary workers.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q4. A developer assumes that blocking a signal in one worker prevents the entire process from receiving that signal. Which correction is most accurate?</p><div class="options-grid"><div class="opt-item opt-correct"><span class="label">A.</span><span class="text">Signal masks are generally per-thread, so other eligible threads may still receive a process-directed signal ✅</span></div><div class="opt-item "><span class="label">B.</span><span class="text">Blocking a signal in one thread automatically blocks every unrelated signal process-wide</span></div><div class="opt-item "><span class="label">C.</span><span class="text">A blocked signal is always discarded immediately</span></div><div class="opt-item "><span class="label">D.</span><span class="text">Signal masks only affect threads created after the mask is changed</span></div></div><div class="diff-tag">💡 Difficulty: easy | ✅ Correct: A</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Signal masks are maintained per thread. Blocking a signal in one worker changes that worker&#039;s eligibility, not necessarily the eligibility of every other thread. To direct signals predictably, a program must coordinate masks across its threads and understand the signal&#039;s delivery rules.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q5. A process-directed signal arrives while two threads have that signal unblocked. Which conclusion is justified without assuming a specific operating-system delivery policy?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">Both threads must run the handler concurrently</span></div><div class="opt-item "><span class="label">B.</span><span class="text">The signal must be delivered to the thread with the lowest identifier</span></div><div class="opt-item opt-correct"><span class="label">C.</span><span class="text">The system can select an eligible thread, so the program should not rely on a particular worker receiving it ✅</span></div><div class="opt-item "><span class="label">D.</span><span class="text">The signal must be postponed until both threads block it</span></div></div><div class="diff-tag">💡 Difficulty: medium | ✅ Correct: C</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> When multiple threads are eligible for a process-directed signal, an application generally cannot assume which eligible thread will receive it. Reliable designs use deliberate signal-mask policies and a documented receiving mechanism rather than relying on thread identity.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q6. A worker handles a signal by updating a shared linked list while another worker modifies the same list. What is the principal risk if the handler interrupts the first worker during a list operation?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">The signal is necessarily converted into a hardware interrupt visible to every thread</span></div><div class="opt-item opt-correct"><span class="label">B.</span><span class="text">The handler may observe or create an inconsistent intermediate state and cause corruption ✅</span></div><div class="opt-item "><span class="label">C.</span><span class="text">The list is automatically copied for the handler</span></div><div class="opt-item "><span class="label">D.</span><span class="text">The operating system always locks every shared object before invoking a handler</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: B</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> A signal handler can interrupt code while shared data structures are temporarily inconsistent. If it modifies the same structure, it may violate invariants or race with other threads. Handlers should avoid unsafe shared-state manipulation and defer complex work to ordinary thread context.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q7. A program uses a synchronous signal-waiting function in a dedicated thread instead of executing a traditional asynchronous handler. What design advantage does this provide?</p><div class="options-grid"><div class="opt-item opt-correct"><span class="label">A.</span><span class="text">Signal processing can occur in normal thread control flow, allowing safer coordination with application logic ✅</span></div><div class="opt-item "><span class="label">B.</span><span class="text">The function guarantees that signals cannot arrive while the process is busy</span></div><div class="opt-item "><span class="label">C.</span><span class="text">All asynchronous signals become harmless and can be ignored</span></div><div class="opt-item "><span class="label">D.</span><span class="text">The dedicated thread no longer needs a signal mask policy</span></div></div><div class="diff-tag">💡 Difficulty: medium | ✅ Correct: A</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Synchronous signal waiting lets a dedicated thread receive selected signals through an ordinary function call. This can simplify coordination and error handling compared with asynchronous interruption, although the program must still configure masks correctly and handle the received signals appropriately.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q8. A process-directed signal is generated while every thread blocks it. Under typical POSIX semantics, what should the application expect?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">The signal must be delivered immediately to the main thread despite its mask</span></div><div class="opt-item "><span class="label">B.</span><span class="text">The signal automatically changes into a thread-directed signal</span></div><div class="opt-item opt-correct"><span class="label">C.</span><span class="text">The signal can remain pending until it becomes deliverable, subject to the signal&#039;s semantics ✅</span></div><div class="opt-item "><span class="label">D.</span><span class="text">The process must terminate as soon as the signal is generated</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: C</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> When all threads block a process-directed signal, it cannot simply be delivered to an unblocked thread because none exists. It may remain pending until delivery becomes possible, but exact pending behavior depends on the signal type and system rules, so the application should not assume unlimited queuing.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q9. A programmer wants a signal to interrupt one specific worker rather than be handled by an arbitrary eligible thread. Which approach most directly expresses that intention in a POSIX-style environment?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">Generate a process-directed signal and assume the scheduler chooses that worker</span></div><div class="opt-item opt-correct"><span class="label">B.</span><span class="text">Use a thread-directed signaling mechanism targeting the intended thread ✅</span></div><div class="opt-item "><span class="label">C.</span><span class="text">Broadcast the signal to every thread and rely on timing</span></div><div class="opt-item "><span class="label">D.</span><span class="text">Change the process-wide handler to execute only on the worker&#039;s CPU</span></div></div><div class="diff-tag">💡 Difficulty: medium | ✅ Correct: B</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Thread-directed signaling targets a particular thread, unlike process-directed signaling whose delivery may go to an eligible thread. The receiving thread must still be able to accept the signal, and the application must account for the targeted thread&#039;s mask and the signal&#039;s behavior.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q10. A signal handler calls a routine that acquires a mutex. The signal interrupted a thread that already held that mutex. What is the most likely failure?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">The mutex is automatically released before the handler starts</span></div><div class="opt-item "><span class="label">B.</span><span class="text">The mutex is converted into a read-only lock</span></div><div class="opt-item "><span class="label">C.</span><span class="text">The handler runs in a separate process and waits harmlessly</span></div><div class="opt-item opt-correct"><span class="label">D.</span><span class="text">The handler can deadlock while trying to acquire a mutex already held by the interrupted thread ✅</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: D</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> If a handler interrupts a thread that holds a mutex and then tries to acquire the same mutex, the handler may wait for a lock that the interrupted code cannot release until the handler returns. This creates a deadlock risk, so ordinary mutex operations are unsuitable in many asynchronous handlers.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q11. A server&#039;s signal handler sets a suitable flag, and the main event loop checks that flag and performs shutdown outside the handler. Why is this often safer than performing shutdown directly inside the handler?</p><div class="options-grid"><div class="opt-item opt-correct"><span class="label">A.</span><span class="text">The handler avoids complex operations that may not be async-signal-safe, leaving them to normal execution context ✅</span></div><div class="opt-item "><span class="label">B.</span><span class="text">The flag guarantees that every worker instantly stops at the same instruction</span></div><div class="opt-item "><span class="label">C.</span><span class="text">The event loop makes signal masks irrelevant</span></div><div class="opt-item "><span class="label">D.</span><span class="text">The handler is no longer considered part of the process</span></div></div><div class="diff-tag">💡 Difficulty: medium | ✅ Correct: A</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Asynchronous handlers can interrupt code at inconvenient points, so complex operations such as allocation, logging through unsafe routines, and mutex-based coordination can be dangerous. A minimal handler can record a request using an appropriate signal-safe mechanism, while the main loop performs orderly shutdown.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q12. A team claims that because a signal handler is installed once, every thread can safely call the same handler logic whenever the signal occurs. What is the strongest objection?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">The operating system refuses to execute handlers in multithreaded processes</span></div><div class="opt-item "><span class="label">B.</span><span class="text">A handler can execute only if the process contains exactly one thread</span></div><div class="opt-item opt-correct"><span class="label">C.</span><span class="text">The handler may run in an arbitrary eligible thread context, where interrupted state and async-signal-safety constraints still apply ✅</span></div><div class="opt-item "><span class="label">D.</span><span class="text">Installing a handler automatically serializes all threads</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: C</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> A process-wide signal disposition does not make handler execution safe in every thread context. A handler may interrupt code holding locks or manipulating shared state, and concurrent or repeated events can expose race conditions. Centralized reception or minimal signal-safe handling is generally more robust.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q13. A worker blocks a termination signal, then creates a helper thread that inherits its signal mask. The helper is expected to receive that signal, but it never does. What is the most plausible explanation?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">The helper automatically changed the signal disposition to ignore</span></div><div class="opt-item opt-correct"><span class="label">B.</span><span class="text">The helper inherited the blocked mask, so it is not eligible to receive that signal while it remains blocked ✅</span></div><div class="opt-item "><span class="label">C.</span><span class="text">Creating a thread deletes all pending signals</span></div><div class="opt-item "><span class="label">D.</span><span class="text">A blocked signal can be received only by a process with no main thread</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: B</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> A newly created POSIX thread typically inherits the creating thread&#039;s signal mask. If the creator blocks the signal before creating the helper, the helper may inherit that block and remain ineligible to receive the signal until its mask is changed.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q14. An application uses a dedicated signal thread, but a worker leaves the termination signal unblocked. What flaw remains in this design?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">The dedicated thread can no longer call ordinary functions</span></div><div class="opt-item "><span class="label">B.</span><span class="text">The signal becomes thread-directed automatically</span></div><div class="opt-item "><span class="label">C.</span><span class="text">The process must deliver every signal to the main thread</span></div><div class="opt-item opt-correct"><span class="label">D.</span><span class="text">The signal may still be delivered asynchronously to an eligible worker instead of being consumed by the designated receiver ✅</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: D</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> A dedicated signal thread is effective only when the signal-mask policy supports it. If workers leave the relevant signal unblocked, they may be eligible for asynchronous delivery, undermining the intended routing. The program should consistently block the signal in workers and unblock or synchronously wait for it in the receiver.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q15. A multithreaded program receives a signal requesting a configuration reload. Which response best separates signal reception from potentially complex work?</p><div class="options-grid"><div class="opt-item opt-correct"><span class="label">A.</span><span class="text">Record the reload request safely, then let a normal worker or event loop parse and apply the configuration ✅</span></div><div class="opt-item "><span class="label">B.</span><span class="text">Parse the entire configuration inside an asynchronous handler while holding all global locks</span></div><div class="opt-item "><span class="label">C.</span><span class="text">Immediately restart every worker from inside the handler</span></div><div class="opt-item "><span class="label">D.</span><span class="text">Allocate several buffers in the handler and update every shared configuration field without coordination</span></div></div><div class="diff-tag">💡 Difficulty: medium | ✅ Correct: A</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Configuration parsing may allocate memory, perform I/O, and modify shared state, making it inappropriate for a minimal asynchronous handler. Recording the request and delegating work to normal thread context allows standard error handling, locking, validation, and coordinated replacement of configuration data.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q16. A handler modifies a shared Boolean flag to request shutdown. Several threads read the flag concurrently. Which improvement most directly addresses the risk of unsynchronized shared-state access?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">Make each thread maintain a private flag and never communicate shutdown</span></div><div class="opt-item opt-correct"><span class="label">B.</span><span class="text">Use an appropriate signal-safe flag mechanism and ensure ordinary threads access it according to the language&#039;s concurrency rules ✅</span></div><div class="opt-item "><span class="label">C.</span><span class="text">Assume the flag is safe because Boolean assignments are always atomic and synchronized</span></div><div class="opt-item "><span class="label">D.</span><span class="text">Call a mutex-protected setter directly from the asynchronous handler</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: B</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> A flag used by a signal handler must meet the platform and language requirements for signal-safe access, and ordinary threads must observe it correctly. In C, volatile sig_atomic_t is a common mechanism for a simple handler-to-main-thread notification, but it is not a general-purpose interthread synchronization primitive.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q17. A signal-handling design uses a handler that calls printf to record each event. Under heavy concurrent activity, what is the strongest concern?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">printf changes every worker&#039;s signal mask permanently</span></div><div class="opt-item "><span class="label">B.</span><span class="text">Output is guaranteed to be lost whenever two threads exist</span></div><div class="opt-item "><span class="label">C.</span><span class="text">The handler must execute on the main thread, so no concern exists</span></div><div class="opt-item opt-correct"><span class="label">D.</span><span class="text">Formatted I/O may not be async-signal-safe and can deadlock or corrupt internal library state if interrupted during another I/O operation ✅</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: D</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Standard formatted I/O functions such as printf are not generally async-signal-safe. If a signal interrupts code while the I/O library holds internal state or locks, calling printf from the handler can deadlock or produce inconsistent behavior. Safer designs use minimal signal-safe notification and defer logging.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q18. A developer expects one ordinary signal to count every occurrence while a receiving thread is busy. Why can that assumption fail for traditional non-real-time signals?</p><div class="options-grid"><div class="opt-item opt-correct"><span class="label">A.</span><span class="text">Traditional signals may coalesce while pending, so repeated occurrences need not be represented as a separate queued event each time ✅</span></div><div class="opt-item "><span class="label">B.</span><span class="text">Traditional signals are always delivered in exact generation order with unlimited buffering</span></div><div class="opt-item "><span class="label">C.</span><span class="text">A process-directed signal is converted into a new thread for every occurrence</span></div><div class="opt-item "><span class="label">D.</span><span class="text">Every occurrence automatically increments a shared counter maintained by the kernel</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: A</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Traditional signals generally do not provide an unlimited queue of distinct pending instances. Multiple occurrences of the same signal may coalesce into a pending indication, so a program needing reliable event counts should use an appropriate queued mechanism or another explicit communication channel.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q19. A graph shows the number of signals generated increasing from 10 to 100, while the number of handler invocations rises only from 8 to 12 under a burst of ordinary signals. Which interpretation is most defensible?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">The operating system necessarily discarded every signal after the twelfth</span></div><div class="opt-item "><span class="label">B.</span><span class="text">The handler must have corrupted the graph&#039;s counters</span></div><div class="opt-item opt-correct"><span class="label">C.</span><span class="text">Pending ordinary signals may have coalesced, so handler invocation count need not match generated-signal count ✅</span></div><div class="opt-item "><span class="label">D.</span><span class="text">The process has exactly twelve threads</span></div></div><div class="diff-tag">💡 Difficulty: medium | ✅ Correct: C</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> A large gap between generated signals and handler invocations can be consistent with coalescing of traditional signals while one instance is pending. The graph alone does not prove the cause, but it invalidates the assumption that each generated signal necessarily causes a separate handler invocation.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q20. A trace records a signal arriving while Thread A holds mutex M. The handler attempts to lock M, and the trace then shows no further progress. Which causal explanation best matches the trace?</p><div class="options-grid"><div class="opt-item opt-correct"><span class="label">A.</span><span class="text">The handler waits for M, but Thread A cannot release M until its interrupted execution resumes ✅</span></div><div class="opt-item "><span class="label">B.</span><span class="text">The signal permanently deletes mutex M</span></div><div class="opt-item "><span class="label">C.</span><span class="text">The operating system must be waiting for another process to create M</span></div><div class="opt-item "><span class="label">D.</span><span class="text">The mutex automatically transfers ownership to the handler and then becomes invalid</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: A</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> The signal interrupts Thread A while it owns M. If the handler attempts to acquire the same non-recursive mutex, it can block waiting for the interrupted thread to release it. Since Thread A cannot continue until the handler returns, the dependency forms a deadlock.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q21. A table shows that after a signal is generated, a dedicated receiver wakes and records it, but the configuration reload begins later on a worker. Which property does this separation demonstrate?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">Signal generation and application-level completion are always simultaneous</span></div><div class="opt-item opt-correct"><span class="label">B.</span><span class="text">Reception can be prompt while the requested operation is deferred to normal execution context ✅</span></div><div class="opt-item "><span class="label">C.</span><span class="text">A worker cannot perform work requested by another thread</span></div><div class="opt-item "><span class="label">D.</span><span class="text">Signal masks automatically synchronize configuration changes</span></div></div><div class="diff-tag">💡 Difficulty: easy | ✅ Correct: B</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Receiving or recording a signal does not mean the requested application operation has completed. A dedicated receiver can promptly recognize the event and then schedule a reload on a worker, where parsing, synchronization, and error handling can occur safely.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q22. A signal handler increments a shared counter, while several threads also increment it during normal execution. What is the central correctness problem?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">The handler&#039;s increment is guaranteed to happen after every worker increment</span></div><div class="opt-item "><span class="label">B.</span><span class="text">The counter is automatically thread-local whenever a signal arrives</span></div><div class="opt-item opt-correct"><span class="label">C.</span><span class="text">Concurrent updates can be lost or violate access rules unless the counter uses a mechanism appropriate for signal context and thread concurrency ✅</span></div><div class="opt-item "><span class="label">D.</span><span class="text">The operating system converts the counter into a signal mask</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: C</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> A shared counter updated from both ordinary threads and a signal handler needs more than an assumption that increment is a simple operation. It may involve multiple memory steps and can race with other updates. Use a design appropriate to both asynchronous-handler restrictions and interthread synchronization.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q23. An application uses a signal to notify a thread that a data buffer is ready. The handler sets a flag before the producer has finished writing the buffer. What design flaw is most important?</p><div class="options-grid"><div class="opt-item opt-correct"><span class="label">A.</span><span class="text">The notification does not establish a valid producer-consumer protocol, so the receiver may read incomplete data ✅</span></div><div class="opt-item "><span class="label">B.</span><span class="text">The handler automatically completes the producer&#039;s remaining writes</span></div><div class="opt-item "><span class="label">C.</span><span class="text">A signal guarantees that all buffer writes are rolled back</span></div><div class="opt-item "><span class="label">D.</span><span class="text">The buffer becomes immutable whenever a signal is generated</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: A</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> A signal notification alone does not guarantee that the producer has finished populating a buffer or that the receiver observes a consistent payload. The program needs a clear synchronization protocol, such as a queue and appropriate memory-ordering rules, rather than treating signal arrival as proof of data readiness.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q24. A program installs a handler for a synchronous fault caused by an invalid memory access. Why is treating this event like an ordinary request to reload configuration potentially unsafe?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">All synchronous faults are process-directed and must be handled by a worker</span></div><div class="opt-item "><span class="label">B.</span><span class="text">The handler always executes after the faulty instruction has completed successfully</span></div><div class="opt-item opt-correct"><span class="label">C.</span><span class="text">A synchronous fault is associated with the executing thread&#039;s operation and may leave execution unable to continue safely ✅</span></div><div class="opt-item "><span class="label">D.</span><span class="text">A configuration reload automatically repairs the invalid memory access</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: C</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Synchronous faults such as invalid memory accesses arise from a particular thread&#039;s execution and may indicate that its state cannot safely continue. They differ from ordinary asynchronous requests, so simply setting a generic work flag may not resolve the fault or make returning from the handler safe.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q25. A process receives an external request to stop. Its handler writes a byte to a nonblocking self-pipe, and the main event loop watches the pipe. Why might this be a sound architecture?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">It allows the handler to perform arbitrary database transactions without blocking</span></div><div class="opt-item "><span class="label">B.</span><span class="text">The pipe makes every signal queued without any limits under all conditions</span></div><div class="opt-item "><span class="label">C.</span><span class="text">The pipe ensures the process-wide signal disposition becomes thread-local</span></div><div class="opt-item opt-correct"><span class="label">D.</span><span class="text">A minimal handler can notify the event loop through an appropriate signal-safe operation, leaving complex work to normal control flow ✅</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: D</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> The self-pipe technique uses a minimal signal handler to write a notification through an operation suitable for signal context, while the event loop handles the request normally. The implementation must still manage nonblocking writes, possible pipe saturation, and signal semantics correctly.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q26. A test repeatedly sends the same ordinary signal while a handler is running. The handler executes fewer times than the number of send operations. Which additional test would best investigate whether signal coalescing explains the result?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">Replace the handler with one that sleeps even longer and assume the result is conclusive</span></div><div class="opt-item opt-correct"><span class="label">B.</span><span class="text">Compare with an appropriate real-time queued signal or explicit message queue under controlled conditions ✅</span></div><div class="opt-item "><span class="label">C.</span><span class="text">Add more worker threads without recording signal generation</span></div><div class="opt-item "><span class="label">D.</span><span class="text">Measure only the process&#039;s total memory usage</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: B</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Traditional signals may coalesce while pending, so repeated sends can yield fewer handler invocations. Comparing behavior with a suitable queued real-time signal or explicit message queue under controlled load helps distinguish coalescing from unrelated losses, scheduling delays, or measurement errors.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q27. A developer says that a signal handler is safe because the handler contains only one call to a function that internally allocates memory and takes a lock. What is the best evaluation?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">A single function call is always safe in a handler</span></div><div class="opt-item "><span class="label">B.</span><span class="text">The handler is safe whenever the called function returns an integer</span></div><div class="opt-item "><span class="label">C.</span><span class="text">Memory allocation is automatically signal-safe if no other thread calls it</span></div><div class="opt-item opt-correct"><span class="label">D.</span><span class="text">Safety depends on the function&#039;s behavior, not the number of calls; hidden allocation or locking can make it unsafe ✅</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: D</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> A handler&#039;s safety cannot be inferred from how short its source code appears. A single library call may allocate memory, acquire internal locks, or access state interrupted mid-update. The programmer must verify async-signal-safety and defer unsuitable operations to normal thread context.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q28. A program needs to preserve the exact count and order of thousands of asynchronous application events. Why is a traditional signal often a poor sole transport mechanism?</p><div class="options-grid"><div class="opt-item opt-correct"><span class="label">A.</span><span class="text">Traditional signals may coalesce and generally do not provide a full application message queue with arbitrary payloads ✅</span></div><div class="opt-item "><span class="label">B.</span><span class="text">Traditional signals always carry a complete copy of the sending thread&#039;s stack</span></div><div class="opt-item "><span class="label">C.</span><span class="text">Every signal is delivered in strict generation order to every thread</span></div><div class="opt-item "><span class="label">D.</span><span class="text">A traditional signal automatically stores an unlimited list of event records</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: A</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Traditional signals are useful for notifications, but pending instances may coalesce and they do not generally transport arbitrary event payloads. If exact counts, ordering, or data must be preserved, an explicit queue, pipe, socket, or suitable queued signal mechanism is usually more appropriate.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q29. A signal receiver obtains a termination request, stops new task submission, asks workers to finish current tasks, and joins them before freeing shared resources. Which principle does this sequence illustrate?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">The signal must be delivered separately to every worker for cleanup to be valid</span></div><div class="opt-item "><span class="label">B.</span><span class="text">A process-directed signal automatically joins all threads</span></div><div class="opt-item opt-correct"><span class="label">C.</span><span class="text">Signal handling can initiate a coordinated lifecycle protocol rather than performing all cleanup inside the handler ✅</span></div><div class="opt-item "><span class="label">D.</span><span class="text">Joining workers is safe only when they are blocked on signals</span></div></div><div class="diff-tag">💡 Difficulty: medium | ✅ Correct: C</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> The receiver converts a signal into an orderly shutdown protocol: stop new work, request cooperative completion, wait for workers, and only then release shared resources. This avoids unsafe cleanup in asynchronous context and prevents freeing data while workers may still access it.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q30. A trace shows Thread A receiving a process-directed signal even though Thread B was created earlier and usually handles similar events. What is the safest interpretation?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">Thread B must have crashed before the trace began</span></div><div class="opt-item opt-correct"><span class="label">B.</span><span class="text">Process-directed delivery does not guarantee a stable recipient based on creation order or past behavior ✅</span></div><div class="opt-item "><span class="label">C.</span><span class="text">The signal is invalid because the first-created thread did not receive it</span></div><div class="opt-item "><span class="label">D.</span><span class="text">The operating system always selects the thread with the shortest execution time</span></div></div><div class="diff-tag">💡 Difficulty: medium | ✅ Correct: B</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Process-directed signal delivery is based on eligibility and operating-system rules, not a promise that the same thread will always receive the signal. A design that relies on creation order or past recipient identity is fragile and should use explicit routing or synchronous reception.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q31. An engineer compares two implementations. Implementation A performs parsing and logging directly in the handler; Implementation B records a notification and processes it in the event loop. Which test result would most strongly support choosing B?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">B completes the requested work eventually but never reports failures</span></div><div class="opt-item "><span class="label">B.</span><span class="text">A uses fewer source-code lines</span></div><div class="opt-item opt-correct"><span class="label">C.</span><span class="text">B avoids deadlocks and handles bursts without corrupting shared state, with acceptable response latency ✅</span></div><div class="opt-item "><span class="label">D.</span><span class="text">A has a shorter handler name and fewer comments</span></div></div><div class="diff-tag">💡 Difficulty: medium | ✅ Correct: C</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Correctness under stress is more important than source-code brevity. If Implementation B handles bursts without deadlocks or state corruption and maintains acceptable latency, that evidence supports deferring complex work to normal context. Performance and failure behavior should be measured under representative loads.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q32. A handler receives a signal and calls a function that is documented as async-signal-safe, then sets a notification flag. What additional concern remains when multiple threads consume the flag?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">No additional concern exists because async-signal-safety guarantees all interthread synchronization</span></div><div class="opt-item "><span class="label">B.</span><span class="text">The signal disposition becomes private to the consuming thread</span></div><div class="opt-item "><span class="label">C.</span><span class="text">Every thread is guaranteed to see the flag immediately without a memory-ordering rule</span></div><div class="opt-item opt-correct"><span class="label">D.</span><span class="text">The handler&#039;s safety does not automatically define a correct multi-consumer protocol; access, ownership, and notification semantics still need to be designed ✅</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: D</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Async-signal-safety concerns whether an operation can safely execute in a handler; it does not by itself establish a complete protocol among ordinary threads. If several threads consume a notification, the program must define synchronization, ownership, visibility, and whether one or all consumers should act.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q33. A signal receiver reads a signal synchronously and then places a reload job on a thread pool. Under heavy load, the job starts late although the signal was received promptly. What is the best diagnosis?</p><div class="options-grid"><div class="opt-item opt-correct"><span class="label">A.</span><span class="text">Signal reception and application-task scheduling are separate stages, and the thread pool may be saturated ✅</span></div><div class="opt-item "><span class="label">B.</span><span class="text">The signal must have been delivered to the wrong process</span></div><div class="opt-item "><span class="label">C.</span><span class="text">Synchronous signal waiting guarantees that the thread pool has free workers</span></div><div class="opt-item "><span class="label">D.</span><span class="text">The operating system is required to prioritize every reload job above all existing tasks</span></div></div><div class="diff-tag">💡 Difficulty: medium | ✅ Correct: A</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> A synchronous receiver can accept a signal promptly while the requested task waits in a saturated thread pool. This is a scheduling and capacity issue after reception, not necessarily a signal-delivery failure. The application may need queue limits, prioritization, or dedicated capacity for critical work.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q34. A team plans to let each worker independently catch a termination signal and free its own portion of a shared cache. Some cache entries are shared across workers. What is the strongest design objection?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">Workers are prohibited from using caches in multithreaded programs</span></div><div class="opt-item opt-correct"><span class="label">B.</span><span class="text">Independent cleanup can race over shared entries and produce double frees or use-after-free errors; coordinated ownership is needed ✅</span></div><div class="opt-item "><span class="label">C.</span><span class="text">Termination signals always execute after every worker has stopped</span></div><div class="opt-item "><span class="label">D.</span><span class="text">A handler automatically reference-counts every cache entry</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: B</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> If workers independently clean shared cache entries, one worker may free an object another still uses, or multiple workers may free the same allocation. Signal reception should trigger a coordinated shutdown protocol with clear ownership, worker quiescence, and resource release after outstanding references are resolved.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q35. A process blocks signal S in all workers and waits for S in one dedicated thread. A newly created worker unexpectedly receives S asynchronously. Which investigation is most useful first?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">Check whether the signal number is prime</span></div><div class="opt-item "><span class="label">B.</span><span class="text">Replace all workers with processes before examining configuration</span></div><div class="opt-item "><span class="label">C.</span><span class="text">Assume the operating system ignored the signal mask rules</span></div><div class="opt-item opt-correct"><span class="label">D.</span><span class="text">Verify the new worker&#039;s inherited mask and any code that later unblocks S, as well as the process&#039;s signal-routing setup ✅</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: D</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> A newly created POSIX thread generally inherits the creating thread&#039;s signal mask, but application code may later alter that mask. If a worker unexpectedly receives S, inspect mask inheritance, subsequent mask changes, and signal disposition and generation type before assuming a system-level violation.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q36. A service must handle a termination signal and a separate user-defined signal requesting statistics. Which design best prevents a long statistics operation from delaying shutdown handling?</p><div class="options-grid"><div class="opt-item opt-correct"><span class="label">A.</span><span class="text">Use a minimal receiver that records event types and dispatches work with explicit priority or separate coordinated processing paths ✅</span></div><div class="opt-item "><span class="label">B.</span><span class="text">Run the entire statistics report inside the asynchronous handler</span></div><div class="opt-item "><span class="label">C.</span><span class="text">Have every worker independently print statistics and terminate</span></div><div class="opt-item "><span class="label">D.</span><span class="text">Block both signals permanently and expect the application to infer them from CPU usage</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: A</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> A long statistics operation should not monopolize an asynchronous handler or block critical shutdown coordination. A receiver can record event types and dispatch ordinary work, while prioritization or separate processing paths ensure that shutdown requests are not indefinitely delayed by lower-priority reporting.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q37. A student argues that using a dedicated signal thread eliminates every race associated with signals. Which response is most accurate?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">Correct, because a dedicated thread disables all concurrent execution</span></div><div class="opt-item "><span class="label">B.</span><span class="text">Correct, because no signal can remain pending once a receiver exists</span></div><div class="opt-item opt-correct"><span class="label">C.</span><span class="text">Incorrect, because masks, pending-signal semantics, shared-state synchronization, and task scheduling still require careful design ✅</span></div><div class="opt-item "><span class="label">D.</span><span class="text">Incorrect only because a dedicated thread must always be the main thread</span></div></div><div class="diff-tag">💡 Difficulty: medium | ✅ Correct: C</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> A dedicated receiver can make signal handling more predictable, but it does not remove all concurrency concerns. The application still must configure masks, account for pending and coalesced signals, synchronize shared state, handle receiver overload, and coordinate the ordinary work triggered by each event.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q38. A system receives a thread-directed signal intended for a worker that has already exited. What should the application avoid assuming?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">That thread-directed signals always survive thread termination and must be delivered to a replacement worker</span></div><div class="opt-item opt-correct"><span class="label">B.</span><span class="text">That a signal targeting a particular thread can automatically be reassigned to any future worker with the same role ✅</span></div><div class="opt-item "><span class="label">C.</span><span class="text">That thread identifiers can be reused in some environments</span></div><div class="opt-item "><span class="label">D.</span><span class="text">That thread lifetime must be coordinated with any mechanism that targets it</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: B</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Thread-directed signaling depends on a specific target and its lifetime; it is not a general-purpose broadcast to a role. Applications should not assume that a signal aimed at an exited thread will be reassigned to a replacement. Target lifetime and identifier reuse must be handled explicitly.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q39. A developer wants to perform a database commit when a termination signal arrives. Which architecture is most appropriate?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">Execute the complete database transaction in the asynchronous handler to minimize latency</span></div><div class="opt-item opt-correct"><span class="label">B.</span><span class="text">Use the handler or receiver to record the request, then let normal application logic commit or roll back under its established transaction and shutdown rules ✅</span></div><div class="opt-item "><span class="label">C.</span><span class="text">Let every worker commit independently before checking whether the database is open</span></div><div class="opt-item "><span class="label">D.</span><span class="text">Ignore database consistency because signal delivery is atomic</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: B</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Database transactions may involve locks, allocation, I/O, and complex recovery logic that is inappropriate for an asynchronous signal handler. The signal should initiate a controlled shutdown path in normal execution context, where transaction boundaries, error handling, and resource ownership remain enforceable.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q40. A multithreaded runtime uses a signal to request a stack dump for diagnostics. Why should the implementation carefully control where and how the dump is produced?</p><div class="options-grid"><div class="opt-item opt-correct"><span class="label">A.</span><span class="text">Dumping stack and runtime state may require unsafe library operations and may observe inconsistent thread states if initiated directly in a handler ✅</span></div><div class="opt-item "><span class="label">B.</span><span class="text">A stack dump automatically blocks every thread until the dump is complete</span></div><div class="opt-item "><span class="label">C.</span><span class="text">Signals can request diagnostics only from single-threaded applications</span></div><div class="opt-item "><span class="label">D.</span><span class="text">A signal handler always has a complete, globally consistent snapshot of all threads</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: A</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Diagnostic dumping may allocate memory, acquire locks, traverse runtime structures, or inspect threads while they are changing state. A minimal handler or controlled receiver should request the dump, while a coordinated diagnostic mechanism gathers information safely and documents any limitations in snapshot consistency.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q41. A signal handler sets a flag, but a compiler optimization causes the main loop not to observe updates as expected. Which lesson is most appropriate?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">All compiler optimizations must be disabled in every multithreaded application</span></div><div class="opt-item "><span class="label">B.</span><span class="text">A plain shared variable is always sufficient for communication with a signal handler</span></div><div class="opt-item opt-correct"><span class="label">C.</span><span class="text">The flag must use a mechanism with the required signal-handler semantics and, where applicable, correct language-level synchronization ✅</span></div><div class="opt-item "><span class="label">D.</span><span class="text">Signal masks guarantee visibility of all ordinary memory writes</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: C</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> A compiler may optimize accesses to an ordinary variable when the language rules do not require it to observe asynchronous updates. A handler-to-main flag needs a suitable signal-safe type or mechanism, such as volatile sig_atomic_t in applicable C code, with broader synchronization handled separately where needed.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q42. A program must handle a signal promptly but also preserve a strict ordering between the signal request and a shared-state update performed by a worker. What is the best design principle?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">Assume signal delivery alone establishes every required memory-ordering relation</span></div><div class="opt-item opt-correct"><span class="label">B.</span><span class="text">Use an explicit synchronization protocol to order the update and request processing, rather than relying on signal arrival alone ✅</span></div><div class="opt-item "><span class="label">C.</span><span class="text">Allow the handler to rewrite the worker&#039;s program counter</span></div><div class="opt-item "><span class="label">D.</span><span class="text">Block the signal only after freeing the shared state</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: B</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Signal delivery is not a substitute for a clearly specified synchronization protocol governing shared application data. If processing must occur after a particular update, use suitable atomic operations, mutexes in ordinary context, queues, or other synchronization that establishes the required ordering and ownership.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q43. A service receives repeated requests to refresh the same cache. Refreshing is expensive, and only the latest configuration matters. Which signal-response strategy can reduce wasted work without losing the required final state?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">Start a full refresh in every handler invocation and let all workers overwrite the cache</span></div><div class="opt-item "><span class="label">B.</span><span class="text">Create an unlimited number of refresh threads for every pending signal</span></div><div class="opt-item "><span class="label">C.</span><span class="text">Treat every ordinary signal as a guaranteed separate durable job</span></div><div class="opt-item opt-correct"><span class="label">D.</span><span class="text">Coalesce redundant refresh requests in normal application logic and perform a coordinated refresh using the latest configuration ✅</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: D</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> If only the latest configuration matters, processing every repeated notification as an independent job can waste resources. A receiver can record that refresh is needed and coalesce redundant requests, then perform a coordinated update in normal context. This application-level strategy complements, rather than depends on, signal coalescing.</p>
+                    </div>
+                </div></div>
+
+    <!-- related topics -->
+<div style="margin:12px 0;"><h3 style="font-size:1rem; color:#1e293b;">🔗 Related Topics (MCQs)</h3><div class="topic-pills"><a href="/books/operating-system/threads-in-operating-system/topics/threads-in-operating-system-overview.html">📝 Threads in operating system overview MCQs</a><a href="/books/operating-system/threads-in-operating-system/topics/why-threads-are-used-in-operating-system.html">📝 Why threads are used in operating system MCQs</a><a href="/books/operating-system/threads-in-operating-system/topics/benefits-of-multithreading-in-operating-system.html">📝 Benefits of multithreading in operating system MCQs</a><a href="/books/operating-system/threads-in-operating-system/topics/multicore-programming-in-operating-system.html">📝 Multicore programming in operating system MCQs</a><a href="/books/operating-system/threads-in-operating-system/topics/multicore-programming-challenges-and-issues.html">📝 Multicore programming challenges and issues MCQs</a></div></div>
+
+    <!-- bottom navigation (same as top, but keep for consistency) -->
+<div class="nav-container" style="margin-top:16px;"><a href="/books/operating-system/threads-in-operating-system/topics/fork-and-exec-system-calls-in-multithreading.html" class="nav-link"><span class="arrow">←</span><span class="label">Previous Topic:</span><span class="topic-name">Fork and exec system calls in multithreading</span></a><span class="nav-current">📝 <span class="current-name">Signal handling in multithreaded programs</span></span><a href="/books/operating-system/threads-in-operating-system/topics/thread-cancellation-in-operating-system.html" class="nav-link"><span class="topic-name">Thread cancellation in operating system</span><span class="label">:Next Topic</span><span class="arrow">→</span></a></div>
+
+    <div class="footer-links">
+      <a href="/quiz" class="btn-primary">🚀 Start Quiz</a>
+      <a href="/practice" class="btn-secondary">📝 Practice Mode</a>
+    </div>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-PT363CT7');</script>
+<!-- End Google Tag Manager -->
+  <title>Grand Central Dispatch in operating system: Definition, Examples & MCQs | BookMCQ</title>
+  <meta name="description" content="Grand Central Dispatch (GCD) is Apple's technology for concurrent code execution on macOS and iOS, managing thread pools automatically through dispatch queues. Includes examples and MCQs with explanations.">
+  <meta name="keywords" content="Grand Central Dispatch in operating system MCQs, Operating System Grand Central Dispatch in operating system questions, Grand Central Dispatch in operating system practice, Operating System topics, Grand Central Dispatch in operating system easy medium hard">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://www.bookmcq.com/books/operating-system/threads-in-operating-system/topics/grand-central-dispatch-in-operating-system.html">
+  <meta property="og:url" content="https://www.bookmcq.com/books/operating-system/threads-in-operating-system/topics/grand-central-dispatch-in-operating-system.html">
+  <meta property="og:title" content="Grand Central Dispatch in operating system - Operating System MCQs | BookMCQ">
+  <meta property="og:description" content="Practice Grand Central Dispatch in operating system from Operating System. 33 questions with difficulty breakdown: Easy 5, Medium 16, Hard 12.">
+  <meta property="og:type" content="website">
+  <meta name="theme-color" content="#7c3aed">
+  <script type="application/ld+json">
+{"@context":"https://schema.org","@type":"CollectionPage","name":"Grand Central Dispatch in operating system - Operating System","description":"Practice Grand Central Dispatch in operating system from Operating System - 4. Threads in Operating System. 33 MCQs with answers, plus 5 easy, 16 medium, and 12 hard questions.","url":"https://www.bookmcq.com/books/operating-system/threads-in-operating-system/topics/grand-central-dispatch-in-operating-system.html","isPartOf":{"@type":"Book","name":"Operating System"},"about":{"@type":"Thing","name":"Grand Central Dispatch in operating system"},"dateModified":"2026-10-28"}
+  </script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      min-height: 100vh;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      max-width: 900px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 0 8px;
+    }
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 18px 16px 24px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+      width: 100%;
+    }
+    /* responsive padding */
+    @media (min-width: 640px) { .card { padding: 28px 32px; } }
+    @media (max-width: 480px) { .card { padding: 14px 12px; } }
+
+    .back-link { display: inline-block; margin-bottom: 12px; color: #7c3aed; text-decoration: none; font-weight: 500; }
+    .back-link:hover { text-decoration: underline; }
+    .breadcrumb { font-size: 13px; color: #000000; margin-bottom: 10px; word-break: break-word; text-align: justify; }
+    .breadcrumb a { color: #000000; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    h1 { font-size: 1.6rem; line-height: 1.2; margin: 6px 0 4px; word-break: break-word; text-align: justify; }
+    @media (max-width: 480px) { h1 { font-size: 1.4rem; } }
+
+    .topic-info { font-size: 0.9rem; color: #475569; margin: 6px 0 10px; text-align: justify; }
+
+    /* ---- NAVIGATION (fully responsive with full labels) ---- */
+    .nav-container {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px 6px;
+      background: #f8fafc;
+      padding: 10px 12px;
+      border-radius: 14px;
+      margin: 16px 0 12px;
+      border: 2px solid #e5e7eb;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+      width: 100%;
+    }
+    .nav-link {
+      color: #7c3aed;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.8rem;
+      padding: 6px 10px;
+      border-radius: 10px;
+      background: white;
+      border: 1px solid #e5e7eb;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      flex: 0 1 auto;
+      min-width: 0;
+      word-break: break-word;
+      line-height: 1.3;
+    }
+    .nav-link:hover { background: #f3e8ff; border-color: #7c3aed; }
+    .nav-link .topic-name { font-weight: 700; color: #7c3aed; text-decoration: underline; text-underline-offset: 2px; word-break: break-word; text-align: justify; }
+    .nav-link .label { font-size: 0.7rem; color: #64748b; font-weight: 500; white-space: nowrap; text-align: justify; }
+    .nav-link .arrow { font-size: 1.1rem; line-height: 1; flex-shrink: 0; }
+    .nav-disabled { color: #94a3b8; font-weight: 500; font-size: 0.75rem; opacity: 0.6; padding: 6px 10px; background: #f1f5f9; border-radius: 10px; border: 1px solid #e5e7eb; white-space: nowrap; text-align: justify; }
+    .nav-current {
+      font-weight: 700;
+      color: #1e293b;
+      font-size: 0.85rem;
+      padding: 4px 12px;
+      background: #ede9fe;
+      border-radius: 10px;
+      border: 2px solid #7c3aed;
+      white-space: nowrap;
+      flex-shrink: 0;
+      text-align: justify;
+    }
+    .nav-current .current-name { font-weight: 800; color: #5b21b6; text-align: justify; }
+
+    /* responsive adjustments for better viewing */
+    @media (max-width: 650px) {
+      .nav-container { 
+        flex-wrap: wrap; 
+        justify-content: center; 
+        gap: 6px; 
+        padding: 8px 10px; 
+      }
+      .nav-link { 
+        font-size: 0.7rem; 
+        padding: 4px 8px; 
+        flex: 0 1 auto; 
+      }
+      .nav-link .label { 
+        font-size: 0.6rem; 
+      }
+      .nav-link .topic-name { 
+        font-size: 0.7rem; 
+      }
+      .nav-current { 
+        font-size: 0.7rem; 
+        padding: 3px 8px; 
+      }
+      .nav-disabled { 
+        font-size: 0.65rem; 
+        padding: 4px 8px; 
+      }
+    }
+
+    @media (max-width: 480px) {
+      .nav-container { 
+        gap: 4px; 
+        padding: 6px 6px; 
+      }
+      .nav-link { 
+        font-size: 0.6rem; 
+        padding: 3px 6px; 
+      }
+      .nav-link .label { 
+        font-size: 0.55rem; 
+      }
+      .nav-link .topic-name { 
+        font-size: 0.6rem; 
+      }
+      .nav-current { 
+        font-size: 0.6rem; 
+        padding: 2px 6px; 
+      }
+      .nav-disabled { 
+        font-size: 0.55rem; 
+        padding: 3px 6px; 
+      }
+      .nav-link .arrow { 
+        font-size: 0.8rem; 
+      }
+    }
+
+    /* difficulty badges - border around badges, black text, bold labels */
+    .badge-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 14px 0; text-align: center; }
+    .badge-item { padding: 10px 4px; border-radius: 12px; text-align: center; border: 2px solid #000000; }
+    .badge-item .num { font-size: 1.8rem; font-weight: 700; text-align: center; color: #000000; }
+    .badge-item .lbl { font-size: 0.7rem; color: #000000; text-align: center; font-weight: 700; }
+    @media (max-width: 480px) { .badge-item .num { font-size: 1.4rem; } }
+
+    /* question blocks */
+    .q-block { background: white; padding: 14px 12px; border-radius: 12px; margin-bottom: 16px; border: 1px solid #e5e7eb; text-align: justify; contain: layout style paint; }
+    .q-text { font-weight: 600; margin: 0 0 10px; line-height: 1.5; text-align: justify; }
+    .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; font-size: 0.9rem; color: #334155; text-align: justify; }
+    .opt-item { display: flex; align-items: flex-start; gap: 4px; padding: 2px 0; text-align: justify; }
+    .opt-item .label { font-weight: 600; color: #000000; min-width: 18px; text-align: justify; }
+    .opt-item .text { text-align: justify; word-break: break-word; }
+    .opt-correct { background-color: #dcfce7; border-radius: 6px; padding: 4px 6px; text-align: justify; }
+    .diff-tag { font-size: 0.7rem; color: #000000; margin-top: 8px; text-align: justify; }
+    .explanation { margin-top: 10px; padding: 10px 12px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px; text-align: justify; }
+    .explanation p { font-size: 0.8rem; color: #1e293b; margin: 0; line-height: 1.5; text-align: justify; }
+
+    @media (max-width: 500px) {
+      .options-grid { grid-template-columns: 1fr; gap: 2px; }
+      .q-block { padding: 12px 10px; }
+      .explanation p { font-size: 0.75rem; }
+    }
+
+    .btn-primary { display: inline-block; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 12px 28px; border-radius: 40px; text-decoration: none; font-weight: 700; margin-top: 8px; transition: 0.2s; border: none; cursor: pointer; text-align: justify; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(102,126,234,0.4); }
+    .btn-secondary { display: inline-block; background: #f1f5f9; color: #1e293b; padding: 10px 22px; border-radius: 40px; text-decoration: none; font-weight: 500; border: 1px solid #d1d5db; text-align: justify; }
+    .btn-secondary:hover { background: #e5e7eb; }
+
+    .footer-links { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 18px; text-align: justify; }
+    .topic-pills { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; text-align: justify; }
+    .topic-pills a { background: #f3f4f6; padding: 4px 12px; border-radius: 30px; font-size: 0.75rem; color: #1e293b; text-decoration: none; border: 1px solid #e5e7eb; white-space: nowrap; text-align: justify; }
+    .topic-pills a:hover { background: #e0e7ff; }
+
+    img, svg { max-width: 100%; height: auto; }
+  </style>
+</head>
+<body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PT363CT7"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+<div class="container">
+  <!-- header -->
+  <div style="text-align:center; padding:6px 0 12px;">
+    <a href="/" style="text-decoration:none;">
+      <span style="font-size:1.2rem; font-weight:700; color:#7c3aed; background:white; padding:6px 18px; border-radius:40px; display:inline-block; box-shadow:0 2px 8px rgba(0,0,0,0.08);">🎓 BookMCQ</span>
+    </a>
+  </div>
+
+  <main class="card">
+    <!-- breadcrumb -->
+    <div class="breadcrumb">
+      <a href="/">🏠 Home</a> &gt; <a href="/books/operating-system/">Operating System</a> &gt; <a href="/books/operating-system/threads-in-operating-system.html">4. Threads in Operating System</a> &gt; Grand Central Dispatch in operating system
+    </div>
+    <a href="/books/operating-system/threads-in-operating-system.html" class="back-link">← Back to 4. Threads in Operating System</a>
+    
+    <h1>📝 Grand Central Dispatch in operating system (33 MCQs)</h1>
+    <p class="topic-info">📖 From <strong>Operating System</strong> • 4. Threads in Operating System • 33 questions available</p>
+
+    <!-- ====== NAVIGATION (fully responsive) ====== -->
+<div class="nav-container"><a href="/books/operating-system/threads-in-operating-system/topics/open-multi-processing-implicit-threading.html" class="nav-link"><span class="arrow">←</span><span class="label">Previous Topic:</span><span class="topic-name">Open Multi Processing Implicit Threading</span></a><span class="nav-current">📝 <span class="current-name">Grand Central Dispatch in operating system</span></span><a href="/books/operating-system/threads-in-operating-system/topics/fork-and-exec-system-calls-in-multithreading.html" class="nav-link"><span class="topic-name">Fork and exec system calls in multithreading</span><span class="label">:Next Topic</span><span class="arrow">→</span></a></div>
+
+
+            <div style="margin: 8px 0 12px;">
+                <h2 style="font-size:1.2rem; font-weight:700; color:#1e293b; margin-top:8px;">What is Grand Central Dispatch in operating system?</h2>
+                <p style="text-align: justify; text-justify: inter-word; line-height:1.7; color:#334155; font-size:0.95rem; word-break:break-word;"><b>Definition:</b> <br>Grand Central Dispatch (GCD) is Apple's technology for concurrent code execution on macOS and iOS, managing thread pools automatically through dispatch queues. GCD abstracts thread management completely, allowing developers to submit tasks as blocks or functions to serial or concurrent queues, with system dynamically adjusting thread count based on workload and available resources.<br><br><b>Working:</b><br>Developers create dispatch queues (serial or concurrent) and submit tasks using dispatch_async or dispatch_sync. GCD maintains global thread pools, automatically creating and destroying threads as needed. Serial queues execute tasks one-at-a-time maintaining order, while concurrent queues execute multiple tasks simultaneously. System prioritizes queues and manages thread allocation intelligently.<br><br><b>Example:</b> <br>```swift<br>dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), {<br>    // Background task<br>    let result = heavyComputation()<br>    dispatch_async(dispatch_get_main_queue(), {<br>        // Update UI on main thread<br>        updateUI(result)<br>    })<br>})<br>```<br>Solution: Background computation runs on global queue while UI update safely executes on main queue.<br><br><b>Reason:</b><br>GCD eliminates manual thread management complexity, optimizes thread usage automatically preventing oversubscription, provides simple queue-based abstraction easier than raw threads, integrates with system power management for energy efficiency on mobile devices, and handles edge cases like queue cancellation and dependency management elegantly.<br><br><b>Common MisConceptions:</b><br>Students think GCD creates unlimited threads, but it intelligently limits thread count based on CPU cores. Another misconception is that all queues behave identically, when serial queues guarantee execution order while concurrent queues don't. Some believe GCD is only for Apple platforms, inspiring similar frameworks on other systems.<br><br><b>Exam Preparation Tips: How to prepare this topic</b><br>Understand queue types and behaviors, practice submitting tasks correctly, learn main queue significance for UI updates, study quality-of-service classes for priority management, and compare GCD with traditional threading approaches highlighting automation benefits.<br><br><b>Key Terms:</b> <ul style='margin-top:5px; margin-bottom:10px; padding-left:20px;'><li><b>Dispatch Queue</b> - GCD structure managing task execution.</li><li><b>Serial Queue</b> - queue executing tasks sequentially.</li><li><b>Concurrent Queue</b> - queue executing tasks in parallel.</li><li><b>Block</b> - anonymous function submitted to queue.</li></ul></p>
+            </div>
+        
+
+    <p style="font-size:13px; color:#000000; margin-top:6px;">🔄 Last updated: 2026-10-28</p>
+    <!-- difficulty badges -->
+<div class="badge-grid"><div class="badge-item" style="background:#dcfce7; border-color:#86efac;"><div class="num" style="color:#000000;">5</div><div class="lbl" style="font-weight:700; color:#000000;">Easy</div></div><div class="badge-item" style="background:#fef9c3; border-color:#fde047;"><div class="num" style="color:#000000;">16</div><div class="lbl" style="font-weight:700; color:#000000;">Medium</div></div><div class="badge-item" style="background:#fee2e2; border-color:#fca5a5;"><div class="num" style="color:#000000;">12</div><div class="lbl" style="font-weight:700; color:#000000;">Hard</div></div></div>
+
+    <!-- all MCQs -->
+<div style="margin:12px 0;"><h3 style="font-size:1.1rem; color:#1e293b; margin-bottom:10px;">📝 All Grand Central Dispatch in operating system MCQs</h3><div class="q-block"><p class="q-text">Q1. A developer needs to execute independent background tasks on Apple platforms without manually creating and managing a separate thread for every task. Which approach best fits this requirement?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">Create a new operating-system process for every task</span></div><div class="opt-item opt-correct"><span class="label">B.</span><span class="text">Use Grand Central Dispatch queues to submit work for runtime scheduling ✅</span></div><div class="opt-item "><span class="label">C.</span><span class="text">Execute every task inside a single critical section</span></div><div class="opt-item "><span class="label">D.</span><span class="text">Assign each task permanently to a physical CPU core</span></div></div><div class="diff-tag">💡 Difficulty: easy | ✅ Correct: B</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Grand Central Dispatch (GCD) allows applications to submit work to dispatch queues, while the system manages scheduling and execution resources. This reduces the need for manual thread creation and lifecycle management, although it does not guarantee that every task executes simultaneously.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q2. A user interface becomes unresponsive because a developer performs a large image-processing operation synchronously on the main thread. Which change is most appropriate?</p><div class="options-grid"><div class="opt-item opt-correct"><span class="label">A.</span><span class="text">Move the expensive computation to a suitable background queue and return UI updates to the main queue ✅</span></div><div class="opt-item "><span class="label">B.</span><span class="text">Increase the number of statements executed on the main thread</span></div><div class="opt-item "><span class="label">C.</span><span class="text">Place the entire image-processing operation inside a synchronous main-queue dispatch</span></div><div class="opt-item "><span class="label">D.</span><span class="text">Replace the image-processing operation with repeated main-thread polling</span></div></div><div class="diff-tag">💡 Difficulty: medium | ✅ Correct: A</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Long-running computation on the main thread can prevent the application from processing input and refreshing its interface. Moving suitable work to a background queue can improve responsiveness, while UI changes should generally be performed on the main thread.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q3. A developer dispatches a task asynchronously to a queue and immediately reads a result that the task has not yet produced. Occasionally, the application uses an old value. What is the most likely cause?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">Asynchronous dispatch always executes tasks in reverse order</span></div><div class="opt-item "><span class="label">B.</span><span class="text">The queue permanently caches all previous return values</span></div><div class="opt-item "><span class="label">C.</span><span class="text">Background tasks cannot modify shared data</span></div><div class="opt-item opt-correct"><span class="label">D.</span><span class="text">The caller assumes completion before the asynchronous task has finished ✅</span></div></div><div class="diff-tag">💡 Difficulty: medium | ✅ Correct: D</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Asynchronous submission allows the caller to continue without waiting for the submitted task to finish. Reading the result immediately can therefore access an uninitialized or outdated value. The program needs an appropriate completion mechanism, synchronization primitive, or dependent task.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q4. A developer submits three independent calculations to a serial dispatch queue. The calculations take 2, 3, and 4 seconds, respectively. Ignoring overhead, what is the minimum total execution time if all must finish on that queue?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">4 seconds</span></div><div class="opt-item opt-correct"><span class="label">B.</span><span class="text">9 seconds ✅</span></div><div class="opt-item "><span class="label">C.</span><span class="text">6 seconds</span></div><div class="opt-item "><span class="label">D.</span><span class="text">2 seconds</span></div></div><div class="diff-tag">💡 Difficulty: easy | ✅ Correct: B</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> A serial dispatch queue executes one submitted task at a time, so the three task durations add together. The total is \(2+3+4=9\) seconds, assuming no additional overhead and no time spent waiting for unrelated resources.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q5. A developer calls a synchronous dispatch operation on the main queue from code already executing on that same queue. The application hangs. What is the best explanation?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">The main queue automatically rejects every synchronous operation</span></div><div class="opt-item "><span class="label">B.</span><span class="text">Synchronous dispatch always creates a deadlock on every queue</span></div><div class="opt-item "><span class="label">C.</span><span class="text">The operation forces the application to create a new process</span></div><div class="opt-item opt-correct"><span class="label">D.</span><span class="text">The current execution waits for work that cannot begin until the current execution returns ✅</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: D</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Synchronous dispatch blocks the caller until the submitted block completes. When code running on the main queue synchronously targets that same serial queue, the new block cannot execute until the current block returns, while the current block is waiting, creating deadlock.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q6. A developer needs to perform a background download and then update the interface only after the download succeeds. Which design best expresses the dependency without blocking the interface?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">Perform the download synchronously on the main queue and update the UI afterward</span></div><div class="opt-item opt-correct"><span class="label">B.</span><span class="text">Submit the download asynchronously, then schedule the UI update on the main queue from its completion path ✅</span></div><div class="opt-item "><span class="label">C.</span><span class="text">Submit the UI update before starting the download and assume it will wait</span></div><div class="opt-item "><span class="label">D.</span><span class="text">Use a serial main queue for both the download and every interface animation</span></div></div><div class="diff-tag">💡 Difficulty: medium | ✅ Correct: B</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> An asynchronous download lets the main thread remain responsive. Once the download completes, its completion path can enqueue the required interface update on the main queue. This preserves the dependency while avoiding a long blocking operation on the UI thread.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q7. A task group contains independent file-processing jobs with highly variable execution times. A developer wants to avoid manually assigning every job to a specific thread. Which GCD property is most relevant?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">Every queue has a permanently assigned worker thread</span></div><div class="opt-item "><span class="label">B.</span><span class="text">Each submitted block must explicitly choose its physical CPU core</span></div><div class="opt-item opt-correct"><span class="label">C.</span><span class="text">The dispatch system schedules queued work using available execution resources ✅</span></div><div class="opt-item "><span class="label">D.</span><span class="text">GCD requires all jobs to use the main queue</span></div></div><div class="diff-tag">💡 Difficulty: medium | ✅ Correct: C</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> GCD separates task submission from low-level thread management. Dispatch queues describe how work should be organized, while the system schedules eligible work using available resources. This allows variable-duration tasks to be managed without requiring the programmer to assign each job to a dedicated thread.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q8. A developer submits a long-running task to a global concurrent queue and expects the operating system to create one new thread for that task. Which correction is most accurate?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">Global queues always create a dedicated thread per submitted block</span></div><div class="opt-item "><span class="label">B.</span><span class="text">Every global queue is actually a separate operating-system process</span></div><div class="opt-item "><span class="label">C.</span><span class="text">The task must execute on the main thread regardless of queue selection</span></div><div class="opt-item opt-correct"><span class="label">D.</span><span class="text">GCD manages execution resources, and a submitted block is not guaranteed a dedicated thread ✅</span></div></div><div class="diff-tag">💡 Difficulty: easy | ✅ Correct: D</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Dispatch queues represent work scheduling rather than a promise of one dedicated thread per block. The runtime determines how queued work uses available execution resources. Developers should not rely on a particular thread identity unless the API explicitly provides that guarantee.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q9. A developer puts CPU-intensive work on a concurrent queue and observes that the user interface remains responsive, but total processing time barely improves. What is the most reasonable interpretation?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">Concurrent queues guarantee linear speedup only for CPU-intensive tasks</span></div><div class="opt-item opt-correct"><span class="label">B.</span><span class="text">The workload may be limited by serial dependencies, hardware capacity, or contention ✅</span></div><div class="opt-item "><span class="label">C.</span><span class="text">The main thread must be executing every background task</span></div><div class="opt-item "><span class="label">D.</span><span class="text">The queue automatically converts CPU calculations into input/output operations</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: B</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Moving CPU-intensive work away from the main thread can improve responsiveness without guaranteeing shorter total execution time. Performance depends on available cores, serial sections, memory behavior, synchronization, and scheduling overhead. Responsiveness and computational speedup are different outcomes.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q10. A developer wants to execute one setup block before several dependent processing blocks on the same serial queue. Which property helps preserve the required sequence?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">The queue randomly reorders tasks to maximize processor usage</span></div><div class="opt-item opt-correct"><span class="label">B.</span><span class="text">Serial queue execution preserves submission order for its queued blocks ✅</span></div><div class="opt-item "><span class="label">C.</span><span class="text">The runtime automatically executes the setup block last</span></div><div class="opt-item "><span class="label">D.</span><span class="text">Each block must be converted into a separate process</span></div></div><div class="diff-tag">💡 Difficulty: medium | ✅ Correct: B</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> A serial dispatch queue executes one block at a time in submission order. Submitting the setup block before dependent blocks on that same queue therefore preserves their sequence. This guarantee does not automatically extend to unrelated queues or work submitted through other scheduling paths.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q11. A developer needs to execute several independent tasks concurrently but must protect a shared database cache from simultaneous modifications. Which design is generally reasonable?</p><div class="options-grid"><div class="opt-item opt-correct"><span class="label">A.</span><span class="text">Use a concurrent queue for independent work and serialize cache mutations through a suitable synchronization mechanism ✅</span></div><div class="opt-item "><span class="label">B.</span><span class="text">Place every operation on the main queue without considering responsiveness</span></div><div class="opt-item "><span class="label">C.</span><span class="text">Allow all cache writes to proceed simultaneously because GCD manages threads</span></div><div class="opt-item "><span class="label">D.</span><span class="text">Create a separate unsynchronized copy of the cache for every task and merge them randomly</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: A</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Independent work can benefit from concurrent scheduling, while shared mutable state needs deliberate coordination. A dedicated serial queue, lock, or another suitable synchronization mechanism can protect cache mutations without unnecessarily serializing all unrelated computation.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q12. A task is submitted with a low-priority quality-of-service setting, while another task has a higher-priority setting. Which expectation is most appropriate?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">The lower-priority task is guaranteed never to execute</span></div><div class="opt-item "><span class="label">B.</span><span class="text">The higher-priority task must finish first regardless of dependencies</span></div><div class="opt-item "><span class="label">C.</span><span class="text">Quality-of-service settings permanently bind each task to a specific CPU</span></div><div class="opt-item opt-correct"><span class="label">D.</span><span class="text">The system can use priority information when scheduling work, but exact execution order is not guaranteed ✅</span></div></div><div class="diff-tag">💡 Difficulty: medium | ✅ Correct: D</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Quality-of-service information communicates the relative importance and responsiveness needs of work. The system may use it to influence scheduling, but resource contention, dependencies, and implementation details mean that priority settings do not guarantee an exact start or completion order.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q13. A developer dispatches a block asynchronously to a serial queue and immediately waits on a semaphore that the block signals. The application can no longer make progress. What should be checked first?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">Whether the queue contains enough comments</span></div><div class="opt-item opt-correct"><span class="label">B.</span><span class="text">Whether the waiting code prevents the queued block from executing ✅</span></div><div class="opt-item "><span class="label">C.</span><span class="text">Whether the block has too many local variables</span></div><div class="opt-item "><span class="label">D.</span><span class="text">Whether serial queues automatically discard semaphore signals</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: B</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> A semaphore wait can block the thread that needs to make progress. If that thread is also responsible for executing the queued block, or if the required execution resources are otherwise unavailable, the wait can deadlock. The blocking dependency must be examined.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q14. A developer uses a dispatch group to coordinate several independent downloads and wants to run a final aggregation step after all downloads finish. Which approach best matches this requirement?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">Run aggregation immediately after submitting the first download</span></div><div class="opt-item "><span class="label">B.</span><span class="text">Use a serial queue only for the first download and ignore the others</span></div><div class="opt-item opt-correct"><span class="label">C.</span><span class="text">Associate the downloads with a dispatch group and schedule aggregation for group completion ✅</span></div><div class="opt-item "><span class="label">D.</span><span class="text">Create a new process after every download without tracking completion</span></div></div><div class="diff-tag">💡 Difficulty: medium | ✅ Correct: C</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> A dispatch group tracks completion across multiple asynchronous operations. A notification or appropriate group-wait mechanism can coordinate a final aggregation step after the associated tasks complete, avoiding the assumption that submitting work means the work has already finished.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q15. A developer uses dispatch_apply for a collection of independent calculations and assumes each iteration executes on a newly created thread. Which statement is most accurate?</p><div class="options-grid"><div class="opt-item opt-correct"><span class="label">A.</span><span class="text">The operation schedules iterations using dispatch facilities, but does not promise a distinct thread per iteration ✅</span></div><div class="opt-item "><span class="label">B.</span><span class="text">Every iteration must execute in a separate process</span></div><div class="opt-item "><span class="label">C.</span><span class="text">The iterations are guaranteed to execute only on the main thread</span></div><div class="opt-item "><span class="label">D.</span><span class="text">dispatch_apply always creates exactly as many threads as iterations</span></div></div><div class="diff-tag">💡 Difficulty: medium | ✅ Correct: A</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> dispatch_apply schedules repeated work through dispatch mechanisms, but the system manages execution resources rather than guaranteeing a separate thread for each iteration. Actual concurrency depends on the queue, available resources, and the operation&#039;s execution characteristics.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q16. A program submits three blocks to the same concurrent queue. The first block creates a value required by the third block, but the second and third blocks are submitted immediately afterward. What is the main correctness concern?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">Concurrent queues always run blocks in reverse submission order</span></div><div class="opt-item "><span class="label">B.</span><span class="text">The second block must always finish before the first block begins</span></div><div class="opt-item "><span class="label">C.</span><span class="text">The third block automatically waits for every earlier block</span></div><div class="opt-item opt-correct"><span class="label">D.</span><span class="text">The third block may run before the first finishes unless a dependency or synchronization mechanism is used ✅</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: D</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> A concurrent queue permits overlapping execution, so submission order alone does not guarantee that one block completes before another begins. If the third block requires a value produced by the first, the program must establish a dependency or another suitable synchronization relationship.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q17. A developer wants a group of tasks to execute one after another in a fixed sequence, with each task seeing the previous task&#039;s completed changes. Which choice is most direct when all tasks can use the same queue?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">Submit them to separate concurrent queues and assume global ordering</span></div><div class="opt-item "><span class="label">B.</span><span class="text">Submit every task to the main queue using synchronous dispatch from arbitrary threads</span></div><div class="opt-item opt-correct"><span class="label">C.</span><span class="text">Submit the tasks in sequence to a serial dispatch queue ✅</span></div><div class="opt-item "><span class="label">D.</span><span class="text">Use independent concurrent tasks and compare their timestamps afterward</span></div></div><div class="diff-tag">💡 Difficulty: medium | ✅ Correct: C</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> A serial queue executes submitted blocks one at a time in submission order, making it suitable for ordered state transitions. The guarantee applies to work submitted to that queue and does not automatically serialize operations that occur outside it.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q18. A developer creates a custom serial dispatch queue and assumes it will always execute blocks on the same physical thread. Which assessment is correct?</p><div class="options-grid"><div class="opt-item opt-correct"><span class="label">A.</span><span class="text">A serial queue guarantees one-at-a-time execution, not a permanent dedicated thread identity ✅</span></div><div class="opt-item "><span class="label">B.</span><span class="text">A serial queue is an operating-system process with one fixed CPU core</span></div><div class="opt-item "><span class="label">C.</span><span class="text">Every serial queue must execute all work on the main thread</span></div><div class="opt-item "><span class="label">D.</span><span class="text">A serial queue guarantees that its thread never yields to another task</span></div></div><div class="diff-tag">💡 Difficulty: medium | ✅ Correct: A</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Serial queues guarantee that their blocks do not execute concurrently with one another, but the programmer should not infer permanent thread affinity from seriality alone. Queue execution resources may be managed by the system, subject to the API&#039;s documented guarantees.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q19. A developer dispatches several short tasks to a concurrent queue. The measured total time is longer than running the same tasks sequentially. Which experiment is most useful?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">Increase the number of queues indefinitely without measuring</span></div><div class="opt-item "><span class="label">B.</span><span class="text">Add synchronous waits after every task to force extra coordination</span></div><div class="opt-item "><span class="label">C.</span><span class="text">Duplicate each task to increase available work</span></div><div class="opt-item opt-correct"><span class="label">D.</span><span class="text">Measure scheduling overhead and test batching small tasks into larger blocks ✅</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: D</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> For very short tasks, scheduling and coordination costs can exceed the work performed. Batching multiple small operations can reduce overhead, but the appropriate granularity should be determined experimentally because excessively large blocks can also reduce load balancing.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q20. A program has two independent background operations and one final operation that requires both results. Which coordination pattern best represents this dependency?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">Start the final operation immediately and let it guess when results are ready</span></div><div class="opt-item opt-correct"><span class="label">B.</span><span class="text">Track completion of both operations and trigger the final operation after both finish ✅</span></div><div class="opt-item "><span class="label">C.</span><span class="text">Run the final operation repeatedly until the results appear</span></div><div class="opt-item "><span class="label">D.</span><span class="text">Place all three operations on unrelated queues without any completion coordination</span></div></div><div class="diff-tag">💡 Difficulty: medium | ✅ Correct: B</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> The final operation depends on two results, so it must not run until both prerequisite operations have completed successfully. A dispatch group, explicit dependency tracking, or completion callbacks can represent this relationship without forcing the entire application to block.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q21. A developer uses a dispatch source to monitor repeated events such as a timer firing or a file descriptor becoming ready. Which description best captures its role?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">It creates a new process whenever an event occurs</span></div><div class="opt-item "><span class="label">B.</span><span class="text">It guarantees that every event is handled by the main thread</span></div><div class="opt-item opt-correct"><span class="label">C.</span><span class="text">It provides a way to receive and process event notifications through dispatch mechanisms ✅</span></div><div class="opt-item "><span class="label">D.</span><span class="text">It replaces the operating system&#039;s entire interrupt-handling system</span></div></div><div class="diff-tag">💡 Difficulty: medium | ✅ Correct: C</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Dispatch sources integrate event notifications with dispatch queues. They can deliver events such as timers or certain system-level conditions to a handler scheduled through a queue, helping applications organize event-driven work without manually polling continuously.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q22. A developer submits a background operation that must update a shared progress indicator frequently. Updates arrive out of order and sometimes show an older percentage. Which design is most robust?</p><div class="options-grid"><div class="opt-item opt-correct"><span class="label">A.</span><span class="text">Coordinate progress state and schedule valid interface updates on the main queue ✅</span></div><div class="opt-item "><span class="label">B.</span><span class="text">Allow every background task to modify the interface directly without coordination</span></div><div class="opt-item "><span class="label">C.</span><span class="text">Use a concurrent queue and assume all percentage values are delivered in order</span></div><div class="opt-item "><span class="label">D.</span><span class="text">Replace progress updates with synchronous waits on the main thread</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: A</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Background operations may finish or report progress at different times, so updates can arrive out of order. The application should protect shared progress state as needed and perform interface changes on the main queue, discarding stale updates when appropriate.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q23. A developer submits a block using asynchronous dispatch and then releases an object that the block needs. The block later accesses invalid state in a language or ownership setup where that release ends the object&#039;s lifetime. What is the primary issue?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">Dispatch queues never execute blocks after submission</span></div><div class="opt-item "><span class="label">B.</span><span class="text">Asynchronous work always copies every object deeply</span></div><div class="opt-item "><span class="label">C.</span><span class="text">The main queue automatically restores released objects</span></div><div class="opt-item opt-correct"><span class="label">D.</span><span class="text">The object&#039;s lifetime is not guaranteed to cover the block&#039;s execution ✅</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: D</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Asynchronous work may execute after the submitting function returns, so required resources must remain valid until the block finishes using them. Appropriate ownership, capture semantics, cancellation handling, or explicit lifetime management prevents access to expired state.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q24. A developer uses a barrier-style operation on a concurrent dispatch queue to protect a shared resource. What is the intended effect of an appropriately supported barrier on that queue?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">It converts the application into a single operating-system process</span></div><div class="opt-item "><span class="label">B.</span><span class="text">It permanently prevents all later blocks from executing</span></div><div class="opt-item opt-correct"><span class="label">C.</span><span class="text">It establishes an exclusive execution interval relative to other work on the same applicable concurrent queue ✅</span></div><div class="opt-item "><span class="label">D.</span><span class="text">It guarantees that every CPU cache is flushed to physical memory</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: C</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> On a supported concurrent dispatch queue, a barrier block can execute exclusively relative to other submitted blocks on that queue, with appropriate ordering around the barrier. It is not a universal lock for unrelated queues or external accesses, so its protection scope matters.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q25. A developer submits a task to a global queue and then uses a dispatch group notification to schedule a completion handler on the main queue. Why is this arrangement useful for a graphical application?</p><div class="options-grid"><div class="opt-item opt-correct"><span class="label">A.</span><span class="text">It lets background work proceed while the final interface-related action is scheduled on the main queue ✅</span></div><div class="opt-item "><span class="label">B.</span><span class="text">It guarantees that background work uses no CPU resources</span></div><div class="opt-item "><span class="label">C.</span><span class="text">It ensures the completion handler runs before the task starts</span></div><div class="opt-item "><span class="label">D.</span><span class="text">It converts the global queue into a serial queue automatically</span></div></div><div class="diff-tag">💡 Difficulty: medium | ✅ Correct: A</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> A background queue can perform work without blocking the interface, while a dispatch group notification can arrange for a handler after associated work completes. Scheduling the handler on the main queue allows UI updates to occur in the appropriate execution context.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q26. A student claims that tasks submitted to a concurrent queue always run in parallel on separate cores. Which response is correct?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">The claim is true whenever the queue is named concurrent</span></div><div class="opt-item "><span class="label">B.</span><span class="text">The claim is true only if all tasks are shorter than one millisecond</span></div><div class="opt-item "><span class="label">C.</span><span class="text">The claim is false only for tasks that perform input/output</span></div><div class="opt-item opt-correct"><span class="label">D.</span><span class="text">Concurrent queues permit overlapping execution, but the system does not guarantee separate-core execution for every task ✅</span></div></div><div class="diff-tag">💡 Difficulty: easy | ✅ Correct: D</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> A concurrent queue allows multiple submitted blocks to be eligible for overlapping execution. Actual execution depends on available resources, scheduling decisions, workload characteristics, and system constraints; a task may wait or execute on a thread that shares a core over time.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q27. A developer has a serial queue that processes requests. One request performs a synchronous wait for another request submitted to the same queue. The application stops progressing. Which reasoning best explains the failure?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">The queue has too many available worker threads</span></div><div class="opt-item opt-correct"><span class="label">B.</span><span class="text">The active request blocks the only execution path that can process the queued dependency ✅</span></div><div class="opt-item "><span class="label">C.</span><span class="text">Serial queues always discard requests that depend on earlier work</span></div><div class="opt-item "><span class="label">D.</span><span class="text">Synchronous waits automatically make every task asynchronous</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: B</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> A serial queue executes only one block at a time. If the active block waits synchronously for another block queued behind it, that second block cannot start until the first returns. This dependency cycle causes deadlock and requires redesigning the wait or queue structure.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q28. A developer wants to process a large collection of independent items and collect a result from each iteration. Which design avoids assuming that iterations finish in index order?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">Append results to an unsynchronized shared array from every task</span></div><div class="opt-item "><span class="label">B.</span><span class="text">Assume the first submitted iteration must always finish first</span></div><div class="opt-item opt-correct"><span class="label">C.</span><span class="text">Store results in predetermined indices or use safe synchronization when collecting them ✅</span></div><div class="opt-item "><span class="label">D.</span><span class="text">Read the result array as soon as the first iteration completes</span></div></div><div class="diff-tag">💡 Difficulty: medium | ✅ Correct: C</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Independent iterations may complete in a different order from their indices or submission order. Writing each result to its own predetermined slot can avoid conflicting writes, while shared collection operations require suitable synchronization. Final processing should wait until all required results are ready.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q29. A developer creates many concurrent tasks, each of which repeatedly acquires the same lock for a short operation. Adding more tasks decreases throughput. Which change is most worth evaluating?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">Increase lock acquisition frequency to improve fairness</span></div><div class="opt-item "><span class="label">B.</span><span class="text">Move every task to the main queue</span></div><div class="opt-item "><span class="label">C.</span><span class="text">Assume the operating system has stopped scheduling background work</span></div><div class="opt-item opt-correct"><span class="label">D.</span><span class="text">Reduce contention by restructuring shared-state access or batching protected operations ✅</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: D</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Many concurrent tasks competing for one lock can spend substantial time waiting instead of doing useful work. Reducing the frequency of shared-state access, batching operations, or partitioning the state may improve throughput while preserving correctness.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q30. A developer wants a task to run after a delay without blocking the current thread. Which approach best fits the requirement?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">Call sleep on the main thread until the delay expires</span></div><div class="opt-item opt-correct"><span class="label">B.</span><span class="text">Schedule the task using an appropriate dispatch timer or delayed dispatch mechanism ✅</span></div><div class="opt-item "><span class="label">C.</span><span class="text">Create a busy loop that repeatedly checks the clock</span></div><div class="opt-item "><span class="label">D.</span><span class="text">Synchronously dispatch the delayed task to the current serial queue</span></div></div><div class="diff-tag">💡 Difficulty: medium | ✅ Correct: B</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> A dispatch timer or appropriate delayed dispatch mechanism can schedule work for a later time without forcing the current thread to wait in a sleep or busy loop. The actual firing time may be affected by system scheduling and timer tolerance.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q31. A developer submits a block to a queue and assumes that returning from the submission call means the block has completed. Which distinction is important?</p><div class="options-grid"><div class="opt-item opt-correct"><span class="label">A.</span><span class="text">Submitting work and completing work are different events, especially for asynchronous dispatch ✅</span></div><div class="opt-item "><span class="label">B.</span><span class="text">Every queue submission waits until all previously submitted work has finished</span></div><div class="opt-item "><span class="label">C.</span><span class="text">Only global queues support asynchronous execution</span></div><div class="opt-item "><span class="label">D.</span><span class="text">A block is complete as soon as it enters the queue</span></div></div><div class="diff-tag">💡 Difficulty: easy | ✅ Correct: A</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Asynchronous submission typically returns before the submitted block completes, allowing the caller to continue. Completion must be established through a suitable callback, dispatch group, synchronization mechanism, or other documented API rather than inferred from the submission call returning.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q32. A developer is designing a highly parallel pipeline. Stage two must begin processing each item only after stage one produces that item&#039;s data, but unrelated items should overlap. Which design principle is best?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">Serialize the entire pipeline and prevent any item from overlapping</span></div><div class="opt-item "><span class="label">B.</span><span class="text">Run stage two immediately and ignore whether stage one&#039;s output exists</span></div><div class="opt-item opt-correct"><span class="label">C.</span><span class="text">Represent per-item dependencies explicitly while allowing independent items to execute concurrently ✅</span></div><div class="opt-item "><span class="label">D.</span><span class="text">Use a single shared mutable output value for every item</span></div></div><div class="diff-tag">💡 Difficulty: hard | ✅ Correct: C</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> A pipeline can preserve correctness by expressing dependencies for each item while allowing independent items to overlap. Serializing the entire pipeline may be unnecessarily restrictive, whereas ignoring dependencies or sharing one unprotected result location can produce incorrect output.</p>
+                    </div>
+                </div><div class="q-block"><p class="q-text">Q33. A developer sees that a task submitted to a background queue sometimes runs later than expected when the device is under heavy load. Which explanation is most accurate?</p><div class="options-grid"><div class="opt-item "><span class="label">A.</span><span class="text">Dispatch queues guarantee exact start times only when tasks are CPU-bound</span></div><div class="opt-item "><span class="label">B.</span><span class="text">Background tasks are never allowed to execute concurrently</span></div><div class="opt-item "><span class="label">C.</span><span class="text">The queue must have been converted into a serial queue</span></div><div class="opt-item opt-correct"><span class="label">D.</span><span class="text">Queue submission does not guarantee immediate execution; scheduling depends on resource availability and system policy ✅</span></div></div><div class="diff-tag">💡 Difficulty: medium | ✅ Correct: D</div>
+                    <div class="explanation">
+                        <p><strong>📖 Explanation:</strong> Dispatching work makes it eligible for scheduling but does not guarantee an exact start time. Heavy system load, competing work, resource limits, and priority policies can delay execution, so timing-sensitive applications should account for variability rather than assuming immediate execution.</p>
+                    </div>
+                </div></div>
+
+    <!-- related topics -->
+<div style="margin:12px 0;"><h3 style="font-size:1rem; color:#1e293b;">🔗 Related Topics (MCQs)</h3><div class="topic-pills"><a href="/books/operating-system/threads-in-operating-system/topics/threads-in-operating-system-overview.html">📝 Threads in operating system overview MCQs</a><a href="/books/operating-system/threads-in-operating-system/topics/why-threads-are-used-in-operating-system.html">📝 Why threads are used in operating system MCQs</a><a href="/books/operating-system/threads-in-operating-system/topics/benefits-of-multithreading-in-operating-system.html">📝 Benefits of multithreading in operating system MCQs</a><a href="/books/operating-system/threads-in-operating-system/topics/multicore-programming-in-operating-system.html">📝 Multicore programming in operating system MCQs</a><a href="/books/operating-system/threads-in-operating-system/topics/multicore-programming-challenges-and-issues.html">📝 Multicore programming challenges and issues MCQs</a></div></div>
+
+    <!-- bottom navigation (same as top, but keep for consistency) -->
+<div class="nav-container" style="margin-top:16px;"><a href="/books/operating-system/threads-in-operating-system/topics/open-multi-processing-implicit-threading.html" class="nav-link"><span class="arrow">←</span><span class="label">Previous Topic:</span><span class="topic-name">Open Multi Processing Implicit Threading</span></a><span class="nav-current">📝 <span class="current-name">Grand Central Dispatch in operating system</span></span><a href="/books/operating-system/threads-in-operating-system/topics/fork-and-exec-system-calls-in-multithreading.html" class="nav-link"><span class="topic-name">Fork and exec system calls in multithreading</span><span class="label">:Next Topic</span><span class="arrow">→</span></a></div>
+
+    <div class="footer-links">
+      <a href="/quiz" class="btn-primary">🚀 Start Quiz</a>
+      <a href="/practice" class="btn-secondary">📝 Practice Mode</a>
+    </div>
+  </main>
+</div>
+</body>
+</html>
