@@ -8620,18 +8620,6 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     
     var lastUpdated = new Date().toISOString().split('T')[0];
     
-    var seoTitle = topicName + ' | BookMCQ';
-    
-    var schemaData = {
-        '@context': 'https://schema.org',
-        '@type': 'CollectionPage',
-        'name': topicName + ' - ' + bookTitle,
-        'description': topicName + ' from ' + bookTitle + ' - ' + chapterDisplay + chapterName + '.',
-        'url': 'https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html',
-        'isPartOf': { '@type': 'Book', 'name': bookTitle },
-        'about': { '@type': 'Thing', 'name': topicName },
-        'dateModified': lastUpdated
-    };
     
     // Use topic definition as meta description (strip HTML tags, trim to ~160 chars)
 var rawDefinition = topic.definition || '';
@@ -8680,7 +8668,20 @@ if (cleanDefinition) {
     }
 }
     
-    // ===== BUILD COMPLETE HTML - NO MathJax, NO External Dependencies =====
+    var seoTitle = topicName + ' | BookMCQ';
+    
+    var schemaData = {
+        '@context': 'https://schema.org',
+        '@type': 'CollectionPage',
+        'name': topicName + ' - ' + bookTitle,
+        'description': metaDescription,
+        'url': 'https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html',
+        'isPartOf': { '@type': 'Book', 'name': bookTitle },
+        'about': { '@type': 'Thing', 'name': topicName },
+        'dateModified': lastUpdated
+    };
+ 
+ // ===== BUILD COMPLETE HTML - NO MathJax, NO External Dependencies =====
     var finalHtml = '<!DOCTYPE html>\n' +
 '<html lang="en">\n' +
 '<head>\n' +
