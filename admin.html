@@ -8644,28 +8644,40 @@ var metaDescription;
 if (cleanDefinition) {
     // 1. Strip "Definition:" prefix
     var cleanText = cleanDefinition.replace(/^definition:\s*/i, '').trim();
-    
+
     // 2. Split into sentences
     var sentences = cleanText.match(/[^.!?]+[.!?]+/g) || [cleanText];
-    
+
     // 3. Take the first sentence
     var firstSentence = sentences[0].trim();
-    
-    // 4. If first sentence is too long (over 180 chars), truncate at word boundary
-    if (firstSentence.length > 180) {
-        var truncated = firstSentence.substring(0, 177);
+
+    // 4. Hard cap at 177 characters total
+    var MAX_LEN = 177;
+    if (firstSentence.length > MAX_LEN) {
+        // Reserve 1 char for the ellipsis
+        var truncated = firstSentence.substring(0, MAX_LEN - 1);
         var lastSpace = truncated.lastIndexOf(' ');
         if (lastSpace > 120) {
             truncated = truncated.substring(0, lastSpace);
         }
-        metaDescription = truncated + '';
+        metaDescription = truncated.trim() + '…';
     } else {
-        // 5. First sentence is fine, use it + value suffix
-        metaDescription = firstSentence + '';
+        metaDescription = firstSentence;
     }
 } else {
-    // 6. Fallback
-    metaDescription = '' + topicName + ' from ' + bookTitle + '. ' + totalQs + '';
+    // 6. Fallback — also capped at 177
+    var MAX_LEN = 177;
+    var fallback = topicName + ' from ' + bookTitle + '. ' + totalQs;
+    if (fallback.length > MAX_LEN) {
+        var truncated = fallback.substring(0, MAX_LEN - 1);
+        var lastSpace = truncated.lastIndexOf(' ');
+        if (lastSpace > 80) {
+            truncated = truncated.substring(0, lastSpace);
+        }
+        metaDescription = truncated.trim() + '…';
+    } else {
+        metaDescription = fallback;
+    }
 }
     
     // ===== BUILD COMPLETE HTML - NO MathJax, NO External Dependencies =====
