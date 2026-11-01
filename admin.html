@@ -2887,7 +2887,7 @@ let seoDropdownInitialized = false;
         
         const { error } = await _supabase.auth.signUp({ 
             email, password,
-            options: { emailRedirectTo: 'https://www.bookmcq.com/admin.html' }
+            options: { emailRedirectTo: 'https://www.bookmcq.com/admin' }
         });
         
         if (error) {
@@ -2937,7 +2937,7 @@ let seoDropdownInitialized = false;
             
             const SECRET_KEY = 'BookMCQ_Admin_Secure_Key_2024';
             sessionStorage.setItem('bookmcq_bulk_access', SECRET_KEY);
-            window.open('bulk-upload.html', '_blank');
+            window.open('/bulk-upload', '_blank');
             showToast('Opening bulk upload...');
         } catch(e) {
             showToast('Error: ' + e.message, true);
@@ -5480,7 +5480,7 @@ async function generateSitemap() {
         books.forEach(book => {
             const slug = book.slug || createSlug(book.title);
             dbUrls.push({
-                loc: `https://www.bookmcq.com/books/${slug}/`,
+                loc: `https://www.bookmcq.com/books/${slug}`,
                 priority: '0.9',
                 changefreq: 'weekly',
                 lastmod: book.created_at ? new Date(book.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
@@ -5497,7 +5497,7 @@ async function generateSitemap() {
                 const bookSlug = chapter.books.slug;
                 const chapterSlug = chapter.slug || createSlug(chapter.name);
                 dbUrls.push({
-                    loc: `https://www.bookmcq.com/books/${bookSlug}/${chapterSlug}.html`,
+                    loc: `https://www.bookmcq.com/books/${bookSlug}/${chapterSlug}`,
                     priority: '0.8',
                     changefreq: 'weekly',
                     lastmod: chapter.created_at ? new Date(chapter.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
@@ -5518,7 +5518,7 @@ async function generateSitemap() {
                 const chapterSlug = topic.chapters.slug || createSlug(topic.chapters.name);
                 const topicSlug = topic.slug || createSlug(topic.name);
                 dbUrls.push({
-                    loc: `https://www.bookmcq.com/books/${bookSlug}/${chapterSlug}/topics/${topicSlug}.html`,
+                    loc: `https://www.bookmcq.com/books/${bookSlug}/${chapterSlug}/topics/${topicSlug}`,
                     priority: '0.7',
                     changefreq: 'weekly',
                     lastmod: topic.created_at ? new Date(topic.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
@@ -5564,8 +5564,8 @@ async function generateSitemap() {
             renderBookUrlsPanel('all');
         }
         
-        // Split into chunks (50 URLs per file)
-        const CHUNK_SIZE = 50;
+        // Split into chunks (200 URLs per file)
+        const CHUNK_SIZE = 200;
         const chunks = [];
         
         for (let i = 0; i < allUrls.length; i += CHUNK_SIZE) {
