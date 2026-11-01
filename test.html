@@ -8061,13 +8061,14 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
         chapterTopics.forEach(function(topic, index) {
             var topicSlug = topic.slug || createSlug(topic.name);
             var topicName = escapeHtml(topic.name);
+            var topicUrl = '/books/' + bookSlug + '/' + chapterSlug + '/topics/' + topicSlug;
             var topicQCount = topicQuestionCounts[topic.id] || 0;
             var icon = iconColors[index % iconColors.length];
-            
-            topicsHtml += '<div onclick="window.location.href=\'/books/' + bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html\'" class="topic-item">';
+
+            topicsHtml += '<div class="topic-item">';
             topicsHtml += '<div class="topic-content">';
             topicsHtml += '<span class="topic-icon">' + icon + '</span>';
-            topicsHtml += '<span class="topic-name">' + topicName + '</span>';
+            topicsHtml += '<a class="topic-name" href="' + topicUrl + '">' + topicName + '</a>';
             topicsHtml += '</div>';
             topicsHtml += '<div class="topic-actions">';
             topicsHtml += '<span class="topic-count">' + topicQCount + ' MCQs</span>';
@@ -8098,7 +8099,7 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
         '@type': 'CollectionPage',
         'name': chapterDisplay + chapterName + ' - ' + bookTitle,
         'description': 'Practice ' + chapterDisplay + chapterName + ' from ' + bookTitle + '. ' + totalQs + ' questions with ' + easyCount + ' easy, ' + mediumCount + ' medium, and ' + hardCount + ' hard difficulty levels.',
-        'url': 'https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '.html',
+        'url': 'https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug,
         'isPartOf': { '@type': 'Book', 'name': bookTitle },
         'about': { '@type': 'Thing', 'name': chapterName },
         'dateModified': lastUpdated
@@ -8116,8 +8117,8 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
     '    <meta name="description" content="' + metaDescription + '">\n' +
     '    <meta name="keywords" content="' + chapterName + ' MCQs, ' + bookTitle + ' ' + chapterName + ' questions, ' + chapterName + ' practice, ' + bookTitle + ' chapter ' + (chapter.chapter_number || '') + ', ' + chapterName + ' easy medium hard">\n' +
     '    <meta name="robots" content="index, follow">\n' +
-    '    <link rel="canonical" href="https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '.html">\n' +
-    '    <meta property="og:url" content="https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '.html">\n' +
+    '    <link rel="canonical" href="https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '">\n' +
+    '    <meta property="og:url" content="https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '">\n' +
     '    <meta property="og:title" content="' + chapterDisplay + chapterName + ' - ' + bookTitle + ' MCQs | BookMCQ">\n' +
     '    <meta property="og:description" content="Practice ' + chapterDisplay + chapterName + ' from ' + bookTitle + '. ' + totalQs + ' questions with difficulty breakdown: Easy ' + easyCount + ', Medium ' + mediumCount + ', Hard ' + hardCount + '.">\n' +
     '    <meta property="og:type" content="website">\n' +
@@ -8152,7 +8153,16 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
     '            width: 100%;\n' +
     '        }\n' +
     '        \n' +
-    '        @media (min-width: 640px) { \n' +
+    '        /* Stretch the topic link over the whole card */\n' +
+    '        .topic-item { position: relative; }\n' +
+    '        .topic-item .topic-name { text-decoration: none; }\n' +
+    '        .topic-item .topic-name::after {\n' +
+    '            content: "";\n' +
+    '            position: absolute;\n' +
+    '            inset: 0;\n' +
+    '            border-radius: 12px;\n' +
+    '        }\n' +
+     '        @media (min-width: 640px) { \n' +
     '            .card { padding: 28px 32px; } \n' +
     '        }\n' +
     '        @media (max-width: 480px) { \n' +
@@ -8407,9 +8417,9 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
     '    <main class="card">\n' +
     '        <!-- breadcrumb -->\n' +
     '        <div class="breadcrumb">\n' +
-    '            <a href="/">🏠 Home</a> &gt; <a href="/books/' + bookSlug + '/">' + bookTitle + '</a> &gt; ' + chapterDisplay + chapterName + '\n' +
+    '            <a href="/">🏠 Home</a> &gt; <a href="/books/' + bookSlug + '">' + bookTitle + '</a> &gt; ' + chapterDisplay + chapterName + '\n' +
     '        </div>\n' +
-    '        <a href="/books/' + bookSlug + '/" class="back-link">← Back to ' + bookTitle + '</a>\n' +
+    '        <a href="/books/' + bookSlug + '" class="back-link">← Back to ' + bookTitle + '</a>\n' +
     '        <h1>📖 ' + chapterDisplay + chapterName + '</h1>\n' +
     '        <p class="chapter-info">📖 From <strong>' + bookTitle + '</strong> • ' + totalQs + ' questions available</p>\n' +
     chapterDefinitionHtml +
