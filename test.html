@@ -7611,23 +7611,23 @@ function generateBookIndexPage(book, chapters, topics, questionStats, totalQuest
         var chapterTopics = topics.filter(function(t) { return t.chapter_id === chapter.id; });
         var topicsHtml = '';
         if (chapterTopics.length > 0) {
-            topicsHtml = '<div style="margin-left: 20px; margin-top: 8px;">';
+            topicsHtml = '<div class="topic-list">';
             chapterTopics.forEach(function(topic) {
                 var topicSlug = topic.slug || createSlug(topic.name);
                 var topicName = escapeHtml(topic.name);
-                topicsHtml += '<a href="' + chapterUrl + '/topics/' + topicSlug + '" style="display:block; padding:4px 8px; font-size:13px; color:#000000; text-decoration:none; border-left:2px solid #e5e7eb; margin-bottom:2px;">📝 ' + topicName + '</a>';
+                topicsHtml += '<a class="topic-link" href="' + chapterUrl + '/topics/' + topicSlug + '">📝 ' + topicName + '</a>';
             });
             topicsHtml += '</div>';
         }
 
         chaptersHtml += '<div class="chapter-item">';
         chaptersHtml += '<div class="chapter-content">';
-        chaptersHtml += '<a class="chapter-title" href="' + chapterUrl + '" style="display:block; text-decoration:none; color:#1e293b;">' + chapterDisplay + chapterName + '</a>';
+        chaptersHtml += '<a class="chapter-title" href="' + chapterUrl + '">' + chapterDisplay + chapterName + '</a>';
         chaptersHtml += topicsHtml;
         chaptersHtml += '</div>';
         chaptersHtml += '<div class="chapter-actions">';
         chaptersHtml += '<span class="chapter-count">' + chapterQCount + ' MCQs</span>';
-        chaptersHtml += '<a href="' + chapterUrl + '" class="chapter-arrow" style="text-decoration:none; color:#000000;">View Chapter →</a>';
+        chaptersHtml += '<span class="chapter-arrow">View Chapter →</span>';
         chaptersHtml += '</div>';
         chaptersHtml += '</div>';
     });
@@ -7854,7 +7854,42 @@ function generateBookIndexPage(book, chapters, topics, questionStats, totalQuest
     '            }\n' +
     '        }\n' +
     '\n' +
-    '        @media (max-width: 380px) {\n' +
+    '        /* ---- CHAPTER CARD LINK (stretched overlay) ---- */\n' +
+    '        .chapter-item {\n' +
+    '            position: relative;\n' +
+    '            cursor: pointer;\n' +
+    '        }\n' +
+    '        .chapter-item .chapter-title {\n' +
+    '            color: #1e293b;\n' +
+    '            text-decoration: none;\n' +
+    '        }\n' +
+    '        /* Stretch the title link over the whole card */\n' +
+    '        .chapter-item .chapter-title::after {\n' +
+    '            content: "";\n' +
+    '            position: absolute;\n' +
+    '            inset: 0;\n' +
+    '            border-radius: 12px;\n' +
+    '        }\n' +
+    '        /* Topic links sit above the stretched link so they stay clickable */\n' +
+    '        .topic-list {\n' +
+    '            position: relative;\n' +
+    '            z-index: 2;\n' +
+    '            margin-left: 20px;\n' +
+    '            margin-top: 8px;\n' +
+    '        }\n' +
+    '        .topic-link {\n' +
+    '            display: block;\n' +
+    '            padding: 4px 8px;\n' +
+    '            font-size: 13px;\n' +
+    '            color: #000000;\n' +
+    '            text-decoration: none;\n' +
+    '            border-left: 2px solid #e5e7eb;\n' +
+    '            margin-bottom: 2px;\n' +
+    '        }\n' +
+    '        .topic-link:hover {\n' +
+    '            text-decoration: underline;\n' +
+    '        }\n' +
+     '        @media (max-width: 380px) {\n' +
     '            .chapter-item {\n' +
     '                padding: 12px 12px;\n' +
     '                gap: 6px;\n' +
