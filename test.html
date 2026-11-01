@@ -7605,8 +7605,9 @@ function generateBookIndexPage(book, chapters, topics, questionStats, totalQuest
         var chapterSlug = chapter.slug || createSlug(chapter.name);
         var chapterDisplay = chapter.chapter_number ? chapter.chapter_number + '. ' : '';
         var chapterName = escapeHtml(chapter.name);
+        var chapterUrl = '/books/' + bookSlug + '/' + chapterSlug;
         var chapterQCount = chapterQuestionCounts?.[chapter.id] || 0;
-        
+
         var chapterTopics = topics.filter(function(t) { return t.chapter_id === chapter.id; });
         var topicsHtml = '';
         if (chapterTopics.length > 0) {
@@ -7614,19 +7615,19 @@ function generateBookIndexPage(book, chapters, topics, questionStats, totalQuest
             chapterTopics.forEach(function(topic) {
                 var topicSlug = topic.slug || createSlug(topic.name);
                 var topicName = escapeHtml(topic.name);
-                topicsHtml += '<div style="padding: 4px 8px; font-size: 13px; color: #000000; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href=\'/books/' + bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html\'">📝 ' + topicName + '</div>';
+                topicsHtml += '<a href="' + chapterUrl + '/topics/' + topicSlug + '" style="display:block; padding:4px 8px; font-size:13px; color:#000000; text-decoration:none; border-left:2px solid #e5e7eb; margin-bottom:2px;">📝 ' + topicName + '</a>';
             });
             topicsHtml += '</div>';
         }
-        
-        chaptersHtml += '<div class="chapter-item" onclick="window.location.href=\'/books/' + bookSlug + '/' + chapterSlug + '.html\'">';
+
+        chaptersHtml += '<div class="chapter-item">';
         chaptersHtml += '<div class="chapter-content">';
-        chaptersHtml += '<div class="chapter-title">' + chapterDisplay + chapterName + '</div>';
+        chaptersHtml += '<a class="chapter-title" href="' + chapterUrl + '" style="display:block; text-decoration:none; color:#1e293b;">' + chapterDisplay + chapterName + '</a>';
         chaptersHtml += topicsHtml;
         chaptersHtml += '</div>';
         chaptersHtml += '<div class="chapter-actions">';
         chaptersHtml += '<span class="chapter-count">' + chapterQCount + ' MCQs</span>';
-        chaptersHtml += '<span class="chapter-arrow">View Chapter →</span>';
+        chaptersHtml += '<a href="' + chapterUrl + '" class="chapter-arrow" style="text-decoration:none; color:#000000;">View Chapter →</a>';
         chaptersHtml += '</div>';
         chaptersHtml += '</div>';
     });
@@ -7652,8 +7653,8 @@ function generateBookIndexPage(book, chapters, topics, questionStats, totalQuest
     '    <meta name="description" content="' + metaDescription + '">\n' +
     '    <meta name="keywords" content="' + bookTitle + ' MCQs, ' + bookTitle + ' questions, ' + bookTitle + ' practice, ' + bookTitle + ' exam preparation, ' + bookTitle + ' easy medium hard questions' + (bookCategory ? ', ' + bookCategory + ' MCQs' : '') + '">\n' +
     '    <meta name="robots" content="index, follow">\n' +
-    '    <link rel="canonical" href="https://www.bookmcq.com/books/' + bookSlug + '/">\n' +
-    '    <meta property="og:url" content="https://www.bookmcq.com/books/' + bookSlug + '/">\n' +
+    '    <link rel="canonical" href="https://www.bookmcq.com/books/' + bookSlug + '">\n' +
+    '    <meta property="og:url" content="https://www.bookmcq.com/books/' + bookSlug + '">\n' +
     '    <meta property="og:title" content="' + bookTitle + ' MCQs | BookMCQ">\n' +
     '    <meta property="og:description" content="Chapter-wise MCQs for ' + bookTitle + ' with ' + totalQuestions + ' practice questions. Difficulty: Easy ' + easyCount + ', Medium ' + mediumCount + ', Hard ' + hardCount + '.">\n' +
     '    <meta property="og:type" content="website">\n' +
