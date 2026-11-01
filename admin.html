@@ -7605,23 +7605,24 @@ function generateBookIndexPage(book, chapters, topics, questionStats, totalQuest
         var chapterSlug = chapter.slug || createSlug(chapter.name);
         var chapterDisplay = chapter.chapter_number ? chapter.chapter_number + '. ' : '';
         var chapterName = escapeHtml(chapter.name);
+        var chapterUrl = '/books/' + bookSlug + '/' + chapterSlug;
         var chapterQCount = chapterQuestionCounts?.[chapter.id] || 0;
-        
+
         var chapterTopics = topics.filter(function(t) { return t.chapter_id === chapter.id; });
         var topicsHtml = '';
         if (chapterTopics.length > 0) {
-            topicsHtml = '<div style="margin-left: 20px; margin-top: 8px;">';
+            topicsHtml = '<div class="topic-list">';
             chapterTopics.forEach(function(topic) {
                 var topicSlug = topic.slug || createSlug(topic.name);
                 var topicName = escapeHtml(topic.name);
-                topicsHtml += '<div style="padding: 4px 8px; font-size: 13px; color: #000000; cursor: pointer; border-left: 2px solid #e5e7eb; margin-bottom: 2px;" onclick="window.location.href=\'/books/' + bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html\'">📝 ' + topicName + '</div>';
+                topicsHtml += '<a class="topic-link" href="' + chapterUrl + '/topics/' + topicSlug + '">📝 ' + topicName + '</a>';
             });
             topicsHtml += '</div>';
         }
-        
-        chaptersHtml += '<div class="chapter-item" onclick="window.location.href=\'/books/' + bookSlug + '/' + chapterSlug + '.html\'">';
+
+        chaptersHtml += '<div class="chapter-item">';
         chaptersHtml += '<div class="chapter-content">';
-        chaptersHtml += '<div class="chapter-title">' + chapterDisplay + chapterName + '</div>';
+        chaptersHtml += '<a class="chapter-title" href="' + chapterUrl + '">' + chapterDisplay + chapterName + '</a>';
         chaptersHtml += topicsHtml;
         chaptersHtml += '</div>';
         chaptersHtml += '<div class="chapter-actions">';
@@ -7652,8 +7653,8 @@ function generateBookIndexPage(book, chapters, topics, questionStats, totalQuest
     '    <meta name="description" content="' + metaDescription + '">\n' +
     '    <meta name="keywords" content="' + bookTitle + ' MCQs, ' + bookTitle + ' questions, ' + bookTitle + ' practice, ' + bookTitle + ' exam preparation, ' + bookTitle + ' easy medium hard questions' + (bookCategory ? ', ' + bookCategory + ' MCQs' : '') + '">\n' +
     '    <meta name="robots" content="index, follow">\n' +
-    '    <link rel="canonical" href="https://www.bookmcq.com/books/' + bookSlug + '/">\n' +
-    '    <meta property="og:url" content="https://www.bookmcq.com/books/' + bookSlug + '/">\n' +
+    '    <link rel="canonical" href="https://www.bookmcq.com/books/' + bookSlug + '">\n' +
+    '    <meta property="og:url" content="https://www.bookmcq.com/books/' + bookSlug + '">\n' +
     '    <meta property="og:title" content="' + bookTitle + ' MCQs | BookMCQ">\n' +
     '    <meta property="og:description" content="Chapter-wise MCQs for ' + bookTitle + ' with ' + totalQuestions + ' practice questions. Difficulty: Easy ' + easyCount + ', Medium ' + mediumCount + ', Hard ' + hardCount + '.">\n' +
     '    <meta property="og:type" content="website">\n' +
@@ -7853,7 +7854,42 @@ function generateBookIndexPage(book, chapters, topics, questionStats, totalQuest
     '            }\n' +
     '        }\n' +
     '\n' +
-    '        @media (max-width: 380px) {\n' +
+    '        /* ---- CHAPTER CARD LINK (stretched overlay) ---- */\n' +
+    '        .chapter-item {\n' +
+    '            position: relative;\n' +
+    '            cursor: pointer;\n' +
+    '        }\n' +
+    '        .chapter-item .chapter-title {\n' +
+    '            color: #1e293b;\n' +
+    '            text-decoration: none;\n' +
+    '        }\n' +
+    '        /* Stretch the title link over the whole card */\n' +
+    '        .chapter-item .chapter-title::after {\n' +
+    '            content: "";\n' +
+    '            position: absolute;\n' +
+    '            inset: 0;\n' +
+    '            border-radius: 12px;\n' +
+    '        }\n' +
+    '        /* Topic links sit above the stretched link so they stay clickable */\n' +
+    '        .topic-list {\n' +
+    '            position: relative;\n' +
+    '            z-index: 2;\n' +
+    '            margin-left: 20px;\n' +
+    '            margin-top: 8px;\n' +
+    '        }\n' +
+    '        .topic-link {\n' +
+    '            display: block;\n' +
+    '            padding: 4px 8px;\n' +
+    '            font-size: 13px;\n' +
+    '            color: #000000;\n' +
+    '            text-decoration: none;\n' +
+    '            border-left: 2px solid #e5e7eb;\n' +
+    '            margin-bottom: 2px;\n' +
+    '        }\n' +
+    '        .topic-link:hover {\n' +
+    '            text-decoration: underline;\n' +
+    '        }\n' +
+     '        @media (max-width: 380px) {\n' +
     '            .chapter-item {\n' +
     '                padding: 12px 12px;\n' +
     '                gap: 6px;\n' +
@@ -8025,13 +8061,14 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
         chapterTopics.forEach(function(topic, index) {
             var topicSlug = topic.slug || createSlug(topic.name);
             var topicName = escapeHtml(topic.name);
+            var topicUrl = '/books/' + bookSlug + '/' + chapterSlug + '/topics/' + topicSlug;
             var topicQCount = topicQuestionCounts[topic.id] || 0;
             var icon = iconColors[index % iconColors.length];
-            
-            topicsHtml += '<div onclick="window.location.href=\'/books/' + bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html\'" class="topic-item">';
+
+            topicsHtml += '<div class="topic-item">';
             topicsHtml += '<div class="topic-content">';
             topicsHtml += '<span class="topic-icon">' + icon + '</span>';
-            topicsHtml += '<span class="topic-name">' + topicName + '</span>';
+            topicsHtml += '<a class="topic-name" href="' + topicUrl + '">' + topicName + '</a>';
             topicsHtml += '</div>';
             topicsHtml += '<div class="topic-actions">';
             topicsHtml += '<span class="topic-count">' + topicQCount + ' MCQs</span>';
@@ -8062,7 +8099,7 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
         '@type': 'CollectionPage',
         'name': chapterDisplay + chapterName + ' - ' + bookTitle,
         'description': 'Practice ' + chapterDisplay + chapterName + ' from ' + bookTitle + '. ' + totalQs + ' questions with ' + easyCount + ' easy, ' + mediumCount + ' medium, and ' + hardCount + ' hard difficulty levels.',
-        'url': 'https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '.html',
+        'url': 'https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug,
         'isPartOf': { '@type': 'Book', 'name': bookTitle },
         'about': { '@type': 'Thing', 'name': chapterName },
         'dateModified': lastUpdated
@@ -8080,8 +8117,8 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
     '    <meta name="description" content="' + metaDescription + '">\n' +
     '    <meta name="keywords" content="' + chapterName + ' MCQs, ' + bookTitle + ' ' + chapterName + ' questions, ' + chapterName + ' practice, ' + bookTitle + ' chapter ' + (chapter.chapter_number || '') + ', ' + chapterName + ' easy medium hard">\n' +
     '    <meta name="robots" content="index, follow">\n' +
-    '    <link rel="canonical" href="https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '.html">\n' +
-    '    <meta property="og:url" content="https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '.html">\n' +
+    '    <link rel="canonical" href="https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '">\n' +
+    '    <meta property="og:url" content="https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '">\n' +
     '    <meta property="og:title" content="' + chapterDisplay + chapterName + ' - ' + bookTitle + ' MCQs | BookMCQ">\n' +
     '    <meta property="og:description" content="Practice ' + chapterDisplay + chapterName + ' from ' + bookTitle + '. ' + totalQs + ' questions with difficulty breakdown: Easy ' + easyCount + ', Medium ' + mediumCount + ', Hard ' + hardCount + '.">\n' +
     '    <meta property="og:type" content="website">\n' +
@@ -8116,7 +8153,16 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
     '            width: 100%;\n' +
     '        }\n' +
     '        \n' +
-    '        @media (min-width: 640px) { \n' +
+    '        /* Stretch the topic link over the whole card */\n' +
+    '        .topic-item { position: relative; }\n' +
+    '        .topic-item .topic-name { text-decoration: none; }\n' +
+    '        .topic-item .topic-name::after {\n' +
+    '            content: "";\n' +
+    '            position: absolute;\n' +
+    '            inset: 0;\n' +
+    '            border-radius: 12px;\n' +
+    '        }\n' +
+     '        @media (min-width: 640px) { \n' +
     '            .card { padding: 28px 32px; } \n' +
     '        }\n' +
     '        @media (max-width: 480px) { \n' +
@@ -8371,9 +8417,9 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
     '    <main class="card">\n' +
     '        <!-- breadcrumb -->\n' +
     '        <div class="breadcrumb">\n' +
-    '            <a href="/">🏠 Home</a> &gt; <a href="/books/' + bookSlug + '/">' + bookTitle + '</a> &gt; ' + chapterDisplay + chapterName + '\n' +
+    '            <a href="/">🏠 Home</a> &gt; <a href="/books/' + bookSlug + '">' + bookTitle + '</a> &gt; ' + chapterDisplay + chapterName + '\n' +
     '        </div>\n' +
-    '        <a href="/books/' + bookSlug + '/" class="back-link">← Back to ' + bookTitle + '</a>\n' +
+    '        <a href="/books/' + bookSlug + '" class="back-link">← Back to ' + bookTitle + '</a>\n' +
     '        <h1>📖 ' + chapterDisplay + chapterName + '</h1>\n' +
     '        <p class="chapter-info">📖 From <strong>' + bookTitle + '</strong> • ' + totalQs + ' questions available</p>\n' +
     chapterDefinitionHtml +
@@ -8480,7 +8526,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
         if (prev) {
             var prevSlug = prev.slug || createSlug(prev.name);
             var prevName = escapeHtml(prev.name);
-            html += '<a href="/books/' + bookSlug + '/' + chapterSlug + '/topics/' + prevSlug + '.html" class="nav-link">';
+            html += '<a href="/books/' + bookSlug + '/' + chapterSlug + '/topics/' + prevSlug + '" class="nav-link">';
             html += '<span class="arrow">←</span>';
             html += '<span class="label">Previous Topic:</span>';
             html += '<span class="topic-name">' + prevName + '</span>';
@@ -8494,7 +8540,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
         if (next) {
             var nextSlug = next.slug || createSlug(next.name);
             var nextName = escapeHtml(next.name);
-            html += '<a href="/books/' + bookSlug + '/' + chapterSlug + '/topics/' + nextSlug + '.html" class="nav-link">';
+            html += '<a href="/books/' + bookSlug + '/' + chapterSlug + '/topics/' + nextSlug + '" class="nav-link">';
             html += '<span class="topic-name">' + nextName + '</span>';
             html += '<span class="label">:Next Topic</span>';
             html += '<span class="arrow">→</span>';
@@ -8600,7 +8646,7 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
             otherTopics.forEach(function(t) {
                 var tSlug = t.slug || createSlug(t.name);
                 var tName = escapeHtml(t.name);
-                relatedTopicsHtml += '<a href="/books/' + bookSlug + '/' + chapterSlug + '/topics/' + tSlug + '.html">📝 ' + tName + ' MCQs</a>';
+                relatedTopicsHtml += '<a href="/books/' + bookSlug + '/' + chapterSlug + '/topics/' + tSlug + '">📝 ' + tName + ' MCQs</a>';
             });
             relatedTopicsHtml += '</div></div>';
         }
@@ -8673,7 +8719,7 @@ if (cleanDefinition) {
         '@type': 'CollectionPage',
         'name': topicName + ' - ' + bookTitle,
         'description': metaDescription,
-        'url': 'https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html',
+        'url': 'https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '/topics/' + topicSlug,
         'isPartOf': { '@type': 'Book', 'name': bookTitle },
         'about': { '@type': 'Thing', 'name': topicName },
     };
@@ -8688,13 +8734,13 @@ if (cleanDefinition) {
 '  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">\n' +
     getGTMHeadCode() + '\n' +
 '  <title>' + seoTitle + '</title>\n' +
-'  <meta name="description" content="' + metaDescription + '">\n' +
+'  <meta name="description" content="' + escapeHtml(metaDescription) + '">\n' +
 '  <meta name="keywords" content="' + topicName + ' MCQs, ' + bookTitle + ' ' + topicName + ' questions, ' + topicName + ' practice, ' + bookTitle + ' topics, ' + topicName + ' easy medium hard">\n' +
 '  <meta name="robots" content="index, follow">\n' +
-'  <link rel="canonical" href="https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html">\n' +
-'  <meta property="og:url" content="https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '.html">\n' +
+'  <link rel="canonical" href="https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '">\n' +
+'  <meta property="og:url" content="https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '/topics/' + topicSlug + '">\n' +
 '  <meta property="og:title" content="' + topicName + ' | BookMCQ">\n' +
-'  <meta property="og:description" content="' + metaDescription +'">\n' +
+'  <meta property="og:description" content="' +escapeHtml(metaDescription) +'">\n' +
 '  <meta property="og:type" content="website">\n' +
 '  <meta name="theme-color" content="#7c3aed">\n' +
 '  <script type="application/ld+json">\n' + JSON.stringify(schemaData) + '\n' +
@@ -8970,9 +9016,9 @@ if (cleanDefinition) {
 '  <main class="card">\n' +
 '    <!-- breadcrumb -->\n' +
 '    <div class="breadcrumb">\n' +
-'      <a href="/">🏠 Home</a> &gt; <a href="/books/' + bookSlug + '/">' + bookTitle + '</a> &gt; <a href="/books/' + bookSlug + '/' + chapterSlug + '.html">' + chapterDisplay + chapterName + '</a> &gt; ' + topicName + '\n' +
+'      <a href="/">🏠 Home</a> &gt; <a href="/books/' + bookSlug + '">' + bookTitle + '</a> &gt; <a href="/books/' + bookSlug + '/' + chapterSlug + '">' + chapterDisplay + chapterName + '</a> &gt; ' + topicName + '\n' +
 '    </div>\n' +
-'    <a href="/books/' + bookSlug + '/' + chapterSlug + '.html" class="back-link">← Back to ' + chapterDisplay + chapterName + '</a>\n' +
+'    <a href="/books/' + bookSlug + '/' + chapterSlug + '" class="back-link">← Back to ' + chapterDisplay + chapterName + '</a>\n' +
 '    \n' +
  '    <!-- ====== NAVIGATION (fully responsive) ====== -->\n' +
         navHtml + '\n' +
