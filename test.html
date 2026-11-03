@@ -7608,28 +7608,28 @@ function generateBookIndexPage(book, chapters, topics, questionStats, totalQuest
         var chapterUrl = '/books/' + bookSlug + '/' + chapterSlug;
         var chapterQCount = chapterQuestionCounts?.[chapter.id] || 0;
 
-        var chapterTopics = topics.filter(function(t) { return t.chapter_id === chapter.id; });
-        var topicsHtml = '';
-        if (chapterTopics.length > 0) {
-            topicsHtml = '<div class="topic-list">';
-            chapterTopics.forEach(function(topic) {
-                var topicSlug = topic.slug || createSlug(topic.name);
-                var topicName = escapeHtml(topic.name);
-                topicsHtml += '<a class="topic-link" href="' + chapterUrl + '/topics/' + topicSlug + '">📝 ' + topicName + '</a>';
-            });
-            topicsHtml += '</div>';
-        }
+    var chapterTopics = topics.filter(function(t) { return t.chapter_id === chapter.id; });
+    var topicsHtml = '';
+    if (chapterTopics.length > 0) {
+        topicsHtml = '<ul class="topic-list">';
+        chapterTopics.forEach(function(topic) {
+            var topicSlug = topic.slug || createSlug(topic.name);
+            var topicName = escapeHtml(topic.name);
+            topicsHtml += '<li><a class="topic-link" href="' + chapterUrl + '/topics/' + topicSlug + '">📝 ' + topicName + '</a></li>';
+        });
+        topicsHtml += '</ul>';
+    }
 
-        chaptersHtml += '<div class="chapter-item">';
-        chaptersHtml += '<div class="chapter-content">';
-        chaptersHtml += '<a class="chapter-title" href="' + chapterUrl + '">' + chapterDisplay + chapterName + '</a>';
-        chaptersHtml += topicsHtml;
-        chaptersHtml += '</div>';
-        chaptersHtml += '<div class="chapter-actions">';
-        chaptersHtml += '<span class="chapter-count">' + chapterQCount + ' MCQs</span>';
-        chaptersHtml += '<span class="chapter-arrow">View Chapter →</span>';
-        chaptersHtml += '</div>';
-        chaptersHtml += '</div>';
+    chaptersHtml += '<div class="chapter-item">';
+    chaptersHtml += '<div class="chapter-content">';
+    chaptersHtml += '<h3 class="chapter-heading"><a class="chapter-title" href="' + chapterUrl + '">' + chapterDisplay + chapterName + '</a></h3>';
+    chaptersHtml += topicsHtml;
+    chaptersHtml += '</div>';
+    chaptersHtml += '<div class="chapter-actions">';
+    chaptersHtml += '<span class="chapter-count">' + chapterQCount + ' MCQs</span>';
+    chaptersHtml += '<span class="chapter-arrow">View Chapter →</span>';
+    chaptersHtml += '</div>';
+    chaptersHtml += '</div>';
     });
     
     var difficultyHtml = '';
@@ -7919,34 +7919,51 @@ var schemaData = {
     '            position: relative;\n' +
     '            cursor: pointer;\n' +
     '        }\n' +
-    '        .chapter-item .chapter-title {\n' +
+    '        .chapter-item .chapter-heading {\n' +
+    '            font-size: 0.95rem;\n' +
+    '            font-weight: 600;\n' +
+    '            color: #1e293b;\n' +
+    '            margin: 0;\n' +
+    '            padding: 0;\n' +
+    '            line-height: 1.4;\n' +
+    '            border: none;\n' +
+    '            text-align: left;\n' +
+    '        }\n' +
+    '        .chapter-item .chapter-heading .chapter-title {\n' +
     '            color: #1e293b;\n' +
     '            text-decoration: none;\n' +
+    '            font-weight: 600;\n' +
+    '            font-size: 0.95rem;\n' +
     '        }\n' +
-    '        /* Stretch the title link over the whole card */\n' +
-    '        .chapter-item .chapter-title::after {\n' +
+    '        /* Stretched link originates from the H3 > a */\n' +
+    '        .chapter-item .chapter-heading .chapter-title::after {\n' +
     '            content: "";\n' +
     '            position: absolute;\n' +
     '            inset: 0;\n' +
     '            border-radius: 12px;\n' +
+    '            z-index: 1;\n' +
     '        }\n' +
     '        /* Topic links sit above the stretched link so they stay clickable */\n' +
-    '        .topic-list {\n' +
+    '        .chapter-item .topic-list {\n' +
+    '            list-style: none;\n' +
+    '            padding: 0;\n' +
+    '            margin: 8px 0 0 20px;\n' +
     '            position: relative;\n' +
     '            z-index: 2;\n' +
-    '            margin-left: 20px;\n' +
-    '            margin-top: 8px;\n' +
     '        }\n' +
-    '        .topic-link {\n' +
+    '        .chapter-item .topic-list li {\n' +
+    '            margin: 0 0 2px 0;\n' +
+    '            padding: 0;\n' +
+    '        }\n' +
+    '        .chapter-item .topic-link {\n' +
     '            display: block;\n' +
     '            padding: 4px 8px;\n' +
     '            font-size: 13px;\n' +
     '            color: #000000;\n' +
     '            text-decoration: none;\n' +
     '            border-left: 2px solid #e5e7eb;\n' +
-    '            margin-bottom: 2px;\n' +
     '        }\n' +
-    '        .topic-link:hover {\n' +
+    '        .chapter-item .topic-link:hover {\n' +
     '            text-decoration: underline;\n' +
     '        }\n' +
      '        @media (max-width: 380px) {\n' +
@@ -8064,6 +8081,14 @@ var schemaData = {
 '      border-radius: 2px;\n' +
 '      background: linear-gradient(135deg, #667eea, #764ba2);\n' +
 '    }\n' +
+'    /* Base h3 */\n' +
+'    h3 {\n' +
+'      font-size: 1.05rem;\n' +
+'      line-height: 1.35;\n' +
+'      margin: 16px 0 8px;\n' +
+'      font-weight: 700;\n' +
+'      color: #1e293b;\n' +
+'    }\n' +
 '    /* Optional utility classes for use outside bare h1/h2 tags */\n' +
 '    .heading-1 {\n' +
 '      font-size: 1.3rem;\n' +
@@ -8097,6 +8122,7 @@ var schemaData = {
 '    @media (max-width: 480px) {\n' +
 '      h1, .heading-1 { font-size: 1.3rem; padding-bottom: 6px; }\n' +
 '      h2, .heading-2 { font-size: 1.15rem; margin: 16px 0 8px; padding-left: 10px; }\n' +
+'      h3 { font-size: 1rem; }\n' +
 '      h2::before, .heading-2::before { width: 3px; }\n' +
 '      p { font-size: 0.9rem; line-height: 1.65; }\n' +
 '    }\n' +     
