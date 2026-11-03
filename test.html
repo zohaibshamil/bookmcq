@@ -7641,8 +7641,66 @@ function generateBookIndexPage(book, chapters, topics, questionStats, totalQuest
         difficultyHtml += '</div>';
     }
     
-    var metaDescription = 'Practice ' + bookTitle + ' MCQs chapter-wise. ' + chapters.length + ' chapters and ' + totalQuestions + ' questions available with ' + easyCount + ' easy, ' + mediumCount + ' medium, and ' + hardCount + ' hard difficulty questions. Perfect for exam preparation.';
-    
+// --- Use book definition as meta description (strip HTML tags, trim to ~177 chars) ---
+var rawBookDef = book.definition || '';
+var cleanBookDef = rawBookDef
+    .replace(/<[^>]*>/g, '')           // remove HTML tags
+    .replace(/\s+/g, ' ')              // collapse whitespace
+    .trim();
+
+var metaDescription;
+if (cleanBookDef) {
+    // 1. Strip a leading "Definition:" / "Book Description:" / "About ...:" prefix if present
+    var cleanText = cleanBookDef
+        .replace(/^(book\s+)?(definition|description|about[^:]*):\s*/i, '')
+        .trim();
+
+    // 2. Split into sentences
+    var sentences = cleanText.match(/[^.!?]+[.!?]+/g) || [cleanText];
+
+    // 3. Take the first sentence
+    var firstSentence = sentences[0].trim();
+
+    // 4. Hard cap at 177 characters total
+    var MAX_LEN = 177;
+    if (firstSentence.length > MAX_LEN) {
+        var truncated = firstSentence.substring(0, MAX_LEN - 1);
+        var lastSpace = truncated.lastIndexOf(' ');
+        if (lastSpace > 120) {
+            truncated = truncated.substring(0, lastSpace);
+        }
+        metaDescription = truncated.trim() + '…';
+    } else {
+        metaDescription = firstSentence;
+    }
+} else {
+    // 6. Fallback — same as current static text, also capped at 177
+    var MAX_LEN = 177;
+    var fallback = 'Practice ' + bookTitle + ' MCQs chapter-wise. ' + chapterCount + ' chapters and ' + totalQs + ' questions available with ' + easyCount + ' easy, ' + mediumCount + ' medium, and ' + hardCount + ' hard difficulty questions. Perfect for exam preparation.';
+    if (fallback.length > MAX_LEN) {
+        var truncated = fallback.substring(0, MAX_LEN - 1);
+        var lastSpace = truncated.lastIndexOf(' ');
+        if (lastSpace > 80) {
+            truncated = truncated.substring(0, lastSpace);
+        }
+        metaDescription = truncated.trim() + '…';
+    } else {
+        metaDescription = fallback;
+    }
+}
+
+// Sanitize quotes so the HTML attribute does not break
+metaDescription = metaDescription.replace(/"/g, '&quot;');
+
+var schemaData = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    'name': bookTitle,
+    'description': metaDescription,
+    'url': 'https://www.bookmcq.com/books/' + bookSlug,
+    'about': { '@type': 'Book', 'name': bookTitle },
+};
+ 
     return '<!DOCTYPE html>\n' +
     '<html lang="en">\n' +
     '<head>\n' +
@@ -7656,10 +7714,12 @@ function generateBookIndexPage(book, chapters, topics, questionStats, totalQuest
     '    <link rel="canonical" href="https://www.bookmcq.com/books/' + bookSlug + '">\n' +
     '    <meta property="og:url" content="https://www.bookmcq.com/books/' + bookSlug + '">\n' +
     '    <meta property="og:title" content="' + bookTitle + ' MCQs | BookMCQ">\n' +
-    '    <meta property="og:description" content="Chapter-wise MCQs for ' + bookTitle + ' with ' + totalQuestions + ' practice questions. Difficulty: Easy ' + easyCount + ', Medium ' + mediumCount + ', Hard ' + hardCount + '.">\n' +
+    '    <meta property="og:description" content="' + metaDescription + '">\n' +
     '    <meta property="og:type" content="website">\n' +
     '    <meta name="theme-color" content="#7c3aed">\n' +
-    '    <style>\n' +
+'    <script type="application/ld+json">\n' + JSON.stringify(schemaData) + '\n' +
+'    <\/script>\n' +
+     '    <style>\n' +
     '        * { box-sizing: border-box; margin: 0; padding: 0; }\n' +
     '        \n' +
     '        body {\n' +
