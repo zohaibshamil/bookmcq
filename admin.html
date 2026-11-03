@@ -7608,28 +7608,28 @@ function generateBookIndexPage(book, chapters, topics, questionStats, totalQuest
         var chapterUrl = '/books/' + bookSlug + '/' + chapterSlug;
         var chapterQCount = chapterQuestionCounts?.[chapter.id] || 0;
 
-        var chapterTopics = topics.filter(function(t) { return t.chapter_id === chapter.id; });
-        var topicsHtml = '';
-        if (chapterTopics.length > 0) {
-            topicsHtml = '<div class="topic-list">';
-            chapterTopics.forEach(function(topic) {
-                var topicSlug = topic.slug || createSlug(topic.name);
-                var topicName = escapeHtml(topic.name);
-                topicsHtml += '<a class="topic-link" href="' + chapterUrl + '/topics/' + topicSlug + '">📝 ' + topicName + '</a>';
-            });
-            topicsHtml += '</div>';
-        }
+    var chapterTopics = topics.filter(function(t) { return t.chapter_id === chapter.id; });
+    var topicsHtml = '';
+    if (chapterTopics.length > 0) {
+        topicsHtml = '<ul class="topic-list">';
+        chapterTopics.forEach(function(topic) {
+            var topicSlug = topic.slug || createSlug(topic.name);
+            var topicName = escapeHtml(topic.name);
+            topicsHtml += '<li><a class="topic-link" href="' + chapterUrl + '/topics/' + topicSlug + '">📝 ' + topicName + '</a></li>';
+        });
+        topicsHtml += '</ul>';
+    }
 
-        chaptersHtml += '<div class="chapter-item">';
-        chaptersHtml += '<div class="chapter-content">';
-        chaptersHtml += '<a class="chapter-title" href="' + chapterUrl + '">' + chapterDisplay + chapterName + '</a>';
-        chaptersHtml += topicsHtml;
-        chaptersHtml += '</div>';
-        chaptersHtml += '<div class="chapter-actions">';
-        chaptersHtml += '<span class="chapter-count">' + chapterQCount + ' MCQs</span>';
-        chaptersHtml += '<span class="chapter-arrow">View Chapter →</span>';
-        chaptersHtml += '</div>';
-        chaptersHtml += '</div>';
+    chaptersHtml += '<div class="chapter-item">';
+    chaptersHtml += '<div class="chapter-content">';
+    chaptersHtml += '<h3 class="chapter-heading"><a class="chapter-title" href="' + chapterUrl + '">' + chapterDisplay + chapterName + '</a></h3>';
+    chaptersHtml += topicsHtml;
+    chaptersHtml += '</div>';
+    chaptersHtml += '<div class="chapter-actions">';
+    chaptersHtml += '<span class="chapter-count">' + chapterQCount + ' MCQs</span>';
+    chaptersHtml += '<span class="chapter-arrow">View Chapter →</span>';
+    chaptersHtml += '</div>';
+    chaptersHtml += '</div>';
     });
     
     var difficultyHtml = '';
@@ -7641,25 +7641,85 @@ function generateBookIndexPage(book, chapters, topics, questionStats, totalQuest
         difficultyHtml += '</div>';
     }
     
-    var metaDescription = 'Practice ' + bookTitle + ' MCQs chapter-wise. ' + chapters.length + ' chapters and ' + totalQuestions + ' questions available with ' + easyCount + ' easy, ' + mediumCount + ' medium, and ' + hardCount + ' hard difficulty questions. Perfect for exam preparation.';
-    
+// --- Use book definition as meta description (strip HTML tags, trim to ~177 chars) ---
+var rawBookDef = book.definition || '';
+var cleanBookDef = rawBookDef
+    .replace(/<[^>]*>/g, '')           // remove HTML tags
+    .replace(/\s+/g, ' ')              // collapse whitespace
+    .trim();
+
+var metaDescription;
+if (cleanBookDef) {
+    // 1. Strip a leading "Definition:" / "Book Description:" / "About ...:" prefix if present
+    var cleanText = cleanBookDef
+        .replace(/^(book\s+)?(definition|description|about[^:]*):\s*/i, '')
+        .trim();
+
+    // 2. Split into sentences
+    var sentences = cleanText.match(/[^.!?]+[.!?]+/g) || [cleanText];
+
+    // 3. Take the first sentence
+    var firstSentence = sentences[0].trim();
+
+    // 4. Hard cap at 177 characters total
+    var MAX_LEN = 177;
+    if (firstSentence.length > MAX_LEN) {
+        var truncated = firstSentence.substring(0, MAX_LEN - 1);
+        var lastSpace = truncated.lastIndexOf(' ');
+        if (lastSpace > 120) {
+            truncated = truncated.substring(0, lastSpace);
+        }
+        metaDescription = truncated.trim() + '…';
+    } else {
+        metaDescription = firstSentence;
+    }
+} else {
+    // 6. Fallback — same as current static text, also capped at 177
+    var MAX_LEN = 177;
+    var fallback = 'Practice ' + bookTitle + ' MCQs chapter-wise. ' + chapterCount + ' chapters and ' + totalQs + ' questions available with ' + easyCount + ' easy, ' + mediumCount + ' medium, and ' + hardCount + ' hard difficulty questions. Perfect for exam preparation.';
+    if (fallback.length > MAX_LEN) {
+        var truncated = fallback.substring(0, MAX_LEN - 1);
+        var lastSpace = truncated.lastIndexOf(' ');
+        if (lastSpace > 80) {
+            truncated = truncated.substring(0, lastSpace);
+        }
+        metaDescription = truncated.trim() + '…';
+    } else {
+        metaDescription = fallback;
+    }
+}
+
+// Sanitize quotes so the HTML attribute does not break
+metaDescription = metaDescription.replace(/"/g, '&quot;');
+
+var schemaData = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    'name': bookTitle,
+    'description': metaDescription,
+    'url': 'https://www.bookmcq.com/books/' + bookSlug,
+    'about': { '@type': 'Book', 'name': bookTitle },
+};
+ 
     return '<!DOCTYPE html>\n' +
     '<html lang="en">\n' +
     '<head>\n' +
     '    <meta charset="UTF-8">\n' +
     '    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">\n' +
     getGTMHeadCode() + '\n' +
-    '    <title>' + bookTitle + ' MCQs - Chapter-wise Practice with Difficulty Levels | BookMCQ</title>\n' +
+    '    <title>' + bookTitle + ' | BookMCQ</title>\n' +
     '    <meta name="description" content="' + metaDescription + '">\n' +
     '    <meta name="keywords" content="' + bookTitle + ' MCQs, ' + bookTitle + ' questions, ' + bookTitle + ' practice, ' + bookTitle + ' exam preparation, ' + bookTitle + ' easy medium hard questions' + (bookCategory ? ', ' + bookCategory + ' MCQs' : '') + '">\n' +
     '    <meta name="robots" content="index, follow">\n' +
     '    <link rel="canonical" href="https://www.bookmcq.com/books/' + bookSlug + '">\n' +
     '    <meta property="og:url" content="https://www.bookmcq.com/books/' + bookSlug + '">\n' +
-    '    <meta property="og:title" content="' + bookTitle + ' MCQs | BookMCQ">\n' +
-    '    <meta property="og:description" content="Chapter-wise MCQs for ' + bookTitle + ' with ' + totalQuestions + ' practice questions. Difficulty: Easy ' + easyCount + ', Medium ' + mediumCount + ', Hard ' + hardCount + '.">\n' +
+    '    <meta property="og:title" content="' + bookTitle + ' | BookMCQ">\n' +
+    '    <meta property="og:description" content="' + metaDescription + '">\n' +
     '    <meta property="og:type" content="website">\n' +
     '    <meta name="theme-color" content="#7c3aed">\n' +
-    '    <style>\n' +
+'    <script type="application/ld+json">\n' + JSON.stringify(schemaData) + '\n' +
+'    <\/script>\n' +
+     '    <style>\n' +
     '        * { box-sizing: border-box; margin: 0; padding: 0; }\n' +
     '        \n' +
     '        body {\n' +
@@ -7859,34 +7919,51 @@ function generateBookIndexPage(book, chapters, topics, questionStats, totalQuest
     '            position: relative;\n' +
     '            cursor: pointer;\n' +
     '        }\n' +
-    '        .chapter-item .chapter-title {\n' +
+    '        .chapter-item .chapter-heading {\n' +
+    '            font-size: 0.95rem;\n' +
+    '            font-weight: 600;\n' +
+    '            color: #1e293b;\n' +
+    '            margin: 0;\n' +
+    '            padding: 0;\n' +
+    '            line-height: 1.4;\n' +
+    '            border: none;\n' +
+    '            text-align: left;\n' +
+    '        }\n' +
+    '        .chapter-item .chapter-heading .chapter-title {\n' +
     '            color: #1e293b;\n' +
     '            text-decoration: none;\n' +
+    '            font-weight: 600;\n' +
+    '            font-size: 0.95rem;\n' +
     '        }\n' +
-    '        /* Stretch the title link over the whole card */\n' +
-    '        .chapter-item .chapter-title::after {\n' +
+    '        /* Stretched link originates from the H3 > a */\n' +
+    '        .chapter-item .chapter-heading .chapter-title::after {\n' +
     '            content: "";\n' +
     '            position: absolute;\n' +
     '            inset: 0;\n' +
     '            border-radius: 12px;\n' +
+    '            z-index: 1;\n' +
     '        }\n' +
     '        /* Topic links sit above the stretched link so they stay clickable */\n' +
-    '        .topic-list {\n' +
+    '        .chapter-item .topic-list {\n' +
+    '            list-style: none;\n' +
+    '            padding: 0;\n' +
+    '            margin: 8px 0 0 20px;\n' +
     '            position: relative;\n' +
     '            z-index: 2;\n' +
-    '            margin-left: 20px;\n' +
-    '            margin-top: 8px;\n' +
     '        }\n' +
-    '        .topic-link {\n' +
+    '        .chapter-item .topic-list li {\n' +
+    '            margin: 0 0 2px 0;\n' +
+    '            padding: 0;\n' +
+    '        }\n' +
+    '        .chapter-item .topic-link {\n' +
     '            display: block;\n' +
     '            padding: 4px 8px;\n' +
     '            font-size: 13px;\n' +
     '            color: #000000;\n' +
     '            text-decoration: none;\n' +
     '            border-left: 2px solid #e5e7eb;\n' +
-    '            margin-bottom: 2px;\n' +
     '        }\n' +
-    '        .topic-link:hover {\n' +
+    '        .chapter-item .topic-link:hover {\n' +
     '            text-decoration: underline;\n' +
     '        }\n' +
      '        @media (max-width: 380px) {\n' +
@@ -7964,7 +8041,92 @@ function generateBookIndexPage(book, chapters, topics, questionStats, totalQuest
     '                gap: 8px; \n' +
     '            }\n' +
     '        }\n' +
-    '    </style>\n' +
+'    /* Base paragraph */\n' +
+'    p {\n' +
+'      text-align: justify;\n' +
+'      text-justify: inter-word;\n' +
+'      line-height: 1.4;\n' +
+'      color: black;\n' +
+'      font-size: 0.95rem;\n' +
+'      word-break: break-word;\n' +
+'    }\n' +
+'    /* Base headings */\n' +
+'    h1 {\n' +
+'      font-size: 1.3rem;\n' +
+'      line-height: 1.25;\n' +
+'      margin: 6px 0 10px;\n' +
+'      font-weight: 800;\n' +
+'      color: #1e293b;\n' +
+'      text-align: justify;\n' +
+'      word-break: break-word;\n' +
+'      border-bottom: 3px solid #7c3aed;\n' +
+'      padding-bottom: 8px;\n' +
+'    }\n' +
+'    h2 {\n' +
+'      font-size: 1.15rem;\n' +
+'      line-height: 1.4;\n' +
+'      margin: 20px 0 10px;\n' +
+'      font-weight: 700;\n' +
+'      color: #1e293b;\n' +
+'      text-align: justify;\n' +
+'      word-break: break-word;\n' +
+'      position: relative;\n' +
+'      padding-left: 12px;\n' +
+'    }\n' +
+'    h2::before {\n' +
+'      content: "";\n' +
+'      position: absolute;\n' +
+'      left: 0; top: 0.15em; bottom: 0.15em;\n' +
+'      width: 4px;\n' +
+'      border-radius: 2px;\n' +
+'      background: linear-gradient(135deg, #667eea, #764ba2);\n' +
+'    }\n' +
+'    /* Base h3 */\n' +
+'    h3 {\n' +
+'      font-size: 1.05rem;\n' +
+'      line-height: 1.35;\n' +
+'      margin: 16px 0 8px;\n' +
+'      font-weight: 700;\n' +
+'      color: #1e293b;\n' +
+'    }\n' +
+'    /* Optional utility classes for use outside bare h1/h2 tags */\n' +
+'    .heading-1 {\n' +
+'      font-size: 1.3rem;\n' +
+'      font-weight: 800;\n' +
+'      color: #1e293b;\n' +
+'      line-height: 1.25;\n' +
+'      margin: 6px 0 10px;\n' +
+'      border-bottom: 3px solid #7c3aed;\n' +
+'      padding-bottom: 8px;\n' +
+'      text-align: justify;\n' +
+'    }\n' +
+'    .heading-2 {\n' +
+'      font-size: 1.15rem;\n' +
+'      font-weight: 700;\n' +
+'      color: #1e293b;\n' +
+'      line-height: 1.3;\n' +
+'      margin: 20px 0 10px;\n' +
+'      padding-left: 12px;\n' +
+'      position: relative;\n' +
+'      text-align: justify;\n' +
+'    }\n' +
+'    .heading-2::before {\n' +
+'      content: "";\n' +
+'      position: absolute;\n' +
+'      left: 0; top: 0.15em; bottom: 0.15em;\n' +
+'      width: 4px;\n' +
+'      border-radius: 2px;\n' +
+'      background: linear-gradient(135deg, #667eea, #764ba2);\n' +
+'    }\n' +
+'    /* Mobile */\n' +
+'    @media (max-width: 480px) {\n' +
+'      h1, .heading-1 { font-size: 1.3rem; padding-bottom: 6px; }\n' +
+'      h2, .heading-2 { font-size: 1.15rem; margin: 16px 0 8px; padding-left: 10px; }\n' +
+'      h3 { font-size: 1rem; }\n' +
+'      h2::before, .heading-2::before { width: 3px; }\n' +
+'      p { font-size: 0.9rem; line-height: 1.65; }\n' +
+'    }\n' +     
+     '    </style>\n' +
     '</head>\n' +
     '<body>\n' +
     getGTMBodyCode() + '\n' +
@@ -7983,7 +8145,7 @@ function generateBookIndexPage(book, chapters, topics, questionStats, totalQuest
     '            <a href="/">🏠 Home</a> &gt; ' + bookTitle + '\n' +
     '        </div>\n' +
     '        <a href="/" class="back-link">← Back to Home</a>\n' +
-    '        <h1>📚 ' + bookTitle + ' MCQs</h1>\n' +
+    '        <h1>📚 ' + bookTitle + '</h1>\n' +
     '        <div class="book-meta">\n' +
     (bookAuthor ? '            <span><strong>Author:</strong> ' + bookAuthor + '</span>\n' : '') +
     (bookCategory ? '            <span><strong>Category:</strong> ' + bookCategory + '</span>\n' : '') +
@@ -7991,9 +8153,8 @@ function generateBookIndexPage(book, chapters, topics, questionStats, totalQuest
     '            <span><strong>Chapters:</strong> ' + chapters.length + '</span>\n' +
     '        </div>\n' +
     bookDefinitionHtml +
-    '        <p style="text-align:justify; line-height:1.7; color:#334155; font-size:0.95rem;">Practice chapter-wise MCQs for <strong>' + bookTitle + '</strong>. This book contains <strong>' + chapters.length + ' chapters</strong> and <strong>' + totalQuestions + ' questions</strong> across easy, medium, and hard difficulty levels.</p>\n' +
     difficultyHtml +
-    '        <h2 style="font-size:17px; font-weight:700; color:#1e293b; margin-top:20px; margin-bottom:14px;">📚 Chapters</h2>\n' +
+    '        <h2>📚 Chapters</h2>\n' +
     '        <div style="display:flex; flex-direction:column; gap:10px;">\n' +
     chaptersHtml +
     '        </div>\n' +
@@ -8026,12 +8187,12 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
         
         var formattedDefinition = paragraphs
             .map(function(p) {
-                return '<p style="margin-bottom: 14px; text-align: justify; text-justify: inter-word; line-height: 1.8; color: #334155; font-size: 15px;">' + p.replace(/\n/g, ' ') + '</p>';
+                return p.replace(/\n/g, ' ');
             })
             .join('');
         
         chapterDefinitionHtml = `
-            <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 16px;">About ${chapterDisplay}${chapterName}</h2>
+            
             ${formattedDefinition}
             <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0;">
         `;
@@ -8055,7 +8216,7 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
         var iconColors = [''];
         
         topicsHtml = '<div style="margin:20px 0;">';
-        topicsHtml += '<h3 style="font-size:17px; font-weight:700; color:#1e293b; margin-bottom:14px;">📌 Topics in this Chapter</h3>';
+        topicsHtml += '<h3>📌 Topics in this Chapter</h3>';
         topicsHtml += '<div style="display:flex; flex-direction:column; gap:10px;">';
         
         chapterTopics.forEach(function(topic, index) {
@@ -8091,21 +8252,67 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
         difficultyHtml += '<div class="badge-item" style="background:#fee2e2; border-color:#fca5a5;"><div class="num" style="color:#000000;">' + hardCount + '</div><div class="lbl" style="color:#000000; font-weight:700;">Hard</div></div>';
         difficultyHtml += '</div>';
     }
-    
-    var lastUpdated = new Date().toISOString().split('T')[0];
+
+
+ // --- Use chapter definition as meta description (strip HTML tags, trim to ~177 chars) ---
+var rawChapterDef = chapter.definition || '';
+var cleanChapterDef = rawChapterDef
+    .replace(/<[^>]*>/g, '')           // remove HTML tags
+    .replace(/\s+/g, ' ')              // collapse whitespace
+    .trim();
+
+var metaDescription;
+if (cleanChapterDef) {
+    // 1. Strip a leading "Definition:" / "Chapter Definition:" prefix if present
+    var cleanText = cleanChapterDef.replace(/^(chapter\s+)?definition:\s*/i, '').trim();
+
+    // 2. Split into sentences
+    var sentences = cleanText.match(/[^.!?]+[.!?]+/g) || [cleanText];
+
+    // 3. Take the first sentence
+    var firstSentence = sentences[0].trim();
+
+    // 4. Hard cap at 177 characters total
+    var MAX_LEN = 177;
+    if (firstSentence.length > MAX_LEN) {
+        var truncated = firstSentence.substring(0, MAX_LEN - 1);
+        var lastSpace = truncated.lastIndexOf(' ');
+        if (lastSpace > 120) {
+            truncated = truncated.substring(0, lastSpace);
+        }
+        metaDescription = truncated.trim() + '…';
+    } else {
+        metaDescription = firstSentence;
+    }
+} else {
+    // 6. Fallback — same as your current line, also capped at 177
+    var MAX_LEN = 177;
+    var fallback = 'Practice ' + chapterName + ' from ' + bookTitle + '. ' + totalQs + ' questions with ' + easyCount + ' easy, ' + mediumCount + ' medium, and ' + hardCount + ' hard difficulty levels. Perfect for exam preparation.';
+    if (fallback.length > MAX_LEN) {
+        var truncated = fallback.substring(0, MAX_LEN - 1);
+        var lastSpace = truncated.lastIndexOf(' ');
+        if (lastSpace > 80) {
+            truncated = truncated.substring(0, lastSpace);
+        }
+        metaDescription = truncated.trim() + '…';
+    } else {
+        metaDescription = fallback;
+    }
+}
+ 
+ 
     
     var schemaData = {
         '@context': 'https://schema.org',
         '@type': 'CollectionPage',
-        'name': chapterDisplay + chapterName + ' - ' + bookTitle,
-        'description': 'Practice ' + chapterDisplay + chapterName + ' from ' + bookTitle + '. ' + totalQs + ' questions with ' + easyCount + ' easy, ' + mediumCount + ' medium, and ' + hardCount + ' hard difficulty levels.',
+        'name': chapterName,
+        'description': metaDescription,
         'url': 'https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug,
         'isPartOf': { '@type': 'Book', 'name': bookTitle },
         'about': { '@type': 'Thing', 'name': chapterName },
-        'dateModified': lastUpdated
     };
     
-    var metaDescription = 'Practice ' + chapterDisplay + chapterName + ' from ' + bookTitle + '. ' + totalQs + ' questions with ' + easyCount + ' easy, ' + mediumCount + ' medium, and ' + hardCount + ' hard difficulty levels. Perfect for exam preparation.';
+
     
     return '<!DOCTYPE html>\n' +
     '<html lang="en">\n' +
@@ -8113,14 +8320,14 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
     '    <meta charset="UTF-8">\n' +
     '    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">\n' +
     getGTMHeadCode() + '\n' +
-    '    <title>' + chapterDisplay + chapterName + ' - ' + bookTitle + ' Practice Questions with Difficulty Levels | BookMCQ</title>\n' +
+    '    <title>' + chapterName + ' | BookMCQ</title>\n' +
     '    <meta name="description" content="' + metaDescription + '">\n' +
     '    <meta name="keywords" content="' + chapterName + ' MCQs, ' + bookTitle + ' ' + chapterName + ' questions, ' + chapterName + ' practice, ' + bookTitle + ' chapter ' + (chapter.chapter_number || '') + ', ' + chapterName + ' easy medium hard">\n' +
     '    <meta name="robots" content="index, follow">\n' +
     '    <link rel="canonical" href="https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '">\n' +
     '    <meta property="og:url" content="https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '">\n' +
-    '    <meta property="og:title" content="' + chapterDisplay + chapterName + ' - ' + bookTitle + ' MCQs | BookMCQ">\n' +
-    '    <meta property="og:description" content="Practice ' + chapterDisplay + chapterName + ' from ' + bookTitle + '. ' + totalQs + ' questions with difficulty breakdown: Easy ' + easyCount + ', Medium ' + mediumCount + ', Hard ' + hardCount + '.">\n' +
+    '    <meta property="og:title" content="' + chapterName + ' | BookMCQ">\n' +
+    '    <meta property="og:description" content="' + metaDescription + '">\n' +
     '    <meta property="og:type" content="website">\n' +
     '    <meta name="theme-color" content="#7c3aed">\n' +
     '    <script type="application/ld+json">\n' + JSON.stringify(schemaData) + '\n' +
@@ -8186,14 +8393,6 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
     '        }\n' +
     '        .breadcrumb a { color: #000000; text-decoration: none; }\n' +
     '        .breadcrumb a:hover { text-decoration: underline; }\n' +
-    '\n' +
-    '        h1 { \n' +
-    '            font-size: 1.6rem; \n' +
-    '            line-height: 1.2; \n' +
-    '            margin: 6px 0 4px; \n' +
-    '            word-break: break-word; \n' +
-    '        }\n' +
-    '        @media (max-width: 480px) { h1 { font-size: 1.4rem; } }\n' +
     '\n' +
     '        .chapter-info { \n' +
     '            font-size: 0.9rem; \n' +
@@ -8401,6 +8600,82 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
     '                gap: 8px; \n' +
     '            }\n' +
     '        }\n' +
+'    /* Base paragraph */\n' +
+'    p {\n' +
+'      text-align: justify;\n' +
+'      text-justify: inter-word;\n' +
+'      line-height: 1.4;\n' +
+'      color: black;\n' +
+'      font-size: 0.95rem;\n' +
+'      word-break: break-word;\n' +
+'    }\n' +
+'    /* Base headings */\n' +
+'    h1 {\n' +
+'      font-size: 1.3rem;\n' +
+'      line-height: 1.25;\n' +
+'      margin: 6px 0 10px;\n' +
+'      font-weight: 800;\n' +
+'      color: #1e293b;\n' +
+'      text-align: justify;\n' +
+'      word-break: break-word;\n' +
+'      border-bottom: 3px solid #7c3aed;\n' +
+'      padding-bottom: 8px;\n' +
+'    }\n' +
+'    h2 {\n' +
+'      font-size: 1.15rem;\n' +
+'      line-height: 1.4;\n' +
+'      margin: 20px 0 10px;\n' +
+'      font-weight: 700;\n' +
+'      color: #1e293b;\n' +
+'      text-align: justify;\n' +
+'      word-break: break-word;\n' +
+'      position: relative;\n' +
+'      padding-left: 12px;\n' +
+'    }\n' +
+'    h2::before {\n' +
+'      content: "";\n' +
+'      position: absolute;\n' +
+'      left: 0; top: 0.15em; bottom: 0.15em;\n' +
+'      width: 4px;\n' +
+'      border-radius: 2px;\n' +
+'      background: linear-gradient(135deg, #667eea, #764ba2);\n' +
+'    }\n' +
+'    /* Optional utility classes for use outside bare h1/h2 tags */\n' +
+'    .heading-1 {\n' +
+'      font-size: 1.3rem;\n' +
+'      font-weight: 800;\n' +
+'      color: #1e293b;\n' +
+'      line-height: 1.25;\n' +
+'      margin: 6px 0 10px;\n' +
+'      border-bottom: 3px solid #7c3aed;\n' +
+'      padding-bottom: 8px;\n' +
+'      text-align: justify;\n' +
+'    }\n' +
+'    .heading-2 {\n' +
+'      font-size: 1.15rem;\n' +
+'      font-weight: 700;\n' +
+'      color: #1e293b;\n' +
+'      line-height: 1.3;\n' +
+'      margin: 20px 0 10px;\n' +
+'      padding-left: 12px;\n' +
+'      position: relative;\n' +
+'      text-align: justify;\n' +
+'    }\n' +
+'    .heading-2::before {\n' +
+'      content: "";\n' +
+'      position: absolute;\n' +
+'      left: 0; top: 0.15em; bottom: 0.15em;\n' +
+'      width: 4px;\n' +
+'      border-radius: 2px;\n' +
+'      background: linear-gradient(135deg, #667eea, #764ba2);\n' +
+'    }\n' +
+'    /* Mobile */\n' +
+'    @media (max-width: 480px) {\n' +
+'      h1, .heading-1 { font-size: 1.3rem; padding-bottom: 6px; }\n' +
+'      h2, .heading-2 { font-size: 1.15rem; margin: 16px 0 8px; padding-left: 10px; }\n' +
+'      h2::before, .heading-2::before { width: 3px; }\n' +
+'      p { font-size: 0.9rem; line-height: 1.65; }\n' +
+'    }\n' +     
     '    </style>\n' +
     '</head>\n' +
     '<body>\n' +
@@ -8417,14 +8692,11 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
     '    <main class="card">\n' +
     '        <!-- breadcrumb -->\n' +
     '        <div class="breadcrumb">\n' +
-    '            <a href="/">🏠 Home</a> &gt; <a href="/books/' + bookSlug + '">' + bookTitle + '</a> &gt; ' + chapterDisplay + chapterName + '\n' +
+    '            <a href="/">🏠 Home</a> &gt; <a href="/books/' + bookSlug + '">' + bookTitle + '</a> &gt; ' + chapterName + '\n' +
     '        </div>\n' +
     '        <a href="/books/' + bookSlug + '" class="back-link">← Back to ' + bookTitle + '</a>\n' +
-    '        <h1>📖 ' + chapterDisplay + chapterName + '</h1>\n' +
-    '        <p class="chapter-info">📖 From <strong>' + bookTitle + '</strong> • ' + totalQs + ' questions available</p>\n' +
+    '        <h1>📖 ' + chapterName + '</h1>\n' +
     chapterDefinitionHtml +
-    '        <p style="text-align:justify; line-height:1.7; color:#334155; font-size:0.95rem;">Practice MCQs for ' + chapterDisplay + chapterName + '. Test your knowledge with carefully crafted questions across easy, medium, and hard difficulty levels.</p>\n' +
-    '        <p style="font-size:13px; color:#000000; margin-top:6px;">🔄 Last updated: ' + lastUpdated + '</p>\n' +
     difficultyHtml +
     topicsHtml +
     sampleMcqsHtml +
