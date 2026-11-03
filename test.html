@@ -8091,19 +8091,67 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
         difficultyHtml += '<div class="badge-item" style="background:#fee2e2; border-color:#fca5a5;"><div class="num" style="color:#000000;">' + hardCount + '</div><div class="lbl" style="color:#000000; font-weight:700;">Hard</div></div>';
         difficultyHtml += '</div>';
     }
-    
+
+
+ // --- Use chapter definition as meta description (strip HTML tags, trim to ~177 chars) ---
+var rawChapterDef = chapter.definition || '';
+var cleanChapterDef = rawChapterDef
+    .replace(/<[^>]*>/g, '')           // remove HTML tags
+    .replace(/\s+/g, ' ')              // collapse whitespace
+    .trim();
+
+var metaDescription;
+if (cleanChapterDef) {
+    // 1. Strip a leading "Definition:" / "Chapter Definition:" prefix if present
+    var cleanText = cleanChapterDef.replace(/^(chapter\s+)?definition:\s*/i, '').trim();
+
+    // 2. Split into sentences
+    var sentences = cleanText.match(/[^.!?]+[.!?]+/g) || [cleanText];
+
+    // 3. Take the first sentence
+    var firstSentence = sentences[0].trim();
+
+    // 4. Hard cap at 177 characters total
+    var MAX_LEN = 177;
+    if (firstSentence.length > MAX_LEN) {
+        var truncated = firstSentence.substring(0, MAX_LEN - 1);
+        var lastSpace = truncated.lastIndexOf(' ');
+        if (lastSpace > 120) {
+            truncated = truncated.substring(0, lastSpace);
+        }
+        metaDescription = truncated.trim() + '…';
+    } else {
+        metaDescription = firstSentence;
+    }
+} else {
+    // 6. Fallback — same as your current line, also capped at 177
+    var MAX_LEN = 177;
+    var fallback = 'Practice ' + chapterName + ' from ' + bookTitle + '. ' + totalQs + ' questions with ' + easyCount + ' easy, ' + mediumCount + ' medium, and ' + hardCount + ' hard difficulty levels. Perfect for exam preparation.';
+    if (fallback.length > MAX_LEN) {
+        var truncated = fallback.substring(0, MAX_LEN - 1);
+        var lastSpace = truncated.lastIndexOf(' ');
+        if (lastSpace > 80) {
+            truncated = truncated.substring(0, lastSpace);
+        }
+        metaDescription = truncated.trim() + '…';
+    } else {
+        metaDescription = fallback;
+    }
+}
+ 
+ 
     
     var schemaData = {
         '@context': 'https://schema.org',
         '@type': 'CollectionPage',
-        'name': chapterDisplay + chapterName + ' - ' + bookTitle,
-        'description': 'Practice ' + chapterName + ' from ' + bookTitle + '. ' + totalQs + ' questions with ' + easyCount + ' easy, ' + mediumCount + ' medium, and ' + hardCount + ' hard difficulty levels.',
+        'name': chapterName + ' - ' + bookTitle,
+        'description': metaDescription,
         'url': 'https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug,
         'isPartOf': { '@type': 'Book', 'name': bookTitle },
         'about': { '@type': 'Thing', 'name': chapterName },
     };
     
-    var metaDescription = 'Practice ' + chapterName + ' from ' + bookTitle + '. ' + totalQs + ' questions with ' + easyCount + ' easy, ' + mediumCount + ' medium, and ' + hardCount + ' hard difficulty levels. Perfect for exam preparation.';
+
     
     return '<!DOCTYPE html>\n' +
     '<html lang="en">\n' +
@@ -8118,7 +8166,7 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
     '    <link rel="canonical" href="https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '">\n' +
     '    <meta property="og:url" content="https://www.bookmcq.com/books/' + bookSlug + '/' + chapterSlug + '">\n' +
     '    <meta property="og:title" content="' + chapterName + ' | BookMCQ">\n' +
-    '    <meta property="og:description" content="Practice ' + chapterDisplay + chapterName + ' from ' + bookTitle + '. ' + totalQs + ' questions with difficulty breakdown: Easy ' + easyCount + ', Medium ' + mediumCount + ', Hard ' + hardCount + '.">\n' +
+    '    <meta property="og:description" content="' + metaDescription + '">\n' +
     '    <meta property="og:type" content="website">\n' +
     '    <meta name="theme-color" content="#7c3aed">\n' +
     '    <script type="application/ld+json">\n' + JSON.stringify(schemaData) + '\n' +
@@ -8420,7 +8468,7 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
     '        <a href="/books/' + bookSlug + '" class="back-link">← Back to ' + bookTitle + '</a>\n' +
     '        <h1>📖 ' + chapterName + '</h1>\n' +
     chapterDefinitionHtml +
-    '        <p style="text-align:justify; line-height:1.7; color:#334155; font-size:0.95rem;">Practice MCQs for ' + chapterName + '. Test your knowledge with carefully crafted questions across easy, medium, and hard difficulty levels.</p>\n' +
+    '        <p>Practice MCQs for ' + chapterName + '. Test your knowledge with carefully crafted questions across easy, medium, and hard difficulty levels.</p>\n' +
     difficultyHtml +
     topicsHtml +
     sampleMcqsHtml +
