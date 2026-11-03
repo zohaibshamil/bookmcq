@@ -7649,7 +7649,7 @@ function generateBookIndexPage(book, chapters, topics, questionStats, totalQuest
     '    <meta charset="UTF-8">\n' +
     '    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">\n' +
     getGTMHeadCode() + '\n' +
-    '    <title>' + bookTitle + ' MCQs - Chapter-wise Practice with Difficulty Levels | BookMCQ</title>\n' +
+    '    <title>' + bookTitle + ' | BookMCQ</title>\n' +
     '    <meta name="description" content="' + metaDescription + '">\n' +
     '    <meta name="keywords" content="' + bookTitle + ' MCQs, ' + bookTitle + ' questions, ' + bookTitle + ' practice, ' + bookTitle + ' exam preparation, ' + bookTitle + ' easy medium hard questions' + (bookCategory ? ', ' + bookCategory + ' MCQs' : '') + '">\n' +
     '    <meta name="robots" content="index, follow">\n' +
@@ -7964,7 +7964,83 @@ function generateBookIndexPage(book, chapters, topics, questionStats, totalQuest
     '                gap: 8px; \n' +
     '            }\n' +
     '        }\n' +
-    '    </style>\n' +
+'    /* Base paragraph */\n' +
+'    p {\n' +
+'      text-align: justify;\n' +
+'      text-justify: inter-word;\n' +
+'      line-height: 1.4;\n' +
+'      color: black;\n' +
+'      font-size: 0.95rem;\n' +
+'      word-break: break-word;\n' +
+'    }\n' +
+'    /* Base headings */\n' +
+'    h1 {\n' +
+'      font-size: 1.3rem;\n' +
+'      line-height: 1.25;\n' +
+'      margin: 6px 0 10px;\n' +
+'      font-weight: 800;\n' +
+'      color: #1e293b;\n' +
+'      text-align: justify;\n' +
+'      word-break: break-word;\n' +
+'      border-bottom: 3px solid #7c3aed;\n' +
+'      padding-bottom: 8px;\n' +
+'    }\n' +
+'    h2 {\n' +
+'      font-size: 1.15rem;\n' +
+'      line-height: 1.4;\n' +
+'      margin: 20px 0 10px;\n' +
+'      font-weight: 700;\n' +
+'      color: #1e293b;\n' +
+'      text-align: justify;\n' +
+'      word-break: break-word;\n' +
+'      position: relative;\n' +
+'      padding-left: 12px;\n' +
+'    }\n' +
+'    h2::before {\n' +
+'      content: "";\n' +
+'      position: absolute;\n' +
+'      left: 0; top: 0.15em; bottom: 0.15em;\n' +
+'      width: 4px;\n' +
+'      border-radius: 2px;\n' +
+'      background: linear-gradient(135deg, #667eea, #764ba2);\n' +
+'    }\n' +
+'    /* Optional utility classes for use outside bare h1/h2 tags */\n' +
+'    .heading-1 {\n' +
+'      font-size: 1.3rem;\n' +
+'      font-weight: 800;\n' +
+'      color: #1e293b;\n' +
+'      line-height: 1.25;\n' +
+'      margin: 6px 0 10px;\n' +
+'      border-bottom: 3px solid #7c3aed;\n' +
+'      padding-bottom: 8px;\n' +
+'      text-align: justify;\n' +
+'    }\n' +
+'    .heading-2 {\n' +
+'      font-size: 1.15rem;\n' +
+'      font-weight: 700;\n' +
+'      color: #1e293b;\n' +
+'      line-height: 1.3;\n' +
+'      margin: 20px 0 10px;\n' +
+'      padding-left: 12px;\n' +
+'      position: relative;\n' +
+'      text-align: justify;\n' +
+'    }\n' +
+'    .heading-2::before {\n' +
+'      content: "";\n' +
+'      position: absolute;\n' +
+'      left: 0; top: 0.15em; bottom: 0.15em;\n' +
+'      width: 4px;\n' +
+'      border-radius: 2px;\n' +
+'      background: linear-gradient(135deg, #667eea, #764ba2);\n' +
+'    }\n' +
+'    /* Mobile */\n' +
+'    @media (max-width: 480px) {\n' +
+'      h1, .heading-1 { font-size: 1.3rem; padding-bottom: 6px; }\n' +
+'      h2, .heading-2 { font-size: 1.15rem; margin: 16px 0 8px; padding-left: 10px; }\n' +
+'      h2::before, .heading-2::before { width: 3px; }\n' +
+'      p { font-size: 0.9rem; line-height: 1.65; }\n' +
+'    }\n' +     
+     '    </style>\n' +
     '</head>\n' +
     '<body>\n' +
     getGTMBodyCode() + '\n' +
@@ -7983,7 +8059,7 @@ function generateBookIndexPage(book, chapters, topics, questionStats, totalQuest
     '            <a href="/">🏠 Home</a> &gt; ' + bookTitle + '\n' +
     '        </div>\n' +
     '        <a href="/" class="back-link">← Back to Home</a>\n' +
-    '        <h1>📚 ' + bookTitle + ' MCQs</h1>\n' +
+    '        <h1>📚 ' + bookTitle + '</h1>\n' +
     '        <div class="book-meta">\n' +
     (bookAuthor ? '            <span><strong>Author:</strong> ' + bookAuthor + '</span>\n' : '') +
     (bookCategory ? '            <span><strong>Category:</strong> ' + bookCategory + '</span>\n' : '') +
@@ -7991,9 +8067,8 @@ function generateBookIndexPage(book, chapters, topics, questionStats, totalQuest
     '            <span><strong>Chapters:</strong> ' + chapters.length + '</span>\n' +
     '        </div>\n' +
     bookDefinitionHtml +
-    '        <p style="text-align:justify; line-height:1.7; color:#334155; font-size:0.95rem;">Practice chapter-wise MCQs for <strong>' + bookTitle + '</strong>. This book contains <strong>' + chapters.length + ' chapters</strong> and <strong>' + totalQuestions + ' questions</strong> across easy, medium, and hard difficulty levels.</p>\n' +
     difficultyHtml +
-    '        <h2 style="font-size:17px; font-weight:700; color:#1e293b; margin-top:20px; margin-bottom:14px;">📚 Chapters</h2>\n' +
+    '        <h2>📚 Chapters</h2>\n' +
     '        <div style="display:flex; flex-direction:column; gap:10px;">\n' +
     chaptersHtml +
     '        </div>\n' +
