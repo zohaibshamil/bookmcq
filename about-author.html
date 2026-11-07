@@ -83,7 +83,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
     <style>
 
-/*! tailwindcss v4.3.5 | MIT License | https://tailwindcss.com */
+                 /* ========== tailwind css styles start ========== */
+         /*! tailwindcss v4.3.5 | MIT License | https://tailwindcss.com */
 @layer properties;
 @layer theme, base, components, utilities;
 @layer theme {
@@ -762,17 +763,13 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   }
 }
 
-
-         
-        /* ========== SYSTEM FONT STACK - REPLACED GOOGLE FONTS ========== */
+                 /* ========== tailwind css styles end ========== */
+         /* ========== SYSTEM FONT STACK - REPLACED GOOGLE FONTS ========== */
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
             min-height: 100vh;
         }
-
-        /* ADD THE FIX HERE */
-        .hidden { display: none !important; }
         
         /* ========== QUIZ CARD - GLASSMORPHISM ========== */
         .quiz-card { 
@@ -842,6 +839,9 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             flex-direction: column;
             overflow: hidden;
             animation: slideUp 0.3s ease;
+        }
+         .ai-chat-window.hidden {
+            display: none !important;
         }
         @keyframes slideUp {
             from {
@@ -1551,8 +1551,20 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         const chatInput = document.getElementById('chatInput');
         const chatMessages = document.getElementById('chatMessages');
         
-        chatBtn.onclick = () => { chatWindow.classList.toggle('hidden'); };
-        closeChatBtn.onclick = () => { chatWindow.classList.add('hidden'); };
+        chatBtn.onclick = () => { 
+            if (chatWindow.classList.contains('hidden')) {
+                chatWindow.classList.remove('hidden');
+                chatWindow.style.display = 'flex'; 
+            } else {
+                chatWindow.classList.add('hidden');
+                chatWindow.style.display = 'none';
+            }
+        };
+        
+        closeChatBtn.onclick = () => { 
+            chatWindow.classList.add('hidden'); 
+            chatWindow.style.display = 'none';
+        };
         
         const addMessage = (text, isUser) => {
             const messageDiv = document.createElement('div');
