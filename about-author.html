@@ -824,25 +824,27 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             right: 30px;
             z-index: 1000;
         }
-        .ai-chat-window {
-            position: fixed;
-            bottom: 100px;
-            right: 30px;
-            width: 350px;
-            max-width: calc(100vw - 60px);
-            height: 500px;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-            z-index: 1001;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            animation: slideUp 0.3s ease;
-        }
-         .ai-chat-window.hidden {
-            display: none !important;
-        }
+/* Remove the conflicting display:flex from base rule */
+.ai-chat-window {
+    position: fixed;
+    bottom: 100px;
+    right: 30px;
+    width: 350px;
+    max-width: calc(100vw - 60px);
+    height: 500px;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    z-index: 1001;
+    /* DO NOT set display here */
+    flex-direction: column;
+    overflow: hidden;
+    animation: slideUp 0.3s ease;
+}
+
+.ai-chat-window:not(.hidden) {
+    display: flex;
+}
         @keyframes slideUp {
             from {
                 opacity: 0;
@@ -1551,20 +1553,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         const chatInput = document.getElementById('chatInput');
         const chatMessages = document.getElementById('chatMessages');
         
-        chatBtn.onclick = () => { 
-            if (chatWindow.classList.contains('hidden')) {
-                chatWindow.classList.remove('hidden');
-                chatWindow.style.display = 'flex'; 
-            } else {
-                chatWindow.classList.add('hidden');
-                chatWindow.style.display = 'none';
-            }
-        };
-        
-        closeChatBtn.onclick = () => { 
-            chatWindow.classList.add('hidden'); 
-            chatWindow.style.display = 'none';
-        };
+chatBtn.onclick = () => {
+    chatWindow.classList.toggle('hidden');
+};
+closeChatBtn.onclick = () => {
+    chatWindow.classList.add('hidden');
+};
         
         const addMessage = (text, isUser) => {
             const messageDiv = document.createElement('div');
