@@ -207,48 +207,58 @@
       return (bytes / 1048576).toFixed(1) + ' MB';
     }
 
-    // ---------- load data ----------
-    function loadDataFromJSON(json) {
-      try {
-        const parsed = typeof json === 'string' ? JSON.parse(json) : json;
-        if (!parsed.library || typeof parsed.library !== 'object' || Object.keys(parsed.library).length === 0) {
-          throw new Error('Invalid data: missing library or empty');
-        }
-        if (!parsed.stats) {
-          let b = Object.keys(parsed.library).length;
-          let c = 0, t = 0;
-          for (const bk in parsed.library) {
-            const chs = parsed.library[bk].chapters || {};
-            c += Object.keys(chs).length;
-            for (const ch in chs) {
-              t += (chs[ch].topics || []).length;
-            }
-          }
-          parsed.stats = { bookCount: b, chapterCount: c, topicCount: t };
-        }
-        if (!parsed.bookOrder) parsed.bookOrder = Object.keys(parsed.library);
-        if (!parsed.chapterOrderMap) {
-          parsed.chapterOrderMap = {};
-          for (const bk in parsed.library) {
-            parsed.chapterOrderMap[bk] = Object.keys(parsed.library[bk].chapters || {});
-          }
-        }
-        currentData = parsed;
-        showStats(parsed.stats);
-        setStatus(`✅ Loaded ${parsed.stats.bookCount} books, ${parsed.stats.chapterCount} chapters, ${parsed.stats.topicCount} topics`, 'success');
-        enableButtons(true);
-        clearLog();
-        log(`📦 Data loaded: ${parsed.stats.bookCount} books, ${parsed.stats.chapterCount} chapters, ${parsed.stats.topicCount} topics`, 'success');
-        return true;
-      } catch (e) {
-        setStatus(`❌ ${e.message}`, 'error');
-        enableButtons(false);
-        clearLog();
-        log(`❌ Error: ${e.message}`, 'error');
-        return false;
-      }
+// ---------- load data ----------
+function loadDataFromJSON(json) {
+  try {
+    const parsed = typeof json === 'string' ? JSON.parse(json) : json;
+
+    // check 1: library field present and an object
+    if (!parsed.library || typeof parsed.library !== 'object') {
+      throw new Error('Invalid data: "library" field missing or not an object');
     }
 
+    // check 2: library actually has books
+    if (Object.keys(parsed.library).length === 0) {
+      throw new Error(
+        'The JSON file is valid but contains 0 books. ' +
+        'Re-run your book-export pipeline so topics-data.min.json actually has data.'
+      );
+    }
+
+    if (!parsed.stats) {
+      let b = Object.keys(parsed.library).length;
+      let c = 0, t = 0;
+      for (const bk in parsed.library) {
+        const chs = parsed.library[bk].chapters || {};
+        c += Object.keys(chs).length;
+        for (const ch in chs) {
+          t += (chs[ch].topics || []).length;
+        }
+      }
+      parsed.stats = { bookCount: b, chapterCount: c, topicCount: t };
+    }
+    if (!parsed.bookOrder) parsed.bookOrder = Object.keys(parsed.library);
+    if (!parsed.chapterOrderMap) {
+      parsed.chapterOrderMap = {};
+      for (const bk in parsed.library) {
+        parsed.chapterOrderMap[bk] = Object.keys(parsed.library[bk].chapters || {});
+      }
+    }
+    currentData = parsed;
+    showStats(parsed.stats);
+    setStatus(`✅ Loaded ${parsed.stats.bookCount} books, ${parsed.stats.chapterCount} chapters, ${parsed.stats.topicCount} topics`, 'success');
+    enableButtons(true);
+    clearLog();
+    log(`📦 Data loaded: ${parsed.stats.bookCount} books, ${parsed.stats.chapterCount} chapters, ${parsed.stats.topicCount} topics`, 'success');
+    return true;
+  } catch (e) {
+    setStatus(`❌ ${e.message}`, 'error');
+    enableButtons(false);
+    clearLog();
+    log(`❌ Error: ${e.message}`, 'error');
+    return false;
+  }
+}
     // ---------- fetch from GitHub ----------
     async function fetchFromGitHub() {
       setStatus('⏳ Fetching topics-data.min.json ...', 'info');
