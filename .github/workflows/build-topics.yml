@@ -53,14 +53,19 @@ jobs:
               }
               if (!m) return null;
 
+              const bookSlug    = decodeURIComponent(m[1]);
+              const chapterSlug = decodeURIComponent(m[2]);
+              const topicSlug   = decodeURIComponent(m[3]);
+
               return {
-                  bookSlug: decodeURIComponent(m[1]),
-                  chapterSlug: decodeURIComponent(m[2]),
-                  topicSlug: decodeURIComponent(m[3]),
-                  bookName: formatName(decodeURIComponent(m[1])),
-                  chapterName: formatName(decodeURIComponent(m[2])),
-                  topicName: formatName(decodeURIComponent(m[3])),
-                  url: url
+                  bookSlug: bookSlug,
+                  chapterSlug: chapterSlug,
+                  topicSlug: topicSlug,
+                  bookName: formatName(bookSlug),
+                  chapterName: formatName(chapterSlug),
+                  topicName: formatName(topicSlug),
+                  // Match the URL format used by admin.html / generator.html
+                  url: `/books/${bookSlug}/${chapterSlug}/topics/${topicSlug}.html`
               };
           }
 
@@ -161,7 +166,7 @@ jobs:
                       library[bookSlug].chapters[chapterSlug].topics.push({
                           name: topicName,
                           slug: topicSlug,
-                          url: url
+                          url: info.url
                       });
                   }
               }
@@ -170,6 +175,7 @@ jobs:
                   console.warn(`⚠️ ${unmatchedCount} of ${allUrls.length} URLs did not match the topic pattern.`);
                   console.warn('   Sample URLs that failed to match:');
                   unmatchedSamples.forEach(u => console.warn(`   - ${u}`));
+                  console.warn('   (Book index pages and chapter index pages are expected to be unmatched.)');
               }
 
               const bookCount = Object.keys(library).length;
@@ -224,9 +230,7 @@ jobs:
             echo "✅ New build.js present (safety check found)"
           else
             echo "❌ OLD build.js present (safety check MISSING)"
-            echo "----- First 20 lines of build.js -----"
             head -20 build.js
-            echo "--------------------------------------"
             exit 1
           fi
 
