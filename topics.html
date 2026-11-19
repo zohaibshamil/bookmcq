@@ -822,7 +822,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
 
     </style>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5790863833339632" crossorigin="anonymous"></script>
 </head>
 <body>
 
@@ -4084,6 +4083,64 @@ function performSearch(query) {
 
         // Load topics from JSON
         loadTopicsData();
+
+        // ================================================================
+        // ★ HASH-BASED BOOK NAVIGATION (used by the Practice page cards) ★
+        // Opening /topics.html#calculus (or any #<book-slug>) auto-expands
+        // that book accordion and scrolls it into view.
+        // ================================================================
+        function openBookByHash(rawHash) {
+            if (!rawHash) return false;
+            const hash = rawHash.replace('#', '').trim();
+            if (!hash) return false;
+
+            const bookEl = document.querySelector(
+                '.book-accordion[data-book="' +
+                (window.CSS && CSS.escape ? CSS.escape(hash) : hash) + '"]'
+            );
+            if (!bookEl) return false;
+
+            const chaptersDiv = document.getElementById('chapters-' + hash);
+            const toggle      = document.getElementById('toggle-'   + hash);
+
+            // Collapse every other book (single-open behaviour, same as toggleBook)
+            document.querySelectorAll('.book-accordion').forEach(function(book) {
+                const otherKey = book.dataset.book;
+                if (otherKey && otherKey !== hash) {
+                    const otherChapters = document.getElementById('chapters-' + otherKey);
+                    const otherToggle   = document.getElementById('toggle-'   + otherKey);
+                    if (otherChapters) otherChapters.classList.remove('open');
+                    if (otherToggle)   otherToggle.classList.remove('open');
+                }
+            });
+
+            // Open the target book
+            if (chaptersDiv) chaptersDiv.classList.add('open');
+            if (toggle)      toggle.classList.add('open');
+
+            // Scroll the book header to a comfortable position
+            const bookHeader = bookEl.querySelector('.book-header');
+            if (bookHeader) {
+                setTimeout(function() {
+                    const rect = bookHeader.getBoundingClientRect();
+                    const targetY = window.scrollY + rect.top - 100;
+                    window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+                }, 100);
+            }
+            return true;
+        }
+
+        // Handle the hash present on initial load (e.g. arriving from /practice)
+        setTimeout(function() {
+            if (window.location.hash) openBookByHash(window.location.hash);
+        }, 250);
+
+        // Handle in-page hash changes without a full reload
+        window.addEventListener('hashchange', function() {
+            if (window.location.hash) openBookByHash(window.location.hash);
+        });
+
+
 
         // ================================================================
         // ★ SEARCH FUNCTIONALITY ★
