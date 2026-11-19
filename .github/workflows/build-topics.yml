@@ -215,6 +215,21 @@ jobs:
           });
           EOF
 
+      - name: Run build script
+        run: node build.js
+
+      - name: Debug - verify build script has safety check
+        run: |
+          if grep -q "BUILD FAILED: 0 books extracted" build.js; then
+            echo "✅ New build.js present (safety check found)"
+          else
+            echo "❌ OLD build.js present (safety check MISSING)"
+            echo "----- First 20 lines of build.js -----"
+            head -20 build.js
+            echo "--------------------------------------"
+            exit 1
+          fi
+
       - name: Verify output has data
         run: |
           set -e
