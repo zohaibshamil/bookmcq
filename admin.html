@@ -4566,171 +4566,463 @@ async function updateSubTopic() {
         }
     };
     
-    async function downloadQuestionsCSV() {
-        const downloadBtn = document.getElementById('downloadQuestionsCsvBtn');
-        const progressEl = document.getElementById('downloadProgress');
-        const statusEl = document.getElementById('downloadStatus');
-        
-        const bookId = document.getElementById('filterBookId').value;
-        const chapterId = document.getElementById('filterChapterId').value;
-        const topicSelect = document.getElementById('filterTopicId');
-        const selectedTopics = Array.from(topicSelect.selectedOptions).filter(opt => opt.value !== '').map(opt => opt.value);
-        const difficulty = document.getElementById('filterDifficulty').value;
-        
-        downloadBtn.disabled = true;
-        downloadBtn.classList.add('opacity-50', 'cursor-not-allowed');
-        progressEl.classList.remove('hidden');
-        statusEl.textContent = 'Fetching questions...';
-        
-        try {
+async function downloadQuestionsCSV() {
+
+    const downloadBtn = document.getElementById('downloadQuestionsCsvBtn');
+    const progressEl = document.getElementById('downloadProgress');
+    const statusEl = document.getElementById('downloadStatus');
+
+    if (!downloadBtn) return;
+
+    const bookId = document.getElementById('filterBookId').value;
+    const chapterId = document.getElementById('filterChapterId').value;
+
+    const topicSelect = document.getElementById('filterTopicId');
+
+    const selectedTopics = Array.from(topicSelect.selectedOptions)
+        .filter(opt => opt.value !== '')
+        .map(opt => parseInt(opt.value, 10));
+
+    const difficulty = document.getElementById('filterDifficulty').value;
+
+    const PAGE_SIZE = 1000;
+    const OPTION_BATCH_SIZE = 200;
+
+    downloadBtn.disabled = true;
+    downloadBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+    if (progressEl) progressEl.classList.remove('hidden');
+
+    if (statusEl) {
+        statusEl.textContent = 'Preparing CSV export...';
+    }
+
+    try {
+
+        // =============================================
+        // STEP 1: FETCH ALL QUESTIONS WITH PAGINATION
+        // =============================================
+
+        const allQuestions = [];
+
+        let page = 0;
+
+        while (true) {
+
+            const from = page * PAGE_SIZE;
+            const to = from + PAGE_SIZE - 1;
+
+            // When filtering by book, use an inner chapter
+            // relationship so only that book's questions return.
+            // Otherwise, keep the relationship optional.
+
+            const chapterRelation = bookId
+                ? 'chapters!inner'
+                : 'chapters';
+
             let query = _supabase
                 .from('questions')
                 .select(`
-                    *,
-                    chapters!inner (
+                    id,
+                    chapter_id,
+                    topic_id,
+                    question_text,
+                    difficulty,
+                    correct_answer,
+                    explanation,
+
+                    ${chapterRelation} (
                         id,
                         name,
                         chapter_number,
-                        book_id,
-                        books!inner (
-                            id,
-                            title,
-                            author
-                        )
+                        book_id
                     ),
+
                     subtopics (
                         id,
-                        name
+                        name,
+                        definition
                     )
                 `);
-            
-            if (bookId && bookId !== '') {
-                query = query.eq('chapters.book_id', parseInt(bookId));
+
+            // Book filter
+
+            if (bookId) {
+                query = query.eq(
+                    'chapters.book_id',
+                    parseInt(bookId, 10)
+                );
             }
-            if (chapterId && chapterId !== '') {
-                query = query.eq('chapter_id', parseInt(chapterId));
+
+            // Chapter filter
+
+            if (chapterId) {
+                query = query.eq(
+                    'chapter_id',
+                    parseInt(chapterId, 10)
+                );
             }
+
+            // Multiple topic filters
+
             if (selectedTopics.length > 0) {
-                query = query.in('topic_id', selectedTopics.map(id => parseInt(id)));
+                query = query.in('topic_id', selectedTopics);
             }
-            if (difficulty && difficulty !== '') {
+
+            // Difficulty filter
+
+            if (difficulty) {
                 query = query.eq('difficulty', difficulty);
             }
-            
-            const { data: questions, error } = await query.order('id', { ascending: true });
-            
+
+            // Fetch current page
+
+            const { data, error } = await query
+                .order('id', { ascending: true })
+                .range(from, to);
+
             if (error) throw error;
-            
-            if (!questions || questions.length === 0) {
-                showToast('No questions found for the selected filters', true);
-                downloadBtn.disabled = false;
-                downloadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+            if (!data || data.length === 0) {
+                break;
+            }
+
+            allQuestions.push(...data);
+
+            if (statusEl) {
+                statusEl.textContent =
+                    `Fetched ${allQuestions.length} questions...`;
+            }
+
+            if (data.length < PAGE_SIZE) {
+                break;
+            }
+
+            page++;
+        }
+
+        // =============================================
+        // STEP 2: CHECK QUESTION RESULTS
+        // =============================================
+
+        if (allQuestions.length === 0) {
+
+            showToast('No questions found for selected filters', true);
+
+            if (progressEl) {
                 progressEl.classList.add('hidden');
-                return;
             }
-            
-            statusEl.textContent = `Processing ${questions.length} questions...`;
-            
-            const questionIds = questions.map(q => q.id);
-            const { data: options, error: optionsError } = await _supabase
-                .from('options')
-                .select('question_id, option_text, option_index')
-                .in('question_id', questionIds)
-                .order('question_id')
-                .order('option_index');
-            
-            if (optionsError) throw optionsError;
-            
-            const optionsMap = {};
-            options.forEach(opt => {
-                if (!optionsMap[opt.question_id]) {
-                    optionsMap[opt.question_id] = ['', '', '', ''];
+
+            return;
+        }
+
+        if (statusEl) {
+            statusEl.textContent =
+                `Fetching options for ${allQuestions.length} questions...`;
+        }
+
+        // =============================================
+        // STEP 3: FETCH OPTIONS IN BATCHES
+        // =============================================
+
+        const optionsMap = Object.create(null);
+
+        for (
+            let start = 0;
+            start < allQuestions.length;
+            start += OPTION_BATCH_SIZE
+        ) {
+
+            const questionIds = allQuestions
+                .slice(start, start + OPTION_BATCH_SIZE)
+                .map(q => q.id);
+
+            let optionPage = 0;
+
+            while (true) {
+
+                const optionFrom = optionPage * PAGE_SIZE;
+                const optionTo = optionFrom + PAGE_SIZE - 1;
+
+                const { data: options, error: optionsError } =
+                    await _supabase
+                        .from('options')
+                        .select(`
+                            question_id,
+                            option_text,
+                            option_index
+                        `)
+                        .in('question_id', questionIds)
+                        .order('question_id', { ascending: true })
+                        .order('option_index', { ascending: true })
+                        .range(optionFrom, optionTo);
+
+                if (optionsError) throw optionsError;
+
+                if (!options || options.length === 0) {
+                    break;
                 }
-                optionsMap[opt.question_id][opt.option_index] = opt.option_text;
-            });
-            
-            statusEl.textContent = 'Generating CSV...';
-            
-            const csvRows = [];
-            const headers = ['topic', 'question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'difficulty', 'explanation'];
-            csvRows.push(headers.join(','));
-            
-            questions.forEach(q => {
-                const chapterData = q.chapters;
-                const topicData = q.subtopics;
-                const topicName = topicData?.name || '';
-                
-                const opts = optionsMap[q.id] || ['', '', '', ''];
-                const correctLetter = ['A', 'B', 'C', 'D'][q.correct_answer] || 'A';
-                
-                const row = [
-                    topicName,
-                    q.question_text,
-                    opts[0] || '',
-                    opts[1] || '',
-                    opts[2] || '',
-                    opts[3] || '',
-                    correctLetter,
-                    q.difficulty || 'medium',
-                    q.explanation || ''
-                ];
-                
-                const escapedRow = row.map(cell => `"${String(cell).replace(/"/g, '""')}"`);
-                csvRows.push(escapedRow.join(','));
-            });
-            
-            const csvContent = csvRows.join('\n');
-            const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            
-            let filename = 'bookmcq_questions';
-            if (bookId) {
-                const bookName = document.getElementById('filterBookId').options[document.getElementById('filterBookId').selectedIndex]?.text || '';
-                if (bookName && bookName !== '-- Select Book --') filename += `_${bookName.replace(/\s+/g, '_')}`;
-            }
-            if (chapterId) {
-                const chapterName = document.getElementById('filterChapterId').options[document.getElementById('filterChapterId').selectedIndex]?.text || '';
-                if (chapterName && chapterName !== '-- Select a Chapter --') filename += `_${chapterName.replace(/\s+/g, '_')}`;
-            }
-            if (selectedTopics.length > 0 && selectedTopics.length < 5) {
-                const topicNames = selectedTopics.map(id => {
-                    const opt = document.getElementById('filterTopicId').querySelector(`option[value="${id}"]`);
-                    return opt ? opt.textContent : id;
+
+                options.forEach(opt => {
+
+                    if (!optionsMap[opt.question_id]) {
+                        optionsMap[opt.question_id] = [
+                            '',
+                            '',
+                            '',
+                            ''
+                        ];
+                    }
+
+                    const index = Number(opt.option_index);
+
+                    if (index >= 0 && index <= 3) {
+
+                        optionsMap[opt.question_id][index] =
+                            opt.option_text || '';
+                    }
+
                 });
-                if (topicNames.length === 1) {
-                    filename += `_${topicNames[0].replace(/\s+/g, '_')}`;
-                } else {
-                    filename += `_${topicNames.length}_topics`;
+
+                if (options.length < PAGE_SIZE) {
+                    break;
                 }
+
+                optionPage++;
             }
-            filename += `_${new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-')}.csv`;
-            
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+
+            if (statusEl) {
+                statusEl.textContent =
+                    `Fetched options for ${Math.min(
+                        start + OPTION_BATCH_SIZE,
+                        allQuestions.length
+                    )} / ${allQuestions.length} questions...`;
+            }
+        }
+
+        // =============================================
+        // STEP 4: PREPARE CSV
+        // =============================================
+
+        if (statusEl) {
+            statusEl.textContent = 'Generating CSV...';
+        }
+
+        const headers = [
+            'topic',
+            'topic_definition',
+            'question_text',
+            'option_a',
+            'option_b',
+            'option_c',
+            'option_d',
+            'correct_answer',
+            'difficulty',
+            'explanation'
+        ];
+
+        const csvRows = [headers.join(',')];
+
+        // Export topic definition only once per topic,
+        // following your sample CSV structure.
+
+        const exportedTopicIds = new Set();
+
+        allQuestions.forEach(q => {
+
+            const topic = q.subtopics;
+
+            const topicName = topic?.name || '';
+
+            const topicKey = q.topic_id != null
+                ? String(q.topic_id)
+                : topicName;
+
+            let topicDefinition = '';
+
+            if (topicName && !exportedTopicIds.has(topicKey)) {
+
+                topicDefinition = topic?.definition || '';
+
+                exportedTopicIds.add(topicKey);
+            }
+
+            // Retrieve options using option_index 0-3
+
+            const opts = optionsMap[q.id] || [
+                '',
+                '',
+                '',
+                ''
+            ];
+
+            // correct_answer is an integer from 0 to 3
+
+            const correctLetter =
+                ['A', 'B', 'C', 'D'][Number(q.correct_answer)] || 'A';
+
+            // Match sample CSV difficulty capitalization
+
+            const difficultyLabel = q.difficulty
+                ? q.difficulty.charAt(0).toUpperCase() +
+                  q.difficulty.slice(1)
+                : 'Medium';
+
+            const row = [
+                topicName,
+                topicDefinition,
+                q.question_text || '',
+                opts[0],
+                opts[1],
+                opts[2],
+                opts[3],
+                correctLetter,
+                difficultyLabel,
+                q.explanation || ''
+            ];
+
+            // Escape CSV values only when required,
+            // matching the sample CSV format.
+
+            const escapedRow = row.map(value => {
+
+                const cell = String(value ?? '');
+
+                if (/[",\r\n]/.test(cell)) {
+                    return `"${cell.replace(/"/g, '""')}"`;
+                }
+
+                return cell;
+            });
+
+            csvRows.push(escapedRow.join(','));
+
+        });
+
+        // =============================================
+        // STEP 5: DOWNLOAD CSV
+        // =============================================
+
+        const csvContent = csvRows.join('\r\n');
+
+        const blob = new Blob(
+            ["\uFEFF" + csvContent],
+            {
+                type: 'text/csv;charset=utf-8;'
+            }
+        );
+
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+
+        let filename = 'bookmcq_questions';
+
+        if (bookId) {
+
+            const bookName =
+                document.getElementById('filterBookId')
+                    .selectedOptions[0]?.text || '';
+
+            if (bookName && bookName !== '-- Select Book --') {
+                filename += `_${bookName.replace(/\s+/g, '_')}`;
+            }
+        }
+
+        if (chapterId) {
+
+            const chapterName =
+                document.getElementById('filterChapterId')
+                    .selectedOptions[0]?.text || '';
+
+            if (chapterName && chapterName !== '-- Select a Chapter --') {
+                filename += `_${chapterName.replace(/\s+/g, '_')}`;
+            }
+        }
+
+        if (selectedTopics.length > 0 && selectedTopics.length < 5) {
+
+            const topicNames = selectedTopics.map(id => {
+
+                const opt = document.getElementById('filterTopicId')
+                    .querySelector(`option[value="${id}"]`);
+
+                return opt ? opt.textContent : id;
+            });
+
+            if (topicNames.length === 1) {
+
+                filename += `_${topicNames[0].replace(/\s+/g, '_')}`;
+
+            } else {
+
+                filename += `_${topicNames.length}_topics`;
+            }
+        }
+
+        filename += `_${new Date().toISOString()
+            .slice(0, 19)
+            .replace(/[:.]/g, '-')}.csv`;
+
+        a.href = url;
+        a.download = filename;
+
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        setTimeout(() => {
             URL.revokeObjectURL(url);
-            
-            showToast(`✅ Downloaded ${questions.length} questions`);
-            statusEl.textContent = `Downloaded ${questions.length} questions ✅`;
+        }, 1000);
+
+        // =============================================
+        // STEP 6: SUCCESS MESSAGE
+        // =============================================
+
+        showToast(
+            `Successfully downloaded ${allQuestions.length} questions`
+        );
+
+        if (statusEl) {
+            statusEl.textContent =
+                `Downloaded ${allQuestions.length} questions successfully ✅`;
+        }
+
+        if (progressEl) {
             setTimeout(() => {
                 progressEl.classList.add('hidden');
             }, 3000);
-            
-        } catch (error) {
-            console.error('Download error:', error);
-            showToast('Error downloading questions: ' + error.message, true);
-            statusEl.textContent = `Error: ${error.message}`;
+        }
+
+    } catch (error) {
+
+        console.error('CSV download error:', error);
+
+        showToast(
+            'Download failed: ' + error.message,
+            true
+        );
+
+        if (statusEl) {
+            statusEl.textContent = 'Error: ' + error.message;
+        }
+
+        if (progressEl) {
             setTimeout(() => {
                 progressEl.classList.add('hidden');
             }, 5000);
-        } finally {
-            downloadBtn.disabled = false;
-            downloadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
         }
+
+    } finally {
+
+        downloadBtn.disabled = false;
+
+        downloadBtn.classList.remove(
+            'opacity-50',
+            'cursor-not-allowed'
+        );
     }
+}
     
     async function addQuestion() {
         const chapterId = document.getElementById('questionChapterId').value;
