@@ -7928,8 +7928,9 @@ function generateBookIndexPage(book, chapters, topics, questionStats, totalQuest
 // --- Use book definition as meta description (strip HTML tags, trim to ~177 chars) ---
 var rawBookDef = book.definition || '';
 var cleanBookDef = rawBookDef
-    .replace(/<[^>]*>/g, '')           // remove HTML tags
-    .replace(/\s+/g, ' ')              // collapse whitespace
+    .replace(/<h2\b[^>]*>[\s\S]*?<\/h2>/gi, ' ')
+    .replace(/<[^>]*>/g, '')
+    .replace(/\s+/g, ' ')
     .trim();
 
 var metaDescription;
@@ -8541,10 +8542,10 @@ function generateChapterPage(book, chapter, chapterTopics, chapterQuestions, cha
  // --- Use chapter definition as meta description (strip HTML tags, trim to ~177 chars) ---
 var rawChapterDef = chapter.definition || '';
 var cleanChapterDef = rawChapterDef
-    .replace(/<[^>]*>/g, '')           // remove HTML tags
-    .replace(/\s+/g, ' ')              // collapse whitespace
+    .replace(/<h2\b[^>]*>[\s\S]*?<\/h2>/gi, ' ')
+    .replace(/<[^>]*>/g, '')
+    .replace(/\s+/g, ' ')
     .trim();
-
 var metaDescription;
 if (cleanChapterDef) {
     // 1. Strip a leading "Definition:" / "Chapter Definition:" prefix if present
@@ -9226,8 +9227,9 @@ function generateTopicPage(book, chapter, topic, topicQuestions, topicDifficulty
     // Use topic definition as meta description (strip HTML tags, trim to ~160 chars)
 var rawDefinition = topic.definition || '';
 var cleanDefinition = rawDefinition
-    .replace(/<[^>]*>/g, '')           // remove HTML tags if any
-    .replace(/\s+/g, ' ')              // collapse whitespace
+    .replace(/<h2\b[^>]*>[\s\S]*?<\/h2>/gi, ' ')
+    .replace(/<[^>]*>/g, '')
+    .replace(/\s+/g, ' ')
     .trim();
 
 var metaDescription;
