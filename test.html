@@ -10757,11 +10757,12 @@ async function commitToGitHub(files, config) {
 
     const apiBase = `https://api.github.com/repos/${owner}/${repo}`;
 
-    const headers = {
-        'Authorization': `token ${config.token}`,
-        'Accept': 'application/vnd.github+json',
-        'Content-Type': 'application/json'
-    };
+const headers = {
+    'Authorization': `Bearer ${String(config.token || '').trim()}`,
+    'Accept': 'application/vnd.github+json',
+    'Content-Type': 'application/json',
+    'X-GitHub-Api-Version': '2022-11-28'
+};
 
     const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -10774,8 +10775,29 @@ async function commitToGitHub(files, config) {
         }
     }
 
-    try {
-        // STEP 1: Get the latest commit on the selected branch
+try {
+    // STEP 0: Verify GitHub token before deployment
+    const authResponse = await fetch(
+        'https://api.github.com/user',
+        { headers }
+    );
+
+    if (!authResponse.ok) {
+        throw new Error(
+            `GitHub token authentication failed (${authResponse.status}): ` +
+            await getErrorMessage(authResponse) +
+            '. Please check or regenerate your GitHub token.'
+        );
+    }
+
+    const authenticatedUser = await authResponse.json();
+
+    console.log(
+        'GitHub authentication successful:',
+        authenticatedUser.login
+    );
+
+    // STEP 1: Get the latest commit on the selected branch
         const refResponse = await fetch(
             `${apiBase}/git/ref/heads/${config.branch}`,
             { headers }
