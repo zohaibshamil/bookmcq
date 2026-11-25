@@ -10848,6 +10848,42 @@ console.log('Preparing files for Git tree creation...');
             content: file.content
         }));
 
+
+console.log('Testing GitHub tree creation with one small file...');
+
+const probeResponse = await fetch(`${apiBase}/git/trees`, {
+    method: 'POST',
+    headers: headers,
+    body: JSON.stringify({
+        base_tree: baseTreeSha,
+        tree: [{
+            path: '.bookmcq-diagnostic-test.txt',
+            mode: '100644',
+            type: 'blob',
+            content: 'BookMCQ GitHub API diagnostic test'
+        }]
+    })
+});
+
+const probeBody = await probeResponse.text();
+
+console.log(
+    `Small Git Tree test: HTTP ${probeResponse.status}`,
+    probeBody
+);
+
+if (!probeResponse.ok) {
+    throw new Error(
+        `Small Git Tree test failed: HTTP ${probeResponse.status} - ${probeBody}`
+    );
+}
+
+return {
+    success: false,
+    message: 'Small Git Tree test succeeded. No branch or repository files were changed. Diagnostic test complete.'
+};
+
+     
         log(`Creating Git tree for ${files.length} files (${(JSON.stringify(treeEntries).length / 1024 / 1024).toFixed(2)} MB)...`);
 console.log('GitHub tree request diagnostics:', {
     authorizationPresent: Boolean(headers.Authorization),
