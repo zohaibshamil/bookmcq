@@ -10859,12 +10859,26 @@ console.log('Git tree created successfully.');
             })
         });
 
-        if (!treeResponse.ok) {
-            throw new Error(
-                `Git Tree API failed: HTTP ${treeResponse.status} - ` +
-                await getErrorMessage(treeResponse)
-            );
-        }
+if (!treeResponse.ok) {
+    const errorBody = await treeResponse.text();
+
+    const scopes =
+        treeResponse.headers.get('x-oauth-scopes') || 'Not provided';
+
+    const permissions =
+        treeResponse.headers.get('x-accepted-github-permissions') || 'Not provided';
+
+    const requestId =
+        treeResponse.headers.get('x-github-request-id') || 'Not provided';
+
+    throw new Error(
+        `Git Tree API failed: HTTP ${treeResponse.status}\n` +
+        `GitHub response: ${errorBody}\n` +
+        `Token scopes: ${scopes}\n` +
+        `Required permissions: ${permissions}\n` +
+        `Request ID: ${requestId}`
+    );
+}
 
         const treeData = await treeResponse.json();
         log('Git tree created successfully.');
