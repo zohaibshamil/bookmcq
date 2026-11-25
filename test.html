@@ -10838,8 +10838,9 @@ console.log(`GitHub authenticated successfully as ${authUser.login}`);
         const baseCommitData = await commitResponse.json();
         const baseTreeSha = baseCommitData.tree.sha;
 
-// STEP 3: Prepare all files in one Git tree
-console.log('Preparing files for Git tree creation...');
+
+        // STEP 3: Create Git trees in smaller chunks
+        console.log(`Preparing ${files.length} files for Git tree creation...`);
 
         const treeEntries = files.map(file => ({
             path: file.path,
@@ -10848,84 +10849,95 @@ console.log('Preparing files for Git tree creation...');
             content: file.content
         }));
 
+        // Keep each API request below approximately 4 MB
+        const MAX_TREE_PAYLOAD_BYTES = 4 * 1024 * 1024;
 
-console.log('Testing GitHub tree creation with one small file...');
+        const encoder = new TextEncoder();
+        const treeChunks = [];
+        let currentChunk = [];
+        let currentChunkSize = 0;
 
-const probeResponse = await fetch(`${apiBase}/git/trees`, {
-    method: 'POST',
-    headers: headers,
-    body: JSON.stringify({
-        base_tree: baseTreeSha,
-        tree: [{
-            path: '.bookmcq-diagnostic-test.txt',
-            mode: '100644',
-            type: 'blob',
-            content: 'BookMCQ GitHub API diagnostic test'
-        }]
-    })
-});
+        for (const entry of treeEntries) {
+            const entrySize = encoder.encode(
+                JSON.stringify(entry)
+            ).length + 1;
 
-const probeBody = await probeResponse.text();
+            if (entrySize > MAX_TREE_PAYLOAD_BYTES) {
+                throw new Error(
+                    `File is too large for a single Git Tree request: ${entry.path}`
+                );
+            }
 
-console.log(
-    `Small Git Tree test: HTTP ${probeResponse.status}`,
-    probeBody
-);
+            if (
+                currentChunk.length > 0 &&
+                currentChunkSize + entrySize > MAX_TREE_PAYLOAD_BYTES
+            ) {
+                treeChunks.push(currentChunk);
+                currentChunk = [];
+                currentChunkSize = 0;
+            }
 
-if (!probeResponse.ok) {
-    throw new Error(
-        `Small Git Tree test failed: HTTP ${probeResponse.status} - ${probeBody}`
-    );
-}
+            currentChunk.push(entry);
+            currentChunkSize += entrySize;
+        }
 
-return {
-    success: false,
-    message: 'Small Git Tree test succeeded. No branch or repository files were changed. Diagnostic test complete.'
-};
+        if (currentChunk.length > 0) {
+            treeChunks.push(currentChunk);
+        }
 
-     
-        log(`Creating Git tree for ${files.length} files (${(JSON.stringify(treeEntries).length / 1024 / 1024).toFixed(2)} MB)...`);
-console.log('GitHub tree request diagnostics:', {
-    authorizationPresent: Boolean(headers.Authorization),
-    authorizationScheme: headers.Authorization?.split(' ')[0],
-    tokenLength: cleanToken.length,
-    repository: `${owner}/${repo}`,
-    fileCount: treeEntries.length
-});
-        const treeResponse = await fetch(`${apiBase}/git/trees`, {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify({
-                base_tree: baseTreeSha,
-                tree: treeEntries
-            })
-        });
+        console.log(
+            `Divided ${files.length} files into ${treeChunks.length} Git Tree requests.`
+        );
 
-if (!treeResponse.ok) {
-    const errorBody = await treeResponse.text();
+        // Create successive trees without creating intermediate commits
+        let currentTreeSha = baseTreeSha;
 
-    const scopes =
-        treeResponse.headers.get('x-oauth-scopes') || 'Not provided';
+        for (let i = 0; i < treeChunks.length; i++) {
+            const chunk = treeChunks[i];
 
-    const permissions =
-        treeResponse.headers.get('x-accepted-github-permissions') || 'Not provided';
+            console.log(
+                `Creating Git Tree ${i + 1}/${treeChunks.length} (${chunk.length} files)...`
+            );
 
-    const requestId =
-        treeResponse.headers.get('x-github-request-id') || 'Not provided';
+            const treeResponse = await fetch(`${apiBase}/git/trees`, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({
+                    base_tree: currentTreeSha,
+                    tree: chunk
+                })
+            });
 
-    throw new Error(
-        `Git Tree API failed: HTTP ${treeResponse.status}\n` +
-        `GitHub response: ${errorBody}\n` +
-        `Token scopes: ${scopes}\n` +
-        `Required permissions: ${permissions}\n` +
-        `Request ID: ${requestId}`
-    );
-}
+            if (!treeResponse.ok) {
+                const errorBody = await treeResponse.text();
 
-        const treeData = await treeResponse.json();
-        log('Git tree created successfully.');
+                throw new Error(
+                    `Git Tree ${i + 1}/${treeChunks.length} failed: ` +
+                    `HTTP ${treeResponse.status} - ${errorBody}`
+                );
+            }
 
-        await wait(1000);
+            const chunkTreeData = await treeResponse.json();
+
+            currentTreeSha = chunkTreeData.sha;
+
+            console.log(
+                `Git Tree ${i + 1}/${treeChunks.length} created successfully.`
+            );
+
+            // Small pause between GitHub API requests
+            await wait(500);
+        }
+
+        // Final tree contains all deployed files
+        const treeData = {
+            sha: currentTreeSha
+        };
+
+        console.log(
+            `All ${files.length} files are now included in the final Git tree.`
+        );
+
 
         // STEP 4: Create commit
 console.log('Creating GitHub commit...');
