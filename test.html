@@ -10777,15 +10777,16 @@ const authResponse = await fetch('https://api.github.com/user', {
 
 const authBody = await authResponse.text();
 
+log(`GitHub authentication test: HTTP ${authResponse.status}`);
+
 if (!authResponse.ok) {
     throw new Error(
-        `GitHub token check failed: HTTP ${authResponse.status} - ${authBody}`
+        `GitHub authentication failed: HTTP ${authResponse.status} - ${authBody}`
     );
 }
 
 const authUser = JSON.parse(authBody);
-
-console.log(`✅ GitHub token authenticated as: ${authUser.login}`);
+log(`GitHub authenticated successfully as ${authUser.login}`);
 
     const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -10898,7 +10899,11 @@ try {
 
         const payloadSizeMB =
             new TextEncoder().encode(treePayload).length / (1024 * 1024);
-
+// INSERT THIS DEBUG CODE HERE
+log('Checking Git Tree request...');
+log(`GitHub API endpoint: ${apiBase}/git/trees`);
+log(`Authorization header present: ${!!headers.Authorization}`);
+log(`Authorization format: ${headers.Authorization?.split(' ')[0]}`);
         // STEP 4: Create one tree containing all files
         const treeResponse = await fetch(
             `${apiBase}/git/trees`,
