@@ -10849,7 +10849,13 @@ console.log('Git tree created successfully.');
         }));
 
         log(`Creating Git tree for ${files.length} files (${(JSON.stringify(treeEntries).length / 1024 / 1024).toFixed(2)} MB)...`);
-
+console.log('GitHub tree request diagnostics:', {
+    authorizationPresent: Boolean(headers.Authorization),
+    authorizationScheme: headers.Authorization?.split(' ')[0],
+    tokenLength: cleanToken.length,
+    repository: `${owner}/${repo}`,
+    fileCount: treeEntries.length
+});
         const treeResponse = await fetch(`${apiBase}/git/trees`, {
             method: 'POST',
             headers: headers,
