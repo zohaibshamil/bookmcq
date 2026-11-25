@@ -10758,6 +10758,12 @@ async function commitToGitHub(files, config) {
     const apiBase = `https://api.github.com/repos/${owner}/${repo}`;
 
 const headers = {
+    'Authorization': `Bearer ${String(config.token || '').trim()}`,
+    'Accept': 'application/vnd.github+json',
+    'Content-Type': 'application/json',
+    'X-GitHub-Api-Version': '2022-11-28'
+};
+
  // Verify GitHub authentication before uploading files
 const authResponse = await fetch('https://api.github.com/user', {
     method: 'GET',
@@ -10775,11 +10781,6 @@ if (!authResponse.ok) {
 const authUser = JSON.parse(authBody);
 
 console.log(`✅ GitHub token authenticated as: ${authUser.login}`);
-    'Authorization': `Bearer ${String(config.token || '').trim()}`,
-    'Accept': 'application/vnd.github+json',
-    'Content-Type': 'application/json',
-    'X-GitHub-Api-Version': '2022-11-28'
-};
 
     const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
