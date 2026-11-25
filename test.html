@@ -10758,6 +10758,23 @@ async function commitToGitHub(files, config) {
     const apiBase = `https://api.github.com/repos/${owner}/${repo}`;
 
 const headers = {
+ // Verify GitHub authentication before uploading files
+const authResponse = await fetch('https://api.github.com/user', {
+    method: 'GET',
+    headers: headers
+});
+
+const authBody = await authResponse.text();
+
+if (!authResponse.ok) {
+    throw new Error(
+        `GitHub token check failed: HTTP ${authResponse.status} - ${authBody}`
+    );
+}
+
+const authUser = JSON.parse(authBody);
+
+console.log(`✅ GitHub token authenticated as: ${authUser.login}`);
     'Authorization': `Bearer ${String(config.token || '').trim()}`,
     'Accept': 'application/vnd.github+json',
     'Content-Type': 'application/json',
@@ -10886,13 +10903,13 @@ try {
             }
         );
 
-        if (!treeResponse.ok) {
-            throw new Error(
-                `Failed to create Git tree for ${files.length} files ` +
-                `(${payloadSizeMB.toFixed(2)} MB): ` +
-                await getErrorMessage(treeResponse)
-            );
-        }
+if (!treeResponse.ok) {
+    const errorBody = await treeResponse.text();
+
+    throw new Error(
+        `Git Tree API failed: HTTP ${treeResponse.status} - ${errorBody}`
+    );
+}
 
         const treeData = await treeResponse.json();
 
