@@ -10783,7 +10783,7 @@ async function commitToGitHub(files, config) {
 
     try {
         // STEP 0: Verify GitHub authentication
-        log('Verifying GitHub authentication...');
+console.log('Verifying GitHub authentication...');
 
         const authResponse = await fetch(
             'https://api.github.com/user',
@@ -10801,7 +10801,7 @@ async function commitToGitHub(files, config) {
         }
 
         const authUser = await authResponse.json();
-        log(`GitHub authenticated successfully as ${authUser.login}`);
+console.log(`GitHub authenticated successfully as ${authUser.login}`);
 
         // STEP 1: Get latest branch reference
         log('Getting latest GitHub branch reference...');
@@ -10836,7 +10836,7 @@ async function commitToGitHub(files, config) {
         const baseTreeSha = baseCommitData.tree.sha;
 
         // STEP 3: Prepare all files in one Git tree
-        log(`Preparing Git tree for ${files.length} files...`);
+console.log('Git tree created successfully.');
 
         const treeEntries = files.map(file => ({
             path: file.path,
@@ -10869,7 +10869,7 @@ async function commitToGitHub(files, config) {
         await wait(1000);
 
         // STEP 4: Create commit
-        log('Creating GitHub commit...');
+console.log('Creating GitHub commit...');
 
         const commitResponseNew = await fetch(`${apiBase}/git/commits`, {
             method: 'POST',
@@ -10892,7 +10892,7 @@ async function commitToGitHub(files, config) {
         await wait(1000);
 
         // STEP 5: Update branch reference
-        log('Updating GitHub branch...');
+console.log('Updating GitHub branch...');
 
         const updateResponse = await fetch(
             `${apiBase}/git/refs/heads/${encodeURIComponent(config.branch)}`,
@@ -10912,7 +10912,7 @@ async function commitToGitHub(files, config) {
             );
         }
 
-        log(`Successfully committed ${files.length} files.`);
+console.log(`Successfully committed ${files.length} files.`);
 
         return {
             success: true,
