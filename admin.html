@@ -10739,184 +10739,205 @@ async function loadDeployBookSelector() {
 
     // ============ GITHUB API COMMIT FUNCTION (GLOBAL) ============
 async function commitToGitHub(files, config) {
-    const [owner, repo] = config.repo.split('/');
+    const [owner, repo] = (config.repo || '').split('/');
+
     if (!owner || !repo) {
-        return { success: false, message: 'Invalid repository format. Use "username/repo"' };
+        return {
+            success: false,
+            message: 'Invalid repository format. Use "username/repo".'
+        };
     }
-    
+
     if (!files || files.length === 0) {
-        return { success: false, message: 'No files to commit' };
+        return {
+            success: false,
+            message: 'No files to commit.'
+        };
     }
-    
+
+    const apiBase = `https://api.github.com/repos/${owner}/${repo}`;
+
+    const headers = {
+        'Authorization': `token ${config.token}`,
+        'Accept': 'application/vnd.github+json',
+        'Content-Type': 'application/json'
+    };
+
+    const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+    async function getErrorMessage(response) {
+        try {
+            const data = await response.json();
+            return data.message || `${response.status} ${response.statusText}`;
+        } catch (error) {
+            return `${response.status} ${response.statusText}`;
+        }
+    }
+
     try {
-        // Get the latest commit SHA
-        const refResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/ref/heads/${config.branch}`, {
-            headers: {
-                'Authorization': `token ${config.token}`,
-                'Accept': 'application/vnd.github.v3+json'
-            }
-        });
-        
+        // STEP 1: Get the latest commit on the selected branch
+        const refResponse = await fetch(
+            `${apiBase}/git/ref/heads/${config.branch}`,
+            { headers }
+        );
+
         if (!refResponse.ok) {
-            const errorData = await refResponse.json();
-            throw new Error(`Failed to get branch reference: ${errorData.message || refResponse.status}`);
+            throw new Error(
+                `Failed to get branch reference: ${await getErrorMessage(refResponse)}`
+            );
         }
-        
-const refData = await refResponse.json();
 
-// This is the latest COMMIT SHA
-const baseSha = refData.object.sha;
+        const refData = await refResponse.json();
+        const baseSha = refData.object?.sha;
 
-if (!baseSha) {
-    throw new Error('Could not retrieve the latest commit SHA.');
-}
-
-// Fetch the actual commit object to get its TREE SHA
-const baseCommitResponse = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/git/commits/${baseSha}`,
-    {
-        headers: {
-            'Authorization': `token ${config.token}`,
-            'Accept': 'application/vnd.github.v3+json'
+        if (!baseSha) {
+            throw new Error('Could not find the latest commit SHA.');
         }
-    }
-);
 
-if (!baseCommitResponse.ok) {
-    const errorData = await baseCommitResponse.json();
+        // STEP 2: Get the actual tree SHA from that commit
+        const baseCommitResponse = await fetch(
+            `${apiBase}/git/commits/${baseSha}`,
+            { headers }
+        );
 
-    throw new Error(
-        `Failed to retrieve base commit: ${errorData.message || baseCommitResponse.status}`
-    );
-}
+        if (!baseCommitResponse.ok) {
+            throw new Error(
+                `Failed to get base commit: ${await getErrorMessage(baseCommitResponse)}`
+            );
+        }
 
-const baseCommitData = await baseCommitResponse.json();
+        const baseCommitData = await baseCommitResponse.json();
+        const baseTreeSha = baseCommitData.tree?.sha;
 
-// This is the actual TREE SHA
-const baseTreeSha = baseCommitData.tree?.sha;
+        if (!baseTreeSha) {
+            throw new Error('Could not find the base tree SHA.');
+        }
 
-if (!baseTreeSha) {
-    throw new Error('GitHub did not return a valid base Tree SHA.');
-}
-        
-        // Create blobs for each file
-        const blobs = [];
-        for (const file of files) {
-            const path = file.path;
-            const content = file.content;
-            
-            // Convert to base64 properly
-            let base64Content;
-            try {
-                const encoder = new TextEncoder();
-                const data = encoder.encode(content);
-                const uint8Array = new Uint8Array(data);
-                let binary = '';
-                for (let i = 0; i < uint8Array.length; i++) {
-                    binary += String.fromCharCode(uint8Array[i]);
-                }
-                base64Content = btoa(binary);
-            } catch (e) {
-                // Fallback
-                base64Content = btoa(unescape(encodeURIComponent(content)));
+        // STEP 3: Prepare all files in one tree request
+        const seenPaths = new Set();
+
+        const treeEntries = files.map(file => {
+            const path = String(file.path || '')
+                .replace(/\\/g, '/')
+                .replace(/^\/+/, '');
+
+            if (!path) {
+                throw new Error('A file has an empty or invalid path.');
             }
-            
-            const blobResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/blobs`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `token ${config.token}`,
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/vnd.github.v3+json'
-                },
-                body: JSON.stringify({
-                    content: base64Content,
-                    encoding: 'base64'
-                })
-            });
-            
-            if (!blobResponse.ok) {
-                const errorData = await blobResponse.json();
-                throw new Error(`Failed to create blob for ${path}: ${errorData.message || blobResponse.status}`);
+
+            if (typeof file.content !== 'string') {
+                throw new Error(`File content is not text: ${path}`);
             }
-            
-            const blobData = await blobResponse.json();
-            blobs.push({
+
+            if (seenPaths.has(path)) {
+                throw new Error(`Duplicate file path detected: ${path}`);
+            }
+
+            seenPaths.add(path);
+
+            return {
                 path: path,
-                sha: blobData.sha,
                 mode: '100644',
-                type: 'blob'
-            });
-        }
-        
-        // Create a new tree
-        const treeResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `token ${config.token}`,
-                'Content-Type': 'application/json',
-                'Accept': 'application/vnd.github.v3+json'
-            },
-body: JSON.stringify({
-    base_tree: baseTreeSha,
-    tree: blobs
-})
+                type: 'blob',
+                content: file.content
+            };
         });
-        
-        if (!treeResponse.ok) {
-            const errorData = await treeResponse.json();
-            throw new Error(`Failed to create tree: ${errorData.message || treeResponse.status}`);
-        }
-        
-        const treeData = await treeResponse.json();
-        
-        // Create a commit
-        const commitResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/commits`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `token ${config.token}`,
-                'Content-Type': 'application/json',
-                'Accept': 'application/vnd.github.v3+json'
-            },
-            body: JSON.stringify({
-                message: `Auto-deploy: ${files.length} file(s) - ${new Date().toISOString()}`,
-                tree: treeData.sha,
-                parents: [baseSha]
-            })
+
+        // IMPORTANT:
+        // GitHub creates the blobs from these content values.
+        // No separate POST request is needed for each file.
+        const treePayload = JSON.stringify({
+            base_tree: baseTreeSha,
+            tree: treeEntries
         });
-        
-        if (!commitResponse.ok) {
-            const errorData = await commitResponse.json();
-            throw new Error(`Failed to create commit: ${errorData.message || commitResponse.status}`);
-        }
-        
-        const commitData = await commitResponse.json();
-        
-        // Update the branch reference
-        const updateResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/refs/heads/${config.branch}`, {
-            method: 'PATCH',
-            headers: {
-                'Authorization': `token ${config.token}`,
-                'Content-Type': 'application/json',
-                'Accept': 'application/vnd.github.v3+json'
-            },
-            body: JSON.stringify({
-                sha: commitData.sha,
-                force: false
-            })
-        });
-        
-        if (!updateResponse.ok) {
-            const errorData = await updateResponse.json();
-            if (updateResponse.status === 422 && errorData.message && errorData.message.includes('fast forward')) {
-                throw new Error('Update is not a fast forward. Please pull latest changes and try again.');
+
+        const payloadSizeMB =
+            new TextEncoder().encode(treePayload).length / (1024 * 1024);
+
+        // STEP 4: Create one tree containing all files
+        const treeResponse = await fetch(
+            `${apiBase}/git/trees`,
+            {
+                method: 'POST',
+                headers: headers,
+                body: treePayload
             }
-            throw new Error(`Failed to update branch: ${errorData.message || updateResponse.status}`);
+        );
+
+        if (!treeResponse.ok) {
+            throw new Error(
+                `Failed to create Git tree for ${files.length} files ` +
+                `(${payloadSizeMB.toFixed(2)} MB): ` +
+                await getErrorMessage(treeResponse)
+            );
         }
-        
-        return { success: true, commitSha: commitData.sha, fileCount: files.length };
-        
+
+        const treeData = await treeResponse.json();
+
+        if (!treeData.sha) {
+            throw new Error('GitHub did not return a tree SHA.');
+        }
+
+        // Allow time between GitHub write operations
+        await wait(1000);
+
+        // STEP 5: Create one commit for all files
+        const commitResponse = await fetch(
+            `${apiBase}/git/commits`,
+            {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({
+                    message: `Auto-deploy: ${files.length} files - ${new Date().toISOString()}`,
+                    tree: treeData.sha,
+                    parents: [baseSha]
+                })
+            }
+        );
+
+        if (!commitResponse.ok) {
+            throw new Error(
+                `Failed to create commit: ${await getErrorMessage(commitResponse)}`
+            );
+        }
+
+        const commitData = await commitResponse.json();
+
+        // Allow time before updating the branch
+        await wait(1000);
+
+        // STEP 6: Update the branch to the new commit
+        const updateResponse = await fetch(
+            `${apiBase}/git/refs/heads/${config.branch}`,
+            {
+                method: 'PATCH',
+                headers: headers,
+                body: JSON.stringify({
+                    sha: commitData.sha,
+                    force: false
+                })
+            }
+        );
+
+        if (!updateResponse.ok) {
+            throw new Error(
+                `Failed to update branch: ${await getErrorMessage(updateResponse)}`
+            );
+        }
+
+        return {
+            success: true,
+            commitSha: commitData.sha,
+            fileCount: files.length
+        };
+
     } catch (error) {
-        return { success: false, message: error.message };
+        console.error('GitHub deployment error:', error);
+
+        return {
+            success: false,
+            message: error.message
+        };
     }
 }
     // ============ HELPER FUNCTIONS ============
