@@ -145,52 +145,69 @@ function renderMathToHTML(text, displayMode = false) {
     
     try {
         let processed = decodedText;
-        
+
+        // 1. Render display mathematics: $$ ... $$
         processed = processed.replace(/\$\$(.+?)\$\$/g, function(match, math) {
             try {
-                const cleanMath = math.trim();
-                let rendered = katex.renderToString(cleanMath, getRenderOptions(true));
-                return rendered;
+                return katex.renderToString(
+                    math.trim(),
+                    getRenderOptions(true)
+                );
             } catch (e) {
+                console.error('Display math error:', e.message);
                 return match;
             }
         });
-        
-        processed = processed.replace(/(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)/g, function(match, math) {
-            try {
-                const cleanMath = math.trim();
-                let rendered = katex.renderToString(cleanMath, getRenderOptions(false));
-                return rendered;
-            } catch (e) {
-                return match;
-            }
-        });
-        
+
+        // 2. Render inline mathematics: \( ... \)
         processed = processed.replace(/\\\((.+?)\\\)/g, function(match, math) {
             try {
-                const cleanMath = math.trim();
-                let rendered = katex.renderToString(cleanMath, getRenderOptions(false));
-                return rendered;
+                return katex.renderToString(
+                    math.trim(),
+                    getRenderOptions(false)
+                );
             } catch (e) {
+                console.error('Inline math error:', e.message);
                 return match;
             }
         });
-        
+
+        // 3. Render display mathematics: \[ ... \]
         processed = processed.replace(/\\\[(.+?)\\\]/g, function(match, math) {
             try {
-                const cleanMath = math.trim();
-                let rendered = katex.renderToString(cleanMath, getRenderOptions(true));
-                return rendered;
+                return katex.renderToString(
+                    math.trim(),
+                    getRenderOptions(true)
+                );
             } catch (e) {
+                console.error('Display math error:', e.message);
                 return match;
             }
         });
-        
+
+        // 4. Render single-dollar inline math: $ ... $
+        // Ignore escaped dollar signs used for currency.
+        processed = processed.replace(
+            /(?<![\\$])\$(?!\$)(.+?)(?<![\\$])\$(?!\$)/g,
+            function(match, math) {
+                try {
+                    return katex.renderToString(
+                        math.trim(),
+                        getRenderOptions(false)
+                    );
+                } catch (e) {
+                    console.error('Dollar math error:', e.message);
+                    return match;
+                }
+            }
+        );
+
         return processed;
+
     } catch (e) {
+        console.error('KaTeX processing error:', e.message);
         return text;
     }
-}
 
 // ===== FILE PROCESSING =====
 
