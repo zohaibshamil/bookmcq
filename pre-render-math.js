@@ -118,15 +118,15 @@ function createTrustOptions() {
 // Render math using KaTeX with clean output
 function renderMathToHTML(text, displayMode = false) {
     if (!text) return text;
-
+    
     if (hasRenderedMath(text)) {
         return text;
     }
-
+    
     let decodedText = decodeHtmlEntities(text);
-
+    
     if (!hasRawMath(decodedText)) return text;
-
+    
     const getRenderOptions = function(display) {
         return {
             throwOnError: false,
@@ -142,63 +142,52 @@ function renderMathToHTML(text, displayMode = false) {
             minRuleThickness: -Infinity
         };
     };
-
+    
     try {
         let processed = decodedText;
-
-        // 1. Display math: $$ ... $$
-        processed = processed.replace(
-            /\$\$([\s\S]+?)\$\$/g,
-            function(match, math) {
-                try {
-                    return katex.renderToString(
-                        math.trim(),
-                        getRenderOptions(true)
-                    );
-                } catch (e) {
-                    console.error('Display math error:', e.message);
-                    return match;
-                }
+        
+        processed = processed.replace(/\$\$(.+?)\$\$/g, function(match, math) {
+            try {
+                const cleanMath = math.trim();
+                let rendered = katex.renderToString(cleanMath, getRenderOptions(true));
+                return rendered;
+            } catch (e) {
+                return match;
             }
-        );
-
-        // 2. Inline math: \( ... \)
-        // Accepts one or more backslashes around the delimiters.
-        processed = processed.replace(
-            /\\\\{1,4}\(([\s\S]+?)\\\\{1,4}\)/g,
-            function(match, math) {
-                try {
-                    return katex.renderToString(
-                        math.trim(),
-                        getRenderOptions(false)
-                    );
-                } catch (e) {
-                    console.error('Inline math error:', e.message);
-                    return match;
-                }
+        });
+        
+        processed = processed.replace(/(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)/g, function(match, math) {
+            try {
+                const cleanMath = math.trim();
+                let rendered = katex.renderToString(cleanMath, getRenderOptions(false));
+                return rendered;
+            } catch (e) {
+                return match;
             }
-        );
-
-        // 3. Display math: \[ ... \]
-        processed = processed.replace(
-            /\\\\{1,4}\[([\s\S]+?)\\\\{1,4}\]/g,
-            function(match, math) {
-                try {
-                    return katex.renderToString(
-                        math.trim(),
-                        getRenderOptions(true)
-                    );
-                } catch (e) {
-                    console.error('Display math error:', e.message);
-                    return match;
-                }
+        });
+        
+        processed = processed.replace(/\\\((.+?)\\\)/g, function(match, math) {
+            try {
+                const cleanMath = math.trim();
+                let rendered = katex.renderToString(cleanMath, getRenderOptions(false));
+                return rendered;
+            } catch (e) {
+                return match;
             }
-        );
-
+        });
+        
+        processed = processed.replace(/\\\[(.+?)\\\]/g, function(match, math) {
+            try {
+                const cleanMath = math.trim();
+                let rendered = katex.renderToString(cleanMath, getRenderOptions(true));
+                return rendered;
+            } catch (e) {
+                return match;
+            }
+        });
+        
         return processed;
-
     } catch (e) {
-        console.error('KaTeX processing error:', e.message);
         return text;
     }
 }
