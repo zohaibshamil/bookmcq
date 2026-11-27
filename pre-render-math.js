@@ -116,7 +116,6 @@ function createTrustOptions() {
 }
 
 // Render math using KaTeX with clean output
-
 function renderMathToHTML(text, displayMode = false) {
     if (!text) return text;
 
@@ -148,48 +147,25 @@ function renderMathToHTML(text, displayMode = false) {
         let processed = decodedText;
 
         // 1. Display math: $$ ... $$
-        processed = processed.replace(/\$\$(.+?)\$\$/g, function(match, math) {
-            try {
-                return katex.renderToString(
-                    math.trim(),
-                    getRenderOptions(true)
-                );
-            } catch (e) {
-                console.error('Display math error:', e.message);
-                return match;
+        processed = processed.replace(
+            /\$\$([\s\S]+?)\$\$/g,
+            function(match, math) {
+                try {
+                    return katex.renderToString(
+                        math.trim(),
+                        getRenderOptions(true)
+                    );
+                } catch (e) {
+                    console.error('Display math error:', e.message);
+                    return match;
+                }
             }
-        });
+        );
 
         // 2. Inline math: \( ... \)
-        processed = processed.replace(/\\\((.+?)\\\)/g, function(match, math) {
-            try {
-                return katex.renderToString(
-                    math.trim(),
-                    getRenderOptions(false)
-                );
-            } catch (e) {
-                console.error('Inline math error:', e.message);
-                return match;
-            }
-        });
-
-        // 3. Display math: \[ ... \]
-        processed = processed.replace(/\\\[(.+?)\\\]/g, function(match, math) {
-            try {
-                return katex.renderToString(
-                    math.trim(),
-                    getRenderOptions(true)
-                );
-            } catch (e) {
-                console.error('Display math error:', e.message);
-                return match;
-            }
-        });
-
-        // 4. Single-dollar math: $ ... $
-        // Ignore escaped currency symbols.
+        // Accepts one or more backslashes around the delimiters.
         processed = processed.replace(
-            /(?<![\\$])\$(?!\$)(.+?)(?<![\\$])\$(?!\$)/g,
+            /\\\\{1,4}\(([\s\S]+?)\\\\{1,4}\)/g,
             function(match, math) {
                 try {
                     return katex.renderToString(
@@ -197,7 +173,23 @@ function renderMathToHTML(text, displayMode = false) {
                         getRenderOptions(false)
                     );
                 } catch (e) {
-                    console.error('Dollar math error:', e.message);
+                    console.error('Inline math error:', e.message);
+                    return match;
+                }
+            }
+        );
+
+        // 3. Display math: \[ ... \]
+        processed = processed.replace(
+            /\\\\{1,4}\[([\s\S]+?)\\\\{1,4}\]/g,
+            function(match, math) {
+                try {
+                    return katex.renderToString(
+                        math.trim(),
+                        getRenderOptions(true)
+                    );
+                } catch (e) {
+                    console.error('Display math error:', e.message);
                     return match;
                 }
             }
@@ -210,7 +202,6 @@ function renderMathToHTML(text, displayMode = false) {
         return text;
     }
 }
-
 
 // ===== FILE PROCESSING =====
 
