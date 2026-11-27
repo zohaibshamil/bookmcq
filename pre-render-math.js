@@ -116,17 +116,18 @@ function createTrustOptions() {
 }
 
 // Render math using KaTeX with clean output
+
 function renderMathToHTML(text, displayMode = false) {
     if (!text) return text;
-    
+
     if (hasRenderedMath(text)) {
         return text;
     }
-    
+
     let decodedText = decodeHtmlEntities(text);
-    
+
     if (!hasRawMath(decodedText)) return text;
-    
+
     const getRenderOptions = function(display) {
         return {
             throwOnError: false,
@@ -142,11 +143,11 @@ function renderMathToHTML(text, displayMode = false) {
             minRuleThickness: -Infinity
         };
     };
-    
+
     try {
         let processed = decodedText;
 
-        // 1. Render display mathematics: $$ ... $$
+        // 1. Display math: $$ ... $$
         processed = processed.replace(/\$\$(.+?)\$\$/g, function(match, math) {
             try {
                 return katex.renderToString(
@@ -159,7 +160,7 @@ function renderMathToHTML(text, displayMode = false) {
             }
         });
 
-        // 2. Render inline mathematics: \( ... \)
+        // 2. Inline math: \( ... \)
         processed = processed.replace(/\\\((.+?)\\\)/g, function(match, math) {
             try {
                 return katex.renderToString(
@@ -172,7 +173,7 @@ function renderMathToHTML(text, displayMode = false) {
             }
         });
 
-        // 3. Render display mathematics: \[ ... \]
+        // 3. Display math: \[ ... \]
         processed = processed.replace(/\\\[(.+?)\\\]/g, function(match, math) {
             try {
                 return katex.renderToString(
@@ -185,8 +186,8 @@ function renderMathToHTML(text, displayMode = false) {
             }
         });
 
-        // 4. Render single-dollar inline math: $ ... $
-        // Ignore escaped dollar signs used for currency.
+        // 4. Single-dollar math: $ ... $
+        // Ignore escaped currency symbols.
         processed = processed.replace(
             /(?<![\\$])\$(?!\$)(.+?)(?<![\\$])\$(?!\$)/g,
             function(match, math) {
@@ -208,6 +209,8 @@ function renderMathToHTML(text, displayMode = false) {
         console.error('KaTeX processing error:', e.message);
         return text;
     }
+}
+
 
 // ===== FILE PROCESSING =====
 
