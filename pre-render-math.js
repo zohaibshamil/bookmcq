@@ -147,16 +147,15 @@ function renderMathToHTML(text, displayMode = false) {
             }
         });
 
-        processed = processed.replace(/(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)/g, function(match, math) {
-            try {
-                const cleanMath = math.trim();
-                let rendered = katex.renderToString(cleanMath, getRenderOptions(false));
-                return rendered;
-            } catch (e) {
-                return match;
-            }
-        });
-
+processed = processed.replace(/(?<![\\$])\$(?!\$)(.+?)(?<![\\$])\$(?!\$)/g, function(match, math) {
+    try {
+        const cleanMath = math.trim();
+        let rendered = katex.renderToString(cleanMath, getRenderOptions(false));
+        return rendered;
+    } catch (e) {
+        return match;
+    }
+});
         processed = processed.replace(/\\\((.+?)\\\)/g, function(match, math) {
             try {
                 const cleanMath = math.trim();
