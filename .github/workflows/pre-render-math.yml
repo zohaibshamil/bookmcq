@@ -5,36 +5,71 @@ on:
     branches: [ main, master ]
     paths:
       - 'books/**/*.html'
+      - 'books/**/*.htm'
   workflow_dispatch:
+    inputs:
+      target:
+        description: 'Optional: specific file or directory inside books/ (e.g. books/algebra/ch1.html). Leave empty to process changed files (push) or everything (manual).'
+        required: false
+        type: string
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         fetch-depth: 0
-    
+
+    - name: Get changed HTML files in books/
+      id: changed
+      if: github.event_name == 'push'
+      uses: tj-actions/changed-files@v44
+      with:
+        files: |
+          books/**/*.html
+          books/**/*.htm
+        separator: ' '
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '22'
         cache: 'npm'
-    
+
     - name: Clear npm cache
       run: npm cache clean --force
-    
+
     - name: Install dependencies
       run: npm install --legacy-peer-deps
-    
+
     - name: Pre-render math with Catax (KaTeX)
-      run: node pre-render-math.js
       env:
+        CHANGED_FILES: ${{ steps.changed.outputs.all_changed_files }}
+        MANUAL_TARGET: ${{ github.event.inputs.target }}
         NODE_OPTIONS: '--max-old-space-size=4096'
-    
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          if [ -n "$MANUAL_TARGET" ]; then
+            echo "→ Manual: processing '$MANUAL_TARGET'"
+            node pre-render-math.js "$MANUAL_TARGET"
+          else
+            echo "→ Manual: processing ALL files in books/"
+            node pre-render-math.js
+          fi
+        elif [ -z "$CHANGED_FILES" ]; then
+          echo "→ No relevant changes detected — nothing to do"
+          exit 0
+        else
+          echo "→ Push: processing changed files only:"
+          echo "$CHANGED_FILES"
+          # shellcheck disable=SC2086
+          node pre-render-math.js $CHANGED_FILES
+        fi
+
     - name: Commit and push changes
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
