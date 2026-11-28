@@ -1,17 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
-    <!-- Google Tag Manager -->
-<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-PT363CT7');</script>
-<!-- End Google Tag Manager -->
     
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <!-- Advanced Consent Mode v2: establish consent before any Google tag loads. -->
+    <script>
+      (function () {
+        window.dataLayer = window.dataLayer || [];
+        window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
+
+        var savedChoice = null;
+        try {
+          var stored = JSON.parse(window.localStorage.getItem('bookmcqCookieConsentV1') || 'null');
+          if (stored && typeof stored.analytics === 'boolean' &&
+              typeof stored.advertising === 'boolean' &&
+              typeof stored.expiresAt === 'number' && stored.expiresAt > Date.now()) {
+            savedChoice = stored;
+          }
+        } catch (error) {
+          // If storage is unavailable, use denied defaults for this page view.
+        }
+
+        window.gtag('consent', 'default', {
+          ad_storage: 'denied',
+          ad_user_data: 'denied',
+          ad_personalization: 'denied',
+          analytics_storage: 'denied',
+          functionality_storage: 'granted',
+          security_storage: 'granted',
+          personalization_storage: 'denied'
+        });
+        window.gtag('set', 'ads_data_redaction', true);
+
+        if (savedChoice) {
+          window.gtag('consent', 'update', {
+            analytics_storage: savedChoice.analytics ? 'granted' : 'denied',
+            ad_storage: savedChoice.advertising ? 'granted' : 'denied',
+            ad_user_data: savedChoice.advertising ? 'granted' : 'denied',
+            ad_personalization: savedChoice.advertising ? 'granted' : 'denied',
+            functionality_storage: 'granted',
+            security_storage: 'granted',
+            personalization_storage: 'denied'
+          });
+        }
+        window.bookMcqSavedCookieConsent = savedChoice;
+      })();
+    </script>
+    <!-- Google Tag Manager: consent defaults are queued before the container loads. -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-PT363CT7');</script>
+
     <title>Practice MCQs - Browse All Books | BookMCQ</title>
 
     <!-- FAVICONS -->
@@ -61,20 +99,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       gtag('config', 'G-5WGZ1P0EV1');
     </script>
     
-    <!-- MathJax -->
-    <script>
-    window.MathJax = {
-        tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']], processEscapes: true },
-        svg: { fontCache: 'global' },
-        options: { skipHtmlTypes: 'script', ignoreHtmlClass: 'no-mathjax', processHtmlClass: 'math' }
-    };
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async></script>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     
     <style>
         body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji"; }
@@ -288,8 +312,126 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             text-align: justify;
             text-justify: inter-word;
         }
-    </style>
+    
+        /* Local replacements for the small Tailwind utility subset used on this page. */
+        .max-w-6xl{max-width:72rem}.mx-auto{margin-left:auto;margin-right:auto}.w-full{width:100%}
+        .block{display:block}.inline-flex{display:inline-flex}.flex{display:flex}.grid{display:grid}.hidden{display:none}
+        .items-center{align-items:center}.justify-between{justify-content:space-between}.text-center{text-align:center}
+        .flex-shrink-0{flex-shrink:0}.whitespace-nowrap{white-space:nowrap}.sticky{position:sticky}.top-4{top:1rem}.z-50{z-index:50}
+        .gap-1{gap:.25rem}.gap-2{gap:.5rem}.gap-3{gap:.75rem}
+        .grid-cols-1{grid-template-columns:repeat(1,minmax(0,1fr))}
+        .space-y-4>:not([hidden])~:not([hidden]){margin-top:1rem}
+        .bg-white{background-color:#fff}.bg-white\/10{background-color:rgba(255,255,255,.1)}.bg-green-500{background-color:#22c55e}
+        .bg-gradient-to-r{background-image:linear-gradient(to right,#9333ea,#4f46e5)}
+        .backdrop-blur-lg{backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+        .rounded-full{border-radius:9999px}.rounded-xl{border-radius:.75rem}.rounded-2xl{border-radius:1rem}
+        .shadow-lg{box-shadow:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -4px rgba(0,0,0,.1)}
+        .shadow-xl{box-shadow:0 20px 25px -5px rgba(0,0,0,.1),0 8px 10px -6px rgba(0,0,0,.1)}
+        .font-bold{font-weight:700}.font-semibold{font-weight:600}.leading-relaxed{line-height:1.625}
+        .text-black{color:#000}.text-white{color:#fff}.text-white\/60{color:rgba(255,255,255,.6)}.text-white\/80{color:rgba(255,255,255,.8)}
+        .text-gray-600{color:#4b5563}.text-gray-700{color:#374151}.text-gray-800{color:#1f2937}.text-purple-600{color:#9333ea}.text-yellow-500{color:#eab308}
+        .text-xs{font-size:.75rem;line-height:1rem}.text-sm{font-size:.875rem;line-height:1.25rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-2xl{font-size:1.5rem;line-height:2rem}.text-\[10px\]{font-size:10px;line-height:1.2}
+        .px-1\.5{padding-left:.375rem;padding-right:.375rem}.px-4{padding-left:1rem;padding-right:1rem}.px-6{padding-left:1.5rem;padding-right:1.5rem}
+        .py-0\.5{padding-top:.125rem;padding-bottom:.125rem}.py-2{padding-top:.5rem;padding-bottom:.5rem}.py-3{padding-top:.75rem;padding-bottom:.75rem}.py-6{padding-top:1.5rem;padding-bottom:1.5rem}.p-6{padding:1.5rem}
+        .mb-4{margin-bottom:1rem}.mb-6{margin-bottom:1.5rem}.mb-8{margin-bottom:2rem}.ml-1{margin-left:.25rem}.mt-6{margin-top:1.5rem}.mt-12{margin-top:3rem}
+        .transition{transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform;transition-duration:150ms}
+        .hover\:text-white:hover{color:#fff}.hover\:bg-purple-50:hover{background-color:#faf5ff}.hover\:shadow-lg:hover{box-shadow:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -4px rgba(0,0,0,.1)}
+        .bookmcq-graduation-icon{display:block;width:28px;height:28px;flex:none;color:#fff}
+        .bookmcq-icon{display:inline-flex;align-items:center;justify-content:center;line-height:1;vertical-align:middle;font-style:normal}
+        .navbar-scrolled .bookmcq-graduation-icon{color:#2d3748}
+        .cookie-settings-link{color:inherit;text-decoration:underline;text-underline-offset:2px;margin-left:8px;cursor:pointer}
+        @media(min-width:640px){.sm\:inline{display:inline}}
+        @media(min-width:768px){.md\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.md\:gap-6{gap:1.5rem}.md\:p-8{padding:2rem}.md\:px-6{padding-left:1.5rem;padding-right:1.5rem}.md\:text-sm{font-size:.875rem;line-height:1.25rem}.md\:text-base{font-size:1rem;line-height:1.5rem}.md\:text-xl{font-size:1.25rem;line-height:1.75rem}.md\:text-2xl{font-size:1.5rem;line-height:2rem}}
+
+    
+    /* Self-contained cookie consent banner styles. */
+    .cookie-consent{position:fixed;left:50%;bottom:18px;z-index:1000;width:min(920px,calc(100% - 32px));max-height:calc(100vh - 36px);overflow:auto;transform:translateX(-50%);padding:22px;border:1px solid #e5e7eb;border-radius:18px;background:#fff;color:#1f2937;box-shadow:0 18px 55px rgba(15,23,42,.28);font-size:14px;line-height:1.55}
+    .cookie-consent[hidden],.cookie-preferences[hidden]{display:none!important}
+    .cookie-consent-main{display:flex;align-items:flex-start;justify-content:space-between;gap:22px}.cookie-consent-copy{min-width:0;max-width:590px}
+    .cookie-consent-kicker{margin:0 0 5px;color:#6d28d9;font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase}
+    .cookie-consent h2{margin:0 0 7px;color:#111827;font-size:20px;line-height:1.25}.cookie-consent p{margin:0 0 9px;color:#4b5563}.cookie-consent a{color:#6d28d9;text-decoration:underline;text-underline-offset:2px}
+    .cookie-consent-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:8px;max-width:310px}
+    .cookie-consent button{min-height:40px;padding:9px 13px;border:1px solid #d1d5db;border-radius:10px;background:#fff;color:#374151;font-size:13px;font-weight:700;cursor:pointer}
+    .cookie-consent button:hover{background:#f9fafb}.cookie-consent button:focus-visible{outline:3px solid #fbbf24;outline-offset:3px}
+    .cookie-consent .cookie-accept{border-color:#6d28d9;background:#6d28d9;color:#fff}.cookie-consent .cookie-accept:hover{background:#5b21b6}
+    .cookie-preferences{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:17px;padding-top:16px;border-top:1px solid #e5e7eb}
+    .cookie-preference{display:flex;align-items:flex-start;gap:9px;padding:11px;border:1px solid #e5e7eb;border-radius:11px;background:#fafafa}
+    .cookie-preference input{width:17px;height:17px;margin-top:2px;accent-color:#6d28d9}.cookie-preference input:disabled{opacity:.7}
+    .cookie-preference strong{display:block;margin-bottom:2px;color:#1f2937;font-size:13px}.cookie-preference small{display:block;color:#6b7280;font-size:11px;line-height:1.4}
+    .cookie-preferences-actions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px}
+    @media(max-width:680px){.cookie-consent{bottom:10px;width:calc(100% - 20px);max-height:calc(100vh - 20px);padding:17px;border-radius:15px}.cookie-consent-main{display:block}.cookie-consent-actions{max-width:none;justify-content:stretch;margin-top:13px}.cookie-consent-actions button{flex:1 1 30%;padding:9px 7px;font-size:12px}.cookie-preferences{grid-template-columns:1fr}.cookie-preferences-actions{grid-column:auto}.cookie-preferences-actions button{flex:1}}
+    
+
+/* BookMCQ shared footer — matching the index page. */
+.site-footer{position:relative;width:100vw;margin:58px 0 0 calc(50% - 50vw);padding:48px 22px 18px;overflow:hidden;color:#cbd5e1;background:linear-gradient(135deg,#111827 0%,#1e1b4b 58%,#312e81 100%);border-top:1px solid rgba(255,255,255,.13)}
+.site-footer:before{content:"";position:absolute;inset:0 0 auto;height:3px;background:linear-gradient(90deg,#a78bfa,#818cf8,#22d3ee)}
+.footer-inner{position:relative;width:min(1152px,100%);margin:0 auto}
+.footer-main{display:grid;grid-template-columns:minmax(230px,1.65fr) repeat(3,minmax(130px,1fr));gap:38px;padding-bottom:35px}
+.footer-brand{max-width:310px}
+.footer-brand-link{display:inline-flex;align-items:center;gap:11px;color:#fff;text-decoration:none;font-size:22px;font-weight:800;letter-spacing:-.4px}
+.footer-logo-mark{display:grid;place-items:center;width:43px;height:43px;border-radius:14px;background:linear-gradient(145deg,#7c3aed,#4f46e5);color:#fff;box-shadow:0 7px 18px rgba(124,58,237,.32)}
+.footer-logo-mark .brand-symbol{width:29px;height:29px}
+.footer-brand p{margin:15px 0 19px;color:#aebbd0;font-size:13px;line-height:1.75}
+.footer-cta{display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border:1px solid rgba(196,181,253,.35);border-radius:999px;color:#fff;text-decoration:none;font-size:13px;font-weight:700;background:rgba(124,58,237,.18);transition:background .2s,transform .2s}
+.footer-cta:hover{background:rgba(124,58,237,.36);transform:translateY(-2px)}
+.footer-column h2{margin:5px 0 15px;color:#fff;font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.footer-links{display:grid;gap:10px;list-style:none}
+.footer-links a{display:inline-flex;align-items:center;gap:7px;color:#b9c4d5;text-decoration:none;font-size:13px;transition:color .18s,transform .18s}
+.footer-links a:hover{color:#fff;transform:translateX(3px)}
+.footer-bottom{display:flex;align-items:center;justify-content:space-between;gap:18px;padding-top:17px;border-top:1px solid rgba(203,213,225,.16);color:#94a3b8;font-size:12px}
+.footer-bottom p{margin:0}
+.footer-bottom-links{display:flex;align-items:center;gap:17px;flex-wrap:wrap}
+.footer-bottom-links a{color:#aebbd0;text-decoration:none;transition:color .18s}
+.footer-bottom-links a:hover{color:#fff}
+@media(max-width:950px){.footer-main{grid-template-columns:minmax(210px,1.4fr) repeat(3,minmax(115px,1fr));gap:24px}}
+@media(max-width:768px){.footer-main{grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 24px}.footer-brand{grid-column:1/-1;max-width:520px}}
+@media(max-width:640px){.site-footer{margin-top:42px;padding:38px 20px 17px}.footer-main{gap:25px 16px}.footer-brand-link{font-size:20px}.footer-column h2{font-size:12px}.footer-links{gap:9px}.footer-links a{font-size:12px}.footer-bottom{align-items:flex-start;flex-direction:column;gap:11px}.footer-bottom-links{gap:14px}}
+
+
+    /* Homepage-matched MCQ Assistant. */
+    .chat-launcher{position:fixed;right:25px;bottom:25px;z-index:80}
+    .chat-launcher button{display:flex;align-items:center;gap:9px;border:0;border-radius:999px;padding:13px 18px;background:linear-gradient(90deg,#7c3aed,#4f46e5);color:#fff;box-shadow:0 12px 28px rgba(0,0,0,.22);font-weight:650;cursor:pointer;transition:transform .2s}
+    .chat-launcher button:hover{transform:scale(1.05)}
+    .chat-window{position:fixed;right:25px;bottom:88px;z-index:81;width:360px;max-width:calc(100vw - 32px);height:min(510px,calc(100vh - 120px));display:flex;flex-direction:column;overflow:hidden;border-radius:20px;background:#fff;box-shadow:0 20px 50px rgba(0,0,0,.25);animation:slideUp .25s ease}
+    .chat-window[hidden]{display:none}
+    @keyframes slideUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+    .chat-header{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;background:linear-gradient(90deg,#7c3aed,#4f46e5);color:#fff}
+    .chat-title{display:flex;align-items:center;gap:9px;font-weight:700}
+    .chat-close{border:0;background:transparent;color:#fff;font-size:25px;cursor:pointer;line-height:1}
+    .chat-messages{flex:1;overflow:auto;padding:15px;background:#f9fafb}
+    .chat-message{display:flex;margin-bottom:12px}
+    .chat-message.user{justify-content:flex-end}
+    .chat-bubble{max-width:85%;padding:10px 13px;border-radius:17px;font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+    .chat-message.bot .chat-bubble{background:#eef0f4;color:#1f2937;border-bottom-left-radius:4px}
+    .chat-message.user .chat-bubble{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border-bottom-right-radius:4px}
+    .chat-form{display:flex;gap:8px;padding:12px;border-top:1px solid #e5e7eb;background:#fff}
+    .chat-form input{min-width:0;flex:1;padding:10px 12px;border:1px solid #d1d5db;border-radius:11px;font-size:13px}
+    .chat-form button{padding:9px 14px;border:0;border-radius:10px;background:#7c3aed;color:#fff;font-weight:650;cursor:pointer}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    @media(max-width:640px){.chat-launcher{right:16px;bottom:16px}.chat-launcher button{padding:12px 15px}.chat-window{right:16px;bottom:78px}}
+
+  </style>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5790863833339632" crossorigin="anonymous"></script>
+
+<style id="bookmcq-visual-corrections">
+/* Keep the graduation-cap SVG black when the navigation enters its scrolled state, matching the homepage. */
+nav.navbar-scrolled > div > div:first-child > svg,
+nav.navbar-scrolled > div > div:first-child > span > svg,
+nav.navbar-scrolled .bookmcq-graduation-icon,
+nav.navbar-scrolled .bm-inline-svg.fa-graduation-cap {
+  color: #000 !important;
+  fill: #000 !important;
+}
+</style>
+
+<style id="bookmcq-nav-link-decoration-fix">
+/* Prevent browser-default anchor underlines in the shared navigation.
+   The existing animated ::after underline remains unchanged. */
+.nav-link {
+  text-decoration: none !important;
+  -webkit-text-decoration: none !important;
+}
+</style>
 </head>
 <body oncontextmenu="return true;">
 
@@ -304,7 +446,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <nav class="bg-white/10 backdrop-blur-lg rounded-full px-4 md:px-6 py-3 mb-8 sticky top-4 z-50 shadow-lg">
         <div class="flex justify-between items-center">
             <div class="flex items-center gap-2">
-                <i class="fas fa-graduation-cap text-white text-xl md:text-2xl"></i>
+                <svg class="bookmcq-graduation-icon" viewBox="0 -64 640 640" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true"><path d="M622.34 153.2L343.4 67.5c-15.2-4.67-31.6-4.67-46.79 0L17.66 153.2c-23.54 7.23-23.54 38.36 0 45.59l48.63 14.94c-10.67 13.19-17.23 29.28-17.88 46.9C38.78 266.15 32 276.11 32 288c0 10.78 5.68 19.85 13.86 25.65L20.33 428.53C18.11 438.52 25.71 448 35.94 448h56.11c10.24 0 17.84-9.48 15.62-19.47L82.14 313.65C90.32 307.85 96 298.78 96 288c0-11.57-6.47-21.25-15.66-26.87.76-15.02 8.44-28.3 20.69-36.72L296.6 284.5c9.06 2.78 26.44 6.25 46.79 0l278.95-85.7c23.55-7.24 23.55-38.36 0-45.6zM352.79 315.09c-28.53 8.76-52.84 3.92-65.59 0l-145.02-44.55L128 384c0 35.35 85.96 64 192 64s192-28.65 192-64l-14.18-113.47-145.03 44.56z" fill="currentColor"/></svg>
                 <span class="text-white font-bold text-lg md:text-xl">BookMCQ</span>
                 <span class="text-white/60 text-xs hidden sm:inline">| Master Every Chapter</span>
             </div>
@@ -356,7 +498,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
         <!-- Hero / Intro -->
         <div class="practice-hero">
-            <h1><i class="fas fa-database"></i> Practice MCQs</h1>
+            <h1><span class="bookmcq-icon" aria-hidden="true">🗄️</span> Practice MCQs</h1>
             <p>
                 Welcome to the BookMCQ Practice Hub. Select any book below to jump directly to its
                 chapter and topic library, where you can practice <strong>chapter-wise MCQs</strong> with
@@ -366,7 +508,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
         <!-- Books Grid -->
         <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <i class="fas fa-book text-purple-600"></i> Browse Books
+            <span class="bookmcq-icon text-purple-600" aria-hidden="true">📘</span> Browse Books
         </h2>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
@@ -378,7 +520,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                         <div class="book-name">Operating System</div>
                         <div class="book-meta">20 chapters · 481 topics</div>
                     </div>
-                    <i class="fas fa-arrow-right book-arrow"></i>
+                    <span class="bookmcq-icon book-arrow" aria-hidden="true">→</span>
                 </a>
             </div>
 
@@ -389,7 +531,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                         <div class="book-name">World History Modern</div>
                         <div class="book-meta">28 chapters · 660 topics</div>
                     </div>
-                    <i class="fas fa-arrow-right book-arrow"></i>
+                    <span class="bookmcq-icon book-arrow" aria-hidden="true">→</span>
                 </a>
             </div>
 
@@ -400,7 +542,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                         <div class="book-name">An Introduction To Microprocessor 8085</div>
                         <div class="book-meta">15 chapters · 184 topics</div>
                     </div>
-                    <i class="fas fa-arrow-right book-arrow"></i>
+                    <span class="bookmcq-icon book-arrow" aria-hidden="true">→</span>
                 </a>
             </div>
 
@@ -411,7 +553,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                         <div class="book-name">Data Communication And Networks</div>
                         <div class="book-meta">32 chapters · 474 topics</div>
                     </div>
-                    <i class="fas fa-arrow-right book-arrow"></i>
+                    <span class="bookmcq-icon book-arrow" aria-hidden="true">→</span>
                 </a>
             </div>
 
@@ -422,7 +564,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                         <div class="book-name">Calculus</div>
                         <div class="book-meta">16 chapters · 633 topics</div>
                     </div>
-                    <i class="fas fa-arrow-right book-arrow"></i>
+                    <span class="bookmcq-icon book-arrow" aria-hidden="true">→</span>
                 </a>
             </div>
 
@@ -433,7 +575,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                         <div class="book-name">Digital SAT Algebra</div>
                         <div class="book-meta">4 chapters · 196 topics</div>
                     </div>
-                    <i class="fas fa-arrow-right book-arrow"></i>
+                    <span class="bookmcq-icon book-arrow" aria-hidden="true">→</span>
                 </a>
             </div>
 
@@ -444,7 +586,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                         <div class="book-name">Campbell Biology</div>
                         <div class="book-meta">2 chapters · 141 topics</div>
                     </div>
-                    <i class="fas fa-arrow-right book-arrow"></i>
+                    <span class="bookmcq-icon book-arrow" aria-hidden="true">→</span>
                 </a>
             </div>
 
@@ -455,7 +597,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                         <div class="book-name">Principles Of Biochemistry</div>
                         <div class="book-meta">2 chapters · 115 topics</div>
                     </div>
-                    <i class="fas fa-arrow-right book-arrow"></i>
+                    <span class="bookmcq-icon book-arrow" aria-hidden="true">→</span>
                 </a>
             </div>
 
@@ -463,7 +605,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
         <!-- Study Guide Section -->
         <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <i class="fas fa-lightbulb text-yellow-500"></i> How To Practice Each Book
+            <span class="bookmcq-icon text-yellow-500" aria-hidden="true">💡</span> How To Practice Each Book
         </h2>
 
         <p class="text-sm text-gray-600 mb-4 leading-relaxed">
@@ -478,7 +620,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
             <!-- Operating System -->
             <div class="guide-section">
-                <h3><i class="fas fa-laptop-code"></i> Operating System</h3>
+                <h3><span class="bookmcq-icon" aria-hidden="true">💻</span> Operating System</h3>
                 <p>
                     Your preparation for this book must begin with "Introduction To Operating System" and
                     "Operating System Structure", because these chapters establish the vocabulary, system
@@ -502,7 +644,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
             <!-- World History Modern -->
             <div class="guide-section">
-                <h3><i class="fas fa-globe"></i> World History Modern</h3>
+                <h3><span class="bookmcq-icon" aria-hidden="true">🌐</span> World History Modern</h3>
                 <p>
                     This book must be studied chronologically, because historical causality depends upon the sequence
                     of events. Begin with "Outbreak Of The First World War: The World In 1914", followed by "The First
@@ -525,7 +667,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
             <!-- Microprocessor 8085 -->
             <div class="guide-section">
-                <h3><i class="fas fa-microchip"></i> An Introduction To Microprocessor 8085</h3>
+                <h3><span class="bookmcq-icon" aria-hidden="true">🔌</span> An Introduction To Microprocessor 8085</h3>
                 <p>
                     Begin your study with "Evolution And History Of Microprocessors", which provides the historical and
                     technical context for the 8085 architecture. Study the three SAP chapters (SAP-I, SAP-II, and
@@ -548,7 +690,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
             <!-- Data Communication And Networks -->
             <div class="guide-section">
-                <h3><i class="fas fa-network-wired"></i> Data Communication And Networks</h3>
+                <h3><span class="bookmcq-icon" aria-hidden="true">🌐</span> Data Communication And Networks</h3>
                 <p>
                     Begin with "Introduction Of Data Communication Networks" and "Network Model Types", because these
                     chapters establish the OSI and TCP/IP reference models that organise every later topic. Study the
@@ -571,7 +713,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
             <!-- Calculus -->
             <div class="guide-section">
-                <h3><i class="fas fa-square-root-variable"></i> Calculus</h3>
+                <h3><span class="bookmcq-icon" aria-hidden="true">√</span> Calculus</h3>
                 <p>
                     Your preparation must begin with "Basics Before Calculus" and "Limits And Continuity", because
                     these chapters establish the algebraic, trigonometric, and limiting concepts on which all
@@ -594,7 +736,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
             <!-- Digital SAT Algebra -->
             <div class="guide-section">
-                <h3><i class="fas fa-calculator"></i> Digital SAT Algebra</h3>
+                <h3><span class="bookmcq-icon" aria-hidden="true">🧮</span> Digital SAT Algebra</h3>
                 <p>
                     This book is designed for examination preparation and must therefore be studied in the order in
                     which its chapters appear. Begin with "Basics Of Algebra", which contains fifty-six topics covering
@@ -617,7 +759,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
             <!-- Campbell Biology -->
             <div class="guide-section">
-                <h3><i class="fas fa-dna"></i> Campbell Biology</h3>
+                <h3><span class="bookmcq-icon" aria-hidden="true">🧬</span> Campbell Biology</h3>
                 <p>
                     Begin with "Evolution And The Theme Of Biology And Scientific Inquiry", which contains one hundred
                     and ten topics and introduces the central themes of biology, the scientific method, and
@@ -640,7 +782,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
             <!-- Principles Of Biochemistry -->
             <div class="guide-section">
-                <h3><i class="fas fa-flask"></i> Principles Of Biochemistry</h3>
+                <h3><span class="bookmcq-icon" aria-hidden="true">🧪</span> Principles Of Biochemistry</h3>
                 <p>
                     Begin with "The Foundations Of Biochemistry", which contains ninety-four topics and covers the
                     structure of cells, the properties of biomolecules, the principles of bioenergetics, and the
@@ -666,16 +808,87 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <!-- CTA -->
         <div class="text-center mt-6">
             <a href="/topics" class="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-full font-semibold hover:shadow-lg transition">
-                <i class="fas fa-book-open"></i> Browse Full Topic Library
+                <span class="bookmcq-icon" aria-hidden="true">📖</span> Browse Full Topic Library
             </a>
         </div>
 
     </main>
 
-    <footer class="mt-12 text-center text-white/60 text-xs md:text-sm py-6">
-        <p>&copy; 2025 BookMCQ. All rights reserved. | Master Every Chapter</p>
+    <footer class="site-footer" aria-label="Site footer">
+      <div class="footer-inner">
+        <div class="footer-main">
+          <div class="footer-brand">
+            <a class="footer-brand-link" href="/" aria-label="BookMCQ home">
+              <span class="footer-logo-mark" aria-hidden="true"><svg class="brand-symbol" viewBox="0 -64 640 640" xmlns="http://www.w3.org/2000/svg" focusable="false"><path d="M622.34 153.2L343.4 67.5c-15.2-4.67-31.6-4.67-46.79 0L17.66 153.2c-23.54 7.23-23.54 38.36 0 45.59l48.63 14.94c-10.67 13.19-17.23 29.28-17.88 46.9C38.78 266.15 32 276.11 32 288c0 10.78 5.68 19.85 13.86 25.65L20.33 428.53C18.11 438.52 25.71 448 35.94 448h56.11c10.24 0 17.84-9.48 15.62-19.47L82.14 313.65C90.32 307.85 96 298.78 96 288c0-11.57-6.47-21.25-15.66-26.87.76-15.02 8.44-28.3 20.69-36.72L296.6 284.5c9.06 2.78 26.44 6.25 46.79 0l278.95-85.7c23.55-7.24 23.55-38.36 0-45.6zM352.79 315.09c-28.53 8.76-52.84 3.92-65.59 0l-145.02-44.55L128 384c0 35.35 85.96 64 192 64s192-28.65 192-64l-14.18-113.47-145.03 44.56z" fill="currentColor"/></svg></span>
+              <span>BookMCQ</span>
+            </a>
+            <p>Build stronger understanding, explore topics, and sharpen your exam skills with structured learning and practice questions.</p>
+            <a class="footer-cta" href="/quiz">Start practicing <span aria-hidden="true">→</span></a>
+          </div>
+          <nav class="footer-column" aria-label="Explore">
+            <h2>Explore</h2>
+            <ul class="footer-links">
+              <li><a href="/">Home</a></li>
+              <li><a href="/quiz">Quiz</a></li>
+              <li><a href="/practice">Practice</a></li>
+              <li><a href="/topics">Topics Library</a></li>
+            </ul>
+          </nav>
+          <nav class="footer-column" aria-label="About BookMCQ">
+            <h2>About</h2>
+            <ul class="footer-links">
+              <li><a href="/about-author">About Author</a></li>
+              <li><a href="/why-trust-us">Why Trust Us</a></li>
+              <li><a href="/faq">Frequently Asked Questions</a></li>
+            </ul>
+          </nav>
+          <nav class="footer-column" aria-label="Help and policies">
+            <h2>Help &amp; Policies</h2>
+            <ul class="footer-links">
+              <li><a href="/contact">Contact Us</a></li>
+              <li><a href="/privacy">Privacy Policy</a></li>
+              <li><a href="/terms-of-service">Terms of Service</a></li>
+            </ul>
+          </nav>
+        </div>
+        <div class="footer-bottom">
+          <p>© <span id="currentYear">2026</span> BookMCQ. All rights reserved.</p>
+          <div class="footer-bottom-links"><a href="/privacy">Privacy</a><a href="/terms-of-service">Terms</a><a href="#cookie-settings" id="cookieSettingsLink" class="cookie-settings-link">Cookie settings</a><a href="#">Back to top ↑</a></div>
+        </div>
+      </div>
     </footer>
 </div>
+
+
+
+  <div class="chat-launcher"><button id="aiChatBtn" type="button" aria-label="Open MCQ Assistant" aria-controls="aiChatWindow" aria-expanded="false"><span aria-hidden="true">🤖</span><span class="chat-launcher-label">Chat</span></button></div>
+  <section class="chat-window" id="aiChatWindow" role="dialog" aria-label="MCQ Assistant" aria-modal="false" hidden>
+    <header class="chat-header"><div class="chat-title"><span aria-hidden="true">🤖</span><span>MCQ Assistant</span></div><button class="chat-close" id="closeChatBtn" type="button" aria-label="Close chat">×</button></header>
+    <div class="chat-messages" id="chatMessages" aria-live="polite"><div class="chat-message bot"><div class="chat-bubble">👋 Hi! I can help you find MCQs. Ask me about available books, topics, or exam preparation.</div></div></div>
+    <form class="chat-form" id="chatForm"><label class="sr-only" for="chatInput">Ask the MCQ Assistant</label><input id="chatInput" type="text" placeholder="Ask about books, topics, or MCQs..." autocomplete="off" maxlength="500"><button id="sendChatBtn" type="submit">Send</button></form>
+  </section>
+
+<section class="cookie-consent" id="cookieConsentBanner" role="dialog" aria-modal="false" aria-labelledby="cookieConsentTitle" aria-describedby="cookieConsentDescription" hidden>
+  <div class="cookie-consent-main">
+    <div class="cookie-consent-copy">
+      <p class="cookie-consent-kicker">Your privacy choices</p>
+      <h2 id="cookieConsentTitle">Cookie preferences</h2>
+      <p id="cookieConsentDescription">BookMCQ uses essential storage to operate the website. With your permission, we also use analytics to understand site usage and advertising technologies to support relevant ads and measure their performance. You can accept, reject, or choose these optional categories.</p>
+      <p>Read our <a href="/privacy">Privacy Policy</a> for more information. You can change your choice later using Cookie settings.</p>
+    </div>
+    <div class="cookie-consent-actions">
+      <button type="button" id="cookieRejectButton">Reject optional</button>
+      <button type="button" id="cookieManageButton" aria-expanded="false" aria-controls="cookiePreferences">Customize</button>
+      <button type="button" id="cookieAcceptButton" class="cookie-accept">Accept all</button>
+    </div>
+  </div>
+  <div class="cookie-preferences" id="cookiePreferences" hidden>
+    <label class="cookie-preference"><input type="checkbox" checked disabled aria-label="Essential storage is always active"><span><strong>Essential</strong><small>Required for core website functions and security. Always active.</small></span></label>
+    <label class="cookie-preference"><input type="checkbox" id="cookieAnalyticsChoice"><span><strong>Analytics</strong><small>Helps us understand visits and improve the website.</small></span></label>
+    <label class="cookie-preference"><input type="checkbox" id="cookieAdvertisingChoice"><span><strong>Advertising</strong><small>Allows advertising storage, ad-related data use, and ad personalization signals.</small></span></label>
+    <div class="cookie-preferences-actions"><button type="button" id="cookieSaveButton" class="cookie-accept">Save my choices</button></div>
+  </div>
+</section>
 
 <script>
     // Mobile Menu functionality (matching home page)
@@ -722,5 +935,116 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     initNavbarScroll();
     initMobileMenu();
 </script>
+
+
+<script>
+(() => {
+  "use strict";
+  const chatButton = document.getElementById("aiChatBtn");
+  const chatWindow = document.getElementById("aiChatWindow");
+  const closeChat = document.getElementById("closeChatBtn");
+  const chatForm = document.getElementById("chatForm");
+  const chatInput = document.getElementById("chatInput");
+  const messages = document.getElementById("chatMessages");
+
+  function toggleChat(open) {
+    chatWindow.hidden = !open;
+    chatButton.setAttribute("aria-expanded", String(open));
+    if (open) chatInput.focus();
+    else chatButton.focus();
+  }
+  chatButton.addEventListener("click", () => toggleChat(chatWindow.hidden));
+  closeChat.addEventListener("click", () => toggleChat(false));
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && !chatWindow.hidden) toggleChat(false);
+  });
+
+  function addMessage(message, sender) {
+    const row = document.createElement("div");
+    row.className = "chat-message " + sender;
+    const bubble = document.createElement("div");
+    bubble.className = "chat-bubble";
+    bubble.textContent = message;
+    row.append(bubble);
+    messages.append(row);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function answerQuery(query) {
+    const q = query.toLowerCase();
+    if (q.includes("book") || q.includes("available") || q.includes("subject")) {
+      return "📚 BookMCQ currently lists 8 books across Biology, Computer Science, Digital SAT, History, and Mathematics. Use the Browse by Category filters to explore the available titles.";
+    }
+    if (q.includes("question") || q.includes("mcq") || q.includes("quiz") || q.includes("practice")) {
+      return "📝 Open the Quiz or Practice section to work through MCQs. You can also browse the Topics Library to find available subjects and topics.";
+    }
+    if (q.includes("request") || q.includes("add book") || q.includes("missing")) {
+      return "📖 To request a book or suggest new content, visit the Contact Us page and share the book title, author, and subject.";
+    }
+    if (q.includes("job") || q.includes("government") || q.includes("private") || q.includes("css") || q.includes("pps") || q.includes("upsc") || q.includes("exam")) {
+      return "💼 BookMCQ supports subject-based practice for competitive examinations and recruitment tests, including CSS, PMS, UPSC, FPSC, PPSC, SPSC, BPSC, banking, IT, and management roles.";
+    }
+    if (q.includes("progress") || q.includes("track")) {
+      return "📈 Visit the Practice section to continue learning and review your practice activity.";
+    }
+    return "I can help you find books, MCQs, and exam-preparation sections. Try asking: “What books are available?”, “Where can I practice MCQs?”, or “How do I request a book?”";
+  }
+
+  chatForm.addEventListener("submit", event => {
+    event.preventDefault();
+    const message = chatInput.value.trim();
+    if (!message) return;
+    addMessage(message, "user");
+    chatInput.value = "";
+    window.setTimeout(() => addMessage(answerQuery(message), "bot"), 180);
+  });
+})();
+</script>
+
+<script>
+(() => {
+  "use strict";
+  const storageKey = "bookmcqCookieConsentV1";
+  const expiryDays = 180;
+  const banner = document.getElementById("cookieConsentBanner");
+  const preferences = document.getElementById("cookiePreferences");
+  const manageButton = document.getElementById("cookieManageButton");
+  const analyticsChoice = document.getElementById("cookieAnalyticsChoice");
+  const advertisingChoice = document.getElementById("cookieAdvertisingChoice");
+  const savedChoice = window.bookMcqSavedCookieConsent || null;
+  function updateGoogleConsent(analytics, advertising) {
+    window.gtag("consent", "update", {
+      analytics_storage: analytics ? "granted" : "denied",
+      ad_storage: advertising ? "granted" : "denied",
+      ad_user_data: advertising ? "granted" : "denied",
+      ad_personalization: advertising ? "granted" : "denied",
+      functionality_storage: "granted",
+      security_storage: "granted",
+      personalization_storage: "denied"
+    });
+  }
+  function openPreferences() {
+    const current = window.bookMcqSavedCookieConsent || savedChoice;
+    analyticsChoice.checked = Boolean(current && current.analytics);
+    advertisingChoice.checked = Boolean(current && current.advertising);
+    preferences.hidden = false;
+    manageButton.setAttribute("aria-expanded", "true");
+  }
+  function saveChoice(analytics, advertising) {
+    const choice = {analytics:Boolean(analytics),advertising:Boolean(advertising),expiresAt:Date.now()+expiryDays*24*60*60*1000};
+    try { window.localStorage.setItem(storageKey, JSON.stringify(choice)); } catch (error) { /* Applies for this page view if storage is blocked. */ }
+    window.bookMcqSavedCookieConsent = choice;
+    updateGoogleConsent(choice.analytics, choice.advertising);
+    banner.hidden = true;
+  }
+  banner.hidden = Boolean(savedChoice);
+  document.getElementById("cookieAcceptButton").addEventListener("click",()=>saveChoice(true,true));
+  document.getElementById("cookieRejectButton").addEventListener("click",()=>saveChoice(false,false));
+  manageButton.addEventListener("click",()=>{if(preferences.hidden)openPreferences();else{preferences.hidden=true;manageButton.setAttribute("aria-expanded","false");}});
+  document.getElementById("cookieSaveButton").addEventListener("click",()=>saveChoice(analyticsChoice.checked,advertisingChoice.checked));
+  document.getElementById("cookieSettingsLink").addEventListener("click",event=>{event.preventDefault();banner.hidden=false;openPreferences();});
+})();
+</script>
+<script>document.getElementById("currentYear").textContent = new Date().getFullYear();</script>
 </body>
 </html>
